@@ -876,8 +876,52 @@ msgid "Identified"
 msgstr "Identifié"
 
 #: .\subprojects\templates\subprojects_list.html:11
+msgid "Not approved"
+msgstr "Non approuvé"
+
+#: .\subprojects\templates\subprojects_list.html:11
+msgid "DAO launched"
+msgstr "DAO lancé"
+
+#: .\subprojects\templates\subprojects_list.html:11
+msgid "Company selected"
+msgstr "Entreprise sélectionné"
+
+#: .\subprojects\templates\subprojects_list.html:11
+msgid "Contract signed with contractor"
+msgstr "Contrat signé avec attributaire"
+
+#: .\subprojects\templates\subprojects_list.html:11
+msgid "Site handover"
+msgstr "Remise du site"
+
+#: .\subprojects\templates\subprojects_list.html:11
+msgid "Abandon"
+msgstr "Abandon"
+
+#: .\subprojects\templates\subprojects_list.html:11
+msgid "Technical reception"
+msgstr "Réception technique"
+
+#: .\subprojects\templates\subprojects_list.html:11
+msgid "Provisional reception"
+msgstr "Réception provisoire"
+
+#: .\subprojects\templates\subprojects_list.html:11
+msgid "Handover to the community"
+msgstr "Remise de l'ouvrage à la communauté"
+
+#: .\subprojects\templates\subprojects_list.html:11
+msgid "Final reception"
+msgstr "Réception définitive"
+
+#: .\subprojects\templates\subprojects_list.html:11
 msgid "No approve"
 msgstr "Non approuvé"
+
+#: .\subprojects\templates\subprojects_list.html:11
+msgid "Approved"
+msgstr "Approuvé"
 
 #: .\subprojects\templates\subprojects_list.html:11
 msgid "In progress"

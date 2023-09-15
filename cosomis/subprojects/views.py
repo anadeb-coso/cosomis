@@ -22,7 +22,7 @@ from usermanager.permissions import (
     CDDSpecialistPermissionRequiredMixin, SuperAdminPermissionRequiredMixin,
     AdminPermissionRequiredMixin, InfraPermissionRequiredMixin
     )
-
+from cosomis.constants import SUB_PROJECT_STATUS_COLOR_TRANSLATE
 
 
 class SubprojectMixin:
@@ -138,6 +138,7 @@ class SubprojectsMapView(LoginRequiredMixin, generic.ListView):
         context['ws_bound'] = settings.DIAGNOSTIC_MAP_WS_BOUND
         context['en_bound'] = settings.DIAGNOSTIC_MAP_EN_BOUND
         context['country_iso_code'] = settings.DIAGNOSTIC_MAP_ISO_CODE
+        context['sub_project_status_color_translation'] = SUB_PROJECT_STATUS_COLOR_TRANSLATE
         return context
 
     def render_to_response(self, context, **response_kwargs):

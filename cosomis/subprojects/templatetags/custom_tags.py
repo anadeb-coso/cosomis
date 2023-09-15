@@ -2,6 +2,8 @@ from django import template
 from django.utils.translation import gettext_lazy
 from subprojects.models import Project, Financier
 
+from cosomis.constants import SUB_PROJECT_STATUS_COLOR
+
 register = template.Library()
 
 
@@ -202,3 +204,7 @@ def split(value, key):
 def call_method(obj, method_name, *args):
     method = getattr(obj, method_name)
     return method(*args)
+
+@register.filter
+def get_step_color(key):
+    return SUB_PROJECT_STATUS_COLOR.get(key, '#000000')
