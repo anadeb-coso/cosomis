@@ -43,6 +43,17 @@ def get_gms_form_reponse(request):
                 subproject.longitude = coordinates[1]
                 subproject.save()
             counter += 1
+        else:
+            try:
+                subprojects =  Subproject.objects.filter(number=int(float(a['serial'])))
+                if subprojects:
+                    subproject = subprojects.first()
+                    subproject.latitude = 0.0
+                    subproject.longitude = 0.0
+                    subproject.save()
+            except:
+                pass
+                
         
     print(counter-1)
     print(Subproject.objects.filter(latitude__isnull=True).count())
@@ -61,6 +72,11 @@ def get_gms_form_reponse_save_images(request):
             if subprojects:
                 subproject = subprojects.first()
                 
+                if not a['_attachments']:
+                    images = SubprojectImage.objects.filter(subproject__id=subproject.id)
+                    for image in images:
+                        image.delete()
+
                 c = 0
                 for attachment in sorted(a['_attachments'], key=lambda obj: obj.get('id')):
                     imgs = SubprojectImage.objects.filter(url=attachment['download_url'])
@@ -86,7 +102,18 @@ def get_gms_form_reponse_save_images(request):
                     img.save()
                     c += 1
             counter += 1
-            
+        else:
+            try:
+                subprojects =  Subproject.objects.filter(number=int(float(a['serial'])))
+                if subprojects:
+                    subproject = subprojects.first()
+                    
+                    if not a['_attachments']:
+                        images = SubprojectImage.objects.filter(subproject__id=subproject.id)
+                        for image in images:
+                            image.delete()
+            except:
+                pass
         
     print(counter-1)
     print(Subproject.objects.filter(latitude__isnull=True).count())
