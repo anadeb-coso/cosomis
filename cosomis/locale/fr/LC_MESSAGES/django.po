@@ -828,6 +828,10 @@ msgid "Wave"
 msgstr "Vague"
 
 #: .\subprojects\templates\subproject.html
+msgid "Arbitrage wave"
+msgstr "Vague d'arbitrage"
+
+#: .\subprojects\templates\subproject.html
 msgid "Lot"
 msgstr "Lot"
 
@@ -1449,7 +1453,7 @@ msgstr "Montant exact dépensé sur le sous-projet"
 
 #: .\subprojects\components\subproject_tracking_graph.html
 msgid "Subproject location"
-msgstr "Emplacement du subproject"
+msgstr "Emplacement du sous-projet"
 
 #: .\subprojects\components\subproject_tracking_graph.html
 msgid "Linked to a sub-project"
@@ -1468,6 +1472,10 @@ msgid "Common sub-project number"
 msgstr "Numéro commun au sous-projet"
 
 #: .\subprojects\components\subproject_tracking_graph.html
+msgid "Subproject kit number"
+msgstr "Numéro du kit du sous-projet"
+
+#: .\subprojects\components\subproject_tracking_graph.html
 msgid "Intervention unit"
 msgstr "Unite d'intervention"
 
@@ -1482,6 +1490,10 @@ msgstr "Secteur du sous-projet"
 #: .\subprojects\components\subproject_tracking_graph.html
 msgid "Type of subproject"
 msgstr "Type de sous-project"
+
+#: .\subprojects\components\subproject_tracking_graph.html
+msgid "Type of structure"
+msgstr "Type d'ouvrage"
 
 #: .\subprojects\components\subproject_tracking_graph.html
 msgid "Full title of approved sub-project (description)"
@@ -1760,6 +1772,30 @@ msgid "Energy"
 msgstr "Energie"
 
 #: .\subprojects\components\subproject_tracking_graph.html
+msgid "None"
+msgstr "Aucun"
+
+#: .\subprojects\components\subproject_tracking_graph.html
+msgid "Judge's level"
+msgstr "Niveau Juge"
+
+#: .\subprojects\components\subproject_tracking_graph.html
+msgid "Mayor's level"
+msgstr "Niveau Maire"
+
+#: .\subprojects\components\subproject_tracking_graph.html
+msgid "Chef canton level"
+msgstr "Niveau chef canton"
+
+#: .\subprojects\components\subproject_tracking_graph.html
+msgid "Village chief level"
+msgstr "Niveau chef village"
+
+#: .\subprojects\components\subproject_tracking_graph.html
+msgid "N/A (Old site)"
+msgstr "N/A (Ancien site)"
+
+#: .\subprojects\components\subproject_tracking_graph.html
 msgid "Sport-Loisir"
 msgstr "Sport-Loisir"
 
@@ -1890,6 +1926,14 @@ msgstr "Votre compte est inactif"
 #: .\subprojects\components\subproject_tracking_graph.html
 msgid "Number of subprojects"
 msgstr "Nombre de Sous-projets"
+
+#: .\subprojects\components\subproject_tracking_graph.html
+msgid "Total number of Subprojects"
+msgstr "Nombre total de Sous-projets"
+
+#: .\subprojects\components\subproject_tracking_graph.html
+msgid "Total number of structures/infrastructures"
+msgstr "Nombre total d'ouvrages/infrastructures"
 
 #: .\subprojects\components\subproject_tracking_graph.html
 msgid "Number of subproject infrastructures"
@@ -2346,3 +2390,55 @@ msgstr "Date d'attribution"
 #: .\subprojects\api
 msgid "Allocation Date after signature of contract(s) (This is only necessary if it's a CVD)"
 msgstr "Date d'attribution après la signature du(des) contrat(s) (Ceci n'est nécessaire que s'il s'agit d'un CVD)"
+
+#: .\subprojects
+msgid "Image of this level"
+msgstr "Image de ce niveau"
+
+#: .\subprojects
+msgid "Another file considered important at this level"
+msgstr "Autre fichier jugé important de ce niveau"
+
+#: .\subprojects
+msgid "Image"
+msgstr "Image"
+
+#: .\subprojects
+msgid "Images"
+msgstr "Images"
+
+#: .\subprojects
+msgid "No images attached"
+msgstr "Aucune image n'est jointe"
+
+#: .\subprojects
+msgid "Another file"
+msgstr "Autre fichier"
+
+#: .\subprojects
+msgid "Other files"
+msgstr "Autres fichiers"
+
+#: .\subprojects
+msgid "No other files attached"
+msgstr "Aucun autre fichier n'est joint"
+
+#: .\subprojects
+msgid "Link"
+msgstr "Lien"
+
+#: .\subprojects
+msgid "Attachments"
+msgstr "Fichiers joints"
+
+#: .\subprojects
+msgid "Legend"
+msgstr "Légende"
+
+#: .\subprojects
+msgid "Refresh page"
+msgstr "Rafraichier la page"
+
+#: .\subprojects
+msgid "Not started"
+msgstr "Non demarré"

@@ -24,6 +24,8 @@
                         </div>
                         {% endif %}
                         <div class="btn-group pull-right">
+                            <a class="btn btn-primary" href="#" data-toggle="modal" data-target="#map-legen">{% translate 'Legend' %}</a>
+                             &nbsp; &nbsp; 
                             <a class="btn btn-primary" href="{% url 'subprojects:list' %}">{% translate 'List Subprojects' %}</a>
                         </div>
                     </div>
@@ -31,34 +33,9 @@
                 <div class="card-body">
                     <div class="overlay-wrapper">
                         <div class="row">
-                            <div class="col-4">
+                            {% comment %} <div class="col-4">
                                 <div class="card">
                                     <div class="card-body">
-
-                                        {% comment %} <div class="card">
-                                            <div class="card-body">
-                                                <div class="row carte-legend">
-                                                    <div class="col-2">
-                                                        <img src="{% static 'images/identified.png' %}" width="20" height="20" style="margin-top: 15px;" />
-                                                        <div style="margin-top: 15px;"><span style="
-                                                            border-radius: 50%;
-                                                            width: 200px !important;
-                                                            height: 200px; 
-                                                            background-color: red;
-                                                            color: red;
-                                                        ">&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
-                                                    </div>
-                                                    <div class="col-4">
-                                                        <p>{% translate 'Identified' %}</p>
-                                                    </div>
-                                                    <div class="col-6">
-                                                        <span>Savenes: - </span><br />
-                                                        <span>Kara: - </span><br />
-                                                        <span>Centrale: - </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div> {% endcomment %}
                                         {% for step, color in sub_project_status_color_translation.items %}
                                         <div class="card">
                                             <div class="card-body">
@@ -101,8 +78,8 @@
 
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-8">
+                            </div> {% endcomment %}
+                            <div class="col-12">
                                 <div class="card">
                                     {% comment %} <div class="card-body" style="height: 1300px;">
                                         <div id="map" style="height: 1700px !important;"></div>
@@ -125,6 +102,59 @@
     </div>
 
 {% endblock %}
+
+
+
+{% block modals %}
+<div class="modal fade" id="map-legen" tabindex="-1" role="dialog" aria-labelledby="map-legenLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="map-legenLabel">{% translate 'Legend' %}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        
+        {% for step, color in types_of_sub_project_color.items %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="row carte-legend">
+                        <div class="col-2">
+                            <div style="margin-top: 15px;"><span style="
+                                border-radius: 50%;
+                                width: 200px !important;
+                                height: 200px; 
+                                background-color: {{ color }};
+                                color: {{ color }};
+                            ">&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+                        </div>
+                        <div class="col-4">
+                            <p>{{ step }}</p>
+                        </div>
+                        <div class="col-6">
+                            <span>Savenes: - </span><br />
+                            <span>Kara: - </span><br />
+                            <span>Centrale: - </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">{% translate 'Close' %}</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+
+
 {% block javascript %}
     {{ block.super }}
     <script src="{% static 'plugins/mapbox-gl-js/v2.6.1/mapbox-gl.js' %}"></script>
@@ -180,27 +210,15 @@
                 statistics_spin.hide();
             }, 1000);
         });
-        //#ffa500
-        //#ff0000 #b40219
-        //#0000ff
-        //#000000
-        //#008200
-        {% comment %} marker = new mapboxgl.Marker({ "color": "#ffa500" })
-                    .setLngLat([1.176201, 9.547689])
-                    .setPopup( // add pop out to map
-      new mapboxgl.Popup({ offset: 25 }).setHTML(
-        `<br />
-        <p><b>${"hhhhhhhhhhh"}</b></p>
-        <a href="#!"><b>${"hhhhhhhhhhh"}</b></a>
-        `
-      )
-    )
-                    .addTo(map);
-                markers.push(marker);  {% endcomment %}
+        
         {% for subproject in subprojects %}
             {% if subproject.latitude and subproject.longitude %}
                 {% if subproject.location_subproject_realized %}
-                    marker = new mapboxgl.Marker({ "color": "{{ subproject.get_current_subproject_step.wording|get_step_color }}" })
+
+                    marker = new mapboxgl.Marker({
+                            scale: 0.35, 
+                            "color": "{{ subproject.type_of_subproject|get_type_sub_project_color }}"
+                        })
                         .setLngLat(
                             [
                                 parseFloat('{{ subproject.longitude }}'.replace(',', '.')), 
@@ -259,7 +277,10 @@
                         .addTo(map);
                     markers.push(marker);
                 {% elif subproject.canton %}
-                    marker = new mapboxgl.Marker({ "color": "{{ subproject.get_current_subproject_step.wording|get_step_color }}" })
+                    marker = new mapboxgl.Marker({ 
+                            scale: 0.35, 
+                            "color": "{{ subproject.type_of_subproject|get_type_sub_project_color }}" 
+                        })
                         .setLngLat(
                             [
                                 parseFloat('{{ subproject.longitude }}'.replace(',', '.')), 

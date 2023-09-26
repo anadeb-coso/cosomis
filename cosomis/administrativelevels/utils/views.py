@@ -3,6 +3,7 @@ from django.views import generic
 
 from cosomis.mixins import AJAXRequestMixin, JSONResponseMixin
 from administrativelevels.models import AdministrativeLevel
+from administrativelevels.functions_adl import get_cascade_administrative_levels_by_administrative_level_id
 
 
 class GetAdministrativeLevelForCVDByADLView(AJAXRequestMixin, LoginRequiredMixin, JSONResponseMixin, generic.View):
@@ -63,3 +64,27 @@ class GetAncestorAdministrativeLevelsView(AJAXRequestMixin, LoginRequiredMixin, 
             pass
 
         return self.render_to_json_response(ancestors, safe=False)
+    
+
+
+class GetChoicesForNextAdministrativeLevelAllView(AJAXRequestMixin, JSONResponseMixin, generic.View):
+    def get(self, request, *args, **kwargs):
+        parent_ids = request.GET.getlist('parent_id[]')
+        datas = dict()
+        if not parent_ids:
+            parent_ids = [None]
+
+        datas = {
+            "prefectures": [],
+            "communes": [],
+            "cantons":  [],
+            "villages": []
+        }
+        for parent_id in parent_ids:
+            for k, v in get_cascade_administrative_levels_by_administrative_level_id(parent_id).items():
+                datas[k] += v
+
+        return self.render_to_json_response(
+            datas, 
+            safe=False
+        )

@@ -13,7 +13,11 @@
     {% include 'layouts/sidebar.html' %}
 
     <!-- Content Wrapper. Contains page content -->
-    <div class="content-wrapper">
+    <div 
+    {% if user.is_authenticated %}
+    class="content-wrapper"
+    {% endif %}
+    >
         {% if hide_content_header %}
         {% elif not object_tile %}
         <!-- Content Header (Page header) -->

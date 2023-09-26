@@ -41,7 +41,7 @@ class UploadFileFormView(AJAXRequestMixin, ModalFormMixin, AdminPermissionRequir
             file_directory_within_bucket = 'proof_of_work/'
             file_path_within_bucket = os.path.join(
                 file_directory_within_bucket,
-                file.name+str(time.time())
+                f'{str(time.time())}-{file.name}'
             )
 
             media_storage = S3Boto3Storage()

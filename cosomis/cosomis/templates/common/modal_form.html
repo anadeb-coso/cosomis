@@ -68,7 +68,7 @@
             
             let help_text1_form = null;
             {% for field in form %}
-                {% if field.name == "begin" or field.name == "end" %}
+                {% if field.name == "begin" or field.name == "end" or "date" in field.name %}
                 console.log("{{ field.name }}");
                     $(('#id_{{ field.name }}')).before(dp1_form.replace('{id}', '{{ field.name }}')).parent().wrapInner(
                         dp2_form.replace('{id}', '{{ field.name }}'));
@@ -97,6 +97,7 @@
                         $('#{{ field.name }}').datetimepicker({
                             maxDate: Date.now(),
                             format: "DD/MM/YYYY",
+                            useCurrent: false,
                             widgetPositioning: {
                                 vertical: 'bottom',
                             }
@@ -110,3 +111,76 @@
             //End Datetimepicker Input
         });
     </script>
+
+
+<script type="text/javascript">
+    function display_file(input_element, type_file="image"){
+        var previewImageOrFile_;
+        if(type_file == "image"){
+            previewImageOrFile_ = document.createElement('img');
+        }else{
+            previewImageOrFile_ = document.createElement('iframe');
+        }
+        previewImageOrFile_.style.display = "none";
+
+        var file_ = input_element.files[0];
+        if (file_) {
+            var reader_ = new FileReader();
+            reader_.addEventListener('load', function() {
+
+                if(type_file == "image"){
+                    previewImageOrFile_.src = reader_.result;
+                    previewImageOrFile_.style.display = "block";
+                    previewImageOrFile_.style.width = "100px";
+                    previewImageOrFile_.style.height = "100px";
+                }else{
+                    previewImageOrFile_.src = `https://view.officeapps.live.com/op/embed.aspx?src=${reader_.result}`;
+                    previewImageOrFile_.style.display = "block";
+                    previewImageOrFile_.style.width = "250px";
+                    previewImageOrFile_.style.height = "300px";
+                    previewImageOrFile_.frameborder = '0';
+                }
+                /*else if(reader_.result.includes(".docx") || reader_.result.includes(".doc")){
+                    previewImageOrFile_.src = `https://view.officeapps.live.com/op/embed.aspx?src=${reader_.result}`;
+                    previewImageOrFile_.style.display = "block";
+                    previewImageOrFile_.style.width = "250px";
+                    previewImageOrFile_.style.height = "300px";
+                    previewImageOrFile_.frameborder = '0';
+                }else{
+                    previewImageOrFile_.src = reader_.result;
+                    previewImageOrFile_.style.display = "block";
+                    previewImageOrFile_.style.width = "250px";
+                    previewImageOrFile_.style.height = "300px";
+                }*/
+            });
+            reader_.readAsDataURL(file_);
+        
+            input_element.parentNode.insertBefore(previewImageOrFile_, input_element.nextSibling);
+        }
+
+    }
+
+    document.querySelectorAll('input').forEach(function(element){
+        element.addEventListener('change', function() {
+            if(this.id.includes('image')){
+                display_file(this, 'image');
+            }else{
+                display_file(this, 'file');
+            }
+        });
+    });
+    
+    var inputImage_ = document.getElementById('id_level_image');
+    
+
+</script>
+
+<script type="text/javascript">
+        document.querySelectorAll('input').forEach(function(element){
+            {% comment %} if(['id_end', 'id_begin'].includes(element.id) || element.id.includes('date')){
+                console.log(element.parentNode.children);
+                console.log(element.parentNode.children[element.parentNode.children.length-2]);
+                element.parentNode.children[0].style.marginBottom = "100px";
+            } {% endcomment %}
+        });
+</script>

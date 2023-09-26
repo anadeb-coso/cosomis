@@ -94,7 +94,7 @@
             let dp2 = '<div class="input-group date" id="{id}" data-target-input="nearest"></div>';
             //Datemask dd/mm/yyyy
             $('.datetimepicker-input').inputmask({alias: "datetime", inputFormat: "dd/mm/yyyy"});
-            let defaultDate = Date.now();
+            let defaultDate = false; //Date.now();
             
             let help_text1 = null;
             {% for field in form %}
@@ -126,6 +126,7 @@
             $('#{{ field.name }}').datetimepicker({
                 maxDate: Date.now(),
                 format: "DD/MM/YYYY",
+                useCurrent: false,
                 widgetPositioning: {
                     vertical: 'bottom',
                 }
@@ -182,6 +183,16 @@
             }
         }
 
+        function selected_options(element_id, data){
+            var list = [];
+            $.each(data, function (index, value) {
+                list.push(value.id);
+            });
+            console.log(list);
+            $(`#${element_id}`).val(list).change();
+        }
+        
+
         $(document).ready(function () {
             {% get_current_language as lang %}
             let child = $("#id_list_of_beneficiary_villages");
@@ -204,7 +215,8 @@
                         },
                         success: function (data) {
                             if (data.length > 0) {
-                                set_datas(child, data);
+                                //set_datas(child, data);
+                                selected_options("id_list_of_beneficiary_villages", data);
                             }
                         },
                         error: function (data) {
@@ -216,7 +228,7 @@
                         }
                     );
                 }else{
-                    set_datas(child, []);
+                    //set_datas(child, []);
                 }
             });
 
@@ -232,7 +244,8 @@
                         },
                         success: function (data) {
                             if (data.length > 0) {
-                                set_datas(child, data);
+                                //set_datas(child, data);
+                                selected_options("id_list_of_beneficiary_villages", data);
                             }
                         },
                         error: function (data) {
@@ -244,7 +257,7 @@
                         }
                     );
                 }else{
-                    set_datas(child, []);
+                    //set_datas(child, []);
                 }
             });
             

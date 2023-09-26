@@ -296,7 +296,8 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
 
                     if village in ("CCD", "TOUTE LA COMMUNAUTE"):
                         subprojects = Subproject.objects.filter(
-                            full_title_of_approved_subproject=full_title_of_approved_subproject
+                            number=number
+                            # full_title_of_approved_subproject=full_title_of_approved_subproject
                             )
                         canton = get_value(datas_file["CANTON"][count])
                         
@@ -367,10 +368,11 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
 
                     else:
                         subproject = Subproject.objects.filter(
-                            full_title_of_approved_subproject=full_title_of_approved_subproject,
-                            location_subproject_realized=administrative_level, 
-                            subproject_sector=subproject_sector,
-                            type_of_subproject=type_of_subproject
+                            number=number
+                            # full_title_of_approved_subproject=full_title_of_approved_subproject,
+                            # location_subproject_realized=administrative_level, 
+                            # subproject_sector=subproject_sector,
+                            # type_of_subproject=type_of_subproject
                             )
                         if subproject:
                             subproject = list(subproject)[0]

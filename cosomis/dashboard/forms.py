@@ -12,11 +12,11 @@ class AdministrativeLevelFilterForm(forms.Form):
     canton = forms.MultipleChoiceField()
     village = forms.MultipleChoiceField()
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, has_all=True, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         administrativelevels_docs = AdministrativeLevel.objects.all()
-        init_list = [('', ''), ('All', _('All'))]
+        init_list = [('', ''), ('All', _('All'))] if has_all else []
         query_result_regions = init_list + list(administrativelevels_docs.filter(type="Region").values_list('id', 'name'))
         query_result_prefectures = init_list + list(administrativelevels_docs.filter(type="Prefecture").values_list('id', 'name'))
         query_result_communes = init_list + list(administrativelevels_docs.filter(type="Commune").values_list('id', 'name'))

@@ -2,7 +2,7 @@ from django import template
 from django.utils.translation import gettext_lazy
 from subprojects.models import Project, Financier
 
-from cosomis.constants import SUB_PROJECT_STATUS_COLOR
+from cosomis.constants import SUB_PROJECT_STATUS_COLOR, TYPES_OF_SUB_PROJECT_COLOR
 
 register = template.Library()
 
@@ -208,3 +208,7 @@ def call_method(obj, method_name, *args):
 @register.filter
 def get_step_color(key):
     return SUB_PROJECT_STATUS_COLOR.get(key, '#000000')
+
+@register.filter
+def get_type_sub_project_color(key):
+    return TYPES_OF_SUB_PROJECT_COLOR.get(key, '#00ffff') #Default e-Aqua f-Aqua
