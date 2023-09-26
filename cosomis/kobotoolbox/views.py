@@ -5,7 +5,7 @@ from datetime import datetime, date
 
 from kobotoolbox.api_call import get_all
 from administrativelevels.models import AdministrativeLevel
-from subprojects.models import Subproject, SubprojectImage
+from subprojects.models import Subproject, SubprojectFile
 from kobotoolbox.form_id_kobo import FORM_ID_KOBO_GMS
 
 
@@ -63,11 +63,11 @@ def get_gms_form_reponse_save_images(request):
                 
                 c = 0
                 for attachment in sorted(a['_attachments'], key=lambda obj: obj.get('id')):
-                    imgs = SubprojectImage.objects.filter(url=attachment['download_url'])
+                    imgs = SubprojectFile.objects.filter(url=attachment['download_url'])
                     if imgs.exists():
                         img = imgs.first()
                     else:
-                        img = SubprojectImage()
+                        img = SubprojectFile()
                         img.subproject = subproject
                         img.principal = True if c == 0 else False
                         img.order = subproject.get_all_images().count() + 1

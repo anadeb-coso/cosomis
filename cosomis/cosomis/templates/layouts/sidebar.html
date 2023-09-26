@@ -1,7 +1,7 @@
 {% load static i18n custom_tags %}
 
 {% make_list "dashboard_subprojects" "dashboard_administrativelevels" "dashboard_indicators" as active_dashboard %}
-
+{% if user.is_authenticated %}
 <!-- Main Sidebar Container -->
 <aside class="main-sidebar sidebar-light-primary soft-shadow sidebar-no-expand">
 
@@ -125,3 +125,4 @@
     </div>
     <!-- /.sidebar -->
 </aside>
+{% endif %}

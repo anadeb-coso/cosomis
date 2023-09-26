@@ -3,6 +3,7 @@
 <!-- Navbar -->
 <nav class="main-header navbar navbar-expand navbar-white navbar-light">
     <!-- Left navbar links -->
+    {% if user.is_authenticated %}
     <ul class="navbar-nav">
         {% if object_tile %}
             <li class="nav-item white-shaded-nav-item">
@@ -66,7 +67,7 @@
             </li>
         {% endif %}
     </ul>
-
+    {% endif %}
     <!-- Right navbar links -->
     <ul class="navbar-nav ml-auto">
 {#        <li class="nav-item">#}

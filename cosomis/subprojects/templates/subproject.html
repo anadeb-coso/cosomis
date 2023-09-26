@@ -44,9 +44,11 @@
                             <div class="float-right">
                                 {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Infra" %}
                                     <a href="{% url 'subprojects:update' object.pk %}" class="float-right font-weight-bold">{% translate 'Update' %}</a>
+                                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" %}
                                     {% if not object.has_subprojects_linked and not object.link_to_subproject %}
                                     <br />
                                     <a href="{% url 'subprojects:create_infra_or_link_subproject' object.pk %}" class="font-weight-bold" style="font-size: 10px !important;">{% translate 'Add an infrastructure or a subproject linking to this sub-project' %}</a>
+                                    {% endif %}
                                     {% endif %}
                                 {% endif %}
                                 {% if object.link_to_subproject %}
@@ -133,7 +135,7 @@
                     <div class="card-body">
 
                         <div class="clearfix">
-                                {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Infra" %}
+                                {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" %}
                                 <a href="{% url 'subprojects:create_infra_or_link_subproject' object.pk %}" class="font-weight-bold" style="font-size: 10px !important;">{% translate 'Add an infrastructure or a subproject linking to this sub-project' %}</a>
                                 <br /><br />
                                 {% endif %}
@@ -639,7 +641,8 @@
                                                     
                                         
                                         <a target="_blank" href="{{ img.url|imgAWSS3Filter }}">
-                                            <img class="d-block w-100" src="{{ img.url|imgAWSS3Filter }}" alt="{{ img.name }}">
+                                            <img class="d-block w-100" src="{{ img.url|imgAWSS3Filter }}" alt="{{ img.name }}" 
+                                                style="width: 500px !important; margin: auto !important;">
                                         </a>
                                         <div class="carousel-caption d-none d-md-block">
                                             <div style="margin-top: -370px !important;">
@@ -653,33 +656,33 @@
 
                                             <div style="width: 70% !important; margin: auto !important; margin-top: 15px !important;">
                                                 <input type="hidden" name="object_id_update" value="{{ object.id }}" id="object_id_update" />
-                                                <input type="hidden" name="image_id" value="{{ img.id }}" id="image_id" />
+                                                <input type="hidden" name="image_id-{{ img.id }}" value="{{ img.id }}" id="image_id-{{ img.id }}" />
 
-                                                <div class="form-group" id="name_content">
-                                                    <label for="name_update">{% translate 'Name' %}</label>
-                                                    <input type="text" name="name_update" id="name_update" class="form-control" value="{{ img.name }}" required />
+                                                <div class="form-group" id="name_content-{{ img.id }}">
+                                                    <label for="name_update-{{ img.id }}">{% translate 'Name' %}</label>
+                                                    <input type="text" name="name_update-{{ img.id }}" id="name_update-{{ img.id }}" class="form-control" value="{{ img.name }}" required />
                                                 </div>
 
-                                                <div class="form-group" id="order_content">
-                                                    <label for="order_update">{% translate 'Order' %}</label>
-                                                    <input type="number" name="order_update" id="order_update" class="form-control" value="{{ img.order }}" required />
+                                                <div class="form-group" id="order_content-{{ img.id }}">
+                                                    <label for="order_update-{{ img.id }}">{% translate 'Order' %}</label>
+                                                    <input type="number" name="order_update-{{ img.id }}" id="order_update-{{ img.id }}" class="form-control" value="{{ img.order }}" required />
                                                 </div>
 
-                                                <div class="form-group" id="date_taken_content">
-                                                    <label for="date_taken_update">{% translate 'Date taken' %} ({{ img.date_taken }})</label>
-                                                    <input type="date" name="date_taken_update" id="date_taken_update" class="form-control" value="{{ img.date_taken }}" required />
+                                                <div class="form-group" id="date_taken_content-{{ img.id }}">
+                                                    <label for="date_taken_update-{{ img.id }}">{% translate 'Date taken' %} ({{ img.date_taken }})</label>
+                                                    <input type="date" name="date_taken_update-{{ img.id }}" id="date_taken_update-{{ img.id }}" class="form-control" value="{{ img.date_taken }}" required />
                                                 </div>
 
-                                                <div class="form-check" id="principal_content" style="margin-bottom: 30px !important; margin-left: 30px !important;">
-                                                    <input type="checkbox" name="principal_update" id="principal_update" class="form-check-input" {% if img.principal %}checked{% endif %}  />
-                                                    <label class="form-check-label" for="principal_update">{% translate 'Principal Image' %}</label>
+                                                <div class="form-check" id="principal_content-{{ img.id }}" style="margin-bottom: 30px !important; margin-left: 30px !important;">
+                                                    <input type="checkbox" name="principal_update-{{ img.id }}" id="principal_update-{{ img.id }}" class="form-check-input" {% if img.principal %}checked{% endif %}  />
+                                                    <label class="form-check-label" for="principal_update-{{ img.id }}">{% translate 'Principal Image' %}</label>
                                                 </div>
-                                                    
+                                                
                                                 <p>
-                                                    <button type="submit" class="btn btn-primary float-left" id="submit_btn_image_update">
+                                                    <button type="submit" class="btn btn-primary float-left submit_btn_image_update" id="submit_btn_image_update-{{ img.id }}">
                                                         {% translate 'Submit' %}
                                                     </button>
-                                                    <a type="submit" class="btn btn-danger float-right" href="{% url 'subprojects:subproject_image_delete' img.id %}" >
+                                                    <a type="submit" class="btn btn-danger float-right" href="{% url 'subprojects:subproject_file_delete' img.id %}" >
                                                         {% translate 'Delete' %}
                                                     </a>
                                                     <div style="clear; both;"></div>
@@ -696,11 +699,13 @@
 
 
                             </div>
-                            <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
+                            <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev" 
+                                style="color: white !important; background-color: black !important;">
                                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                                 <span class="sr-only">Previous</span>
                             </a>
-                            <a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next">
+                            <a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next" 
+                                style="color: white !important; background-color: black !important;">
                                 <span class="carousel-control-next-icon" aria-hidden="true"></span>
                                 <span class="sr-only">Next</span>
                             </a>
@@ -746,28 +751,30 @@
             let load_subproject_step_add_spin = $('#load-subproject-step-add-spin');
             let load_subproject_step_graph_spin = $('#load-subproject-step-graph-spin');
             
-            $(document).on("click", "#submit_btn_image_update", function (event) {
+            $(document).on("click", ".submit_btn_image_update", function (event) {
+                var id_list = this.id.split('-');
+                var img_id = id_list[id_list.length-1];
                 event.preventDefault();
                 const object_id = $('#object_id_update').val();
-                const date_taken = $('#date_taken_update').val();
-                const order = $('#order_update').val();
-                const name = $('#name_update').val();
+                const date_taken = $('#date_taken_update-'+img_id).val();
+                const order = $('#order_update-'+img_id).val();
+                const name = $('#name_update-'+img_id).val();
                 if(order && order == 0){
                     alert(`{% translate "The order field must have a value greater than 0" %}`);
-                    $("#submit_btn_image_update").attr('disabled', false);
+                    $("#submit_btn_image_update-"+img_id).attr('disabled', false);
                 }else if(object_id && order && name){
                     $(this).attr('disabled', true);
 
                     {% comment %} try{ {% endcomment %}
                         var data =  new FormData();
-                        data.append("image_id", $('#image_id').val());
+                        data.append("image_id", $('#image_id-'+img_id).val());
                         data.append("csrfmiddlewaretoken", "{{ csrf_token }}");
                         data.append("object_id", $('#object_id_update').val());
-                        data.append("date_taken", $('#date_taken_update').val());
-                        data.append("order", $('#order_update').val());
-                        data.append("name", $('#name_update').val());
+                        data.append("date_taken", $('#date_taken_update-'+img_id).val());
+                        data.append("order", $('#order_update-'+img_id).val());
+                        data.append("name", $('#name_update-'+img_id).val());
 
-                        var principal = document.getElementById("principal_update");
+                        var principal = document.getElementById("principal_update-"+img_id);
                         if (principal.checked == true){
                             principal_value = 1;
                         } else {
@@ -791,25 +798,25 @@
                                     $(".messageModalImage").modal("hide");
                                     $("#messageModalImage").text("");
                                 }, 4000);
-                                $("#submit_btn_image_update").attr('disabled', false);
+                                $("#submit_btn_image_update-"+img_id).attr('disabled', false);
                             }
 
                         }).catch(
                             error => {
                                 console.log(error);
                                 alert(error);
-                                $("#submit_btn_image_update").attr('disabled', false);
+                                $("#submit_btn_image_update-"+img_id).attr('disabled', false);
                             }
                         );
                     {% comment %} }catch(e){
                         alert(`{% translate "Please fill in all fields" %}`);
-                        $("#submit_btn_image_update").attr('disabled', false);
+                        $("#submit_btn_image_update-"+img_id).attr('disabled', false);
                     } {% endcomment %}
                     
 
                 }else{
                     alert(`{% translate "Please fill in all fields" %}`);
-                    $("#submit_btn_image_update").attr('disabled', false);
+                    $("#submit_btn_image_update-"+img_id).attr('disabled', false);
                 }
                 
 
@@ -839,6 +846,11 @@
             }
             let delete_subproject_tracking_step_form_ajax = new DelteSubprojectStepFormAjaxSubmit();
 
+            class DisplaySubprojectStepFilesAjaxSubmit extends FormAjaxSubmit {
+                
+            }
+            let display_subproject_tracking_step_files_ajax = new DisplaySubprojectStepFilesAjaxSubmit();
+
             function loadSubprojectStep(){
                 load_subproject_step_graph_spin.show();
                 load_subproject_step_add_spin.show();
@@ -852,7 +864,7 @@
                     let comment_thread_a = $(".comment-thread a");
                     add_subproject_tracking_step.on('click', function () {
                         let url = "{% url 'subprojects:step:subproject_step_add_form' object.id %}";
-                        add_subproject_tracking_step_form_ajax.load_form('#subproject_add_step_form', status_change_modal, url);
+                        add_subproject_tracking_step_form_ajax.load_form('#subproject_add_step_form', status_change_modal, url, false, true);
                     });
                     //End Add subproject step
 
@@ -863,16 +875,16 @@
                         let id_add_evolution_level = list_id_attr[list_id_attr.length - 1];
                         let url = "{% url 'subprojects:step:subproject_level_add_form' object.id 0 %}".replace("/0", ("/"+id_add_evolution_level));
                         console.log(url);
-                        add_subproject_tracking_level_form_ajax.load_form('#subproject_add_level_form', status_change_modal, url);
+                        add_subproject_tracking_level_form_ajax.load_form('#subproject_add_level_form', status_change_modal, url, false, true);
                     });
                     //End Add subproject level
 
                     //Update Subproject Step-Level
                     comment_thread_a.on('click', function () {
                         if(this.classList.contains('subproject_step')){
-                            add_subproject_tracking_step_form_ajax.load_form('#subproject_add_step_form', status_change_modal, this.id);
+                            add_subproject_tracking_step_form_ajax.load_form('#subproject_add_step_form', status_change_modal, this.id, false, true);
                         }else if(this.classList.contains('subproject_level')){
-                            add_subproject_tracking_level_form_ajax.load_form('#subproject_add_level_form', status_change_modal, this.id);
+                            add_subproject_tracking_level_form_ajax.load_form('#subproject_add_level_form', status_change_modal, this.id, false, true);
                         }
                     });
                     //End Update Subproject Step-Level 
@@ -882,6 +894,12 @@
                         delete_subproject_tracking_step_form_ajax.load_form('#subproject_deletion_step_form', status_change_modal, this.id);
                     });
                     //End Delete Subproject Step-Level
+
+                    //Display Subproject Step-Level Files
+                    $(".display_subproject_step_files").on('click', function () {
+                        display_subproject_tracking_step_files_ajax.load_form('#display_subproject_step_files_form', status_change_modal, this.id);
+                    });
+                    //End Display Subproject Step-Level Files
 
                     load_subproject_step_add_spin.hide();
                 });

@@ -46,13 +46,13 @@ class Subproject(BaseModel):
     link_to_subproject = models.ForeignKey('Subproject', null=True, blank=True, on_delete=models.CASCADE, verbose_name=_("Linked to a sub-project")) #To link the subprojects that the cantons or CVD link to make
     
     number = models.IntegerField(null=True, blank=True, verbose_name=_("Number unique to each sub-project or infrastructure"))
-    joint_subproject_number = models.IntegerField(null=True, blank=True, verbose_name=_("Common sub-project number"))
+    joint_subproject_number = models.IntegerField(null=True, blank=True, verbose_name=_("Subproject kit number"))
     intervention_unit = models.IntegerField(null=True, blank=True, verbose_name=_("Intervention unit"))
     facilitator_name = models.CharField(max_length=255, null=True, blank=True, verbose_name=_("Facilitator name"))
-    wave = models.CharField(max_length=2, null=True, blank=True, verbose_name=_("Wave"))
+    wave = models.CharField(max_length=2, null=True, blank=True, verbose_name=_("Arbitrage wave"))
     lot = models.CharField(max_length=2, null=True, blank=True, verbose_name=_("Lot"))
     subproject_sector = models.CharField(max_length=100, verbose_name=_("Subproject sector"))
-    type_of_subproject = models.CharField(max_length=100, verbose_name=_("Type of subproject"))
+    type_of_subproject = models.CharField(max_length=100, verbose_name=_("Type of structure"))
     subproject_type_designation = models.CharField(max_length=100, choices=SUB_PROJECT_TYPE_DESIGNATION, default='Subproject', verbose_name=_("Subproject type designation (Subproject or Infrastructure)"))
     full_title_of_approved_subproject = models.TextField(max_length=255, verbose_name=_("Full title of approved sub-project (description)"))
     works_type = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Works type"))
@@ -236,8 +236,13 @@ class Subproject(BaseModel):
 
     def get_all_images(self, order=False):
         if order:
-            return sorted(self.subprojectimage_set.get_queryset(), key=lambda o: o.order)
-        return self.subprojectimage_set.get_queryset()
+            return sorted(self.subprojectfile_set.get_queryset().filter(file_type__icontains="image"), key=lambda o: o.order)
+        return self.subprojectfile_set.get_queryset().filter(file_type__icontains="image")
+
+    def get_all_exclude_images(self, order=False):
+        if order:
+            return sorted(self.subprojectfile_set.get_queryset().exclude(file_type__icontains="image"), key=lambda o: o.order)
+        return self.subprojectfile_set.get_queryset().exclude(file_type__icontains="image")
     
     def get_principal_image(self):
         for img in self.get_all_images():
@@ -355,6 +360,29 @@ class SubprojectStep(_Step):
             if l.wording == wording:
                 return True
         return False
+    
+    def get_images(self):
+        if self.wording == "En cours":
+            return SubprojectFile.objects.filter(
+                subproject_level__subproject_step__id=self.id,
+                file_type__icontains="image"
+            ).order_by("-date_taken")
+        return self.subprojectfile_set.get_queryset().filter(file_type__icontains="image").order_by("-date_taken")
+
+    def get_exclude_images(self):
+        if self.wording == "En cours":
+            return SubprojectFile.objects.filter(
+                subproject_level__subproject_step__id=self.id
+            ).exclude(
+                file_type__icontains="image"
+            ).order_by("-date_taken")
+        return self.subprojectfile_set.get_queryset().exclude(file_type__icontains="image").order_by("-date_taken")
+    
+    def get_last_image(self):
+        return self.get_images().last()
+
+    def get_last_exclude_image(self):
+        return self.get_exclude_images().last()
         
     
     def __str__(self):
@@ -369,6 +397,18 @@ class Level(_Step):
     percent = CustomerFloatRangeField(verbose_name=_("Percent"), min_value=0, max_value=100)
     begin = models.DateField(verbose_name=_("Begin"))
     end = models.DateField(null=True, blank=True, verbose_name=_("End"))
+    
+    def get_images(self):
+        return self.subprojectfile_set.get_queryset().filter(file_type__icontains="image").order_by("-date_taken")
+
+    def get_exclude_images(self):
+        return self.subprojectfile_set.get_queryset().exclude(file_type__icontains="image").order_by("-date_taken")
+    
+    def get_last_image(self):
+        return self.get_images().last()
+
+    def get_last_exclude_image(self):
+        return self.get_exclude_images().last()
 
 
 class VulnerableGroup(BaseModel):
@@ -451,13 +491,17 @@ class Component(BaseModel):
         return self.name
 
 
-class SubprojectImage(BaseModel):
+class SubprojectFile(BaseModel):
     subproject = models.ForeignKey(Subproject, null=True, blank=True, on_delete=models.CASCADE)
+    subproject_step = models.ForeignKey(SubprojectStep, null=True, blank=True, on_delete=models.CASCADE)
+    subproject_level = models.ForeignKey(Level, null=True, blank=True, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     url = models.CharField(max_length=255)
     order = models.IntegerField(default=0)
     principal = models.BooleanField(default=False)
     date_taken = models.DateField()
+    file_type = models.CharField(max_length=100, default="image")
+
 
 
 class Financier(BaseModel):

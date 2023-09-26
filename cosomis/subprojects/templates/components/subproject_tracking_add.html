@@ -28,7 +28,14 @@
                         <button type="button" class="subproject_step_delete" 
                             id="{% url 'object_deletion_form' subproject_step.id 'SubprojectStep' %}">
                             <span aria-hidden="true"><i class="fas fa-times text-danger"></i></span>
+                        </button><br />
+                        {% if subproject_step.get_images|length != 0 or subproject_step.get_exclude_images|length != 0 %}
+                        <button type="button" class="display_subproject_step_files" 
+                            id="{% url 'subprojects:step:display_subproject_step_files' subproject_step.id %}"
+                            >
+                            <span aria-hidden="true"><i class="fa fa-picture-o"></i></span>
                         </button>
+                        {% endif %}
                     </div>
                     <div class="comment-info">
                         <a href="#!" class="comment-author subproject_step" 
@@ -72,7 +79,14 @@
                                 <button type="button" class="subproject_step_delete" 
                                     id="{% url 'object_deletion_form' level.id 'Level' %}">
                                     <span aria-hidden="true"><i class="fas fa-times text-danger"></i></span>
+                                </button><br />
+                                {% if level.get_images|length != 0 or level.get_exclude_images|length != 0 %}
+                                <button type="button" class="display_subproject_step_files" 
+                                    id="{% url 'subprojects:step:display_subproject_level_files' level.id %}"
+                                    >
+                                    <span aria-hidden="true"><i class="fa fa-picture-o"></i></span>
                                 </button>
+                                {% endif %}
                             </div>
                             <div class="comment-info">
                                 <a href="#!" class="comment-author subproject_level" 
@@ -110,5 +124,4 @@
         {% endfor %}
         {% endwith %}
     </div>
-
 

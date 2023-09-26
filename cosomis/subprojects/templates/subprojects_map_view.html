@@ -1,0 +1,108 @@
+
+
+{% load static i18n custom_tags %}
+
+
+
+
+
+
+    
+    <script>
+    
+        removeAllMarkers();
+        
+        {% for subproject in subprojects %}
+            {% if subproject.latitude and subproject.longitude %}
+                {% if subproject.location_subproject_realized %}
+
+                    marker = new mapboxgl.Marker({
+                            scale: 0.35, 
+                            "color": "{{ subproject.type_of_subproject|get_type_sub_project_color }}"
+                        })
+                        .setLngLat(
+                            [
+                                parseFloat('{{ subproject.longitude }}'.replace(',', '.')), 
+                                parseFloat('{{ subproject.latitude }}'.replace(',', '.'))
+                            ]
+                        )
+                        .setPopup(
+                            new mapboxgl.Popup().setHTML(
+                                `<br />
+                                <a target="_blank" href="{% url 'administrativelevels:detail' subproject.location_subproject_realized.pk %}?type=Village"><b>{{ subproject.location_subproject_realized.name }}</b></a><br />
+                                <a target="_blank" href="{% url 'subprojects:detail' subproject.pk %}"><b>{{ subproject.full_title_of_approved_subproject }}</b></a>
+                                
+                                
+                                <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
+                                    <ol class="carousel-indicators">
+                                        {% for img in subproject.get_all_images %}
+                                        <li data-target="#carouselExampleIndicators" data-slide-to="{{ forloop.counter }}" {% if img.principal %}class="active"{% endif %} ></li>
+                                        {% endfor %}
+                                    </ol>
+                                    <div class="carousel-inner">
+                                        
+                                        {% for img in subproject.get_all_images %}
+
+                                            <div class="carousel-item {% if img.principal %}active{% endif %}">
+                                                            
+                                                
+                                                <a target="_blank" href="{{ img.url|imgAWSS3Filter }}">
+                                                    <img class="d-block w-100" src="{{ img.url|imgAWSS3Filter }}" alt="{{ img.name }}">
+                                                </a>
+                                                <div class="carousel-caption d-none d-md-block">
+                                                    <div style="margin-top: -370px !important;">
+                                                        <h5>{{ img.name }}</h5>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+
+                                        {% endfor %}
+
+
+                                    </div>
+                                    <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
+                                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                        <span class="sr-only">Previous</span>
+                                    </a>
+                                    <a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next">
+                                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                        <span class="sr-only">Next</span>
+                                    </a>
+                                </div>
+                                
+                                
+                                `
+                            )
+                        )
+                        .addTo(map);
+                    markers.push(marker);
+                {% elif subproject.canton %}
+                    marker = new mapboxgl.Marker({ 
+                            scale: 0.35, 
+                            "color": "{{ subproject.type_of_subproject|get_type_sub_project_color }}" 
+                        })
+                        .setLngLat(
+                            [
+                                parseFloat('{{ subproject.longitude }}'.replace(',', '.')), 
+                                parseFloat('{{ subproject.latitude }}'.replace(',', '.'))
+                            ]
+                        )
+                        .setPopup(
+                            new mapboxgl.Popup({ offset: 25 }).setHTML(
+                                `<br />
+                                <a target="_blank" href="{% url 'administrativelevels:detail' subproject.canton.pk %}?type={{ subproject.canton.type }}"><b>{{ subproject.canton.name }}</b></a>
+                                <a target="_blank" href="{% url 'subprojects:detail' subproject.pk %}"><b>{{ subproject.full_title_of_approved_subproject }}</b></a>
+                                `
+                            )
+                        )
+                        .addTo(map);
+                    markers.push(marker);
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+
+        spin.hide();
+    </script>
+    
+    

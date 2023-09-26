@@ -1,0 +1,111 @@
+{% load bootstrap4 static i18n custom_tags %}
+
+<script src="{% static 'js/disableOnSubmit.js' %}"></script>
+
+<div class="modal-dialog modal-confirmation">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="modal-title mx-auto">
+                <div class="fs29 text-bold-family text-{% if form_class_color %}{{ form_class_color }}{% else %}primary{% endif %}">
+                    {{ title }}
+                </div>
+                {% if subtitle %}
+                    <p>
+                        <small class="subtitle">{{ subtitle }}</small>
+                    </p>
+                {% endif %}
+            </div>
+            <button type="button" class="border-0 bg-transparent close-modal" data-dismiss="modal" aria-label="Close">
+                <div class="circle-icon bg-{% if form_class_color %}{{ form_class_color }}{% else %}primary{% endif %}">
+                    <div class="center-27">
+                        <i class="fas fa-times"></i>
+                    </div>
+                </div>
+            </button>
+        </div>
+        
+            <div class="modal-body">
+                <div class="overlay-wrapper">
+                    {% if picture %}
+                        <div class="text-center">
+                            <img id="modal_form_picture" src="{{ picture }}" class="{{ picture_class }}">
+                        </div>
+                    {% endif %}
+                    
+                    <div>
+                        {% if object_images|length != 0 %}
+                            <div>
+                                <span>
+                                    {% if object_images|length == 1 %}
+                                        {% translate "Image" %}
+                                    {% else %}
+                                        {% translate "Images" %}
+                                    {% endif %}
+                                </span>
+                            </div>
+
+                            <div>
+                                {% for image in object_images %}
+                                    <a href="{{ image.url|imgAWSS3Filter }}" target="_blank" >
+                                        <img src="{{ image.url|imgAWSS3Filter }}" width="300" />
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <span>{% translate "No images attached" %}</span>
+                        {% endif %}
+                    </div>
+                    <hr />
+                    <div>
+                        {% if object_exclude_images|length != 0 %}
+                            <div>
+                                <span>
+                                    {% if object_exclude_images|length == 1 %}
+                                        {% translate "Another file" %}
+                                    {% else %}
+                                        {% translate "Other files" %}
+                                    {% endif %}
+                                </span>
+                            </div>
+
+                            <div>
+                                {% for exclude_image in object_exclude_images %}
+                                    {% if ".docx" in exclude_image.url or ".doc" in exclude_image.url %}
+                                        <a href="{{ exclude_image.url|imgAWSS3Filter }}" target="_blank" >
+                                            {% translate "Download" %}
+                                        </a><br />
+                                        <a href="{{ exclude_image.url|imgAWSS3Filter }}" target="_blank" >
+                                            <iframe style="float: left;"
+                                                src='https://view.officeapps.live.com/op/embed.aspx?src={{ exclude_image.url|imgAWSS3Filter }}' 
+                                                width="250" height="300" frameborder='0'>
+                                                    This is an embedded 
+                                                    <a target='_blank' href='http://office.com'>Microsoft Office</a> 
+                                                    document, powered by 
+                                                    <a target='_blank' href='http://office.com/webapps'>Office Online</a>.
+                                            </iframe>
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ exclude_image.url|imgAWSS3Filter }}" target="_blank" >
+                                            {% translate "Link" %}
+                                        </a><br />
+                                        <a href="{{ exclude_image.url|imgAWSS3Filter }}" target="_blank" >
+                                            <iframe src="{{ exclude_image.url|imgAWSS3Filter }}" width="250" height="300"></iframe>
+                                        </a>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <span>{% translate "No other files attached" %}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="overlay submit-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+            </div>
+            
+    </div>
+</div>

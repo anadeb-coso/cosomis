@@ -9,11 +9,14 @@ from datetime import timedelta, date
 from itertools import zip_longest
 import json
 from django.forms.models import model_to_dict
+from storages.backends.s3boto3 import S3Boto3Storage
+import os
+import time
 
 from cosomis.mixins import AJAXRequestMixin, JSONResponseMixin, ModalFormMixin
 from subprojects.views import SubprojectMixin
 from subprojects.forms import SubprojectAddStepForm, SubprojectAddLevelForm #, DeleteConfirmForm
-from subprojects.models import SubprojectStep, Level
+from subprojects.models import SubprojectStep, Level, SubprojectFile
 from usermanager.permissions import (
     InfraPermissionRequiredMixin, 
 )
@@ -25,7 +28,6 @@ class SubprojectFormMixin(SubprojectMixin, generic.FormView):
         return super().get_form_kwargs()
 
     def get_context_data(self, **kwargs):
-        print(999)
         context = super().get_context_data(**kwargs)
         if self.kwargs.get('subproject_step_update_id'):
             obj = SubprojectStep.objects.get(id=self.kwargs['subproject_step_update_id'])
@@ -181,7 +183,41 @@ class SubprojectStepAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequiredM
         subproject_step.wording = subproject_step.step.wording
         subproject_step.percent = subproject_step.step.percent
         subproject_step.ranking = subproject_step.step.ranking
-        subproject_step.save()
+        subproject_step = subproject_step.save_and_return_object()
+
+        images = subproject_step.subproject.get_all_images()
+        for file in [self.request.FILES.get('level_image'), self.request.FILES.get('level_other_file')]:
+            if file:
+                file_directory_within_bucket = 'proof_of_work/'
+                file_path_within_bucket = os.path.join(
+                    file_directory_within_bucket,
+                    f'{str(time.time())}-{file.name}'
+                )
+                media_storage = S3Boto3Storage()
+                if not media_storage.exists(file_path_within_bucket):  # avoid overwriting existing file
+                    media_storage.save(file_path_within_bucket,file)
+                    file_url = media_storage.url(file_path_within_bucket)
+
+                    principal = False
+                    if len(images) == 0:
+                        principal = True
+
+                    image = SubprojectFile.objects.filter(
+                        subproject_step_id=subproject_step.id, file_type=file.content_type
+                    ).first()
+                    if not image:
+                        image = SubprojectFile()
+                        image.order = len(images) + 1
+                        image.subproject = subproject_step.subproject
+                        image.subproject_step = subproject_step
+                        image.file_type = file.content_type
+
+                    image.url = file_url
+                    image.principal = principal
+                    image.date_taken = subproject_step.begin
+                    image.name = subproject_step.wording
+                    image.save()
+
 
         
         msg = _("The Step was successfully saved.")
@@ -228,7 +264,42 @@ class SubprojectLevelAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequired
         
         subproject_level = form.save(commit=False)
         subproject_level.subproject_step = subproject_step
-        subproject_level.save()
+        subproject_level = subproject_level.save_and_return_object()
+
+
+        images = subproject_level.subproject_step.subproject.get_all_images()
+        for file in [self.request.FILES.get('level_image'), self.request.FILES.get('level_other_file')]:
+            if file:
+                file_directory_within_bucket = 'proof_of_work/'
+                file_path_within_bucket = os.path.join(
+                    file_directory_within_bucket,
+                    f'{str(time.time())}-{file.name}'
+                )
+                media_storage = S3Boto3Storage()
+                if not media_storage.exists(file_path_within_bucket):  # avoid overwriting existing file
+                    media_storage.save(file_path_within_bucket,file)
+                    file_url = media_storage.url(file_path_within_bucket)
+                    
+                    principal = False
+                    if len(images) == 0:
+                        principal = True
+
+                    image = SubprojectFile.objects.filter(
+                        subproject_level_id=subproject_level.id, file_type=file.content_type
+                    ).first()
+                    if not image:
+                        image = SubprojectFile()
+                        image.order = len(images) + 1
+                        image.subproject = subproject_level.subproject_step.subproject
+                        image.subproject_level = subproject_level
+                        image.file_type = file.content_type
+                    image.url = file_url
+                    image.principal = principal
+                    image.date_taken = subproject_level.begin
+                    image.name = subproject_level.wording
+                    image.save()
+
+
         
         msg = _("The Level was successfully saved.")
         messages.add_message(self.request, messages.SUCCESS, msg, extra_tags='success')
@@ -238,6 +309,31 @@ class SubprojectLevelAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequired
 #And Add
 
 
+#Display Files
+class FilesView(AJAXRequestMixin, ModalFormMixin, LoginRequiredMixin, InfraPermissionRequiredMixin, 
+                                 JSONResponseMixin, generic.TemplateView):
+    template_name = "components/subproject_tracking_files.html"
+    id_form = "display_subproject_step_files_form"
+    title = _('Attachments')
+    
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        if self.kwargs.get('subproject_step_id'):
+            context['object'] = SubprojectStep.objects.get(id=self.kwargs['subproject_step_id'])
+        elif self.kwargs.get('subproject_level_id'):
+            context['object'] = Level.objects.get(id=self.kwargs['subproject_level_id'])
+        else:
+            raise Http404
+        
+        context['object_images'] = context['object'].get_images()
+        context['object_exclude_images'] = context['object'].get_exclude_images()
+        
+        return context
+
+
+#End Display Fils
 
 # #Delete
 # class SubprojectStepDeleteFormView(AJAXRequestMixin, ModalFormMixin, LoginRequiredMixin, JSONResponseMixin,

@@ -37,7 +37,8 @@ TYPES_OF_SUB_PROJECT = (
     ('Latrine Communautaire', _('Community latrine')), 
     ('Forage Photovoltaïque (Latrines)', _('Photovoltaic drilling (Latrines)')), 
     ('Forage Photovoltaïque (Maraichage)', _('Photovoltaic drilling (market gardening)')), 
-    ('USP', _('USP')), ('Batiment Scolaire au Lycée', _('School building at Lycée')), 
+    ('USP', _('USP')), 
+    ('Batiment Scolaire au Lycée', _('School building at Lycée')), 
     ('Batiment Scolaire au Primaire', _('Primary school building')), 
     ('Pharmacie', _('Pharmacy')), 
     ('Lampadaires solaire', _('Solar street lamps')), 
@@ -48,4 +49,30 @@ TYPES_OF_SUB_PROJECT = (
     ('Forage Photovoltaïque (Maison des jeunes)', _('Photovoltaic drilling (youth center)')), 
     ('Salle de réunion', _('Meeting room')), 
     ('Forage Photovoltaïque (Salle de réunion)', _('Photovoltaic drilling (Meeting room)'))
+)
+
+
+WORKS_TYPE_OF_SUB_PROJECT = (
+    ('Construction', 'Construction'), 
+    ('Construction et équipement', 'Construction et équipement'), 
+    ('Construction, réhabilitation et équipement', 'Construction, réhabilitation et équipement'), 
+    ('Equipement', 'Equipement'), 
+    ('Réhabilitation', 'Réhabilitation'), 
+    ('Réhabilitation et équipement', 'Réhabilitation et équipement')
+)
+
+LEVEL_OF_ACHIEVEMENT_DONATION_CERTIFICATE_OF_SUB_PROJECT = (
+    ('', ''),
+    ('Aucun', _('None')),
+    ('Niveau chef village', _("Village chief level")),
+    ('Niveau chef canton', _("Chef canton level")),
+    ('Niveau Maire', _("Mayor's level")),
+    ('Niveau Juge', _("Judge's level")),
+    ('N/A (Ancien site)', _("N/A (Old site)")),
+)
+
+SUB_PROJECT_STEP_STANDART = (
+    ('not_started', _('Not started')),
+    ('in_progress', _('In progress')),
+    ('completed', _('Completed'))
 )

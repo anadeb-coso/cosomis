@@ -9,21 +9,23 @@ from django.contrib.auth.decorators import login_required
 from storages.backends.s3boto3 import S3Boto3Storage
 from cosomis.mixins import AJAXRequestMixin, PageMixin
 from .forms import SubprojectForm, VulnerableGroupForm
-from subprojects.models import Subproject, VulnerableGroup, SubprojectImage
 from django.utils.translation import gettext_lazy as _
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 
+from subprojects.models import Subproject, VulnerableGroup, SubprojectFile
 from django import forms
 from subprojects import functions as subprojects_functions
 from administrativelevels.libraries import download_file
 from usermanager.permissions import (
     CDDSpecialistPermissionRequiredMixin, SuperAdminPermissionRequiredMixin,
-    AdminPermissionRequiredMixin, InfraPermissionRequiredMixin
+    AdminPermissionRequiredMixin, InfraPermissionRequiredMixin, EvaluatorPermissionRequiredMixin
     )
-from cosomis.constants import SUB_PROJECT_STATUS_COLOR_TRANSLATE
-
+from cosomis.constants import SUB_PROJECT_STATUS_COLOR_TRANSLATE, TYPES_OF_SUB_PROJECT_COLOR
+from administrativelevels.functions_adl import get_cascade_villages_ids_by_administrative_level_id
+from dashboard.forms import AdministrativeLevelFilterForm
+from subprojects.forms import SubprojectFilterForm
 
 class SubprojectMixin:
     subproject = None
@@ -114,12 +116,9 @@ class SubprojectsListView(PageMixin, LoginRequiredMixin, generic.ListView):
         ctx['total_infrastruture'] = all.filter(subproject_type_designation="Infrastructure").count()
         return ctx
 
-class SubprojectsMapView(LoginRequiredMixin, generic.ListView):
+class SubprojectsMapViewPage(generic.TemplateView):
 
-    model = Subproject
-    queryset = Subproject.objects.all()
-    template_name = 'subprojects_map.html'
-    context_object_name = 'subprojects'
+    template_name = 'subprojects_map_page.html'
     title = _('Subprojects')
     active_level1 = 'subprojects'
     breadcrumb = [
@@ -139,6 +138,10 @@ class SubprojectsMapView(LoginRequiredMixin, generic.ListView):
         context['en_bound'] = settings.DIAGNOSTIC_MAP_EN_BOUND
         context['country_iso_code'] = settings.DIAGNOSTIC_MAP_ISO_CODE
         context['sub_project_status_color_translation'] = SUB_PROJECT_STATUS_COLOR_TRANSLATE
+        context['types_of_sub_project_color'] = TYPES_OF_SUB_PROJECT_COLOR
+        context['hide_content_header'] = True
+        context['form'] = AdministrativeLevelFilterForm(False)
+        context['form_suproject'] = SubprojectFilterForm(False)
         return context
 
     def render_to_response(self, context, **response_kwargs):
@@ -155,6 +158,90 @@ class SubprojectsMapView(LoginRequiredMixin, generic.ListView):
             using=self.template_engine,
             **response_kwargs
         )
+
+class SubprojectsMapView(generic.ListView):
+    template_name = 'subprojects_map_view.html'
+    context_object_name = 'subprojects'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['access_token'] = settings.MAPBOX_ACCESS_TOKEN
+        context['lat'] = settings.DIAGNOSTIC_MAP_LATITUDE
+        context['lng'] = settings.DIAGNOSTIC_MAP_LONGITUDE
+        context['zoom'] = settings.DIAGNOSTIC_MAP_ZOOM
+        context['ws_bound'] = settings.DIAGNOSTIC_MAP_WS_BOUND
+        context['en_bound'] = settings.DIAGNOSTIC_MAP_EN_BOUND
+        context['country_iso_code'] = settings.DIAGNOSTIC_MAP_ISO_CODE
+        context['sub_project_status_color_translation'] = SUB_PROJECT_STATUS_COLOR_TRANSLATE
+        context['types_of_sub_project_color'] = TYPES_OF_SUB_PROJECT_COLOR
+        return context
+
+    def get_results(self):
+        id_regions = self.request.GET.getlist('id_region[]')
+        id_prefectures = self.request.GET.getlist('id_prefecture[]')
+        id_communes = self.request.GET.getlist('id_commune[]')
+        id_cantons = self.request.GET.getlist('id_canton[]')
+        id_villages = self.request.GET.getlist('id_village[]')
+        subproject_sectors = self.request.GET.getlist('id_subproject_sectors[]')
+        subproject_types = self.request.GET.getlist('id_subproject_types[]')
+        works_type_of_subprojects = self.request.GET.getlist('id_works_type_of_subproject[]')
+        subproject_steps = self.request.GET.getlist('id_subproject_step[]')
+        type_field = self.request.GET.get('type_field')
+        _ids = []
+        liste_villages = []
+        
+        if (id_regions or id_prefectures or id_communes or id_cantons or id_villages) and type_field:
+            if id_regions and type_field == "region":
+                _ids = id_regions
+            elif id_prefectures and type_field == "prefecture":
+                _ids = id_prefectures
+            elif id_communes and type_field == "commune":
+                _ids = id_communes
+            elif id_cantons and type_field == "canton":
+                _ids = id_cantons
+            elif id_villages and type_field == "village":
+                _ids = id_villages
+                
+            if type_field == "village":
+                liste_villages = [int(_id) for _id in _ids if _id]
+            else:
+                for _id in _ids:
+                    if _id:
+                        liste_villages += get_cascade_villages_ids_by_administrative_level_id(_id)
+
+            subprojects = Subproject.objects.filter(
+                Q(location_subproject_realized_id__in=liste_villages) | 
+                Q(list_of_villages_crossed_by_the_track_or_electrification__id__in=liste_villages)
+            )
+        else:
+            subprojects = Subproject.objects.all()
+        
+        if subproject_sectors:
+            subprojects = subprojects.filter(subproject_sector__in=[elt for elt in subproject_sectors if elt])
+        
+        if subproject_types:
+            subprojects = subprojects.filter(type_of_subproject__in=[elt for elt in subproject_types if elt])
+            
+        if works_type_of_subprojects:
+            subprojects = subprojects.filter(works_type__in=[elt for elt in works_type_of_subprojects if elt])
+        
+        if subproject_steps:
+            _subprojects = []
+            for subproject in subprojects:
+                subproject_step = subproject.get_current_subproject_step
+                if subproject_step:
+                    if 'not_started' in subproject_steps and subproject_step.ranking < 8 and subproject_step.ranking not in (2,):
+                        _subprojects.append(subproject)
+                    if 'in_progress' in subproject_steps and subproject_step.ranking == 8:
+                        _subprojects.append(subproject)
+                    if 'completed' in subproject_steps and subproject_step.ranking > 8 and subproject_step.ranking not in (9, 10):
+                        _subprojects.append(subproject)
+            subprojects = _subprojects
+        return subprojects
+
+    def get_queryset(self):
+        return self.get_results()
+
 
 
 class SubprojectDetailView(LoginRequiredMixin, generic.DetailView):
@@ -177,7 +264,7 @@ class SubprojectDetailView(LoginRequiredMixin, generic.DetailView):
         return context
 
 
-class SubprojectCreateView(PageMixin, LoginRequiredMixin, InfraPermissionRequiredMixin, generic.CreateView):
+class SubprojectCreateView(PageMixin, LoginRequiredMixin, EvaluatorPermissionRequiredMixin, generic.CreateView):
     model = Subproject
     template_name = 'subproject_create.html'
     context_object_name = 'subproject'
@@ -260,7 +347,7 @@ class SubprojectUpdateView(PageMixin, LoginRequiredMixin, InfraPermissionRequire
         self.form_mixin = form
         return super(SubprojectCreateView, self).get(request, *args, **kwargs)
     
-class SubSubprojectCreateView(PageMixin, LoginRequiredMixin, InfraPermissionRequiredMixin, generic.CreateView):
+class SubSubprojectCreateView(PageMixin, LoginRequiredMixin, EvaluatorPermissionRequiredMixin, generic.CreateView):
     model = Subproject
     template_name = 'subproject_create.html'
     context_object_name = 'subproject'
@@ -295,6 +382,8 @@ class SubSubprojectCreateView(PageMixin, LoginRequiredMixin, InfraPermissionRequ
                 obj.pk = None
                 obj.canton = None
                 obj.type_of_subproject = None
+                obj.number = None
+                obj.estimated_cost = None
                 obj.link_to_subproject = Subproject.objects.get(id=self.kwargs['subproject_id'])
                 
                 context['form'] = SubprojectForm(initial={
@@ -346,19 +435,19 @@ class VulnerableGroupCreateView(PageMixin, LoginRequiredMixin, generic.CreateVie
 
 
 @login_required
-def subprojectimage_delete(request, image_id):
-    """Function to delete one subprojectImage"""
+def subprojectfile_delete(request, file_id):
+    """Function to delete one SubprojectFile"""
     try:
-        img = SubprojectImage.objects.get(id=image_id)
-        subproject = img.subproject
-        if img.principal:
+        file = SubprojectFile.objects.get(id=file_id)
+        subproject = file.subproject
+        if file.principal:
             for image in subproject.get_all_images():
-                if image.id != image_id:
+                if image.id != file_id:
                     image.principal = True
                     image.save()
                     break
 
-        img.delete()
+        file.delete()
         
         messages.info(request, _("Image delete successfully"))
     except Exception as exc:

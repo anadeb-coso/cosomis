@@ -1,0 +1,395 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n bootstrap4 custom_tags %}
+{% block extracss %}
+    <link href="{% static 'plugins/mapbox-gl-js/v2.6.1/mapbox-gl.css' %}" rel="stylesheet">
+    <style>
+        #map {
+            height: 1553px;
+        }
+        .carte-legend p {
+            font-weight: bold;
+            margin-top: 17px;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            {% if user.is_authenticated %}
+            <div class="col-md-12">
+                {% if user.is_superuser or user|has_group:"Admin" %}
+                <div class="btn-group pull-left">
+                    <a class="btn btn-primary" href="{% url 'subprojects:create' %}">{% translate 'Create Subproject' %}</a>
+                </div>
+                {% endif %}
+                <div class="btn-group pull-right">
+                    <a class="btn btn-primary" href="#" data-toggle="modal" data-target="#map-legen">{% translate 'Legend' %}</a>
+                        &nbsp; &nbsp; 
+                    <a class="btn btn-primary" href="{% url 'subprojects:list' %}">{% translate 'List Subprojects' %}</a>
+                </div>
+            </div>
+
+            <div class="clearfix"></div>
+            <br />
+            {% endif %}
+
+            <div class="row subprojects-map-view-filter">
+                <div class="col-2">
+                    {% bootstrap_field form.region show_label=False %}
+                </div>
+                <div class="col-2">
+                    {% bootstrap_field form.prefecture show_label=False %}
+                </div>
+                <div class="col-2">
+                    {% bootstrap_field form.commune show_label=False %}
+                </div>
+                <div class="col-2">
+                    {% bootstrap_field form.canton show_label=False %}
+                </div>
+                <div class="col-2">
+                    {% bootstrap_field form.village show_label=False %}
+                </div>
+                <div class="col-2">
+                    <a class="btn fs12 text-bold-family text-primary pull-right p-0" style="margin-top: 8px;"
+                       id="clear_all_filters">
+                        {% translate "Clear all filters" %}
+                    </a>
+                </div>
+            </div>
+            <div class="row subprojects-map-view-filter">
+                <div class="col-2">
+                    {% bootstrap_field form_suproject.subproject_sectors show_label=False %}
+                </div>
+                <div class="col-{% if user.is_authenticated %}4{% else %}3{% endif %}">
+                    {% bootstrap_field form_suproject.subproject_types show_label=False %}
+                </div>
+                <div class="col-2">
+                    {% bootstrap_field form_suproject.works_type_of_subproject show_label=False %}
+                </div>
+                <div class="col-2">
+                    {% bootstrap_field form_suproject.subproject_step show_label=False %}
+                </div>
+                {% if user.is_authenticated %}
+                <div class="col-2">
+                    <a class="btn fs12 text-bold-family text-primary pull-right p-0" style="margin-top: 8px;"
+                       onclick="location.reload();">
+                        {% translate "Refresh page" %}
+                    </a>
+                </div>
+                {% else %}
+                <div class="col-2">
+                    <a class="btn fs12 text-bold-family text-primary pull-right p-0" style="margin-top: 8px;"
+                       onclick="location.reload();">
+                        {% translate "Refresh page" %}
+                    </a>
+                </div>
+                <div class="col-1">
+                    <a class="btn fs12 text-bold-family text-primary pull-right p-0" style="margin-top: 8px;"
+                        data-toggle="modal" data-target="#map-legen">{% translate 'Legend' %}</a>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="card">
+                <div class="card-body" style="">
+                    <div id="map" style=""></div>
+                    <div id="subprojects-map-view"></div>
+                </div>
+                <div class="overlay" id="spin">
+                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                </div>
+            </div>
+
+        </div>
+    </div>
+{% endblock %}
+
+
+
+
+
+{% block modals %}
+<div class="modal fade" id="map-legen" tabindex="-1" role="dialog" aria-labelledby="map-legenLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="map-legenLabel">{% translate 'Legend' %}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        
+        {% for step, color in types_of_sub_project_color.items %}
+            <div class="card">
+                <div class="card-body">
+                    <div class="row carte-legend">
+                        <div class="col-2">
+                            <div style="margin-top: 15px;"><span style="
+                                border-radius: 50%;
+                                width: 200px !important;
+                                height: 200px; 
+                                background-color: {{ color }};
+                                color: {{ color }};
+                            ">&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+                        </div>
+                        <div class="col-4">
+                            <p>{{ step }}</p>
+                        </div>
+                        <div class="col-6">
+                            <span>Savenes: - </span><br />
+                            <span>Kara: - </span><br />
+                            <span>Centrale: - </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">{% translate 'Close' %}</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+
+{% block javascript %}
+    {{ block.super }}
+
+    <script src="{% static 'plugins/mapbox-gl-js/v2.6.1/mapbox-gl.js' %}"></script>
+    <script src="{% static 'js/cascade_requests.js' %}"></script>
+    <script type="text/javascript">
+        let ids = ["id_region", "id_prefecture", "id_commune", "id_canton", "id_village"]
+        var type_field = "";
+        var suproject_attrs_filter = false;
+        let spin = $('#spin');
+        let subprojects_map_view = $('#subprojects-map-view');
+        let administrative_level = $('#id_administrative_level');
+        let id_region = $('#id_region');
+        let id_prefecture = $('#id_prefecture');
+        let id_commune = $('#id_commune');
+        let id_canton = $('#id_canton');
+        let id_village = $('#id_village');
+        
+        
+        
+        //Map
+        
+        let markers = [];
+        let marker;
+        let a;
+
+        mapboxgl.accessToken = '{{ access_token }}';
+        if (!mapboxgl.supported()) {
+            alert('Your browser does not support Mapbox GL');
+        }
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+             center: [
+                parseFloat('{{ lng }}'.replace(',', '.')), 
+                parseFloat('{{ lat }}'.replace(',', '.'))
+            ],
+            zoom: parseFloat('{{ zoom }}'.replace(',', '.'))
+        });
+
+        const bounds = [
+            {{ ws_bound }}, // [west, south]
+            {{ en_bound }}  // [east, north]
+        ];
+        // Set the map's max bounds.
+        map.setMaxBounds(bounds);
+
+        map.on('load', function () {
+            map.addLayer(
+                {
+                    'id': 'country-boundaries',
+                    'source': {
+                        'type': 'vector',
+                        'url': 'mapbox://mapbox.country-boundaries-v1',
+                    },
+                    'source-layer': 'country_boundaries',
+                    'type': 'fill',
+                    'paint': {
+                        'fill-color': '#00FFFF',
+                        'fill-opacity': 0.2,
+                    },
+                },
+                'country-label'
+            );
+
+            map.setFilter('country-boundaries', [
+                "in",
+                "iso_3166_1_alpha_3",
+                '{{ country_iso_code }}',
+            ]);
+
+            setTimeout(function () {
+                spin.hide();
+            }, 1000);
+        });
+
+        function removeAllMarkers() {
+            for (const marker of markers) {
+                marker.remove();
+            }
+            
+            markers.length = 0;
+        }
+
+        //End Map
+
+
+        function loadSubprojectsMapView(type_field="", suproject_attrs_filter=false) {
+            if($("#id_"+type_field).val() || type_field == "all" || suproject_attrs_filter){ 
+
+                $(".subprojects-map-view-filter select").attr('disabled', true);
+                $.ajax({
+                    type: 'GET',
+                    url: "{% url 'administrativelevels:utils:get_choices_for_next_administrative_level_all' %}",
+                    data: {
+                        parent_id: $("#id_"+type_field).val()
+                    },
+                    success: function (data) {
+                        if(type_field == "region"){
+                            set_datas_administrative_level(id_prefecture, data.prefectures);
+                            set_datas_administrative_level(id_commune, data.communes);
+                            set_datas_administrative_level(id_canton, data.cantons);
+                            set_datas_administrative_level(id_village, data.villages);
+                        }else if(type_field == "prefecture"){
+                            set_datas_administrative_level(id_commune, data.communes);
+                            set_datas_administrative_level(id_canton, data.cantons);
+                            set_datas_administrative_level(id_village, data.villages);
+                        }else if(type_field == "commune"){
+                            set_datas_administrative_level(id_canton, data.cantons);
+                            set_datas_administrative_level(id_village, data.villages);
+                        }else if(type_field == "canton"){
+                            set_datas_administrative_level(id_village, data.villages);
+                        }
+
+                        console.log(data.villages.length);
+                        
+                    },
+                    error: function (data) {
+                        alert(error_server_message + "Error " + data.status);
+                        $(".subprojects-map-view-filter select").attr('disabled', false);
+                    }
+                }).done(function () {
+                        $(".subprojects-map-view-filter select").attr('disabled', false);
+                    }
+                );
+
+
+
+
+
+                spin.show();
+                
+            $.ajax({
+                type: "GET",
+                url: "{% url 'subprojects:map_view' %}",
+                data: {
+                    id_region: id_region.val(),
+                    id_prefecture: id_prefecture.val(),
+                    id_commune: id_commune.val(),
+                    id_canton: id_canton.val(),
+                    id_village: id_village.val(),
+                    id_subproject_sectors: $('#id_subproject_sectors').val(),
+                    id_subproject_types: $('#id_subproject_types').val(),
+                    id_works_type_of_subproject: $('#id_works_type_of_subproject').val(),
+                    id_subproject_step: $('#id_subproject_step').val(),
+                    type_field: type_field
+                },
+                success: function (response) {
+                    
+                    subprojects_map_view.html(response);
+                },
+                error: function (data) {
+                    spin.hide();
+                    alert(error_server_message + "Error " + data.status);
+                }
+            });
+
+            }
+            
+
+
+
+
+            
+        }
+
+        loadSubprojectsMapView("all");
+
+
+        $('.subprojects-map-view-filter select').on('change', function () {
+            type_field = "";
+            suproject_attrs_filter = false;
+            if($(this).attr('id') && $(this).val().length != 0){
+                type_field = $(this).attr('id').split('_')[1];
+                suproject_attrs_filter = true;
+            }
+            loadSubprojectsMapView(type_field, suproject_attrs_filter);
+        });
+
+        $("#clear_all_filters").on("click", function () {
+            $('.subprojects-map-view-filter input').val('');
+            $('.subprojects-map-view-filter select').val(null).trigger('change.select2');
+            loadSubprojectsMapView("all");
+        });
+
+    </script>
+    
+
+
+{% endblock %}
+
+{% block select2 %}
+    <script type="text/javascript">
+        $("#id_region").select2({
+            placeholder: "{% translate 'Region' %}",
+            allowClear: true
+        });
+        $("#id_prefecture").select2({
+            placeholder: "{% translate 'Prefecture' %}",
+            allowClear: true,
+        });
+        $("#id_commune").select2({
+            placeholder: "{% translate 'Commune' %}",
+            allowClear: true,
+        });
+         $("#id_canton").select2({
+            placeholder: "{% translate 'Canton' %}",
+            allowClear: true,
+        });
+         $("#id_village").select2({
+            placeholder: "{% translate 'Village' %}",
+            allowClear: true,
+        });
+        $("#id_subproject_sectors").select2({
+            placeholder: "{% translate 'Subproject sector' %}",
+            allowClear: true,
+        });
+         $("#id_subproject_types").select2({
+            placeholder: "{% translate 'Type of structure' %}",
+            allowClear: true,
+        });
+         $("#id_works_type_of_subproject").select2({
+            placeholder: "{% translate 'Works type' %}",
+            allowClear: true,
+        });
+         $("#id_subproject_step").select2({
+            placeholder: "{% translate 'Status' %}",
+            allowClear: true,
+        });
+
+        $('b[role="presentation"]').hide();
+        $('.select2-selection__arrow').append(
+            '<i class="fas fa-chevron-circle-down text-primary" style="margin-top:12px;"></i>');
+
+    </script>
+{% endblock select2 %}

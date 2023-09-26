@@ -8,7 +8,7 @@ import time
 import json
 from django.http import HttpResponse
 
-from subprojects.models import Subproject, SubprojectImage
+from subprojects.models import Subproject, SubprojectFile, SubprojectStep, Level
 
 
 class UploadSuprojectImageView(LoginRequiredMixin, generic.View):
@@ -38,7 +38,7 @@ class UploadSuprojectImageView(LoginRequiredMixin, generic.View):
             file_directory_within_bucket = 'proof_of_work/'
             file_path_within_bucket = os.path.join(
                 file_directory_within_bucket,
-                file.name+str(time.time())
+                f'{str(time.time())}-{file.name}'
             )
 
             media_storage = S3Boto3Storage()
@@ -56,13 +56,15 @@ class UploadSuprojectImageView(LoginRequiredMixin, generic.View):
                     if len(images) == 0:
                         principal = True
 
-                image = SubprojectImage()
+                image = SubprojectFile()
                 image.url = file_url
                 image.subproject = subproject
                 image.principal = principal
                 image.order = order
                 image.date_taken = date_taken
                 image.name = name
+                image.file_type = file.content_type
+
                 image.save()
 
                 return HttpResponse(json.dumps({"message": _("Registered").__str__(), "ok": True}), content_type="application/json")
@@ -86,7 +88,7 @@ class UpdateSuprojectImageView(LoginRequiredMixin, generic.View):
         subproject = None
         _ok = True
 
-        image = SubprojectImage.objects.get(id=image_id)
+        image = SubprojectFile.objects.get(id=image_id)
         
         subproject = Subproject.objects.get(id=object_id)
         images = subproject.get_all_images()
@@ -99,7 +101,7 @@ class UpdateSuprojectImageView(LoginRequiredMixin, generic.View):
         
         if not _ok:
             return HttpResponse(json.dumps({"message": _("There is already an image that has this order").__str__()}), content_type="application/json")
-            
+        
         if order and name:
             if principal:
                 for img in images:
@@ -111,6 +113,7 @@ class UpdateSuprojectImageView(LoginRequiredMixin, generic.View):
                     principal = True
 
             image.subproject = subproject
+
             image.principal = principal
             image.order = order
             if date_taken:
