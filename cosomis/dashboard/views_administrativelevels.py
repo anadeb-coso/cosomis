@@ -104,13 +104,14 @@ class DashboardWaveListView(DashboardAdministrativeLevelMixin, AJAXRequestMixin,
         for _wave in columns_listes:
             if _wave[0] not in waves:
                 waves.append(_wave[0])
-           
+        
+        administrative_levels_waves_project = all_administrative_levels_waves.filter(project_id=project_id)
         count = 0
         total_cantons = 0
         for wave in waves:
             datas[_("Wave")][count] = wave
 
-            administrative_levels_waves = all_administrative_levels_waves.filter(wave__number=wave, project_id=project_id)
+            administrative_levels_waves = administrative_levels_waves_project.filter(wave__number=wave)
             
             cantons = []
             for adl_wave in administrative_levels_waves:
@@ -251,13 +252,13 @@ class DashboardWaveTimesListView(DashboardAdministrativeLevelMixin, AJAXRequestM
             header2.append(_("End date"))
 
         count = 0
-
+        periods_project = PeriodWave.objects.filter(project_id=project_id)
         for wave in waves:
             datas[(_("Wave"), _("Wave"))][count] = f'{_("Wave")} {wave}'
-
+            periods_waves_project = periods_project.filter(wave__number=wave)
             for part in parts:
                 try:
-                    period = PeriodWave.objects.get(project_id=project_id, part=part, wave__number=wave)
+                    period = periods_waves_project.get(part=part)
                     datas[(f'{_("Part")} {part}', _("Start date"))][count] = period.begin.strftime("%B %Y").title()
                     
                     datas[(f'{_("Part")} {part}', _("End date"))][count] = period.end.strftime("%B %Y").title()
@@ -283,9 +284,9 @@ class DashboardWaveTimesListView(DashboardAdministrativeLevelMixin, AJAXRequestM
 
             administrative_level_ids_descendants += ([column[0]] + _ids_descendants if column[0] != "All" else _ids_descendants)
 
-        all_administrative_levels_waves = AdministrativeLevelWave.objects.filter(
-            administrative_level__id__in=administrative_level_ids_descendants
-        )
+        # all_administrative_levels_waves = AdministrativeLevelWave.objects.filter(
+        #     administrative_level__id__in=administrative_level_ids_descendants
+        # )
 
         ctx["summary"] = {}
 
@@ -317,17 +318,21 @@ class DashboardSummaryAdministrativeLevelNumberListView(DashboardAdministrativeL
         columns = get_children_types_administrativelevels(administrative_level_type)
         for column in columns:
             datas[column] = {}
-            
+        
+
+        assigns_activated_a_project = AssignAdministrativeLevelToFacilitator.objects.filter(
+                activated=True, project_id=project_id
+        )
+        
         count = 0
         for line in lines:
             datas[_("X")][count] = line.name
-            assigns = AssignAdministrativeLevelToFacilitator.objects.filter(
+            assigns = assigns_activated_a_project.filter(
                 Q(administrative_level__id=line.id, administrative_level__type=line.type) | 
                 Q(administrative_level__parent__id=line.id, administrative_level__parent__type=line.type) | 
                 Q(administrative_level__parent__parent__id=line.id, administrative_level__parent__parent__type=line.type) | 
                 Q(administrative_level__parent__parent__parent__id=line.id, administrative_level__parent__parent__parent__type=line.type) | 
-                Q(administrative_level__parent__parent__parent__parent__id=line.id, administrative_level__parent__parent__parent__parent__type=line.type),
-                activated=True, project_id=project_id
+                Q(administrative_level__parent__parent__parent__parent__id=line.id, administrative_level__parent__parent__parent__parent__type=line.type)
             )
             dict_dict = dict()
             for column in columns:
@@ -408,18 +413,27 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
             lines = AdministrativeLevelWave.objects.filter(administrative_level__id__in=ids)
         else:
             lines = AdministrativeLevelWave.objects.all()
-            
+        
         count = 0
+        allocation_project = AdministrativeLevelAllocation.objects.filter(
+            project_id=project_id,
+            cvd=None
+        )
         for line in lines:
             _ids = ([line.administrative_level.id] + get_administrative_level_ids_descendants(line.administrative_level.id, None, []))
+            allocation_adl_project = allocation_project.filter(
+                administrative_level__id=line.administrative_level.id
+            )
+            subproject_filter_adl_project = subprojects.filter(
+                Q(location_subproject_realized__id__in=_ids) | 
+                Q(canton__id__in=_ids)
+            )
             for component in components:
                 datas[_("Cantons")][count] = line.administrative_level.name
                 datas[_("Component")][count] = component.name
 
                 try:
-                    amount__sum = AdministrativeLevelAllocation.objects.filter(
-                        administrative_level__id=line.administrative_level.id, project_id=project_id,
-                        cvd=None,
+                    amount__sum = allocation_adl_project.filter(
                         component_id=component.id
                     ).aggregate(Sum('amount'))['amount__sum']
 
@@ -427,9 +441,7 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
                 except:
                     datas[_("Allocation") + " FCFA"][count] = ""
                 
-                subproject_filter = subprojects.filter(
-                        Q(location_subproject_realized__id__in=_ids) | 
-                        Q(canton__id__in=_ids),
+                subproject_filter = subproject_filter_adl_project.filter(
                         component_id=component.id
                     )
                 try:
@@ -464,13 +476,15 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
                 count += 1
 
         # All sum
+        allocations_cvd = AdministrativeLevelAllocation.objects.filter(
+            cvd=None, project_id=project_id
+        )
         c = 0
         for component in components:
             datas[_("Cantons")][count+c] = _("Total")
             datas[_("Component")][count+c] = component.name
-            amount__sum = AdministrativeLevelAllocation.objects.filter(
-                        cvd=None,
-                        component_id=component.id
+            amount__sum = allocations_cvd.filter(
+                component_id=component.id
             ).aggregate(Sum('amount'))['amount__sum']
             datas[_("Allocation") + " FCFA"][count+c] = amount__sum if amount__sum else ""
 
@@ -501,7 +515,7 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
         datas[ _("Cantons")][count+c] = _("Total")
         datas[ _("Component")][count+c] = _("All")
         datas[_("Allocation") + " FCFA"][count+c] = AdministrativeLevelAllocation.objects.filter(
-                        cvd=None
+                        cvd=None, project_id=project_id
             ).aggregate(Sum('amount'))['amount__sum']
         
         estimated_cost__sum = subprojects.aggregate(Sum('estimated_cost'))['estimated_cost__sum']
@@ -540,7 +554,7 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
 
     def get_context_data(self, **kwargs):
         ctx = super(DashboardSummaryAdministrativeLevelAllocationListView, self).get_context_data(**kwargs)
-        children_ids = [c[0] for c in ctx['queryset_results']['columns_tuples']]
+        # children_ids = [c[0] for c in ctx['queryset_results']['columns_tuples']]
 
 
         ctx["summary"] = {}

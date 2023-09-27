@@ -5,6 +5,8 @@ from django.utils.translation import gettext_lazy as _
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.db.models import Sum, Max
+from django.db import connection
+import logging
 
 from subprojects.models import Subproject, Step
 from administrativelevels.models import AdministrativeLevel
@@ -94,46 +96,6 @@ class DashboardSubprojectsMixin:
 class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, LoginRequiredMixin, generic.ListView):
     template_name = 'tracking.html'
     context_object_name = 'queryset_results'
-
-    # def get_queryset(self):
-    #     administrative_level_id = self.request.GET.get('administrative_level_id', None)
-    #     administrative_level_type = self.request.GET.get('administrative_level_type', 'All').title()
-
-    #     administrative_level_id = 0 if administrative_level_id in ("", "null", "undefined") else administrative_level_id
-    #     administrative_level_type = "All" if administrative_level_type in ("", "null", "undefined") else administrative_level_type
-    
-    #     administrative_levels_ids = get_administrative_level_ids_descendants(
-    #         administrative_level_id, administrative_level_type, []
-    #     )
-        
-    #     if administrative_level_type == "All":
-    #         administrative_levels = AdministrativeLevel.objects.filter(type="Region")
-    #     elif administrative_level_id and administrative_level_id != "All":
-    #         administrative_levels = AdministrativeLevel.objects.filter(id=administrative_level_id).first().children
-    #     elif administrative_level_type:
-    #         administrative_levels = AdministrativeLevel.objects.filter(parent__type=administrative_level_type)
-        
-    #     if not administrative_levels and administrative_level_id:
-    #         administrative_levels = AdministrativeLevel.objects.filter(id=administrative_level_id)
-
-    #     subprojects = Subproject.objects.filter()
-
-    #     sectors = sorted(list(set(list(subprojects.values_list('subproject_sector')))))
-        
-    #     if not administrative_level_id:
-    #         pass
-    #     else:
-    #         subprojects = Subproject.objects.filter(
-    #             Q(location_subproject_realized__id__in=administrative_levels_ids) | 
-    #             Q(canton__id__in=administrative_levels_ids)
-    #         )
-    #     administrative_level = administrative_levels.first()
-    #     return {
-    #         'subprojects': subprojects,
-    #         'sectors': [s[0] for s in sectors],
-    #         'administrative_level_type': administrative_level.type if administrative_level else "",
-    #         'columns_tuples': list(administrative_levels.order_by('name').values_list('id', 'name'))
-    #     }
     
     def summary_subprojects_by_sectors_1(self, columns_listes, sectors, all_subprojects, characters_length):
         datas = {
@@ -162,13 +124,22 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
 
             number_toal = 0
             for column in columns_listes:
-                number = all_subprojects.filter(
-                    Q(location_subproject_realized__id__in=column[2]) | 
-                    Q(canton__id__in=column[2]),
-                    subproject_sector=_sectors[i], subproject_type_designation__in=(["Infrastructure", "Subproject"] if (i+1)%2 == 0 else ["Subproject"])
-                ).count()
+                # number = all_subprojects.filter(
+                #     Q(location_subproject_realized__id__in=column[2]) | 
+                #     Q(canton__id__in=column[2]),
+                #     subproject_sector=_sectors[i], subproject_type_designation__in=(["Infrastructure", "Subproject"] if (i+1)%2 == 0 else ["Subproject"])
+                # ).count()
                 
-                datas[column[1]][count] = number #str(number).rjust(characters_length,'0')
+                # datas[column[1]][count] = number #str(number).rjust(characters_length,'0')
+                # number_toal += number
+                number = 0
+                for _subp in all_subprojects:
+                    if (_subp.location_subproject_realized_id in column[2] or \
+                        _subp.canton_id in column[2]) and _subp.subproject_sector == _sectors[i] and \
+                        _subp.subproject_type_designation in (["Infrastructure", "Subproject"] if (i+1)%2 == 0 else ["Subproject"]):
+                        number += 1
+                
+                datas[column[1]][count] = number
                 number_toal += number
 
             datas[_("Total")][count] = number_toal #str(number_toal).rjust(characters_length,'0')
@@ -204,70 +175,6 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
         }
 
 
-    # def summary_amount_subprojects_by_sectors_1(self, columns_listes, sectors, all_subprojects, characters_length):
-    #     datas = {
-    #         _("Sectors"): {},
-    #         _("Number of subprojects"): {},
-    #         _("Number of subproject infrastructures"): {}
-    #     }
-    #     for column in columns_listes:
-    #         datas[column[1]] = {}
-            
-    #     datas[_("Total")] = {}
-    #     # datas[_("OBSERVATIONS")] = {}
-
-    #     count = 0
-    #     _sectors = sectors
-            
-    #     for i in range(len(_sectors)):
-    #         datas[_("Sectors")][count] = _sectors[i]
-
-    #         subprojects_filter = all_subprojects.filter(subproject_sector=_sectors[i])
-    #         datas[_("Number of subprojects")][count] = subprojects_filter.filter(
-    #             subproject_type_designation="Subproject"
-    #         ).count()
-            
-    #         subprojects_filter_infras = all_subprojects.filter(
-    #             subproject_sector=_sectors[i], subproject_type_designation__in=["Infrastructure", "Subproject"]
-    #         )
-    #         datas[_("Number of subproject infrastructures")][count] = subprojects_filter_infras.count()
-
-    #         toal_mount = 0
-    #         for column in columns_listes:
-    #             estimated_cost = subprojects_filter_infras.filter(
-    #                 Q(location_subproject_realized__id__in=column[2]) | 
-    #                 Q(canton__id__in=column[2])
-    #             ).aggregate(Sum('estimated_cost'))['estimated_cost__sum']
-    #             estimated_cost = estimated_cost if estimated_cost else 0
-                
-    #             datas[column[1]][count] = estimated_cost #str(estimated_cost).rjust(characters_length,'0')
-    #             toal_mount += estimated_cost
-
-    #         datas[_("Total")][count] = toal_mount #str(toal_mount).rjust(characters_length,'0')
-    #         count += 1
-
-    #     datas[_("Sectors")][count] = _("Total")
-
-    #     # All sum
-    #     columns_skip = [
-    #         _("Sectors"),
-    #         # _("OBSERVATIONS")
-    #     ]
-    #     for k_data in datas.keys():
-    #         _sum = 0
-    #         if k_data not in columns_skip:
-    #             _sum = functions.sum_dict_value(datas[k_data], count)
-    #         if _sum:
-    #             datas[k_data][count] = _sum #str(_sum).rjust(characters_length,'0')
-    #     # End All sum
-
-    #     return {
-    #         'title': _("Amount of sub-projects by administrative level and sector"),
-    #         'datas': datas,
-    #         'length_loop': range(0, count+1),
-    #         'values': list(datas.values())
-    #     }
-
 
     def get_context_data(self, **kwargs):
         ctx = super(DashboardSubprojectsListView, self).get_context_data(**kwargs)
@@ -285,7 +192,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                 ]
             )
         all_subprojects = ctx['queryset_results']['subprojects']
-        all_steps = Step.objects.all().order_by('-ranking')
+        # all_steps = Step.objects.all().order_by('-ranking')
 
         ctx["summary"] = {}
 
@@ -294,12 +201,6 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
         for k, v in self.summary_subprojects_by_sectors_1(columns_listes, sectors, all_subprojects, characters_length).items():
             ctx["summary"]["summary_subprojects_by_sectors_1"][k] = v
         
-        # characters_length = 0 #len(str(all_subprojects.aggregate(Sum('estimated_cost'))['estimated_cost__sum']))
-        # ctx["summary"]["summary_amount_subprojects_by_sectors_1"] = {}
-        # for k, v in self.summary_amount_subprojects_by_sectors_1(columns_listes, sectors, all_subprojects, characters_length).items():
-        #     ctx["summary"]["summary_amount_subprojects_by_sectors_1"][k] = v
-
-
         return ctx
     
 
@@ -339,11 +240,18 @@ class DashboardSubprojectsBySectorAmountListView(DashboardSubprojectsMixin, AJAX
 
             toal_mount = 0
             for column in columns_listes:
-                estimated_cost = subprojects_filter_infras.filter(
-                    Q(location_subproject_realized__id__in=column[2]) | 
-                    Q(canton__id__in=column[2])
-                ).aggregate(Sum('estimated_cost'))['estimated_cost__sum']
-                estimated_cost = estimated_cost if estimated_cost else 0
+                # estimated_cost = subprojects_filter_infras.filter(
+                #     Q(location_subproject_realized__id__in=column[2]) | 
+                #     Q(canton__id__in=column[2])
+                # ).aggregate(Sum('estimated_cost'))['estimated_cost__sum']
+                # estimated_cost = estimated_cost if estimated_cost else 0
+
+                estimated_cost = 0
+                for _subp_structure in subprojects_filter_infras:
+                    if (_subp_structure.location_subproject_realized_id in column[2] or \
+                        _subp_structure.canton_id in column[2]):
+                        estimated_cost += _subp_structure.estimated_cost
+
                 
                 datas[column[1]][count] = estimated_cost #str(estimated_cost).rjust(characters_length,'0')
                 toal_mount += estimated_cost
@@ -485,7 +393,7 @@ class DashboardSubprojectsSectorsAndStepsListView(DashboardSubprojectsMixin, AJA
     def get_context_data(self, **kwargs):
         ctx = super(DashboardSubprojectsSectorsAndStepsListView, self).get_context_data(**kwargs)
         adls = ctx['queryset_results']['ald_filter_ids'] + ctx['queryset_results']['administrative_levels_ids']
-        all_subprojects = subprojects = Subproject.objects.filter(
+        all_subprojects = Subproject.objects.filter(
                 Q(location_subproject_realized__id__in=adls) | 
                 Q(canton__id__in=adls)
             )
@@ -510,20 +418,41 @@ class DashboardSubprojectsStepsAlreadyTrackListView(DashboardSubprojectsMixin, A
     context_object_name = 'queryset_results'
     table_class_style = 'table-bordered'
 
-    def summary_subprojects_by_steps_already_track(self, all_subprojects, characters_length):
+    def summary_subprojects_by_steps_already_track(self, all_subprojects, characters_length, administrative_levels_ids):
         datas = {
             _("Step"): {},
             _("Number"): {}
         }
         
-        count = 0
+        # count = 0
 
-        for step in Step.objects.all():
-            datas[_("Step")][count] = step.__str__()
+        # for step in Step.objects.all():
+        #     datas[_("Step")][count] = step.__str__()
 
-            datas[_("Number")][count] = all_subprojects.filter_by_steps_already_track(Subproject, step_id=step.id).count()
+        #     datas[_("Number")][count] = all_subprojects.filter(subprojectstep__step__id=step.id).count() #all_subprojects.filter_by_steps_already_track(Subproject, step_id=step.id).count()
         
-            count += 1
+        #     count += 1
+        administrative_levels_ids_str = ', '.join(str(elt) for elt in administrative_levels_ids)
+        count = 0
+        with connection.cursor() as cursor:
+            try:
+                cursor.execute("""
+SELECT s.wording, COUNT(subp_subp_step.subp_id) FROM subprojects_step s 
+LEFT JOIN (
+    SELECT subp.id subp_id, subp_step.step_id subp_step_step_id FROM subprojects_subprojectstep subp_step 
+    INNER JOIN subprojects_subproject subp ON subp_step.subproject_id=subp.id 
+    WHERE subp.location_subproject_realized_id IN (%s) OR subp.canton_id IN (%s)
+    ) subp_subp_step ON s.id=subp_subp_step.subp_step_step_id 
+GROUP BY s.id
+""" % (administrative_levels_ids_str, administrative_levels_ids_str))
+                
+                for row in cursor.fetchall():
+                    datas[_("Step")][count] = row[0]
+                    datas[_("Number")][count] = row[1]
+                    count += 1
+                    
+            except Exception as exc:
+                logging.exception(exc)
 
 
         return {
@@ -543,7 +472,7 @@ class DashboardSubprojectsStepsAlreadyTrackListView(DashboardSubprojectsMixin, A
 
         characters_length = 3
         ctx["summary"]["summary_subprojects_by_steps_already_track"] = {}
-        for k, v in self.summary_subprojects_by_steps_already_track(all_subprojects, characters_length).items():
+        for k, v in self.summary_subprojects_by_steps_already_track(all_subprojects, characters_length, ctx['queryset_results']['administrative_levels_ids']).items():
             ctx["summary"]["summary_subprojects_by_steps_already_track"][k] = v
 
         ctx["queryset_results"]["administrative_level_type"] = None
@@ -557,22 +486,43 @@ class DashboardSubprojectsCurrentStepsListView(DashboardSubprojectsMixin, AJAXRe
     context_object_name = 'queryset_results'
     table_class_style = 'table-bordered'
     
-    def summary_subprojects_by_current_steps(self, all_subprojects, characters_length):
+    def summary_subprojects_by_current_steps(self, all_subprojects, characters_length, administrative_levels_ids):
         datas = {
             _("Step"): {},
             _("Number"): {}
         }
         
+        # count = 0
+        # for step in Step.objects.all():
+        #     datas[_("Step")][count] = step.__str__()
+
+        #     datas[_("Number")][count] = all_subprojects.filter_by_step(Subproject, step_id=step.id).count()
+        #     count += 1
+        administrative_levels_ids_str = ', '.join(str(elt) for elt in administrative_levels_ids)
         count = 0
+        with connection.cursor() as cursor:
+            try:
+                cursor.execute("""
+SELECT s.wording, COUNT(subp_step_current.subp_id) FROM subprojects_step s 
+LEFT JOIN (
+        SELECT subp.id subp_id, (
+            SELECT subp_step.step_id FROM subprojects_subprojectstep subp_step 
+            WHERE subp_step.subproject_id=subp.id 
+            ORDER BY subp_step.begin DESC, subp_step.ranking DESC LIMIT 1 
+        ) subp_step_step_id FROM subprojects_subproject subp 
+        WHERE subp.location_subproject_realized_id IN (%s) OR subp.canton_id IN (%s)
+    ) subp_step_current ON s.id=subp_step_step_id 
+GROUP BY s.id
+""" % (administrative_levels_ids_str, administrative_levels_ids_str))
+                
+                for row in cursor.fetchall():
+                    datas[_("Step")][count] = row[0]
+                    datas[_("Number")][count] = row[1]
+                    count += 1
+                    
+            except Exception as exc:
+                logging.exception(exc)
 
-        for step in Step.objects.all():
-            datas[_("Step")][count] = step.__str__()
-
-            datas[_("Number")][count] = all_subprojects.filter_by_step(Subproject, step_id=step.id).count()
-        
-            count += 1
-
-        
         datas[_("Step")][count] = _("Total")
         # All sum
         columns_skip = [
@@ -604,7 +554,7 @@ class DashboardSubprojectsCurrentStepsListView(DashboardSubprojectsMixin, AJAXRe
         characters_length = 3
 
         ctx["summary"]["summary_subprojects_by_current_steps"] = {}
-        for k, v in self.summary_subprojects_by_current_steps(all_subprojects, characters_length).items():
+        for k, v in self.summary_subprojects_by_current_steps(all_subprojects, characters_length, ctx['queryset_results']['administrative_levels_ids']).items():
             ctx["summary"]["summary_subprojects_by_current_steps"][k] = v
 
         ctx["queryset_results"]["administrative_level_type"] = None
