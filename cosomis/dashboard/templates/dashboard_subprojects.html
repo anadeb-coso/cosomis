@@ -262,6 +262,7 @@
                 });
             }
 
+            subprojects_steps_number_spin.hide();
             function loadSubprojectsSteps(administrative_level_id=null, administrative_level_type=null) {
                 subprojects_steps_number_spin.show();
                 $.ajax({
@@ -283,6 +284,7 @@
                 });
             }
 
+            subprojects_current_steps_number_spin.hide();
             function loadSubprojectsCurrentSteps(administrative_level_id=null, administrative_level_type=null) {
                 subprojects_current_steps_number_spin.show();
                 $.ajax({
@@ -307,8 +309,8 @@
             loadSubprojects();
             loadSubprojectsAmount();
             loadSubprojectsSectorsAndSteps();
-            loadSubprojectsSteps();
-            loadSubprojectsCurrentSteps();
+            //loadSubprojectsSteps();
+            //loadSubprojectsCurrentSteps();
             $('.administrative-level-filter select').on('change', function () {
                 let elt_id;
                 for(let i=0; i<administrative_level_ids.length; i++){
@@ -324,8 +326,8 @@
                     loadSubprojects(administrative_level_id, administrative_level_type);
                     loadSubprojectsAmount(administrative_level_id, administrative_level_type);
                     loadSubprojectsSectorsAndSteps(administrative_level_id, administrative_level_type);
-                    loadSubprojectsSteps(administrative_level_id, administrative_level_type);
-                    loadSubprojectsCurrentSteps(administrative_level_id, administrative_level_type);
+                    //loadSubprojectsSteps(administrative_level_id, administrative_level_type);
+                    //loadSubprojectsCurrentSteps(administrative_level_id, administrative_level_type);
                 }
             });
 
@@ -337,8 +339,8 @@
                 loadSubprojects();
                 loadSubprojectsAmount();
                 loadSubprojectsSectorsAndSteps();
-                loadSubprojectsSteps();
-                loadSubprojectsCurrentSteps();
+                //loadSubprojectsSteps();
+                //loadSubprojectsCurrentSteps();
             });
 
 
