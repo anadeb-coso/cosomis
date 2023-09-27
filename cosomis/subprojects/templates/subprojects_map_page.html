@@ -332,10 +332,10 @@
             if($(this).attr('id') && $(this).val().length != 0){
                 type_field = $(this).attr('id').split('_')[1];
                 suproject_attrs_filter = true;
-                loadSubprojectsMapView(type_field, suproject_attrs_filter);
             }else{
                 $(this).val([]).trigger('change.select2');
             }
+            loadSubprojectsMapView(type_field, suproject_attrs_filter);
         });
 
         $("#clear_all_filters").on("click", function () {

@@ -424,35 +424,36 @@ class DashboardSubprojectsStepsAlreadyTrackListView(DashboardSubprojectsMixin, A
             _("Number"): {}
         }
         
-        # count = 0
-
-        # for step in Step.objects.all():
-        #     datas[_("Step")][count] = step.__str__()
-
-        #     datas[_("Number")][count] = all_subprojects.filter(subprojectstep__step__id=step.id).count() #all_subprojects.filter_by_steps_already_track(Subproject, step_id=step.id).count()
-        
-        #     count += 1
-        administrative_levels_ids_str = ', '.join(str(elt) for elt in administrative_levels_ids)
         count = 0
-        with connection.cursor() as cursor:
-            try:
-                cursor.execute("""
-SELECT s.wording, COUNT(subp_subp_step.subp_id) FROM subprojects_step s 
-LEFT JOIN (
-    SELECT subp.id subp_id, subp_step.step_id subp_step_step_id FROM subprojects_subprojectstep subp_step 
-    INNER JOIN subprojects_subproject subp ON subp_step.subproject_id=subp.id 
-    WHERE subp.location_subproject_realized_id IN (%s) OR subp.canton_id IN (%s)
-    ) subp_subp_step ON s.id=subp_subp_step.subp_step_step_id 
-GROUP BY s.id
-""" % (administrative_levels_ids_str, administrative_levels_ids_str))
+
+        for step in Step.objects.all():
+            datas[_("Step")][count] = step.__str__()
+
+            datas[_("Number")][count] = all_subprojects.filter(subprojectstep__step__id=step.id).count() #all_subprojects.filter_by_steps_already_track(Subproject, step_id=step.id).count()
+        
+            count += 1
+
+#         administrative_levels_ids_str = ', '.join(str(elt) for elt in administrative_levels_ids)
+#         count = 0
+#         with connection.cursor() as cursor:
+#             try:
+#                 cursor.execute("""
+# SELECT s.wording, COUNT(subp_subp_step.subp_id) FROM subprojects_step s 
+# LEFT JOIN (
+#     SELECT subp.id subp_id, subp_step.step_id subp_step_step_id FROM subprojects_subprojectstep subp_step 
+#     INNER JOIN subprojects_subproject subp ON subp_step.subproject_id=subp.id 
+#     WHERE subp.location_subproject_realized_id IN (%s) OR subp.canton_id IN (%s)
+#     ) subp_subp_step ON s.id=subp_subp_step.subp_step_step_id 
+# GROUP BY s.id
+# """ % (administrative_levels_ids_str, administrative_levels_ids_str))
                 
-                for row in cursor.fetchall():
-                    datas[_("Step")][count] = row[0]
-                    datas[_("Number")][count] = row[1]
-                    count += 1
+#                 for row in cursor.fetchall():
+#                     datas[_("Step")][count] = row[0]
+#                     datas[_("Number")][count] = row[1]
+#                     count += 1
                     
-            except Exception as exc:
-                logging.exception(exc)
+#             except Exception as exc:
+#                 logging.exception(exc)
 
 
         return {
@@ -492,36 +493,38 @@ class DashboardSubprojectsCurrentStepsListView(DashboardSubprojectsMixin, AJAXRe
             _("Number"): {}
         }
         
-        # count = 0
-        # for step in Step.objects.all():
-        #     datas[_("Step")][count] = step.__str__()
-
-        #     datas[_("Number")][count] = all_subprojects.filter_by_step(Subproject, step_id=step.id).count()
-        #     count += 1
-        administrative_levels_ids_str = ', '.join(str(elt) for elt in administrative_levels_ids)
         count = 0
-        with connection.cursor() as cursor:
-            try:
-                cursor.execute("""
-SELECT s.wording, COUNT(subp_step_current.subp_id) FROM subprojects_step s 
-LEFT JOIN (
-        SELECT subp.id subp_id, (
-            SELECT subp_step.step_id FROM subprojects_subprojectstep subp_step 
-            WHERE subp_step.subproject_id=subp.id 
-            ORDER BY subp_step.begin DESC, subp_step.ranking DESC LIMIT 1 
-        ) subp_step_step_id FROM subprojects_subproject subp 
-        WHERE subp.location_subproject_realized_id IN (%s) OR subp.canton_id IN (%s)
-    ) subp_step_current ON s.id=subp_step_step_id 
-GROUP BY s.id
-""" % (administrative_levels_ids_str, administrative_levels_ids_str))
+        for step in Step.objects.all():
+            datas[_("Step")][count] = step.__str__()
+
+            datas[_("Number")][count] = all_subprojects.filter_by_step(Subproject, step_id=step.id).count()
+            count += 1
+
+            
+#         administrative_levels_ids_str = ', '.join(str(elt) for elt in administrative_levels_ids)
+#         count = 0
+#         with connection.cursor() as cursor:
+#             try:
+#                 cursor.execute("""
+# SELECT s.wording, COUNT(subp_step_current.subp_id) FROM subprojects_step s 
+# LEFT JOIN (
+#         SELECT subp.id subp_id, (
+#             SELECT subp_step.step_id FROM subprojects_subprojectstep subp_step 
+#             WHERE subp_step.subproject_id=subp.id 
+#             ORDER BY subp_step.begin DESC, subp_step.ranking DESC LIMIT 1 
+#         ) subp_step_step_id FROM subprojects_subproject subp 
+#         WHERE subp.location_subproject_realized_id IN (%s) OR subp.canton_id IN (%s)
+#     ) subp_step_current ON s.id=subp_step_step_id 
+# GROUP BY s.id
+# """ % (administrative_levels_ids_str, administrative_levels_ids_str))
                 
-                for row in cursor.fetchall():
-                    datas[_("Step")][count] = row[0]
-                    datas[_("Number")][count] = row[1]
-                    count += 1
+#                 for row in cursor.fetchall():
+#                     datas[_("Step")][count] = row[0]
+#                     datas[_("Number")][count] = row[1]
+#                     count += 1
                     
-            except Exception as exc:
-                logging.exception(exc)
+#             except Exception as exc:
+#                 logging.exception(exc)
 
         datas[_("Step")][count] = _("Total")
         # All sum
