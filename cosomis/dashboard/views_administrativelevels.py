@@ -328,11 +328,11 @@ class DashboardSummaryAdministrativeLevelNumberListView(DashboardAdministrativeL
         for line in lines:
             datas[_("X")][count] = line.name
             assigns = assigns_activated_a_project.filter(
-                Q(administrative_level__id=line.id, administrative_level__type=line.type) | 
-                Q(administrative_level__parent__id=line.id, administrative_level__parent__type=line.type) | 
-                Q(administrative_level__parent__parent__id=line.id, administrative_level__parent__parent__type=line.type) | 
-                Q(administrative_level__parent__parent__parent__id=line.id, administrative_level__parent__parent__parent__type=line.type) | 
-                Q(administrative_level__parent__parent__parent__parent__id=line.id, administrative_level__parent__parent__parent__parent__type=line.type)
+                Q(administrative_level__id=line.id) | 
+                Q(administrative_level__parent__id=line.id) | 
+                Q(administrative_level__parent__parent__id=line.id) | 
+                Q(administrative_level__parent__parent__parent__id=line.id) | 
+                Q(administrative_level__parent__parent__parent__parent__id=line.id)
             )
             dict_dict = dict()
             for column in columns:
@@ -404,7 +404,6 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
             _("Remaining amount") + " FCFA": {},
         }
         components = Component.objects.filter(parent__name="Composante 1")
-        subprojects = Subproject.objects.all()
         ids = []
         
         if adl_ids:
@@ -415,13 +414,26 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
             lines = AdministrativeLevelWave.objects.all()
         
         count = 0
-        allocation_project = AdministrativeLevelAllocation.objects.filter(
-            project_id=project_id,
-            cvd=None
-        )
+        if ids:
+            allocations_project = AdministrativeLevelAllocation.objects.filter(
+                project_id=project_id,
+                cvd=None,
+                administrative_level__id__in=ids
+            )
+            subprojects = Subproject.objects.filter(
+                Q(location_subproject_realized__id__in=ids) | 
+                Q(canton__id__in=ids)
+            )
+        else:
+            allocations_project = AdministrativeLevelAllocation.objects.filter(
+                project_id=project_id,
+                cvd=None
+            )
+            subprojects = Subproject.objects.all()
+
         for line in lines:
             _ids = ([line.administrative_level.id] + get_administrative_level_ids_descendants(line.administrative_level.id, None, []))
-            allocation_adl_project = allocation_project.filter(
+            allocation_adl_project = allocations_project.filter(
                 administrative_level__id=line.administrative_level.id
             )
             subproject_filter_adl_project = subprojects.filter(
@@ -476,14 +488,12 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
                 count += 1
 
         # All sum
-        allocations_cvd = AdministrativeLevelAllocation.objects.filter(
-            cvd=None, project_id=project_id
-        )
+        
         c = 0
         for component in components:
             datas[_("Cantons")][count+c] = _("Total")
             datas[_("Component")][count+c] = component.name
-            amount__sum = allocations_cvd.filter(
+            amount__sum = allocations_project.filter(
                 component_id=component.id
             ).aggregate(Sum('amount'))['amount__sum']
             datas[_("Allocation") + " FCFA"][count+c] = amount__sum if amount__sum else ""
@@ -514,9 +524,7 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
             
         datas[ _("Cantons")][count+c] = _("Total")
         datas[ _("Component")][count+c] = _("All")
-        datas[_("Allocation") + " FCFA"][count+c] = AdministrativeLevelAllocation.objects.filter(
-                        cvd=None, project_id=project_id
-            ).aggregate(Sum('amount'))['amount__sum']
+        datas[_("Allocation") + " FCFA"][count+c] = allocations_project.aggregate(Sum('amount'))['amount__sum']
         
         estimated_cost__sum = subprojects.aggregate(Sum('estimated_cost'))['estimated_cost__sum']
         datas[_("Total estimate for subprojects") + " FCFA"][count+c] = estimated_cost__sum if estimated_cost__sum else ""

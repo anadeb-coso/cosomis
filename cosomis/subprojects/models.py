@@ -289,7 +289,16 @@ class Subproject(BaseModel):
                 return level.__str__()
         if step:
             return step.__str__()
-        return self.current_level_of_physical_realization_of_the_work
+        if self.current_level_of_physical_realization_of_the_work:
+            if not self.current_level_of_physical_realization_of_the_work.replace('.','',1).replace(',','',1).isdigit():
+                return self.current_level_of_physical_realization_of_the_work
+            _status = float(self.current_level_of_physical_realization_of_the_work)
+            if _status > 0 and _status < 1:
+                return _("In progress")
+            elif _status >= 1:
+                return _("Completed")
+
+        return None
     
     @property
     def get_current_subproject_step_and_level_without_percent(self):
@@ -300,7 +309,16 @@ class Subproject(BaseModel):
                 return level.wording
         if step:
             return step.wording
-        return self.current_level_of_physical_realization_of_the_work
+        if self.current_level_of_physical_realization_of_the_work:
+            if not self.current_level_of_physical_realization_of_the_work.replace('.','',1).replace(',','',1).isdigit():
+                return self.current_level_of_physical_realization_of_the_work
+            _status = float(self.current_level_of_physical_realization_of_the_work) * 100
+            if _status > 0 and _status < 100:
+                return _("In progress") + " " + _status + "%"
+            elif _status >= 100:
+                return _("Completed") + " " + _status + "%"
+
+        return None
 
     @property
     def get_current_subproject_step_and_level_object(self):

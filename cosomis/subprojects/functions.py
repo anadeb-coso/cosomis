@@ -1,10 +1,10 @@
 from django.utils.translation import gettext_lazy as _
 from django.db.models import Q
-from datetime import datetime
+from datetime import datetime, date as type_date
 import pandas as pd
 import copy
 import re as re_module
-import os
+import sys, os
 from sys import platform
 
 from administrativelevels.libraries import functions as libraries_functions
@@ -14,7 +14,12 @@ from subprojects.models import Subproject
 
 
 def get_value(elt):
-    return elt if not pd.isna(elt) else None
+    # return elt if not pd.isna(elt) else None
+    _elt  = elt if not pd.isna(elt) else None
+    if _elt and _elt.__str__() == "00:00:00":
+        return None
+        
+    return _elt
 
 def exists_id(liste, id):
     for o in liste:
@@ -76,7 +81,7 @@ def get_adminstrative_level_by_name(ad_name, canton_str: str):
         return None
 
 def get_adminstrative_level_by_name_with_slash(ad_name: str, canton_str: str):
-    villages_name = re_module.split('[&,;/]| Et ', ad_name.title()) #ad_name.split("/")
+    villages_name = re_module.split('[&,;/+]| Et ', ad_name.title()) #ad_name.split("/")
     print(villages_name)
     for village_name in villages_name:
         v = get_adminstrative_level_by_name(village_name.upper(), canton_str)
@@ -124,13 +129,13 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                 _village = str(datas_file["VILLAGE"][count])
                 __village = _village.upper()
                 number = get_value(datas_file["N°"][count])
-                joint_subproject_number = get_value(datas_file["num_sp"][count])
+                joint_subproject_number = get_value(datas_file["num_kit"][count])
                 intervention_unit = get_value(datas_file["UNITE D'INTERVENTION"][count])
                 facilitator_name = get_value(datas_file["NOM DE L'AC"][count])
                 wave = get_value(datas_file["VAGUE"][count])
                 lot = get_value(datas_file["LOT"][count])
-                subproject_sector = get_value(datas_file["SECTEUR–SP"][count])
-                type_of_subproject = get_value(datas_file["TYPE DE SOUS-PROJET"][count])
+                subproject_sector = get_value(datas_file["SECTEUR BENEFICIAIRE–SP"][count])
+                type_of_subproject = get_value(datas_file["TYPE D'OUVRAGE (INFRASTRUCTURE)"][count])
                 full_title_of_approved_subproject = get_value(datas_file["INTITULE COMPLET DU SOUS-PROJET APPROUVES (Description)"][count])
                 works_type = get_value(datas_file["TYPE DE TRAVAUX"][count])
                 estimated_cost = get_value(datas_file["COUT ESTIMATIF"][count])
@@ -261,19 +266,19 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                         at_least_error_name = True
                         at_least_one_error = True
                         text_errors += (f'\nLine N°{count} [{_village}]: {exc.__str__()}' if text_errors else f'Line N°{count} [{_village}]: {exc.__str__()}')
-                    print(_is_object_error)
+
                     if _is_object_error and not administrative_level and \
-                        ("/" in village.title() or "," in village.title() or ";" in village.title() or " Et " in village.title() or "&" in village.title()):
-                        print(village)
+                        ("/" in village.title() or "," in village.title() or ";" in village.title() or " Et " in village.title() or "&" in village.title() or "+" in village.title()):
+
                         administrative_level = get_adminstrative_level_by_name_with_slash(village, canton_file_data)
-                        print(administrative_level)
+
                         if not administrative_level:
                             _is_object_error = True
                         else:
                             del list_villages_not_found_full_infos[-1]
                             del list_villages_not_found[-1]
                             _is_object_error = False
-
+                        print(administrative_level)
                 if not _is_object_error:
                     
                     if administrative_level and ((cvd_ids and administrative_level.cvd_id not in cvd_ids) or (canton_ids and administrative_level.cvd_id not in canton_ids)):
@@ -357,36 +362,41 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                                 at_least_one_error = True
                                 text_errors += (f'\nLine N°{count} [{canton}]: {exc.__str__()}' if text_errors else f'Line N°{count} [{canton}]: {exc.__str__()}')
                         
-                        for sub in subprojects:
-                            if administrative_level_canton and not sub.link_to_subproject:
-                                is_link_to_subproject = True
-                                subproject = sub
-                            if administrative_level_canton and sub.canton and sub.canton.id == administrative_level_canton.id:
-                                subproject = sub
-                                is_link_to_subproject = False
-                                break
+                        # for sub in subprojects:
+                        #     if administrative_level_canton and not sub.link_to_subproject:
+                        #         is_link_to_subproject = True
+                        #         subproject = sub
+                        #     if administrative_level_canton and sub.canton and sub.canton.id == administrative_level_canton.id:
+                        #         subproject = sub
+                        #         is_link_to_subproject = False
+                        #         break
+                        subproject = subprojects.first()
 
                     else:
-                        subproject = Subproject.objects.filter(
+                        subprojects = Subproject.objects.filter(
                             number=number
                             # full_title_of_approved_subproject=full_title_of_approved_subproject,
                             # location_subproject_realized=administrative_level, 
                             # subproject_sector=subproject_sector,
                             # type_of_subproject=type_of_subproject
                             )
-                        if subproject:
-                            subproject = list(subproject)[0]
+                        # if subproject:
+                        #     subproject = list(subproject)[0]
+                        subproject = subprojects.first()
 
-                    if is_link_to_subproject:
-                        subproject_to_link = copy.copy(subproject)
-                        subproject = None
+                    # if is_link_to_subproject:
+                    #     subproject_to_link = copy.copy(subproject)
+                    #     subproject = None
 
                     if not subproject:
                         subproject = Subproject()
-                        subproject.ranking = 1
-                        subproject.link_to_subproject = subproject_to_link
-                    
-
+                        # subproject.link_to_subproject = subproject_to_link
+                    try:
+                        _expected_duration_of_the_work = float(str(expected_duration_of_the_work).split(' ')[0].split('m')[0].split('M')[0])
+                    except:
+                        _expected_duration_of_the_work = None
+                    print(_expected_duration_of_the_work)
+                        
                     subproject.location_subproject_realized = administrative_level
                     subproject.number = number
                     subproject.joint_subproject_number = joint_subproject_number
@@ -421,7 +431,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                     subproject.depth_of_drilling = depth_of_drilling
                     subproject.drilling_flow_rate = drilling_flow_rate
                     subproject.current_status_of_the_site = current_status_of_the_site
-                    subproject.expected_duration_of_the_work = expected_duration_of_the_work
+                    subproject.expected_duration_of_the_work = _expected_duration_of_the_work
                     subproject.expected_end_date_of_the_contract = expected_end_date_of_the_contract
                     subproject.total_contract_amount_paid = total_contract_amount_paid
                     subproject.amount_of_the_care_and_maintenance_fund_expected_to_be_mobilized = amount_of_the_care_and_maintenance_fund_expected_to_be_mobilized
@@ -434,8 +444,9 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                     subproject.official_handover_date_of_the_microproject_to_the_community = official_handover_date_of_the_microproject_to_the_community
                     subproject.official_handover_date_of_the_microproject_to_the_sector = official_handover_date_of_the_microproject_to_the_sector
                     subproject.comments = comments
-                    subproject.latitude = latitude
-                    subproject.longitude = longitude
+                    if longitude and latitude:
+                        subproject.latitude = latitude
+                        subproject.longitude = longitude
                     
                     subproject.population = population
                     subproject.direct_beneficiaries_men = direct_beneficiaries_men
@@ -472,7 +483,9 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
 
 
             except Exception as exc:
-                text_errors += f'\nLine N°{count} [{_village}]: {exc.__str__()}'
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                text_errors += f'\nLine N°{count} [{_village}]: {exc.__str__()}, {exc_type}, {fname}, {exc_tb.tb_lineno}'
                 nbr_other_errors += 1
                 at_least_one_error = True
                 print(exc)
@@ -579,7 +592,7 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
 
     datas = {
         "N°": {},
-        "num_sp": {},
+        "num_kit": {},
         "Longitude (x)": {},
         "Latitude (y)": {},
         "REGION": {},
@@ -601,8 +614,8 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         "NOM DE L'AC": {},
         "VAGUE": {},
         "LOT": {},
-        "SECTEUR–SP": {},
-        "TYPE DE SOUS-PROJET": {},
+        "SECTEUR BENEFICIAIRE–SP": {},
+        "TYPE D'OUVRAGE (INFRASTRUCTURE)": {},
         "LISTE DE VILLAGES TRAVERSÉ PAR LA PISTE OU L'ÉLECTRIFICATION": {},
         "INTITULE COMPLET DU SOUS-PROJET APPROUVES (Description)": {},
         "TYPE DE TRAVAUX": {},
@@ -774,7 +787,7 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         
 
         datas["N°"][count] = elt.number
-        datas["num_sp"][count] = elt.joint_subproject_number
+        datas["num_kit"][count] = elt.joint_subproject_number
         datas["Longitude (x)"][count] = elt.longitude
         datas["Latitude (y)"][count] = elt.latitude
         datas["UNITE D'INTERVENTION"][count] = elt.intervention_unit
@@ -792,8 +805,8 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         datas["NOM DE L'AC"][count] = elt.facilitator_name
         datas["VAGUE"][count] = elt.wave
         datas["LOT"][count] = elt.lot
-        datas["SECTEUR–SP"][count] = elt.subproject_sector
-        datas["TYPE DE SOUS-PROJET"][count] = elt.type_of_subproject
+        datas["SECTEUR BENEFICIAIRE–SP"][count] = elt.subproject_sector
+        datas["TYPE D'OUVRAGE (INFRASTRUCTURE)"][count] = elt.type_of_subproject
 
         list_of_villages_crossed_by_the_track_or_electrification_str = ""
         list_of_villages_crossed_by_the_track_or_electrification = elt.list_of_villages_crossed_by_the_track_or_electrification.all()

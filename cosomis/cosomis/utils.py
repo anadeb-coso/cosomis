@@ -267,7 +267,7 @@ def save_subproject_tracking():
                         step_identifie, step_approved, step_dao_progress
                     ]
                 )
-            else:
+            elif subproject.current_status_of_the_site.title() == "En cours":
                 print("En cours")
                 set_step(
                     subproject, 
@@ -277,16 +277,29 @@ def save_subproject_tracking():
                         step_progress
                     ]
                 )
-                print(subproject.current_level_of_physical_realization_of_the_work)
+                
+                _percent = 0.0
+                _current_level_of_physical_realization_of_the_works = subproject.current_level_of_physical_realization_of_the_work.split("%")
+                if _current_level_of_physical_realization_of_the_works:
+                    _current_level_of_physical_realization_of_the_work = _current_level_of_physical_realization_of_the_works[0]
+                    if not _current_level_of_physical_realization_of_the_work \
+                            or not str(_current_level_of_physical_realization_of_the_work).replace('.','',1).replace(',','',1).isdigit():
+                        _percent = 0.0
+                    else:
+                        _percent = float(_current_level_of_physical_realization_of_the_work.replace(',', '0')) * 100
+                print(_percent)
                 subproject_step_progress = subproject.get_current_subproject_step
-                if subproject_step_progress.step.has_levels and not subproject_step_progress.check_step(subproject.current_level_of_physical_realization_of_the_work):
+                # if subproject_step_progress.step.has_levels and not subproject_step_progress.check_step(subproject.current_level_of_physical_realization_of_the_work):
+                if subproject_step_progress.step.has_levels:
                     subproject_level = Level()
-                    subproject_level.wording = subproject.current_level_of_physical_realization_of_the_work
+                    subproject_level.wording = "En cours"
                     subproject_level.subproject_step = subproject_step_progress
-                    subproject_level.percent = 35.0
+                    subproject_level.percent = _percent
                     subproject_level.begin = datetime.datetime.now().date()
                     subproject_level.save()
-                
+            else:
+                print("Identifié")
+                set_step(subproject, [step_identifie])
         else:
             print("Identifié")
             set_step(subproject, [step_identifie])
@@ -297,11 +310,16 @@ def save_subproject_tracking():
 
 
 def all_functions_call():
+    print("attribute_component_to_subprojects")
     attribute_component_to_subprojects(Subproject.objects.all(), Component.objects.get(id=2))
-    # attribute_project_to_subprojects(Subproject.objects.all(), Project.objects.get(id=1))
-    # link_infrastures_to_subproject()
-    # copy_cvd_to_list_of_beneficiary_villages()
-    # save_subproject_tracking()
+    print("attribute_project_to_subprojects")
+    attribute_project_to_subprojects(Subproject.objects.all(), Project.objects.get(id=1))
+    print("link_infrastures_to_subproject")
+    link_infrastures_to_subproject()
+    print("copy_cvd_to_list_of_beneficiary_villages")
+    copy_cvd_to_list_of_beneficiary_villages()
+    print("save_subproject_tracking")
+    save_subproject_tracking()
 
 
 

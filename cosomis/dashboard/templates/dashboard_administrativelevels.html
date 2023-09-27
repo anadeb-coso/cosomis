@@ -279,18 +279,18 @@
                 let elt_id;
                 for(let i=0; i<administrative_level_ids.length; i++){
                     elt_id = administrative_level_ids[i];
-                    if($(this).attr('id') != elt_id) $(`#${elt_id}`).val(null).trigger('change.select2');
+                    if($(this).attr('id') != elt_id) $(`#${elt_id}`).val([]).trigger('change.select2');
                 }
                 administrative_level_id = null;
                 administrative_level_type = null;
                 if($(this).attr('id') && $(this).val()){
                     administrative_level_type = $(this).attr('id').split('_')[1];
                     administrative_level_id = $(this).val();
+                    loadWaves(administrative_level_id, administrative_level_type);
+                    loadWavesTimes(administrative_level_id, administrative_level_type);
+                    loadSummaryAdministrativeLevels(administrative_level_id, administrative_level_type);
+                    loadSummaryAllocation(administrative_level_id, administrative_level_type);
                 }
-                loadWaves(administrative_level_id, administrative_level_type);
-                loadWavesTimes(administrative_level_id, administrative_level_type);
-                loadSummaryAdministrativeLevels(administrative_level_id, administrative_level_type);
-                loadSummaryAllocation(administrative_level_id, administrative_level_type);
             });
 
 
