@@ -288,7 +288,7 @@ def save_subproject_tracking():
                         step_identifie, step_approved, step_dao_progress
                     ]
                 )
-            elif current_level.title() == "En cours" or current_status_of_the_site.title() == "En cours":
+            elif current_level == "En cours".title() or current_status_of_the_site == "En cours".title():
                 print("En cours")
                 set_step(
                     subproject, 
