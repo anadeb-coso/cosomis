@@ -104,12 +104,21 @@
 {#                <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>#}
 {#            </div>#}
 {#        </li>#}
+        {% if user.is_authenticated %}
         <li class="nav-item white-shaded-nav-item">
             <a class="nav-link" href="{% url 'usermanager:logout' %}" title="{% translate 'Logout' %}"
                role="button">
                 <i class="fa fa-sign-out align-bottom"></i>
             </a>
         </li>
+        {% else %}
+        <li class="nav-item white-shaded-nav-item">
+            <a class="nav-link" href="{% url 'usermanager:login' %}" title="{% translate 'Log in' %}"
+               role="button">
+                <i class="fa fa-sign-in align-bottom"></i>
+            </a>
+        </li>
+        {% endif %}
     </ul>
 </nav>
 <!-- /.navbar -->
