@@ -226,8 +226,8 @@ def save_subproject_tracking():
 
     for subproject in subprojects:
         if subproject.current_level_of_physical_realization_of_the_work or subproject.current_status_of_the_site:
-            current_level = strip_accents(subproject.current_level_of_physical_realization_of_the_work).title()
-            current_status_of_the_site = strip_accents(subproject.current_status_of_the_site).title()
+            current_level = strip_accents(subproject.current_level_of_physical_realization_of_the_work if subproject.current_level_of_physical_realization_of_the_work else "").title()
+            current_status_of_the_site = strip_accents(subproject.current_status_of_the_site if subproject.current_status_of_the_site else "").title()
             if current_level == "Remise du site".title() or current_status_of_the_site == "Remise du site".title(): #Remise du site
                 print("Remise du site")
                 set_step(
