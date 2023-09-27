@@ -225,9 +225,10 @@ def save_subproject_tracking():
     step_final_acceptance = Step.objects.get(ranking=15)
 
     for subproject in subprojects:
-        if subproject.current_level_of_physical_realization_of_the_work:
+        if subproject.current_level_of_physical_realization_of_the_work or subproject.current_status_of_the_site:
             current_level = strip_accents(subproject.current_level_of_physical_realization_of_the_work).title()
-            if current_level == "Remise du site".title(): #Remise du site
+            current_status_of_the_site = strip_accents(subproject.current_status_of_the_site).title()
+            if current_level == "Remise du site".title() or current_status_of_the_site == "Remise du site".title(): #Remise du site
                 print("Remise du site")
                 set_step(
                     subproject, 
@@ -236,10 +237,10 @@ def save_subproject_tracking():
                         step_company_selected, step_contract_signed, step_site_handover
                     ]
                 )
-            elif "se de validation".title() in current_level: #En phase de validation | En phse de validation
+            elif "se de validation".title() in current_level or "se de validation".title() in current_status_of_the_site: #En phase de validation | En phse de validation
                 print("En phase de validation")
                 set_step(subproject, [step_identifie])
-            elif "notification de l'intention d'attribution".title() in current_level: #En  phase  de notification de l'intention d'attribution  | En phse de notification de l'intention d'attribution
+            elif "notification de l'intention d'attribution".title() in current_level or "notification de l'intention d'attribution".title() in current_status_of_the_site: #En  phase  de notification de l'intention d'attribution  | En phse de notification de l'intention d'attribution
                 print("En  phase  de notification de l'intention d'attribution")
                 set_step(
                     subproject, 
@@ -248,7 +249,27 @@ def save_subproject_tracking():
                         step_company_selected
                     ]
                 )
-            elif current_level == "Reception provisoire".title(): #Reception provisoire
+            elif current_level == "Acheve".title() or current_status_of_the_site == "Acheve".title(): #Acheve
+                print("Acheve")
+                set_step(
+                    subproject, 
+                    [
+                        step_identifie, step_approved, step_dao_progress, 
+                        step_company_selected, step_contract_signed, step_site_handover,
+                        step_progress, step_completed
+                    ]
+                )
+            elif current_level == "Reception technique".title() or current_status_of_the_site == "Reception technique".title(): #Reception technique
+                print("Reception technique")
+                set_step(
+                    subproject, 
+                    [
+                        step_identifie, step_approved, step_dao_progress, 
+                        step_company_selected, step_contract_signed, step_site_handover,
+                        step_progress, step_completed, step_technical_acceptance
+                    ]
+                )
+            elif current_level == "Reception provisoire".title() or current_status_of_the_site == "Reception provisoire".title(): #Reception provisoire
                 print("Reception provisoire")
                 set_step(
                     subproject, 
@@ -259,7 +280,7 @@ def save_subproject_tracking():
                         step_provisional_acceptance, step_handover_to_the_community
                     ]
                 )
-            elif current_level == "Infructueux".title(): #Infructueux
+            elif current_level == "Infructueux".title() or current_status_of_the_site == "Infructueux".title(): #Infructueux
                 print("Infructueux")
                 set_step(
                     subproject, 
@@ -267,7 +288,7 @@ def save_subproject_tracking():
                         step_identifie, step_approved, step_dao_progress
                     ]
                 )
-            elif subproject.current_status_of_the_site.title() == "En cours":
+            elif current_level.title() == "En cours" or current_status_of_the_site.title() == "En cours":
                 print("En cours")
                 set_step(
                     subproject, 
