@@ -280,6 +280,18 @@ def save_subproject_tracking():
                         step_provisional_acceptance, step_handover_to_the_community
                     ]
                 )
+            elif current_level == "Reception definitive".title() or current_status_of_the_site == "Reception definitive".title(): #Reception definitive
+                print("Reception definitive")
+                set_step(
+                    subproject, 
+                    [
+                        step_identifie, step_approved, step_dao_progress, 
+                        step_company_selected, step_contract_signed, step_site_handover,
+                        step_progress, step_completed, step_technical_acceptance,
+                        step_provisional_acceptance, step_handover_to_the_community,
+                        step_final_acceptance
+                    ]
+                )
             elif current_level == "Infructueux".title() or current_status_of_the_site == "Infructueux".title(): #Infructueux
                 print("Infructueux")
                 set_step(
@@ -307,7 +319,7 @@ def save_subproject_tracking():
                             or not str(_current_level_of_physical_realization_of_the_work).replace('.','',1).replace(',','',1).isdigit():
                         _percent = 0.0
                     else:
-                        _percent = float(_current_level_of_physical_realization_of_the_work.replace(',', '0')) * 100
+                        _percent = float(_current_level_of_physical_realization_of_the_work.replace(',', '0'))
                 print(_percent)
                 subproject_step_progress = subproject.get_current_subproject_step
                 # if subproject_step_progress.step.has_levels and not subproject_step_progress.check_step(subproject.current_level_of_physical_realization_of_the_work):

@@ -98,7 +98,8 @@
             
             let help_text1 = null;
             {% for field in form %}
-                {% if "date" in field.name %}
+                {% if "date" in field.name or "dates" in field.name %}
+                console.log("{{ field.name }}");
                     $(('#id_{{ field.name }}')).before(dp1.replace('{id}', '{{ field.name }}')).parent().wrapInner(
                         dp2.replace('{id}', '{{ field.name }}'));
                     
@@ -107,31 +108,31 @@
                     $('#{{ field.name }}').after(help_text1);
 
                     {% if field.value %}
-            defaultDate = '{{ field.value|date:'Y-m-d' }}';//moment('{{ field.value }}').format('YYYY-MM-DD'); //moment("{{ field.value }}", "YYYY-MM-DD");
-        {% else %}
-            defaultDate = false;
-        {% endif %}
-        
-        if(defaultDate){
-            $('#{{ field.name }}').datetimepicker({
-                maxDate: Date.now(),
-                useCurrent: false,
-                defaultDate: defaultDate,
-                format: "DD/MM/YYYY",
-                widgetPositioning: {
-                    vertical: 'bottom',
-                }
-            });
-        }else{
-            $('#{{ field.name }}').datetimepicker({
-                maxDate: Date.now(),
-                format: "DD/MM/YYYY",
-                useCurrent: false,
-                widgetPositioning: {
-                    vertical: 'bottom',
-                }
-            });
-        }
+                        defaultDate = '{{ field.value|date:'Y-m-d' }}';//moment('{{ field.value }}').format('YYYY-MM-DD'); //moment("{{ field.value }}", "YYYY-MM-DD");
+                    {% else %}
+                        defaultDate = false;
+                    {% endif %}
+                    
+                    if(defaultDate){
+                        $('#{{ field.name }}').datetimepicker({
+                            maxDate: Date.now(),
+                            useCurrent: false,
+                            defaultDate: defaultDate,
+                            format: "DD/MM/YYYY",
+                            widgetPositioning: {
+                                vertical: 'bottom',
+                            }
+                        });
+                    }else{
+                        $('#{{ field.name }}').datetimepicker({
+                            maxDate: Date.now(),
+                            format: "DD/MM/YYYY",
+                            useCurrent: false,
+                            widgetPositioning: {
+                                vertical: 'bottom',
+                            }
+                        });
+                    }
         
                     
 

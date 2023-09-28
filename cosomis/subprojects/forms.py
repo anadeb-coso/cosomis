@@ -6,7 +6,7 @@ from administrativelevels.models import AdministrativeLevel, CVD
 from subprojects import (
     SUB_PROJECT_SECTORS, TYPES_OF_SUB_PROJECT, WORKS_TYPE_OF_SUB_PROJECT,
     LEVEL_OF_ACHIEVEMENT_DONATION_CERTIFICATE_OF_SUB_PROJECT,
-    SUB_PROJECT_STEP_STANDART
+    SUB_PROJECT_STEP_STANDART, CURRENT_STATUS_OF_THE_SITE
 )
 
 class SubprojectForm(forms.ModelForm):
@@ -14,6 +14,7 @@ class SubprojectForm(forms.ModelForm):
     type_of_subproject = forms.ChoiceField(label=_("Type of subproject"), required=True)
     works_type = forms.ChoiceField(label=_("Works type"), required=True)
     level_of_achievement_donation_certificate = forms.ChoiceField(label=_("Level of donation certificate"), required=True)
+    current_status_of_the_site = forms.ChoiceField(label=_("Current site status (Work in progress, Work stopped, Work abandoned, Technical acceptance, Provisional acceptance, etc.)"), required=True)
 
     def __init__(self, *args, **kwargs):
         super(SubprojectForm, self).__init__(*args, **kwargs)
@@ -39,15 +40,18 @@ class SubprojectForm(forms.ModelForm):
                 'subproject_sector': SUB_PROJECT_SECTORS,
                 'type_of_subproject': TYPES_OF_SUB_PROJECT,
                 'works_type': WORKS_TYPE_OF_SUB_PROJECT,
-                'level_of_achievement_donation_certificate': LEVEL_OF_ACHIEVEMENT_DONATION_CERTIFICATE_OF_SUB_PROJECT
+                'level_of_achievement_donation_certificate': LEVEL_OF_ACHIEVEMENT_DONATION_CERTIFICATE_OF_SUB_PROJECT,
+                'current_status_of_the_site': CURRENT_STATUS_OF_THE_SITE
             }
             instance_datas = {
                 'subproject_sector': self.instance.subproject_sector,
                 'type_of_subproject': self.instance.type_of_subproject,
                 'works_type': self.instance.works_type,
-                'level_of_achievement_donation_certificate': self.instance.level_of_achievement_donation_certificate
+                'level_of_achievement_donation_certificate': self.instance.level_of_achievement_donation_certificate,
+                'current_status_of_the_site': self.instance.current_status_of_the_site
             }
-            if label in ('subproject_sector', 'type_of_subproject', 'works_type', 'level_of_achievement_donation_certificate'):
+            if label in ('subproject_sector', 'type_of_subproject', 'works_type', \
+                         'level_of_achievement_donation_certificate', 'current_status_of_the_site'):
                 self.fields[label].choices = choices_datas[label]
                 self.fields[label].widget.choices = choices_datas[label]
                 if instance_datas[label]:

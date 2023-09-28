@@ -38,11 +38,11 @@
 
                 <div class="container">
                     <ul class="nav nav-tabs">
-                        <li style="width: 20%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link active" data-toggle="tab" href="#Number-of-sub-projects-by-administrative-level-and-sector">{% translate "Number of sub-projects by administrative level and sector" %}</a></li>
-                        <li style="width: 20%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link" data-toggle="tab" href="#Amount-of-sub-projects-by-administrative-level-and-sector">{% translate "Amount of sub-projects by administrative level and sector" %}</a></li>
-                        <li style="width: 20%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link" data-toggle="tab" href="#Subprojects-by-village-sector-and-step">{% translate "Subprojects by village, sector and step" %}</a></li>
-                        <li style="width: 20%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link" data-toggle="tab" href="#Subprojects-by-step">{% translate "Subprojects by step" %}</a></li>
-                        <li style="width: 20%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link" data-toggle="tab" href="#Subprojects-by-current-step">{% translate "Subprojects by current step" %}</a></li>
+                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link active" data-toggle="tab" href="#Number-of-sub-projects-by-administrative-level-and-sector">{% translate "Number of sub-projects by administrative level and sector" %}</a></li>
+                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link" data-toggle="tab" href="#Amount-of-sub-projects-by-administrative-level-and-sector">{% translate "Amount of sub-projects by administrative level and sector" %}</a></li>
+                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link" data-toggle="tab" href="#Subprojects-by-village-sector-and-step">{% translate "Subprojects by village, sector and step" %}</a></li>
+                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link" data-toggle="tab" href="#Subprojects-by-step">{% translate "Subprojects by step" %}</a></li>
+                        {% comment %} <li style="width: 20%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link" data-toggle="tab" href="#Subprojects-by-current-step">{% translate "Subprojects by current step" %}</a></li> {% endcomment %}
                     </ul>
 
                     <div class="tab-content">
@@ -106,7 +106,7 @@
                         </div>
 
 
-                        <div id="Subprojects-by-current-step" class="tab-pane fade">
+                        {% comment %} <div id="Subprojects-by-current-step" class="tab-pane fade">
                             <div class="card">
                                 <div class="card-body">
                                     <div id="subprojects-current-steps-number-list">
@@ -118,7 +118,7 @@
                                 </div>
                             </div>
 
-                        </div>
+                        </div> {% endcomment %}
                     </div>
 
 
@@ -262,7 +262,7 @@
                 });
             }
 
-            subprojects_steps_number_spin.hide();
+            //subprojects_steps_number_spin.hide();
             function loadSubprojectsSteps(administrative_level_id=null, administrative_level_type=null) {
                 subprojects_steps_number_spin.show();
                 $.ajax({
@@ -309,7 +309,7 @@
             loadSubprojects();
             loadSubprojectsAmount();
             loadSubprojectsSectorsAndSteps();
-            //loadSubprojectsSteps();
+            loadSubprojectsSteps();
             //loadSubprojectsCurrentSteps();
             $('.administrative-level-filter select').on('change', function () {
                 let elt_id;
@@ -326,7 +326,7 @@
                     loadSubprojects(administrative_level_id, administrative_level_type);
                     loadSubprojectsAmount(administrative_level_id, administrative_level_type);
                     loadSubprojectsSectorsAndSteps(administrative_level_id, administrative_level_type);
-                    //loadSubprojectsSteps(administrative_level_id, administrative_level_type);
+                    loadSubprojectsSteps(administrative_level_id, administrative_level_type);
                     //loadSubprojectsCurrentSteps(administrative_level_id, administrative_level_type);
                 }
             });
@@ -339,7 +339,7 @@
                 loadSubprojects();
                 loadSubprojectsAmount();
                 loadSubprojectsSectorsAndSteps();
-                //loadSubprojectsSteps();
+                loadSubprojectsSteps();
                 //loadSubprojectsCurrentSteps();
             });
 

@@ -129,6 +129,7 @@ class SubprojectStepAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequiredM
     title = _('Record a step')
     submit_button = _('Save')
     # permissions = ('read',)
+    _obj = None
 
     def check_permissions(self):
         super().check_permissions()
@@ -142,7 +143,7 @@ class SubprojectStepAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequiredM
             form = SubprojectAddStepForm(request.POST, instance=obj)
         else:
             form = SubprojectAddStepForm(request.POST)
-
+        self._obj = obj
         if form and form.is_valid():
             data = form.cleaned_data
             ranking = None
@@ -184,6 +185,20 @@ class SubprojectStepAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequiredM
         subproject_step.percent = subproject_step.step.percent
         subproject_step.ranking = subproject_step.step.ranking
         subproject_step = subproject_step.save_and_return_object()
+
+        if not self._obj:
+            if subproject_step.step.ranking < 8:
+                self.subproject.current_status_of_the_site = "Identifié"
+            elif subproject_step.step.ranking == 9:
+                self.subproject.current_status_of_the_site = "Abandon"
+            elif subproject_step.step.ranking == 10:
+                self.subproject.current_status_of_the_site = "Arrêt"
+            elif subproject_step.step.ranking == 14:
+                self.subproject.current_status_of_the_site = "Réception provisoire"
+            else:
+                self.subproject.current_status_of_the_site = subproject_step.step.wording
+            self.subproject.current_level_of_physical_realization_of_the_work = str(subproject_step.step.percent if subproject_step.step.percent else subproject_step.step.wording)
+            self.subproject.save()
 
         images = subproject_step.subproject.get_all_images()
         for file in [self.request.FILES.get('level_image'), self.request.FILES.get('level_other_file')]:
@@ -233,6 +248,7 @@ class SubprojectLevelAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequired
     id_form = "subproject_add_level_form"
     title = _('Record an evolution level')
     submit_button = _('Save')
+    _obj = None
     
 
     def check_permissions(self):
@@ -240,12 +256,13 @@ class SubprojectLevelAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequired
 
     def post(self, request, *args, **kwargs):
         form = None
+        obj = None
         if self.kwargs.get('subproject_level_update_id'):
             obj = Level.objects.get(id=self.kwargs['subproject_level_update_id'])
             form = SubprojectAddLevelForm(request.POST, instance=obj)
         else:
             form = SubprojectAddLevelForm(request.POST)
-
+        self._obj = obj
         if form and form.is_valid():
             return self.form_valid(form)
         
@@ -266,6 +283,10 @@ class SubprojectLevelAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequired
         subproject_level.subproject_step = subproject_step
         subproject_level = subproject_level.save_and_return_object()
 
+        if not self._obj:
+            self.subproject.current_status_of_the_site = "En cours"
+            self.subproject.current_level_of_physical_realization_of_the_work = str(subproject_level.percent if subproject_level.percent else "0")
+            self.subproject.save()
 
         images = subproject_level.subproject_step.subproject.get_all_images()
         for file in [self.request.FILES.get('level_image'), self.request.FILES.get('level_other_file')]:

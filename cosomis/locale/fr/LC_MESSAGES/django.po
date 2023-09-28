@@ -876,6 +876,10 @@ msgid "Others"
 msgstr "Autres"
 
 #: .\subprojects\templates\subprojects_list.html:11
+msgid "Stop"
+msgstr "Arrêt"
+
+#: .\subprojects\templates\subprojects_list.html:11
 msgid "Identified"
 msgstr "Identifié"
 

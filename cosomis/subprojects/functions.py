@@ -395,8 +395,19 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                         _expected_duration_of_the_work = float(str(expected_duration_of_the_work).split(' ')[0].split('m')[0].split('M')[0])
                     except:
                         _expected_duration_of_the_work = None
-                    print(_expected_duration_of_the_work)
-                        
+                    
+                    
+                    _current_level_of_physical_realization_of_the_works = str(current_level_of_physical_realization_of_the_work).split("%")
+                    if _current_level_of_physical_realization_of_the_works:
+                        _current_level_of_physical_realization_of_the_work = _current_level_of_physical_realization_of_the_works[0]
+                        if not _current_level_of_physical_realization_of_the_work \
+                                or not str(_current_level_of_physical_realization_of_the_work).replace('.','',1).replace(',','',1).isdigit():
+                            _current_level_of_physical_realization_of_the_work = current_level_of_physical_realization_of_the_work
+                        else:
+                            _current_level_of_physical_realization_of_the_work = float(_current_level_of_physical_realization_of_the_work.replace(',', '0')) * 100
+                    else:
+                        _current_level_of_physical_realization_of_the_work = current_level_of_physical_realization_of_the_work
+
                     subproject.location_subproject_realized = administrative_level
                     subproject.number = number
                     subproject.joint_subproject_number = joint_subproject_number
@@ -426,7 +437,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                     subproject.date_signature_contract_facilitator = date_signature_contract_facilitator
                     subproject.amount_of_the_facilitator_contract = amount_of_the_facilitator_contract
                     subproject.launch_date_of_the_construction_site_in_the_village = launch_date_of_the_construction_site_in_the_village
-                    subproject.current_level_of_physical_realization_of_the_work = current_level_of_physical_realization_of_the_work
+                    subproject.current_level_of_physical_realization_of_the_work = _current_level_of_physical_realization_of_the_work
                     subproject.length_of_the_track = length_of_the_track
                     subproject.depth_of_drilling = depth_of_drilling
                     subproject.drilling_flow_rate = drilling_flow_rate

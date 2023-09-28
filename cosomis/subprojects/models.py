@@ -49,23 +49,23 @@ class Subproject(BaseModel):
     joint_subproject_number = models.IntegerField(null=True, blank=True, verbose_name=_("Subproject kit number"))
     intervention_unit = models.IntegerField(null=True, blank=True, verbose_name=_("Intervention unit"))
     facilitator_name = models.CharField(max_length=255, null=True, blank=True, verbose_name=_("Facilitator name"))
-    wave = models.CharField(max_length=2, null=True, blank=True, verbose_name=_("Arbitrage wave"))
-    lot = models.CharField(max_length=2, null=True, blank=True, verbose_name=_("Lot"))
+    wave = models.CharField(max_length=4, null=True, blank=True, verbose_name=_("Arbitrage wave"))
+    lot = models.CharField(max_length=4, null=True, blank=True, verbose_name=_("Lot"))
     subproject_sector = models.CharField(max_length=100, verbose_name=_("Subproject sector"))
-    type_of_subproject = models.CharField(max_length=100, verbose_name=_("Type of structure"))
+    type_of_subproject = models.CharField(max_length=150, verbose_name=_("Type of structure"))
     subproject_type_designation = models.CharField(max_length=100, choices=SUB_PROJECT_TYPE_DESIGNATION, default='Subproject', verbose_name=_("Subproject type designation (Subproject or Infrastructure)"))
     full_title_of_approved_subproject = models.TextField(max_length=255, verbose_name=_("Full title of approved sub-project (description)"))
-    works_type = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Works type"))
+    works_type = models.CharField(max_length=150, null=True, blank=True, verbose_name=_("Works type"))
     estimated_cost = models.FloatField(null=True, blank=True, verbose_name=_("Estimated cost"))
     exact_amount_spent = models.FloatField(null=True, blank=True, verbose_name=_("Exact amount spent on the sub-project"))
-    level_of_achievement_donation_certificate = models.CharField(max_length=50, null=True, blank=True, verbose_name=_("Level of donation certificate"))
+    level_of_achievement_donation_certificate = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Level of donation certificate"))
     approval_date_cora = models.DateField(null=True, blank=True, verbose_name=_("Approval date cora"))
     date_of_signature_of_contract_for_construction_supervisors = models.DateField(null=True, blank=True, verbose_name=_("Date signature contrat controleurs de travaux BTP (CT)"))
     amount_of_the_contract_for_construction_supervisors = models.FloatField(null=True, blank=True, verbose_name=_("Contract amount for construction supervisors BTP (CT)"))
     date_signature_contract_controllers_in_SES = models.DateField(null=True, blank=True, verbose_name=_("Date signed SES controllers contract (CSES)"))
     amount_of_the_controllers_contract_in_SES = models.FloatField(null=True, blank=True, verbose_name=_("Contract amount for SES controllers (CSES)"))
     convention = models.CharField(max_length=255, null=True, blank=True, verbose_name=_("Convention"))
-    contract_number_of_work_companies = models.CharField(max_length=15, null=True, blank=True, verbose_name=_("Contract no. for work companies (ET)"))
+    contract_number_of_work_companies = models.CharField(max_length=255, null=True, blank=True, verbose_name=_("Contract no. for work companies (ET)"))
     name_of_the_awarded_company_works_companies = models.CharField(max_length=255, null=True, blank=True, verbose_name=_("Name of company awarded work contract (ET)"))
     date_signature_contract_work_companies = models.DateField(null=True, blank=True, verbose_name=_("Date of signature of works contract (ET)"))
     contract_amount_work_companies = models.FloatField(null=True, blank=True, verbose_name=_("Contract amount for works companies (ET)"))
@@ -293,9 +293,9 @@ class Subproject(BaseModel):
             if not self.current_level_of_physical_realization_of_the_work.replace('.','',1).replace(',','',1).isdigit():
                 return self.current_level_of_physical_realization_of_the_work
             _status = float(self.current_level_of_physical_realization_of_the_work)
-            if _status > 0 and _status < 1:
+            if _status > 0 and _status < 100:
                 return _("In progress")
-            elif _status >= 1:
+            elif _status >= 100:
                 return _("Completed")
 
         return None
@@ -312,7 +312,7 @@ class Subproject(BaseModel):
         if self.current_level_of_physical_realization_of_the_work:
             if not self.current_level_of_physical_realization_of_the_work.replace('.','',1).replace(',','',1).isdigit():
                 return self.current_level_of_physical_realization_of_the_work
-            _status = float(self.current_level_of_physical_realization_of_the_work) * 100
+            _status = float(self.current_level_of_physical_realization_of_the_work)
             if _status > 0 and _status < 100:
                 return _("In progress") + " " + _status + "%"
             elif _status >= 100:

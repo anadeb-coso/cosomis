@@ -76,3 +76,14 @@ SUB_PROJECT_STEP_STANDART = (
     ('in_progress', _('In progress')),
     ('completed', _('Completed'))
 )
+
+CURRENT_STATUS_OF_THE_SITE = (
+    ("Identifié", _("Identified")),
+    ("En cours", _("In progress")),
+    ("Achevé", _("Completed")),
+    ("Réception technique", ("Technical reception")), 
+    ("Réception provisoire", _("Provisional reception")), 
+    ("Réception définitive", _("Final reception")),
+    ("Arrêt", _("Stop")),
+    ("Abandon", _("Abandon")),
+)
