@@ -186,17 +186,17 @@ def set_step(subproject, liste):
                 subproject_step.begin = subproject.launch_date_of_the_construction_site_in_the_village
             elif subproject.date_signature_contract_work_companies and s.ranking in (5, 6):
                 if s.ranking == 6:
-                    subproject_step.begin = subproject.date_signature_contract_work_companies + datetime.timedelta(days=3)
+                    subproject_step.begin = subproject.date_signature_contract_work_companies #+ datetime.timedelta(days=3)
                 else:
                     subproject_step.begin = subproject.date_signature_contract_work_companies
             else:
                 subproject_step_current = subproject.get_current_subproject_step
                 if subproject_step_current:
-                    subproject_step.begin = subproject_step_current.begin + datetime.timedelta(days=7)
+                    subproject_step.begin = subproject_step_current.begin #+ datetime.timedelta(days=7)
                 elif subproject_step.ranking > 7:
                     subproject_step.begin = datetime.datetime.now().date()
                 elif subproject.approval_date_cora and subproject_step.ranking <= 7:
-                    subproject_step.begin = subproject.approval_date_cora + datetime.timedelta(days=3)
+                    subproject_step.begin = subproject.approval_date_cora #+ datetime.timedelta(days=3)
                 else:
                     subproject_step.begin = datetime.date(2023, 1, 1)
             subproject_step.save()
