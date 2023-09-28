@@ -179,7 +179,7 @@ def set_step(subproject, liste):
             subproject_step.step = s
             
             if subproject.approval_date_cora and s.ranking == 1: #1
-                subproject_step.begin = subproject.approval_date_cora + datetime.timedelta(days=1)# - datetime.timedelta(days=14)
+                subproject_step.begin = subproject.approval_date_cora - datetime.timedelta(days=1)# - datetime.timedelta(days=14)
             elif subproject.approval_date_cora and s.ranking in (2, 3): #2 & 3
                 subproject_step.begin = subproject.approval_date_cora
             elif subproject.launch_date_of_the_construction_site_in_the_village and s.ranking == 8:# 8
