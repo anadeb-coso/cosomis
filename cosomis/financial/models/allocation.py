@@ -26,7 +26,20 @@ class AdministrativeLevelAllocation(BaseModel):
     class Meta(object):
         app_label = 'financial'
         db_table = 'financial_administrativeLevel_allocation'
-
+    
+    def __str__(self) -> str:
+        _str = ""
+        if self.administrative_level:
+            _str = f"{self.project}.ADL.{self.administrative_level}.{self.amount}"
+        elif self.cvd:
+            _str = f"{self.project}.CVD.{self.cvd}.{self.amount}"
+        if _str:
+            if self.allocation_date:
+                return _str + f"{self.allocation_date.year}\
+                    {self.allocation_date.month if self.allocation_date.year > 9 else ('0' + str(self.allocation_date.month))}\
+                    {self.allocation_date.day if self.allocation_date.day > 9 else ('0' + str(self.allocation_date.day))}"
+            return _str
+        return self.amount
 
     def sum_amount_by_administrative_level(self):
         return AdministrativeLevelAllocation.objects.filter(

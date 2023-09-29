@@ -11,7 +11,7 @@
 
                             <div class="btn-group pull-left" >
                                 {% if user.is_superuser or user|has_group:"Admin" %}
-                                    {% include 'components/modal_upload_one_sheet.html' with type_object="allocation" show_just_villages=False %}
+                                    {% include 'components/modal_upload_one_sheet.html' with type_object="allocation" show_just_villages=False name_file_to_load="Canton" %}
                                     <div> &nbsp; &nbsp; </div>
                                 {% endif %}
 

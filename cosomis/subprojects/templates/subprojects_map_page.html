@@ -211,6 +211,8 @@
                     'source': {
                         'type': 'vector',
                         'url': 'mapbox://mapbox.country-boundaries-v1',
+                        //'url': 'mapbox://styles/leokooshi/cln3btl1k037p01pf57c7a1hh',
+                        //'url': 'https://api.mapbox.com/styles/v1/leokooshi/cln3btl1k037p01pf57c7a1hh.html?title=copy&access_token=pk.eyJ1IjoibGVva29vc2hpIiwiYSI6ImNsa3RkdGtsaTBiMzYzZm80MXFkcXg1YWYifQ.K2XbCj9JYmYi0Go2mLsjiQ&zoomwheel=true&fresh=true#6.7/8.719/1.152',
                     },
                     'source-layer': 'country_boundaries',
                     'type': 'fill',
@@ -328,14 +330,19 @@
 
         $('.subprojects-map-view-filter select').on('change', function () {
             type_field = "";
-            suproject_attrs_filter = false;
-            if($(this).attr('id') && $(this).val().length != 0){
+            //suproject_attrs_filter = false;
+            if($(this).attr('id') && ids.includes($(this).attr('id')) && $(this).val().length != 0){
                 type_field = $(this).attr('id').split('_')[1];
-                suproject_attrs_filter = true;
-            }else{
+                //suproject_attrs_filter = true;
+                loadSubprojectsMapView(type_field, true);
+            }else if(ids.includes($(this).attr('id'))){
                 $(this).val([]).trigger('change.select2');
             }
-            loadSubprojectsMapView(type_field, suproject_attrs_filter);
+            
+            if(!ids.includes($(this).attr('id'))){
+                loadSubprojectsMapView(type_field, true);
+            }
+            
         });
 
         $("#clear_all_filters").on("click", function () {

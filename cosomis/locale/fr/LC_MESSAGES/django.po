@@ -2176,6 +2176,10 @@ msgid "Amount transferred"
 msgstr "Montant viré"
 
 #: .\subprojects\components\subproject_tracking_graph.html
+msgid "Amount transferred in dollars"
+msgstr "Montant viré en dollars"
+
+#: .\subprojects\components\subproject_tracking_graph.html
 msgid "Transfer date"
 msgstr "Date de virement"
 
@@ -2446,3 +2450,15 @@ msgstr "Rafraichier la page"
 #: .\subprojects
 msgid "Not started"
 msgstr "Non demarré"
+
+#: .\subprojects
+msgid "Human-powered pump (H.P.P.)"
+msgstr "Pompe à motricité humaine (PMH)"
+
+#: .\subprojects
+msgid "Pre-school school building"
+msgstr "Batiment Scolaire au Pré-scolaire"
+
+#: .\subprojects
+msgid "Linked to allocation"
+msgstr "Lié à l'allocation"

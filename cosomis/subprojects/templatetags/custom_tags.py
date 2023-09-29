@@ -136,7 +136,7 @@ def separate_with_space(value, unit=None, show_float=False):
     else:
         unit = ""
     
-    if not show_float:
+    if not show_float and value:
         value = round(float(value))
 
     if not value or not str(value).replace('-','').replace('.','',1).replace(',','',1).isdigit():

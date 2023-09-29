@@ -36,7 +36,6 @@ class SubprojectMixin:
         try:
             return Subproject.objects.get(id=kwargs['subproject_id'])
         except Exception as exc:
-            print(exc)
             raise Http404
         
 
@@ -162,6 +161,7 @@ class SubprojectsMapViewPage(generic.TemplateView):
 class SubprojectsMapView(generic.ListView):
     template_name = 'subprojects_map_view.html'
     context_object_name = 'subprojects'
+    title = _('Subprojects')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -176,16 +176,22 @@ class SubprojectsMapView(generic.ListView):
         context['types_of_sub_project_color'] = TYPES_OF_SUB_PROJECT_COLOR
         return context
 
+    def filter_list_by_delete_empty(self, _list):
+        if _list:
+            return [elt for elt in _list if elt]
+        else:
+            return []
+    
     def get_results(self):
-        id_regions = self.request.GET.getlist('id_region[]')
-        id_prefectures = self.request.GET.getlist('id_prefecture[]')
-        id_communes = self.request.GET.getlist('id_commune[]')
-        id_cantons = self.request.GET.getlist('id_canton[]')
-        id_villages = self.request.GET.getlist('id_village[]')
-        subproject_sectors = self.request.GET.getlist('id_subproject_sectors[]')
-        subproject_types = self.request.GET.getlist('id_subproject_types[]')
-        works_type_of_subprojects = self.request.GET.getlist('id_works_type_of_subproject[]')
-        subproject_steps = self.request.GET.getlist('id_subproject_step[]')
+        id_regions = self.filter_list_by_delete_empty(self.request.GET.getlist('id_region[]'))
+        id_prefectures = self.filter_list_by_delete_empty(self.request.GET.getlist('id_prefecture[]'))
+        id_communes = self.filter_list_by_delete_empty(self.request.GET.getlist('id_commune[]'))
+        id_cantons = self.filter_list_by_delete_empty(self.request.GET.getlist('id_canton[]'))
+        id_villages = self.filter_list_by_delete_empty(self.request.GET.getlist('id_village[]'))
+        subproject_sectors = self.filter_list_by_delete_empty(self.request.GET.getlist('id_subproject_sectors[]'))
+        subproject_types = self.filter_list_by_delete_empty(self.request.GET.getlist('id_subproject_types[]'))
+        works_type_of_subprojects = self.filter_list_by_delete_empty(self.request.GET.getlist('id_works_type_of_subproject[]'))
+        subproject_steps = self.filter_list_by_delete_empty(self.request.GET.getlist('id_subproject_step[]'))
         type_field = self.request.GET.get('type_field')
         _ids = []
         liste_villages = []
@@ -208,11 +214,33 @@ class SubprojectsMapView(generic.ListView):
                 for _id in _ids:
                     if _id:
                         liste_villages += get_cascade_villages_ids_by_administrative_level_id(_id)
-
             subprojects = Subproject.objects.filter(
                 Q(location_subproject_realized_id__in=liste_villages) | 
                 Q(list_of_villages_crossed_by_the_track_or_electrification__id__in=liste_villages)
             )
+        elif (id_regions or id_prefectures or id_communes or id_cantons or id_villages):
+            if id_villages:
+                _ids = id_villages
+            elif id_cantons:
+                _ids = id_cantons
+            elif id_communes:
+                _ids = id_communes
+            elif id_prefectures:
+                _ids = id_prefectures
+            elif id_regions:
+                _ids = id_regions
+                
+            if type_field == "village":
+                liste_villages = [int(_id) for _id in _ids if _id]
+            else:
+                for _id in _ids:
+                    if _id:
+                        liste_villages += get_cascade_villages_ids_by_administrative_level_id(_id)
+            subprojects = Subproject.objects.filter(
+                Q(location_subproject_realized_id__in=liste_villages) | 
+                Q(list_of_villages_crossed_by_the_track_or_electrification__id__in=liste_villages)
+            )
+
         else:
             subprojects = Subproject.objects.all()
         
@@ -228,14 +256,24 @@ class SubprojectsMapView(generic.ListView):
         if subproject_steps:
             _subprojects = []
             for subproject in subprojects:
-                subproject_step = subproject.get_current_subproject_step
+                # subproject_step = subproject.get_current_subproject_step
+                # if subproject_step:
+                #     if 'not_started' in subproject_steps and subproject_step.ranking < 8 and subproject_step.ranking not in (2,):
+                #         _subprojects.append(subproject)
+                #     if 'in_progress' in subproject_steps and subproject_step.ranking == 8:
+                #         _subprojects.append(subproject)
+                #     if 'completed' in subproject_steps and subproject_step.ranking > 8 and subproject_step.ranking not in (9, 10):
+                #         _subprojects.append(subproject)
+                subproject_step = subproject.current_status_of_the_site
                 if subproject_step:
-                    if 'not_started' in subproject_steps and subproject_step.ranking < 8 and subproject_step.ranking not in (2,):
+                    if 'not_started' in subproject_steps and subproject_step == "Identifié":
                         _subprojects.append(subproject)
-                    if 'in_progress' in subproject_steps and subproject_step.ranking == 8:
+                    if 'in_progress' in subproject_steps and subproject_step == "En cours":
                         _subprojects.append(subproject)
-                    if 'completed' in subproject_steps and subproject_step.ranking > 8 and subproject_step.ranking not in (9, 10):
+                    if 'completed' in subproject_steps and subproject_step in ("Achevé", \
+                            "Réception technique", "Réception provisoire", "Réception définitive"):
                         _subprojects.append(subproject)
+
             subprojects = _subprojects
         return subprojects
 

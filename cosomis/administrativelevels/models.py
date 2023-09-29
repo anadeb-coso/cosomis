@@ -99,13 +99,13 @@ class CVD(BaseModel):
     bank_code = models.CharField(max_length=10, verbose_name=_("Bank code"), null=True, blank=True)
     guichet_code = models.CharField(max_length=10, verbose_name=_("Guichet code"), null=True, blank=True)
     account_number = models.CharField(max_length=100, verbose_name=_("Account number"), null=True, blank=True)
-    rib = models.CharField(max_length=2, verbose_name=_("RIB"), null=True, blank=True)
+    rib = models.CharField(max_length=3, verbose_name=_("RIB"), null=True, blank=True)
     president_name_of_the_cvd = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("President name of the CVD"))
-    president_phone_of_the_cvd = models.CharField(max_length=15, null=True, blank=True, verbose_name=_("President phone of the CVD"))
+    president_phone_of_the_cvd = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("President phone of the CVD"))
     treasurer_name_of_the_cvd = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Treasurer name of the CVD"))
-    treasurer_phone_of_the_cvd = models.CharField(max_length=15, null=True, blank=True, verbose_name=_("Treasurer phone of the CVD"))
+    treasurer_phone_of_the_cvd = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Treasurer phone of the CVD"))
     secretary_name_of_the_cvd = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Secretary name of the CVD"))
-    secretary_phone_of_the_cvd = models.CharField(max_length=15, null=True, blank=True, verbose_name=_("Secretary phone of the CVD"))
+    secretary_phone_of_the_cvd = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Secretary phone of the CVD"))
     description = models.TextField(null=True, blank=True, verbose_name=_("Description"))
 
     def get_name(self):

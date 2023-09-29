@@ -59,6 +59,7 @@ TYPES_OF_SUB_PROJECT_COLOR = {
     'Forage Photovoltaïque (Maraichage)': "#0000ff", #Blue f-blue
     'Forage Photovoltaïque (Salle de réunion)': "#0000ff", #Blue f-blue
     "Retenue d'eau": "#601ee0", #Blueviolet f-Blue violet
+    "Pompe à motricité humaine (PMH)": "#1e90ff", #DodgerBlue f-Bleu cagnard
 
     'Latrine Communautaire': "#191970", #MidNightBlue f-Blue sombre
 
@@ -69,6 +70,7 @@ TYPES_OF_SUB_PROJECT_COLOR = {
     'Pédiatrie': "#92d492", #DarkSeaGreen f-Vert de mer foncé
     'Laboratoire': "#00ff00", #Lime f-citron vert
 
+    'Batiment Scolaire au Pré-scolaire': "#808080", #Gray f-Gris
     'Batiment Scolaire au Primaire': "#808080", #Gray f-Gris
     'Batiment Scolaire au CEG': "#808080", #Gray f-Gris
     'Batiment Scolaire au Lycée': "#808080", #Gray f-Gris

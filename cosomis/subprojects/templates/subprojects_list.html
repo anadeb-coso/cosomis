@@ -54,6 +54,7 @@
                     <table id="table" class="table">
                         <thead>
                         <tr>
+                            <th>{% translate 'N°' %}</th>
                             <th>{% translate 'Village' %}</th>
                             <th>{% translate 'Canton' %}</th>
                             <th>{% translate 'Region' %}</th>
@@ -66,6 +67,7 @@
                         <tbody>
                         {% for subproject in subprojects %}
                             <tr>
+                                <td>N{{ subproject.number }}.{{ subproject.joint_subproject_number }}</td>
                                 <td>{{ subproject.get_village.name }}</td>
                                 <td>{{ subproject.get_cantons_names }}</td>
                                 <td>{{ subproject.get_canton.parent.parent.parent.name }}</td>
@@ -93,6 +95,19 @@
                             </tr>
                         {% endfor %}
                         </tbody>
+                        
+                        <tfoot>
+                            <tr>
+                                <th rowspan="1" colspan="1"></th>
+                                <th rowspan="1" colspan="1"></th>
+                                <th rowspan="1" colspan="1"></th>
+                                <th rowspan="1" colspan="1"></th>
+                                <th rowspan="1" colspan="1"></th>
+                                <th rowspan="1" colspan="1"></th>
+                                <th rowspan="1" colspan="1"></th>
+                            </tr>
+                        </tfoot>
+
                     </table>
                     {% comment %} <b>{{ total_without_link }}/{{ total }} {% translate 'Subprojects' %}</b> {% endcomment %}
                     
@@ -145,6 +160,31 @@
                     url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}')
                 },
                 dom: "ltipr",
+                initComplete: function () {
+                    this.api()
+                        .columns()
+                        .every(function () {
+                            var column = this;
+                            
+                            // Create select element and listener
+                            var select = $('<select style="width:50px !important;"><option value=""></option></select>')
+                                .appendTo($(column.footer()).empty())
+                                .on('change', function () {
+                                    var val = $(`#table`).DataTable.util.escapeRegex($(this).val());
+            
+                                    column.search(val ? '^' + val + '$' : '', true, false).draw();
+                                });
+            
+                            // Add list of options
+                            column
+                                .data()
+                                .unique()
+                                .sort()
+                                .each(function (d, j) {
+                                    select.append('<option value="' + d + '">' + d + '</option>');
+                                });
+                        });
+                },
                 columnDefs: [
                     {% comment %} {
                         targets: 1,
@@ -154,7 +194,7 @@
                 ],
                 lengthMenu: [10, 50, 100],
                 pageLength: 10,
-                order: [[0, 'desc']]
+                order: []//[[0, 'desc']]
             });
             $('#search').on('keyup', function () {
                 table.search($(this).val()).draw();

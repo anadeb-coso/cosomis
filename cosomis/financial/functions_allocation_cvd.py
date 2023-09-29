@@ -20,15 +20,6 @@ def save_cvd_instead_of_csv_file_datas_in_db(datas_file: dict, project_id=1) -> 
     at_least_one_save = False # Variable to determine if at least one is saved
     at_least_one_error = False # Variable to determine if at least one error is occurred
 
-    datas = {
-        "REGION" : {}, "PREFECTURE" : {}, "COMMUNE" : {}, "CANTON" : {}, 
-        "ID CVD": {}, "CVD": {}, "VILLAGES" : {}, "BANQUE": {}, "CODE BANQUE": {},
-        "CODE GUICHET": {}, "N° DE COMPTE": {}, "RIB": {}, 
-        "Nom du président du CVD": {}, "Tél du Président du CVD": {}, 
-        "Nom du trésorier du CVD": {}, "Tél du trésorier du CVD": {}, 
-        "Nom du secrétaire du CVD": {}, "Tél du secrétaire du CVD": {}
-    }
-
     if datas_file:
         count = 0
         long = len(list(datas_file.values())[0])
@@ -44,6 +35,9 @@ def save_cvd_instead_of_csv_file_datas_in_db(datas_file: dict, project_id=1) -> 
                 president_name_of_the_cvd, president_phone_of_the_cvd = None, None
                 treasurer_name_of_the_cvd, treasurer_phone_of_the_cvd = None, None
                 secretary_name_of_the_cvd, secretary_phone_of_the_cvd = None, None
+                amount, amount_in_dollars = None, None
+                amount_after_signature_of_contracts, amount_in_dollars_after_signature_of_contracts = None, None
+                amount_transferred, amount_transferred_in_dollars = None, None
                 
                 try:
                     president_name_of_the_cvd = get_value(datas_file["Nom du président du CVD"][count])
@@ -69,7 +63,6 @@ def save_cvd_instead_of_csv_file_datas_in_db(datas_file: dict, project_id=1) -> 
                     secretary_phone_of_the_cvd = get_value(datas_file["Tél du secrétaire du CVD"][count])
                 except Exception as exc:
                     pass
-                
 
                 
                 
@@ -98,7 +91,6 @@ def save_cvd_instead_of_csv_file_datas_in_db(datas_file: dict, project_id=1) -> 
                 except Exception as exc:
                     pass
 
-
                 
                 cvd = CVD.objects.filter(id=cvd_id).first()
                 if cvd:
@@ -126,7 +118,6 @@ def save_cvd_instead_of_csv_file_datas_in_db(datas_file: dict, project_id=1) -> 
                     cvd = cvd.save_and_return_object()
 
 
-
                     if amount != None:
                         allocation = AdministrativeLevelAllocation.objects.filter(cvd_id=cvd.id, amount=amount).first()
                         if not allocation:
@@ -146,17 +137,15 @@ def save_cvd_instead_of_csv_file_datas_in_db(datas_file: dict, project_id=1) -> 
                         allocation.save()
                     
                     if amount_transferred:
-                        bank_transfer = BankTransfer.objects.filter(cvd_id=cvd.id, amount_transferred=amount_transferred).first()
-                        if not bank_transfer:
-                            bank_transfer = BankTransfer()
-                            bank_transfer.cvd = cvd
-                            bank_transfer.project_id = project_id
-                            bank_transfer.amount_transferred = amount_transferred
-                        if amount_transferred_in_dollars:
-                            bank_transfer.amount_transferred_in_dollars = amount_transferred_in_dollars
+                        bank_transfer = BankTransfer()
+                        bank_transfer.cvd = cvd
+                        bank_transfer.project_id = project_id
+                        bank_transfer.amount_transferred = amount_transferred
+                        bank_transfer.amount_transferred_in_dollars = amount_transferred_in_dollars
                         bank_transfer.save()
                         
                         at_least_one_save = True
+
 
             except Exception as exc:
                 at_least_one_error = True

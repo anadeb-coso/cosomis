@@ -26,7 +26,10 @@ TYPES_OF_SUB_PROJECT = (
     ('Forage Photovoltaïque (Centre communautaire)', _('Photovoltaic drilling (Community center)')), 
     ('Forage Photovoltaïque (Boisson)', _('Photovoltaic drilling (Beverage)')), 
     ('Piste + OF', _('Track + OF')), 
+    ('Batiment Scolaire au Lycée', _('School building at Lycée')), 
     ('Batiment Scolaire au CEG', _('School building at CEG')), 
+    ('Batiment Scolaire au Primaire', _('Primary school building')), 
+    ('Batiment Scolaire au Pré-scolaire', _('Pre-school school building')),
     ('Forage Photovoltaïque (Ecole)', _('Photovoltaic drilling (School)')), 
     ('Magasin De Stockage', _('Storage Warehouse')), 
     ('CMS', _('Medical-social center')), 
@@ -38,8 +41,6 @@ TYPES_OF_SUB_PROJECT = (
     ('Forage Photovoltaïque (Latrines)', _('Photovoltaic drilling (Latrines)')), 
     ('Forage Photovoltaïque (Maraichage)', _('Photovoltaic drilling (market gardening)')), 
     ('USP', _('USP')), 
-    ('Batiment Scolaire au Lycée', _('School building at Lycée')), 
-    ('Batiment Scolaire au Primaire', _('Primary school building')), 
     ('Pharmacie', _('Pharmacy')), 
     ('Lampadaires solaire', _('Solar street lamps')), 
     ('Pédiatrie', _('Pediatrics')), 
@@ -48,7 +49,8 @@ TYPES_OF_SUB_PROJECT = (
     ('Maison des jeunes', _('Youth center')), 
     ('Forage Photovoltaïque (Maison des jeunes)', _('Photovoltaic drilling (youth center)')), 
     ('Salle de réunion', _('Meeting room')), 
-    ('Forage Photovoltaïque (Salle de réunion)', _('Photovoltaic drilling (Meeting room)'))
+    ('Forage Photovoltaïque (Salle de réunion)', _('Photovoltaic drilling (Meeting room)')),
+    ('Pompe à motricité humaine (PMH)', _('Human-powered pump (H.P.P.)'))
 )
 
 

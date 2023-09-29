@@ -5,6 +5,7 @@ from administrativelevels.models import CVD, AdministrativeLevel
 from cosomis.models_base import BaseModel
 from subprojects.models import Project
 from cosomis.customers_fields import CustomerFloatRangeField
+from financial.models.allocation import AdministrativeLevelAllocation
 
 
 class BankTransfer(BaseModel):
@@ -12,9 +13,11 @@ class BankTransfer(BaseModel):
     cvd = models.ForeignKey(CVD, on_delete=models.CASCADE, verbose_name=_("CVD"), null=True, blank=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, verbose_name=_("Project"))
     amount_transferred = CustomerFloatRangeField(verbose_name=_("Amount transferred"), min_value=0)
-    transfer_date = models.DateField(verbose_name=_("Transfer date"))
+    amount_transferred_in_dollars = CustomerFloatRangeField(verbose_name=_("Amount transferred in dollars"), min_value=0, null=True, blank=True)
+    transfer_date = models.DateField(verbose_name=_("Transfer date"), null=True)
     motif = models.DateField(max_length=255, verbose_name=_("Motif"), null=True, blank=True)
     description = models.TextField(verbose_name=_("Description"), null=True, blank=True)
+    linked_to_allocation = models.ForeignKey(AdministrativeLevelAllocation, on_delete=models.CASCADE, verbose_name=_("Linked to allocation"), null=True, blank=True)
 
     
     class Meta(object):
