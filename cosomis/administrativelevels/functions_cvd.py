@@ -35,6 +35,7 @@ def save_cvd_instead_of_csv_file_datas_in_db(datas_file: dict, project_id=1) -> 
         while count < long:
             try:
                 cvd_id = get_value(datas_file["ID CVD"][count])
+                cvd_name = get_value(datas_file["CVD"][count])
                 bank = get_value(datas_file["BANQUE"][count])
                 bank_code = get_value(datas_file["CODE BANQUE"][count])
                 guichet_code = get_value(datas_file["CODE GUICHET"][count])
@@ -102,6 +103,8 @@ def save_cvd_instead_of_csv_file_datas_in_db(datas_file: dict, project_id=1) -> 
                 
                 cvd = CVD.objects.filter(id=cvd_id).first()
                 if cvd:
+                    if cvd_name != None:
+                        cvd.name = cvd_name
                     cvd.bank = Bank.objects.filter(Q(name=bank) | Q(abbreviation=bank)).first()
                     if bank_code != None:
                         cvd.bank_code = bank_code
@@ -126,37 +129,42 @@ def save_cvd_instead_of_csv_file_datas_in_db(datas_file: dict, project_id=1) -> 
                     cvd = cvd.save_and_return_object()
 
 
+                    try:
+                        if amount != None:
+                            allocation = AdministrativeLevelAllocation.objects.filter(cvd_id=cvd.id, amount=amount).first()
+                            if not allocation:
+                                allocation = AdministrativeLevelAllocation()
+                                allocation.cvd = cvd
+                                allocation.project_id = project_id
+                                allocation.component_id = 2
+                                allocation.amount = amount
 
-                    if amount != None:
-                        allocation = AdministrativeLevelAllocation.objects.filter(cvd_id=cvd.id, amount=amount).first()
-                        if not allocation:
-                            allocation = AdministrativeLevelAllocation()
-                            allocation.cvd = cvd
-                            allocation.project_id = project_id
-                            allocation.component_id = 2
-                            allocation.amount = amount
-
-                        if amount_in_dollars:
-                            allocation.amount_in_dollars = amount_in_dollars
-                        if amount_after_signature_of_contracts:
-                            allocation.amount_after_signature_of_contracts = amount_after_signature_of_contracts
-                        if amount_in_dollars_after_signature_of_contracts:
-                            allocation.amount_in_dollars_after_signature_of_contracts = amount_in_dollars_after_signature_of_contracts
-                        
-                        allocation.save()
+                            if amount_in_dollars:
+                                allocation.amount_in_dollars = amount_in_dollars
+                            if amount_after_signature_of_contracts:
+                                allocation.amount_after_signature_of_contracts = amount_after_signature_of_contracts
+                            if amount_in_dollars_after_signature_of_contracts:
+                                allocation.amount_in_dollars_after_signature_of_contracts = amount_in_dollars_after_signature_of_contracts
+                            
+                            allocation.save()
+                    except:
+                        pass
                     
-                    if amount_transferred:
-                        bank_transfer = BankTransfer.objects.filter(cvd_id=cvd.id, amount_transferred=amount_transferred).first()
-                        if not bank_transfer:
-                            bank_transfer = BankTransfer()
-                            bank_transfer.cvd = cvd
-                            bank_transfer.project_id = project_id
-                            bank_transfer.amount_transferred = amount_transferred
-                        if amount_transferred_in_dollars:
-                            bank_transfer.amount_transferred_in_dollars = amount_transferred_in_dollars
-                        bank_transfer.save()
-                        
-                        at_least_one_save = True
+                    try:
+                        if amount_transferred:
+                            bank_transfer = BankTransfer.objects.filter(cvd_id=cvd.id, amount_transferred=amount_transferred).first()
+                            if not bank_transfer:
+                                bank_transfer = BankTransfer()
+                                bank_transfer.cvd = cvd
+                                bank_transfer.project_id = project_id
+                                bank_transfer.amount_transferred = amount_transferred
+                            if amount_transferred_in_dollars:
+                                bank_transfer.amount_transferred_in_dollars = amount_transferred_in_dollars
+                            bank_transfer.save()
+                            
+                            at_least_one_save = True
+                    except:
+                        pass
 
             except Exception as exc:
                 at_least_one_error = True
