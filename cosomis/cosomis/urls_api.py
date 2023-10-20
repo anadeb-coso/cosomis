@@ -7,4 +7,5 @@ app_name = 'api'
 urlpatterns = [
     path('subprojects/', include('subprojects.api.urls')),
     path('administrativelevels/', include('administrativelevels.api.urls')),
+    path('users/', include('usermanager.api.urls')),
 ]
