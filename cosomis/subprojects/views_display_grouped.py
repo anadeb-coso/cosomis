@@ -121,6 +121,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListView(DashboardSubprojectsMi
                     _("Region"): {},
                     _("Sites"): {},
                     _("Structures"): {},
+                    _("Type"): {},
                     _("Companies"): {},
                     _("Estimated cost") + " FCFA": {},
                     _("Amount FCFA TTC"): {},
@@ -133,6 +134,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListView(DashboardSubprojectsMi
                 'number': None,
                 'region': None,
                 'sites': None,
+                'type': None,
                 'structures': None,
                 'companies': None,
                 'estimated_cost': None,
@@ -153,13 +155,17 @@ class DashboardSubprojectsDisplayGroupedBySectorsListView(DashboardSubprojectsMi
             village = subproject.get_village()
             datas[subproject.subproject_sector][_("Sites")][count] = village.name if village and village != "CCD" else (f'{canton.name} ({_("Canton")})' if village == "CCD" and canton else "-")
             obj['sites'] = datas[subproject.subproject_sector][_("Sites")][count]
-
-            datas[subproject.subproject_sector][_("Structures")][count] = (
-                subproject.full_title_of_approved_subproject \
-                    if subproject.subproject_type_designation != "Infrastructure" else \
-                    subproject.type_of_subproject
-            )
+            
+            datas[subproject.subproject_sector][_("Structures")][count] = subproject.full_title_of_approved_subproject 
+            # (
+            #     subproject.full_title_of_approved_subproject \
+            #         if subproject.subproject_type_designation != "Infrastructure" else \
+            #         subproject.type_of_subproject
+            # )
             obj['structures'] = datas[subproject.subproject_sector][_("Structures")][count]
+
+            datas[subproject.subproject_sector][_("Type")][count] = subproject.type_of_subproject
+            obj['type'] = subproject.type_of_subproject
 
             datas[subproject.subproject_sector][_("Companies")][count] = subproject.name_of_the_awarded_company_works_companies if subproject.name_of_the_awarded_company_works_companies else "-"
             obj['companies'] = datas[subproject.subproject_sector][_("Companies")][count]
@@ -191,6 +197,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListView(DashboardSubprojectsMi
             _("Region"),
             _("Sites"),
             _("Structures"),
+            _("Type"),
             _("Companies"),
             _("Level of realization") + " %",
             _("Physical level")
@@ -215,6 +222,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListView(DashboardSubprojectsMi
                     _("Region"),
                     _("Sites"),
                     _("Structures"),
+                    _("Type"),
                     _("Companies"),
                     _("Estimated cost") + " FCFA",
                     _("Amount FCFA TTC"),
@@ -269,6 +277,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListSubView(DashboardSubproject
                     _("Region"): {},
                     _("Sites"): {},
                     _("Structures"): {},
+                    _("Type"): {},
                     _("Companies"): {},
                     _("Estimated cost") + " FCFA": {},
                     _("Amount FCFA TTC"): {},
@@ -282,6 +291,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListSubView(DashboardSubproject
                 'region': None,
                 'sites': None,
                 'structures': None,
+                'type': None,
                 'companies': None,
                 'estimated_cost': None,
                 'amount_ttc': None,
@@ -302,12 +312,16 @@ class DashboardSubprojectsDisplayGroupedBySectorsListSubView(DashboardSubproject
             datas[subproject.subproject_sector][_("Sites")][count] = village.name if village and village != "CCD" else (f'{canton.name} ({_("Canton")})' if village == "CCD" and canton else "-")
             obj['sites'] = datas[subproject.subproject_sector][_("Sites")][count]
 
-            datas[subproject.subproject_sector][_("Structures")][count] = (
-                subproject.full_title_of_approved_subproject \
-                    if subproject.subproject_type_designation != "Infrastructure" else \
-                    subproject.type_of_subproject
-            )
+            datas[subproject.subproject_sector][_("Structures")][count] = subproject.full_title_of_approved_subproject
+            # (
+            #     subproject.full_title_of_approved_subproject \
+            #         if subproject.subproject_type_designation != "Infrastructure" else \
+            #         subproject.type_of_subproject
+            # )
             obj['structures'] = datas[subproject.subproject_sector][_("Structures")][count]
+
+            datas[subproject.subproject_sector][_("Type")][count] = subproject.type_of_subproject
+            obj['type'] = subproject.type_of_subproject
 
             datas[subproject.subproject_sector][_("Companies")][count] = subproject.name_of_the_awarded_company_works_companies if subproject.name_of_the_awarded_company_works_companies else "-"
             obj['companies'] = datas[subproject.subproject_sector][_("Companies")][count]
@@ -339,6 +353,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListSubView(DashboardSubproject
             _("Region"),
             _("Sites"),
             _("Structures"),
+            _("Type"),
             _("Companies"),
             _("Level of realization") + " %",
             _("Physical level")
@@ -363,6 +378,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListSubView(DashboardSubproject
                     _("Region"),
                     _("Sites"),
                     _("Structures"),
+                    _("Type"),
                     _("Companies"),
                     _("Estimated cost") + " FCFA",
                     _("Amount FCFA TTC"),
