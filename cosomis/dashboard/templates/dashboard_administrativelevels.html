@@ -38,10 +38,10 @@
 
                 <div class="container">
                     <ul class="nav nav-tabs">
-                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link active" data-toggle="tab" href="#Project-coverage">{% translate "Project coverage" %}</a></li>
-                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link" data-toggle="tab" href="#Investment-cycle-deployment-time">{% translate "Investment cycle deployment time" %}</a></li>
-                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link" data-toggle="tab" href="#Summary-of-locations-reached">{% translate "Summary of locations reached" %}</a></li>
-                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link" data-toggle="tab" href="#Allocation-tab">{% translate "Allocation" %}</a></li>
+                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link active nav-tab-toggle" data-toggle="tab" href="#Project-coverage">{% translate "Project coverage" %}</a></li>
+                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link nav-tab-toggle" data-toggle="tab" href="#Investment-cycle-deployment-time">{% translate "Investment cycle deployment time" %}</a></li>
+                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link nav-tab-toggle" data-toggle="tab" href="#Summary-of-locations-reached">{% translate "Summary of locations reached" %}</a></li>
+                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link nav-tab-toggle" data-toggle="tab" href="#Allocation-tab">{% translate "Allocation" %}</a></li>
                     </ul>
 
                     <div class="tab-content">
@@ -181,8 +181,8 @@
             let summary_allocation = $('#summary-allocation-list');
             var administrative_level_id = null;
             var administrative_level_type = null;
-
-
+            var current_nav_link = 'Project-coverage';
+            var current_nav_links = [];
 
 
             function loadWaves(administrative_level_id=null, administrative_level_type=null) {
@@ -198,6 +198,8 @@
                         waves_spin.hide();
                         
                         waves_number.html(response);
+
+                        current_nav_links.push('Project-coverage');
                     },
                     error: function (data) {
                         waves_spin.hide();
@@ -219,6 +221,8 @@
                         waves_times_spin.hide();
                         
                         waves_times_number.html(response);
+
+                        current_nav_links.push('Investment-cycle-deployment-time');
                     },
                     error: function (data) {
                         waves_times_spin.hide();
@@ -240,6 +244,8 @@
                         summary_adl_number_spin.hide();
                         
                         summary_adl_number.html(response);
+
+                        current_nav_links.push('Summary-of-locations-reached');
                     },
                     error: function (data) {
                         summary_adl_number_spin.hide();
@@ -261,6 +267,8 @@
                         summary_allocation_spin.hide();
                         
                         summary_allocation.html(response);
+
+                        current_nav_links.push('Allocation-tab');
                     },
                     error: function (data) {
                         summary_allocation_spin.hide();
@@ -269,11 +277,20 @@
                 });
             }
 
+            function callNavLinkPage(){
+                if(!current_nav_links.includes('Project-coverage') && current_nav_link.includes('Project-coverage')){
+                    loadWaves(administrative_level_id, administrative_level_type);
+                }else if(!current_nav_links.includes('Investment-cycle-deployment-time') && current_nav_link.includes('Investment-cycle-deployment-time')){
+                    loadWavesTimes(administrative_level_id, administrative_level_type);
+                }else if(!current_nav_links.includes('Summary-of-locations-reached') && current_nav_link.includes('Summary-of-locations-reached')){
+                    loadSummaryAdministrativeLevels(administrative_level_id, administrative_level_type);
+                }else if(!current_nav_links.includes('Allocation-tab') && current_nav_link.includes('Allocation-tab')){
+                    loadSummaryAllocation(administrative_level_id, administrative_level_type);
+                }
+            }
             
-            loadWaves();
-            loadWavesTimes();
-            loadSummaryAdministrativeLevels();
-            loadSummaryAllocation();
+            callNavLinkPage();
+
             
             $('.administrative-level-filter select').on('change', function () {
                 let elt_id;
@@ -286,22 +303,33 @@
                 if($(this).attr('id') && $(this).val()){
                     administrative_level_type = $(this).attr('id').split('_')[1];
                     administrative_level_id = $(this).val();
-                    loadWaves(administrative_level_id, administrative_level_type);
+                    current_nav_links = [];
+                    callNavLinkPage();
+                    /*loadWaves(administrative_level_id, administrative_level_type);
                     loadWavesTimes(administrative_level_id, administrative_level_type);
                     loadSummaryAdministrativeLevels(administrative_level_id, administrative_level_type);
-                    loadSummaryAllocation(administrative_level_id, administrative_level_type);
+                    loadSummaryAllocation(administrative_level_id, administrative_level_type);*/
                 }
             });
 
+            
 
+            $('.nav-tab-toggle').on('click', function () {
+                current_nav_link = this.href;
+                callNavLinkPage();
+            });
 
             $("#clear_all_filters").on("click", function () {
                 $('.administrative-level-filter input').val('');
                 $('.administrative-level-filter select').val(null).trigger('change.select2');
-                loadWaves();
+                administrative_level_id = null;
+                administrative_level_type = null;
+                current_nav_links = [];
+                callNavLinkPage();
+                /*loadWaves();
                 loadWavesTimes();
                 loadSummaryAdministrativeLevels();
-                loadSummaryAllocation();
+                loadSummaryAllocation();*/
             }); 
 
 

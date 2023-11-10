@@ -38,10 +38,10 @@
 
                 <div class="container">
                     <ul class="nav nav-tabs">
-                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link active" data-toggle="tab" href="#Number-of-sub-projects-by-administrative-level-and-sector">{% translate "Number of sub-projects by administrative level and sector" %}</a></li>
-                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link" data-toggle="tab" href="#Amount-of-sub-projects-by-administrative-level-and-sector">{% translate "Amount of sub-projects by administrative level and sector" %}</a></li>
-                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link" data-toggle="tab" href="#Subprojects-by-village-sector-and-step">{% translate "Subprojects by village, sector and step" %}</a></li>
-                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link" data-toggle="tab" href="#Subprojects-by-step">{% translate "Subprojects by step" %}</a></li>
+                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link active nav-tab-toggle" data-toggle="tab" href="#Number-of-sub-projects-by-administrative-level-and-sector" >{% translate "Number of sub-projects by administrative level and sector" %}</a></li>
+                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link nav-tab-toggle" data-toggle="tab" href="#Amount-of-sub-projects-by-administrative-level-and-sector" >{% translate "Amount of sub-projects by administrative level and sector" %}</a></li>
+                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link nav-tab-toggle" data-toggle="tab" href="#Subprojects-by-village-sector-and-step" >{% translate "Subprojects by village, sector and step" %}</a></li>
+                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link nav-tab-toggle" data-toggle="tab" href="#Subprojects-by-step" >{% translate "Subprojects by step" %}</a></li>
                         {% comment %} <li style="width: 20%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link" data-toggle="tab" href="#Subprojects-by-current-step">{% translate "Subprojects by current step" %}</a></li> {% endcomment %}
                     </ul>
 
@@ -195,8 +195,8 @@
             let subprojects_current_steps_number = $('#subprojects-current-steps-number-list');
             var administrative_level_id = null;
             var administrative_level_type = null;
-
-
+            var current_nav_link = 'Number-of-sub-projects-by-administrative-level-and-sector';
+            var current_nav_links = [];
 
 
             function loadSubprojects(administrative_level_id=null, administrative_level_type=null) {
@@ -212,6 +212,8 @@
                         subprojects_number_spin.hide();
                         
                         subprojects_number.html(response);
+
+                        current_nav_links.push('Number-of-sub-projects-by-administrative-level-and-sector');
                     },
                     error: function (data) {
                         subprojects_number_spin.hide();
@@ -233,6 +235,8 @@
                         subprojects_amount_spin.hide();
                         
                         subprojects_amount.html(response);
+
+                        current_nav_links.push('Amount-of-sub-projects-by-administrative-level-and-sector');
                     },
                     error: function (data) {
                         subprojects_amount_spin.hide();
@@ -254,6 +258,8 @@
                         subprojects_sectors_steps_number_spin.hide();
                         
                         subprojects_sectors_steps_number.html(response);
+
+                        current_nav_links.push('Subprojects-by-village-sector-and-step');
                     },
                     error: function (data) {
                         subprojects_sectors_steps_number_spin.hide();
@@ -276,6 +282,8 @@
                         subprojects_steps_number_spin.hide();
                         
                         subprojects_steps_number.html(response);
+
+                        current_nav_links.push('Subprojects-by-step');
                     },
                     error: function (data) {
                         subprojects_steps_number_spin.hide();
@@ -306,10 +314,23 @@
                 });
             }
             
-            loadSubprojects();
-            loadSubprojectsAmount();
-            loadSubprojectsSectorsAndSteps();
-            loadSubprojectsSteps();
+            function callNavLinkPage(){
+                if(!current_nav_links.includes('Number-of-sub-projects-by-administrative-level-and-sector') && current_nav_link.includes('Number-of-sub-projects-by-administrative-level-and-sector')){
+                    loadSubprojects(administrative_level_id, administrative_level_type);
+                }else if(!current_nav_links.includes('Amount-of-sub-projects-by-administrative-level-and-sector') && current_nav_link.includes('Amount-of-sub-projects-by-administrative-level-and-sector')){
+                    loadSubprojectsAmount(administrative_level_id, administrative_level_type);
+                }else if(!current_nav_links.includes('Subprojects-by-village-sector-and-step') && current_nav_link.includes('Subprojects-by-village-sector-and-step')){
+                    loadSubprojectsSectorsAndSteps(administrative_level_id, administrative_level_type);
+                }else if(!current_nav_links.includes('Subprojects-by-step') && current_nav_link.includes('Subprojects-by-step')){
+                    loadSubprojectsSteps(administrative_level_id, administrative_level_type);
+                }
+            }
+            
+            callNavLinkPage();
+            
+            
+            
+            
             //loadSubprojectsCurrentSteps();
             $('.administrative-level-filter select').on('change', function () {
                 let elt_id;
@@ -323,10 +344,12 @@
                 if($(this).attr('id') && $(this).val().length != 0){
                     administrative_level_type = $(this).attr('id').split('_')[1];
                     administrative_level_id = $(this).val();
-                    loadSubprojects(administrative_level_id, administrative_level_type);
+                    current_nav_links = [];
+                    callNavLinkPage();
+                    /* loadSubprojects(administrative_level_id, administrative_level_type);
                     loadSubprojectsAmount(administrative_level_id, administrative_level_type);
                     loadSubprojectsSectorsAndSteps(administrative_level_id, administrative_level_type);
-                    loadSubprojectsSteps(administrative_level_id, administrative_level_type);
+                    loadSubprojectsSteps(administrative_level_id, administrative_level_type); */
                     //loadSubprojectsCurrentSteps(administrative_level_id, administrative_level_type);
                 }
             });
@@ -336,11 +359,20 @@
             $("#clear_all_filters").on("click", function () {
                 $('.administrative-level-filter input').val('');
                 $('.administrative-level-filter select').val(null).trigger('change.select2');
-                loadSubprojects();
+                administrative_level_id = null;
+                administrative_level_type = null;
+                current_nav_links = [];
+                callNavLinkPage();
+                /*loadSubprojects();
                 loadSubprojectsAmount();
                 loadSubprojectsSectorsAndSteps();
-                loadSubprojectsSteps();
+                loadSubprojectsSteps();*/
                 //loadSubprojectsCurrentSteps();
+            });
+
+            $('.nav-tab-toggle').on('click', function () {
+                current_nav_link = this.href;
+                callNavLinkPage();
             });
 
 

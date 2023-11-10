@@ -2462,3 +2462,7 @@ msgstr "Batiment Scolaire au Pré-scolaire"
 #: .\subprojects
 msgid "Linked to allocation"
 msgstr "Lié à l'allocation"
+
+#: .\subprojects
+msgid "Planning status"
+msgstr "Statut de la planification"
