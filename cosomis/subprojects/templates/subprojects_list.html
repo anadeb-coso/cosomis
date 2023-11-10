@@ -46,6 +46,8 @@
                         <div class="btn-group pull-right">
                             {% include 'components/download_subprojects.html' %}
                             <div> &nbsp; &nbsp; </div>
+                            <a class="btn btn-primary" href="{% url 'subprojects:display_grouped:display_grouped_dashboard' %}">{% translate 'Display grouped' %}</a>
+                            <div> &nbsp; &nbsp; </div>
                             <a class="btn btn-primary" href="{% url 'subprojects:map' %}">{% translate 'Map View' %}</a>
                         </div>
                     </div>
@@ -55,10 +57,12 @@
                         <thead>
                         <tr>
                             <th>{% translate 'N°' %}</th>
-                            <th>{% translate 'Village' %}</th>
-                            <th>{% translate 'Canton' %}</th>
+                            {% comment %} <th>{% translate 'Village' %}</th>
+                            <th>{% translate 'Canton' %}</th> {% endcomment %}
+                            <th>{% translate 'Sites' %}</th>
                             <th>{% translate 'Region' %}</th>
                             <th>{% translate 'Project Name' %}</th>
+                            <th>{% translate 'Type' %}</th>
                             <th>{% translate 'Status' %}</th>
                             <th>{% translate 'Allocation' %} CFA</th>
                             <th width="12%">{% translate 'Action' %}</th>
@@ -68,10 +72,18 @@
                         {% for subproject in subprojects %}
                             <tr>
                                 <td>N{{ subproject.number }}.{{ subproject.joint_subproject_number }}</td>
-                                <td>{{ subproject.get_village.name }}</td>
-                                <td>{{ subproject.get_cantons_names }}</td>
+                                {% comment %} <td>{{ subproject.get_village.name }}</td>
+                                <td>{{ subproject.get_cantons_names }}</td> {% endcomment %}
+                                <td>
+                                    {% if '/' in subproject.get_cantons_names %}
+                                        {{ subproject.get_cantons_names }}
+                                    {% else %}
+                                        {{ subproject.get_village.name }}
+                                    {% endif %}
+                                </td>
                                 <td>{{ subproject.get_canton.parent.parent.parent.name }}</td>
                                 <td>{{ subproject.full_title_of_approved_subproject }}</td>
+                                <td>{{ subproject.type_of_subproject }}</td>
                                 <td>
                                     {% if subproject.get_current_subproject_step_and_level %}
                                         {{ subproject.get_current_subproject_step_and_level }}

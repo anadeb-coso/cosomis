@@ -2466,3 +2466,15 @@ msgstr "Lié à l'allocation"
 #: .\subprojects
 msgid "Planning status"
 msgstr "Statut de la planification"
+
+#: .\subprojects
+msgid "Display grouped"
+msgstr "Affichage groupé"
+
+#: .\subprojects
+msgid "Grouped by sector"
+msgstr "Groupé par secteur"
+
+#: .\subprojects
+msgid "Sub-projects grouped by sector"
+msgstr "Sous-projets groupé par secteurs"
