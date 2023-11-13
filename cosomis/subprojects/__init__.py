@@ -34,7 +34,7 @@ TYPES_OF_SUB_PROJECT = (
     ('Magasin De Stockage', _('Storage Warehouse')), 
     ('CMS', _('Medical-social center')), 
     ('Extension réseau électrique', _('Power grid extension')), 
-    ("Retenue d'eau", "Water retention"), 
+    ("Retenue d'eau", _("Water retention")), 
     ('Terrain de Foot', _('Soccer pitch')), 
     ('CHP', _('Prefectural hospital center')), 
     ('Latrine Communautaire', _('Community latrine')), 

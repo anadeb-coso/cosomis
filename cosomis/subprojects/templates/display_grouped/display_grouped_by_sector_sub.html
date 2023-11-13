@@ -1,12 +1,16 @@
 {% load static i18n bootstrap4 custom_tags humanize  %}
+
 {% if datas %}
+
+
+
 
 <div class="card">
     <div class="card-header">
         <h5 class="font-weight-bold">{% translate "Sub-projects grouped by sector" %}</h5>
     </div>
 
-<div id="accordion">
+<div id="accordion" class="panel-heading">
                                             
             {% for k_data, v_data in datas_on_liste.items %}
 
@@ -14,10 +18,12 @@
             <hr />
             <br /> {% endcomment %}
             <div class="card">
-                <div class="card-header" id="heading-{{ k_data }}">
+                <div class="card-header" >
                     <h5 class="mb-0">
-                        <button class="btn btn-link" data-toggle="collapse" data-target="#collapse-{{ k_data }}" aria-expanded="true" aria-controls="collapseOne">
-                            {{ k_data }} <span style="font-size:11px;">(T: {{ v_data|length }})</span>
+                        <button id="heading-{{ k_data }}" style="width: 100%;"
+                            class="btn btn-link accordion-toggle" data-toggle="collapse" data-target="#collapse-{{ k_data }}" 
+                            data-parent="#accordion" aria-expanded="false" aria-controls="collapse-{{ k_data }}">
+                            <span style="float: left;">{{ k_data }} <span style="font-size:11px;">(T: {{ v_data|length }})</span></span>
                         </button>
                     </h5>
                 </div>
@@ -28,7 +34,7 @@
                     
 
 
-            <div id="collapse-{{ k_data }}" class="collapse {% if forloop.counter == 1 %}show{% endif %}" aria-labelledby="heading-{{ k_data }}" data-parent="#accordion">
+            <div id="collapse-{{ k_data }}" class="collapse" aria-labelledby="heading-{{ k_data }}" data-parent="#accordion">
                     <div class="card-body">
     {% if not headers %}
     <div class="row" style="margin-top: 10px !important;">

@@ -56,6 +56,27 @@
             padding-left: 1rem; 
             padding-right: 1rem;
       }
+
+
+      .panel-heading .accordion-toggle[aria-expanded="false"]::after {
+            /* symbol for "collapsed" panels */
+            font-family: 'Glyphicons Halflings';  /* essential for enabling glyphicon */
+            content: "+";    /* adjust as needed, taken from bootstrap.css */
+            float: right;        /* adjust as needed */
+            color: grey;         /* adjust as needed */
+            font-size: 20px;
+            font-weight: bold;
+      }
+      .panel-heading .accordion-toggle[aria-expanded="true"]:after {
+            /* symbol for "opening" panels */
+            font-family: 'Glyphicons Halflings';  /* essential for enabling glyphicon */
+            content: "-";    /* adjust as needed, taken from bootstrap.css */
+            float: right;        /* adjust as needed */
+            color: grey;         /* adjust as needed */
+            font-size: 20px;
+            font-weight: bold;
+      }
+
 </style>
 
 <script>
