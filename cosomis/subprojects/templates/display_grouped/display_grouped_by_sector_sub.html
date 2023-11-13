@@ -9,6 +9,8 @@
             {% for k_data, v_data in datas_on_liste.items %}
 
             <br />
+            <hr />
+            <br />
             <h1>{{ k_data }}</h1>
             
     {% if not headers %}
@@ -49,13 +51,14 @@
                                 <tr>
                                         <td>{{ v_d.number }}</td>
                                         <td>{{ v_d.region }}</td>
+                                        <td>{{ v_d.commune }}</td>
                                         <td>{{ v_d.sites }}</td>
                                         <td>{{ v_d.structures }}</td>
                                         <td>{{ v_d.type }}</td>
                                         <td>{{ v_d.companies }}</td>
-                                        <td>{{ v_d.estimated_cost }}</td>
-                                        <td>{{ v_d.amount_ttc }}</td>
-                                        <td>{{ v_d.realization_level }}</td>
+                                        <td>{{ v_d.estimated_cost|separate_with_space }}</td>
+                                        <td>{{ v_d.amount_ttc|separate_with_space }}</td>
+                                        <td>{{ v_d.realization_level|remove_zeros_on_zeros }}</td>
                                         <td>{{ v_d.physical_level }}</td>
                                 </tr>
                                     {% endfor %}

@@ -2452,6 +2452,10 @@ msgid "Not started"
 msgstr "Non demarré"
 
 #: .\subprojects
+msgid "Sectors"
+msgstr "Secteurs"
+
+#: .\subprojects
 msgid "Human-powered pump (H.P.P.)"
 msgstr "Pompe à motricité humaine (PMH)"
 
@@ -2477,4 +2481,4 @@ msgstr "Groupé par secteur"
 
 #: .\subprojects
 msgid "Sub-projects grouped by sector"
-msgstr "Sous-projets groupé par secteurs"
+msgstr "Sous-projets regroupés par secteur"

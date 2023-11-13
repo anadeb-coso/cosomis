@@ -119,6 +119,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListView(DashboardSubprojectsMi
                 datas[subproject.subproject_sector] = {
                     _("N°"): {},
                     _("Region"): {},
+                    _("Commune"): {},
                     _("Sites"): {},
                     _("Structures"): {},
                     _("Type"): {},
@@ -133,6 +134,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListView(DashboardSubprojectsMi
             obj = {
                 'number': None,
                 'region': None,
+                'commune': None,
                 'sites': None,
                 'type': None,
                 'structures': None,
@@ -148,9 +150,12 @@ class DashboardSubprojectsDisplayGroupedBySectorsListView(DashboardSubprojectsMi
             try:
                 canton = subproject.get_canton()
                 datas[subproject.subproject_sector][_("Region")][count] = canton.parent.parent.parent.name if canton else "-"
+                datas[subproject.subproject_sector][_("Commune")][count] = canton.parent.name if canton else "-"
             except:
                 datas[subproject.subproject_sector][_("Region")][count] = "-"
+                datas[subproject.subproject_sector][_("Commune")][count] = "-"
             obj['region'] = datas[subproject.subproject_sector][_("Region")][count]
+            obj['commune'] = datas[subproject.subproject_sector][_("Commune")][count]
 
             village = subproject.get_village()
             datas[subproject.subproject_sector][_("Sites")][count] = village.name if village and village != "CCD" else (f'{canton.name} ({_("Canton")})' if village == "CCD" and canton else "-")
@@ -195,6 +200,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListView(DashboardSubprojectsMi
         columns_skip = [
             _("N°"),
             _("Region"),
+            _("Commune"),
             _("Sites"),
             _("Structures"),
             _("Type"),
@@ -220,6 +226,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListView(DashboardSubprojectsMi
             'datas_headers': [
                     _("N°"),
                     _("Region"),
+                    _("Commune"),
                     _("Sites"),
                     _("Structures"),
                     _("Type"),
@@ -275,6 +282,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListSubView(DashboardSubproject
                 datas[subproject.subproject_sector] = {
                     _("N°"): {},
                     _("Region"): {},
+                    _("Commune"): {},
                     _("Sites"): {},
                     _("Structures"): {},
                     _("Type"): {},
@@ -289,6 +297,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListSubView(DashboardSubproject
             obj = {
                 'number': None,
                 'region': None,
+                'commune': None,
                 'sites': None,
                 'structures': None,
                 'type': None,
@@ -304,9 +313,12 @@ class DashboardSubprojectsDisplayGroupedBySectorsListSubView(DashboardSubproject
             try:
                 canton = subproject.get_canton()
                 datas[subproject.subproject_sector][_("Region")][count] = canton.parent.parent.parent.name if canton else "-"
+                datas[subproject.subproject_sector][_("Commune")][count] = canton.parent.name if canton else "-"
             except:
                 datas[subproject.subproject_sector][_("Region")][count] = "-"
+                datas[subproject.subproject_sector][_("Commune")][count] = "-"
             obj['region'] = datas[subproject.subproject_sector][_("Region")][count]
+            obj['commune'] = datas[subproject.subproject_sector][_("Commune")][count]
 
             village = subproject.get_village()
             datas[subproject.subproject_sector][_("Sites")][count] = village.name if village and village != "CCD" else (f'{canton.name} ({_("Canton")})' if village == "CCD" and canton else "-")
@@ -351,6 +363,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListSubView(DashboardSubproject
         columns_skip = [
             _("N°"),
             _("Region"),
+            _("Commune"),
             _("Sites"),
             _("Structures"),
             _("Type"),
@@ -376,6 +389,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListSubView(DashboardSubproject
             'datas_headers': [
                     _("N°"),
                     _("Region"),
+                    _("Commune"),
                     _("Sites"),
                     _("Structures"),
                     _("Type"),
