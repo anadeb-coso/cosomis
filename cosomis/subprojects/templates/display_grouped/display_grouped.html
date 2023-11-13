@@ -28,6 +28,20 @@
                     </a>
                 </div>
             </div>
+            <div class="row subprojects-filter">
+                <div class="col-3">
+                    {% bootstrap_field form_suproject.subproject_sectors show_label=False %}
+                </div>
+                <div class="col-3">
+                    {% bootstrap_field form_suproject.subproject_types show_label=False %}
+                </div>
+                <div class="col-3">
+                    {% bootstrap_field form_suproject.works_type_of_subproject show_label=False %}
+                </div>
+                <div class="col-3">
+                    {% bootstrap_field form_suproject.subproject_step show_label=False %}
+                </div>
+            </div>
 
 
 
@@ -111,7 +125,11 @@
                     url: "{% url 'subprojects:display_grouped:display_grouped_by_sector' %}",
                     data: {
                         administrative_level_id: administrative_level_id,
-                        administrative_level_type: administrative_level_type
+                        administrative_level_type: administrative_level_type,
+                        id_subproject_sectors: $('#id_subproject_sectors').val(),
+                        id_subproject_types: $('#id_subproject_types').val(),
+                        id_works_type_of_subproject: $('#id_works_type_of_subproject').val(),
+                        id_subproject_step: $('#id_subproject_step').val(),
                     },
                     success: function (response) {
                         subprojects_number_spin.hide();
@@ -137,7 +155,11 @@
                     url: "{% url 'subprojects:display_grouped:display_grouped_by_sector_sub' %}",
                     data: {
                         administrative_level_id: administrative_level_id,
-                        administrative_level_type: administrative_level_type
+                        administrative_level_type: administrative_level_type,
+                        id_subproject_sectors: $('#id_subproject_sectors').val(),
+                        id_subproject_types: $('#id_subproject_types').val(),
+                        id_works_type_of_subproject: $('#id_works_type_of_subproject').val(),
+                        id_subproject_step: $('#id_subproject_step').val(),
                     },
                     success: function (response) {
                         subprojects_sub_number_spin.hide();
@@ -183,12 +205,21 @@
                     callNavLinkPage();
                 }
             });
+            
+            $('.subprojects-filter select').on('change', function () {
+                if($(this).attr('id') && $(this).val().length != 0){
+                    current_nav_links = [];
+                    callNavLinkPage();
+                }
+            });
 
 
 
             $("#clear_all_filters").on("click", function () {
                 $('.administrative-level-filter input').val('');
                 $('.administrative-level-filter select').val(null).trigger('change.select2');
+                $('.subprojects-filter input').val('');
+                $('.subprojects-filter select').val(null).trigger('change.select2');
                 administrative_level_id = null;
                 administrative_level_type = null;
                 current_nav_links = [];
@@ -227,6 +258,22 @@
         });
          $("#id_village").select2({
             placeholder: "{% translate 'Village' %}",
+            allowClear: true,
+        });
+        $("#id_subproject_sectors").select2({
+            placeholder: "{% translate 'Subproject sector' %}",
+            allowClear: true,
+        });
+         $("#id_subproject_types").select2({
+            placeholder: "{% translate 'Type of structure' %}",
+            allowClear: true,
+        });
+         $("#id_works_type_of_subproject").select2({
+            placeholder: "{% translate 'Works type' %}",
+            allowClear: true,
+        });
+         $("#id_subproject_step").select2({
+            placeholder: "{% translate 'Status' %}",
             allowClear: true,
         });
 

@@ -13,6 +13,7 @@ from administrativelevels.models import AdministrativeLevel
 from administrativelevels.functions import get_administrative_level_ids_descendants
 from dashboard import forms
 from dashboard import functions
+from subprojects.forms import SubprojectFilterForm
 
 
 
@@ -25,6 +26,7 @@ class DashboardTemplateView(PageMixin, LoginRequiredMixin, generic.TemplateView)
         ctx = super(DashboardTemplateView, self).get_context_data(**kwargs)
         ctx['hide_content_header'] = True
         ctx['form_adl'] = forms.AdministrativeLevelFilterForm()
+        ctx['form_suproject'] = SubprojectFilterForm(False)
         return ctx
 
 
@@ -39,9 +41,20 @@ class DashboardSubprojectsMixin:
         ctx.setdefault('table_thead_class_style', self.table_thead_class_style)
         return ctx
     
+    
+    def filter_list_by_delete_empty(self, _list):
+        if _list:
+            return [elt for elt in _list if elt]
+        else:
+            return []
+        
     def get_queryset(self):
         administrative_level_ids_get = self.request.GET.getlist('administrative_level_id[]', None)
         administrative_level_type = self.request.GET.get('administrative_level_type', 'All').title()
+        subproject_sectors = self.filter_list_by_delete_empty(self.request.GET.getlist('id_subproject_sectors[]'))
+        subproject_types = self.filter_list_by_delete_empty(self.request.GET.getlist('id_subproject_types[]'))
+        works_type_of_subprojects = self.filter_list_by_delete_empty(self.request.GET.getlist('id_works_type_of_subproject[]'))
+        subproject_steps = self.filter_list_by_delete_empty(self.request.GET.getlist('id_subproject_step[]'))
         
         administrative_level_type = "All" if administrative_level_type in ("", "null", "undefined") else administrative_level_type
 
@@ -69,20 +82,52 @@ class DashboardSubprojectsMixin:
         if not administrative_levels:
             administrative_levels = AdministrativeLevel.objects.filter(id__in=ald_filter_ids)
 
-        subprojects = Subproject.objects.filter()
+        # subprojects = Subproject.objects.filter()
 
+        # if not ald_filter_ids:
+        #     pass
+        # else:
+        #     subprojects = Subproject.objects.filter(
+        #         Q(location_subproject_realized__id__in=administrative_levels_ids) | 
+        #         Q(canton__id__in=administrative_levels_ids)
+        #     )
+
+        adls = ald_filter_ids + administrative_levels_ids
+
+        subprojects = Subproject.objects.filter(
+            Q(location_subproject_realized__id__in=adls) | 
+            Q(canton__id__in=adls)
+        )
         sectors = sorted(list(set(list(subprojects.values_list('subproject_sector')))))
         
-        if not ald_filter_ids:
-            pass
-        else:
-            subprojects = Subproject.objects.filter(
-                Q(location_subproject_realized__id__in=administrative_levels_ids) | 
-                Q(canton__id__in=administrative_levels_ids)
-            )
+        
         administrative_level = administrative_levels.first()
 
+
+        if subproject_sectors:
+            subprojects = subprojects.filter(subproject_sector__in=[elt for elt in subproject_sectors if elt])
         
+        if subproject_types:
+            subprojects = subprojects.filter(type_of_subproject__in=[elt for elt in subproject_types if elt])
+            
+        if works_type_of_subprojects:
+            subprojects = subprojects.filter(works_type__in=[elt for elt in works_type_of_subprojects if elt])
+        
+        if subproject_steps:
+            _subprojects = []
+            for subproject in subprojects:
+                subproject_step = subproject.current_status_of_the_site
+                if subproject_step:
+                    if 'not_started' in subproject_steps and subproject_step == "Identifié":
+                        _subprojects.append(subproject)
+                    if 'in_progress' in subproject_steps and subproject_step == "En cours":
+                        _subprojects.append(subproject)
+                    if 'completed' in subproject_steps and subproject_step in ("Achevé", \
+                            "Réception technique", "Réception provisoire", "Réception définitive"):
+                        _subprojects.append(subproject)
+
+            subprojects = Subproject.objects.filter(id__in=[o.id for o in _subprojects])
+
         return {
             'subprojects': subprojects,
             'sectors': [s[0] for s in sectors],
@@ -241,13 +286,13 @@ class DashboardSubprojectsDisplayGroupedBySectorsListView(DashboardSubprojectsMi
 
     def get_context_data(self, **kwargs):
         ctx = super(DashboardSubprojectsDisplayGroupedBySectorsListView, self).get_context_data(**kwargs)
-        adls = ctx['queryset_results']['ald_filter_ids'] + ctx['queryset_results']['administrative_levels_ids']
-        all_subprojects = Subproject.objects.filter(
-                Q(location_subproject_realized__id__in=adls) | 
-                Q(canton__id__in=adls)
-            )
+        # adls = ctx['queryset_results']['ald_filter_ids'] + ctx['queryset_results']['administrative_levels_ids']
+        # all_subprojects = Subproject.objects.filter(
+        #         Q(location_subproject_realized__id__in=adls) | 
+        #         Q(canton__id__in=adls)
+        #     )
         
-        # all_subprojects = ctx['queryset_results']['subprojects']
+        all_subprojects = ctx['queryset_results']['subprojects']
         
        
         characters_length = 3
@@ -404,13 +449,13 @@ class DashboardSubprojectsDisplayGroupedBySectorsListSubView(DashboardSubproject
 
     def get_context_data(self, **kwargs):
         ctx = super(DashboardSubprojectsDisplayGroupedBySectorsListSubView, self).get_context_data(**kwargs)
-        adls = ctx['queryset_results']['ald_filter_ids'] + ctx['queryset_results']['administrative_levels_ids']
-        all_subprojects = Subproject.objects.filter(
-                Q(location_subproject_realized__id__in=adls) | 
-                Q(canton__id__in=adls)
-            )
+        # adls = ctx['queryset_results']['ald_filter_ids'] + ctx['queryset_results']['administrative_levels_ids']
+        # all_subprojects = Subproject.objects.filter(
+        #         Q(location_subproject_realized__id__in=adls) | 
+        #         Q(canton__id__in=adls)
+        #     )
         
-        # all_subprojects = ctx['queryset_results']['subprojects']
+        all_subprojects = ctx['queryset_results']['subprojects']
         
        
         characters_length = 3
