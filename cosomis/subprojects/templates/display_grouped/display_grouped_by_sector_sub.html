@@ -6,13 +6,30 @@
         <h5 class="font-weight-bold">{% translate "Sub-projects grouped by sector" %}</h5>
     </div>
 
+<div id="accordion">
+                                            
             {% for k_data, v_data in datas_on_liste.items %}
 
-            <br />
+            {% comment %} <br />
             <hr />
-            <br />
-            <h1>{{ k_data }}</h1>
-            
+            <br /> {% endcomment %}
+            <div class="card">
+                <div class="card-header" id="heading-{{ k_data }}">
+                    <h5 class="mb-0">
+                        <button class="btn btn-link" data-toggle="collapse" data-target="#collapse-{{ k_data }}" aria-expanded="true" aria-controls="collapseOne">
+                            {{ k_data }} <span style="font-size:11px;">(T: {{ v_data|length }})</span>
+                        </button>
+                    </h5>
+                </div>
+
+                
+                        
+                        
+                    
+
+
+            <div id="collapse-{{ k_data }}" class="collapse {% if forloop.counter == 1 %}show{% endif %}" aria-labelledby="heading-{{ k_data }}" data-parent="#accordion">
+                    <div class="card-body">
     {% if not headers %}
     <div class="row" style="margin-top: 10px !important;">
         <div class="col-10">
@@ -66,7 +83,15 @@
 
         </table>
     </div>
+
+    </div>
+                </div>
+            </div>
+
+
+
                 {% endfor %}
+                </div>
 </div>
 {% else %}
 <div class="font-weight-bold d-flex justify-content-center text-danger" >
@@ -110,7 +135,7 @@
             table_subprojects_number.search($(this).val()).draw();
         });
         }    
-        {% for k_data, v_data in datas_on_liste.items %}
+        {% for k_data, v_data in datas.items %}
             
             
             ttt("{{ k_data }}");
@@ -121,7 +146,7 @@
      {% if not headers %}
         $("#export-{{ k_data }}").on("click", function (event) {
             event.preventDefault();
-            var datas_json = {{ datas|safe }};
+            var datas_json = {{ v_data|safe }};
             $.ajax({
                     type: "POST",
                     url: $(this).parent().attr('action'),
