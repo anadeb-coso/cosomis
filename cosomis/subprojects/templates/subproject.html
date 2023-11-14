@@ -235,9 +235,39 @@
 
 
         <div class="row">
+
+            <div class="col-8">
+                <div class="card">
+                    <div class="card-body">
+
+                        <div class="clearfix pb-1">
+                            <span class="font-weight-bold">{% translate 'Contract no. for work companies (ET)' %}: </span>
+                            <span>{% if object.contract_number_of_work_companies %}{{ object.contract_number_of_work_companies }}{% else %}-{% endif %}</span>
+                        </div>
+
+                        <div class="clearfix pb-1">
+                            <span class="font-weight-bold">{% translate 'Name of company awarded work contract (ET)' %}: </span>
+                            <span>{% if object.name_of_the_awarded_company_works_companies %}{{ object.name_of_the_awarded_company_works_companies }}{% else %}-{% endif %}</span>
+                        </div>
+
+                        <div class="clearfix pb-1">
+                            <span class="font-weight-bold">{% translate 'Date contract signed by works companies (ET)' %}: </span>
+                            <span>{% if object.date_signature_contract_work_companies %}{{ object.date_signature_contract_work_companies }}{% else %}-{% endif %}</span>
+                        </div>
+
+                        <div class="clearfix pb-1">
+                            <span class="font-weight-bold">{% translate 'Contract amount for works companies (ET)' %}: </span>
+                            <span>{% if object.contract_amount_work_companies %}{{ object.contract_amount_work_companies|separate_with_space:"FCFA" }}{% else %}-{% endif %}</span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            
             <div class="col-4">
                 <div class="card" >
-                    <div class="card-header">
+                    {% comment %} <div class="card-header">
                         <div class="clearfix">
                             <div class="float-left">
                                 <h5 class="font-weight-bold">{% translate 'Facilitator' %}</h5>
@@ -246,9 +276,13 @@
                                 
                             </div>
                         </div>
-                    </div>
+                    </div> {% endcomment %}
                     <div class="card-body">
-                        
+                        <div class="clearfix">
+                            <div class="float-left">
+                                <h5 class="font-weight-bold text-sm">{% translate 'Facilitator' %}</h5>
+                            </div>
+                        </div>
                         <div class="clearfix">
                             <a href="#" class="font-weight-bold">
                                 {% if object.get_facilitator_name %}
@@ -276,8 +310,8 @@
                         
                 </div>
             </div>
-            <div class="col-4">
-            <div class="card">
+            {% comment %} <div class="col-4">
+                <div class="card">
                     <div class="card-header">
                         <div class="clearfix">
                             <div class="float-left">
@@ -318,8 +352,8 @@
                         <h6><a href="#" class="font-weight-bold text-primary">{% translate 'View All Movements' %}</a></h6>
                     </div>
                 </div>
-            </div>
-            <div class="col-4">
+            </div> {% endcomment %}
+            {% comment %} <div class="col-4">
                 <div class="card">
                     <div class="card-header">
                         <div class="clearfix">
@@ -340,12 +374,58 @@
                         
                     </div>
                 </div>
-            </div>
+            </div> {% endcomment %}
         </div>
 
 
+        <div class="row">
 
+            <div class="col-8">
+                <div class="card">
+                    <div class="card-body">
 
+                        <div class="clearfix pb-1">
+                            <span class="font-weight-bold">{% translate 'Approval date cora' %}: </span>
+                            <span>{% if object.approval_date_cora %}{{ object.approval_date_cora }}{% else %}-{% endif %}</span>
+                        </div>
+
+                        <div class="clearfix pb-1">
+                            <span class="font-weight-bold">{% translate 'Date of start of work in the village (date of notification of service order)' %}: </span>
+                            <span>{% if object.launch_date_of_the_construction_site_in_the_village %}{{ object.launch_date_of_the_construction_site_in_the_village }}{% else %}-{% endif %}</span>
+                        </div>
+
+                        <div class="clearfix pb-1">
+                            <span class="font-weight-bold">{% translate 'Estimated completion time (months)' %}: </span>
+                            <span>{% if object.expected_duration_of_the_work %}{{ object.expected_duration_of_the_work|remove_zeros_on_zeros }}{% else %}-{% endif %}</span>
+                        </div>
+
+                        <div class="clearfix pb-1">
+                            <span class="font-weight-bold">{% translate 'Expected contract end date' %}: </span>
+                            <span>{% if object.expected_end_date_of_the_contract %}{{ object.expected_end_date_of_the_contract }}{% else %}-{% endif %}</span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if object.comments %}
+        <div class="row">
+
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+
+                        <div class="clearfix pb-1">
+                            <span class="font-weight-bold">{% translate 'Comments' %}: </span>
+                            <span>{{ object.comments }}</span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
 
 
@@ -476,7 +556,7 @@
                 </div>
                 {% endif %}
 
-                <div class="clearfix pb-1">
+                {% comment %} <div class="clearfix pb-1">
                     <span class="font-weight-bold">{% translate 'Name of company awarded work contract (ET)' %}: </span>
                     <span>{% if object.name_of_the_awarded_company_works_companies %}{{ object.name_of_the_awarded_company_works_companies }}{% else %}-{% endif %}</span>
                 </div>
@@ -484,7 +564,7 @@
                 <div class="clearfix pb-1">
                     <span class="font-weight-bold">{% translate 'Date contract signed by works companies (ET)' %}: </span>
                     <span>{% if object.date_signature_contract_work_companies %}{{ object.date_signature_contract_work_companies }}{% else %}-{% endif %}</span>
-                </div>
+                </div> {% endcomment %}
 
                 {% comment %} <div class="clearfix pb-1">
                     <span class="font-weight-bold">{% translate 'Estimated cost' %}: </span><span>{{ object.get_estimated_cost_str }}</span>

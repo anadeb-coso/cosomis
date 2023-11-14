@@ -94,6 +94,8 @@ class SubprojectsListView(PageMixin, LoginRequiredMixin, generic.ListView):
             search = search.upper()
             return Paginator(
                 Subproject.objects.filter(
+                    Q(link_to_subproject=None, number__icontains=search) | 
+                    Q(link_to_subproject=None, joint_subproject_number__icontains=search) | 
                     Q(link_to_subproject=None, full_title_of_approved_subproject__icontains=search) | 
                     Q(link_to_subproject=None, location_subproject_realized__name__icontains=search) | 
                     Q(link_to_subproject=None, subproject_sector__icontains=search) | 
