@@ -10,7 +10,7 @@ class AdministrativeLevelAdmin(admin.ModelAdmin):
     
     list_display = (
         'name',
-        'parent__name',
+        'parent',
         'no_sql_db_id'
     )
 
