@@ -324,12 +324,14 @@ def save_subproject_tracking():
                 subproject_step_progress = subproject.get_current_subproject_step
                 # if subproject_step_progress.step.has_levels and not subproject_step_progress.check_step(subproject.current_level_of_physical_realization_of_the_work):
                 if subproject_step_progress.step.has_levels:
-                    subproject_level = Level()
-                    subproject_level.wording = "En cours"
-                    subproject_level.subproject_step = subproject_step_progress
-                    subproject_level.percent = _percent
-                    subproject_level.begin = datetime.datetime.now().date()
-                    subproject_level.save()
+                    level = subproject_step_progress.get_levels().first()
+                    if (level and _percent > level.percent) or not level:
+                        subproject_level = Level()
+                        subproject_level.wording = "En cours"
+                        subproject_level.subproject_step = subproject_step_progress
+                        subproject_level.percent = _percent
+                        subproject_level.begin = datetime.datetime.now().date()
+                        subproject_level.save()
             else:
                 print("Identifié")
                 set_step(subproject, [step_identifie])
@@ -342,17 +344,17 @@ def save_subproject_tracking():
     print("Done !")
 
 
-def all_functions_call():
-    print("attribute_component_to_subprojects")
-    attribute_component_to_subprojects(Subproject.objects.all(), Component.objects.get(id=2))
-    print("attribute_project_to_subprojects")
-    attribute_project_to_subprojects(Subproject.objects.all(), Project.objects.get(id=1))
-    print("link_infrastures_to_subproject")
-    link_infrastures_to_subproject()
-    print("copy_cvd_to_list_of_beneficiary_villages")
-    copy_cvd_to_list_of_beneficiary_villages()
-    print("save_subproject_tracking")
-    save_subproject_tracking()
+# def all_functions_call():
+#     print("attribute_component_to_subprojects")
+#     attribute_component_to_subprojects(Subproject.objects.all(), Component.objects.get(id=2))
+#     print("attribute_project_to_subprojects")
+#     attribute_project_to_subprojects(Subproject.objects.all(), Project.objects.get(id=1))
+#     print("link_infrastures_to_subproject")
+#     link_infrastures_to_subproject()
+#     print("copy_cvd_to_list_of_beneficiary_villages")
+#     copy_cvd_to_list_of_beneficiary_villages()
+#     print("save_subproject_tracking")
+#     save_subproject_tracking()
 
 
 
