@@ -1,48 +1,72 @@
 {% load static i18n bootstrap4 custom_tags humanize  %}
+
 {% if datas %}
+
+
+
 
 <div class="card">
     <div class="card-header">
         <h5 class="font-weight-bold">{% translate "Sub-projects grouped by sector" %}: <span style="font-size:11px;">(T: {{ subprojects_number }})</span></h5>
     </div>
-    {% comment %} {% if not headers %}
-    <div class="row">
+
+<div id="accordion" class="panel-heading">
+                                            
+            {% for k_data, v_data in datas_on_liste.items %}
+            {% with k_data_label=k_data k_data=k_data|format_id %}
+            {% comment %} <br />
+            <hr />
+            <br /> {% endcomment %}
+            <div class="card">
+                <div class="card-header" >
+                    <h5 class="mb-0">
+                        <button id="heading-{{ k_data }}" style="width: 100%;"
+                            class="btn btn-link accordion-toggle" data-toggle="collapse" data-target="#collapse-{{ k_data }}" 
+                            data-parent="#accordion" aria-expanded="false" aria-controls="collapse-{{ k_data }}">
+                            <span style="float: left;">{{ k_data_label }} <span style="font-size:11px;">(T: {{ v_data|length }})</span></span>
+                        </button>
+                    </h5>
+                </div>
+
+                
+                        
+                        
+                    
+
+
+            <div id="collapse-{{ k_data }}" class="collapse" aria-labelledby="heading-{{ k_data }}" data-parent="#accordion">
+                    <div class="card-body">
+    {% if not headers %}
+    <div class="row" style="margin-top: 10px !important;">
         <div class="col-10">
             <div class="input-group mb-3 search-bar">
                 <div class="input-group-prepend">
                     <span class="input-group-text"><i class="fas fa-search"></i></span>
                 </div>
-                <input class="form-control" id="search-{{ data_id }}" placeholder="{% translate 'Search' %}...">
+                <input class="form-control" id="search-{{ k_data }}" placeholder="{% translate 'Search' %}...">
             </div>
         </div>
         <div class="col-2">
             <div class="text-right mb-4">
                 <form method='post'action="{% url 'dashboard:dashboard_download_excel_file' %}">
-                    <button class="btn btn-primary btn-xs" type="submit" id="export-{{ data_id }}">
+                    <button class="btn btn-primary btn-xs" type="submit" id="export-{{ k_data }}">
                         <i class="fa fa-file-export"></i> {% translate 'Export file' %}
                     </button>
                 </form>
             </div>
         </div>
     </div>
-    {% endif %} {% endcomment %}
+    {% endif %}
 
-    <div class="card-body table-responsive">
-        <table id="table-{{ data_id }}" class="table {{ table_class_style }}" style="width: 100% !important;">
-            <tbody>
-                {% for k_data, v_data in datas_on_liste.items %}
-                {% with k_data_label=k_data k_data=k_data|format_id %}
-                <tr>
-                    <td colspan="11">
-                        <table class="table mb-0">
-                            <thead class="{{ table_thead_class_style }}">
+
+    <div class="card-body table-responsive" >
+        <table id="table-{{ k_data }}" class="table {{ table_class_style }}" style="width: 100% !important;">
+            
+            <thead class="{{ table_thead_class_style }}">
                                 <tr>
-                                    <td colspan="11">{{ k_data_label }}</td>
-                                </tr>
-                                <tr>
-                                    {% for head in datas_headers %}
-                                    <td>{{ head }}</td>
-                                    {% endfor %}
+                                        {% for head in datas_headers %}
+                        <td>{{ head }}</td>
+                    {% endfor %}
                                 </tr>
                             </thead>
                             <tbody>
@@ -52,24 +76,29 @@
                                         <td>{{ v_d.region }}</td>
                                         <td>{{ v_d.commune }}</td>
                                         <td>{{ v_d.sites }}</td>
-                                        <td>{{ v_d.structures }}</td>
-                                        <td>{{ v_d.type }}</td>
+                                        <td data-toggle="modal" data-target="#card-modal-{{ k_data }}-{{ v_d.number }}" style="cursor: pointer;">
+                                            {{ v_d.type }}
+                                        </td>
                                         <td>{{ v_d.companies }}</td>
                                         <td>{{ v_d.estimated_cost|separate_with_space }}</td>
                                         <td>{{ v_d.amount_ttc|separate_with_space }}</td>
                                         <td>{{ v_d.realization_level|remove_zeros_on_zeros }}</td>
                                         <td>{{ v_d.physical_level }}</td>
                                 </tr>
-                                {% endfor %}
+                                    {% endfor %}
                             </tbody>
-                        </table>
-                    </td>
-                </tr>
-                {% endwith %}
-                {% endfor %}
-            </tbody>
+
         </table>
     </div>
+
+    </div>
+                </div>
+            </div>
+
+
+                {% endwith %}
+                {% endfor %}
+                </div>
 </div>
 {% else %}
 <div class="font-weight-bold d-flex justify-content-center text-danger" >
@@ -79,6 +108,30 @@
 
 {% comment %} <a id="downloard_a"></a> {% endcomment %}
 
+{% block modals %}
+    {% for k_data, v_data in datas_on_liste.items %}
+    {% with k_data_label=k_data k_data=k_data|format_id %}
+    {% for v_d in v_data %}
+    <div class="modal fade" id="card-modal-{{ k_data }}-{{ v_d.number }}" tabindex="-1" role="dialog"
+        aria-labelledby="UploadTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+
+                <div class="card">
+                    <div class="card-body">
+
+                        <h3>{{ v_d.structures }}</h3>
+
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% endwith %}
+    {% endfor %}
+{% endblock %}
 
 <!-- DataTables export files -->
 {% include 'layouts/datatable-js.html' %}
@@ -87,9 +140,10 @@
 
     $(document).ready(function () {
         {% get_current_language as lang %}
-        var columns_datatable = []        
-
-        {% comment %} let table_subprojects_number = $('#table-{{ data_id }}').DataTable({
+        var columns_datatable = []    
+        
+        function ttt(t_id){
+            let table_subprojects_number = $('#table-'+t_id).DataTable({
             {% if not_allow_datatable_auto_width %}bAutoWidth: false,{% endif %}
             language: {
                 url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}')
@@ -100,7 +154,7 @@
             buttons: [ 'copy', 'excel', 'pdf', 'colvis' ],
         
             lengthMenu: [4, 8, 10, 20, 50, 100, 200, 500, 1000, 10000],
-            pageLength: 10,
+            pageLength: 4,
             order: []
         });
 
@@ -108,16 +162,22 @@
         .appendTo( '#example_wrapper .col-md-6:eq(0)' );
 
 
-        $('#search-{{ data_id }}').on('keyup', function () {
+        $('#search-'+t_id).on('keyup', function () {
             table_subprojects_number.search($(this).val()).draw();
-        }); {% endcomment %}
+        });
+        }    
+        {% for k_data, v_data in datas.items %}
+            {% with k_data=k_data|format_id %}
+            
+            ttt("{{ k_data }}");
+        
         
 
 
-         {% comment %} {% if not headers %}
-        $("#export-{{ data_id }}").on("click", function (event) {
+     {% if not headers %}
+        $("#export-{{ k_data }}").on("click", function (event) {
             event.preventDefault();
-            var datas_json = {{ datas|safe }};
+            var datas_json = {{ v_data|safe }};
             $.ajax({
                     type: "POST",
                     url: $(this).parent().attr('action'),
@@ -126,7 +186,7 @@
                     },
                     data: JSON.stringify({
                         datas: datas_json,
-                        type_datas: '{{ data_id }}' + '_{{ queryset_results.administrative_level_type }}_'
+                        type_datas: '{{ k_data }}' + '_{{ queryset_results.administrative_level_type }}_'
                     }),
                     success: function (response) {
                         if(response.error){
@@ -143,7 +203,10 @@
 
 
         });
-        {% endif %} {% endcomment %}
+        {% endif %} 
+
+        {% endwith %}
+        {% endfor %}
 
                         
     });

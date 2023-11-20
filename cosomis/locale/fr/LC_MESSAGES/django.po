@@ -2482,3 +2482,7 @@ msgstr "Groupé par secteur"
 #: .\subprojects
 msgid "Sub-projects grouped by sector"
 msgstr "Sous-projets regroupés par secteur"
+
+#: .\subprojects
+msgid "Grouped by type"
+msgstr "Groupé par type"

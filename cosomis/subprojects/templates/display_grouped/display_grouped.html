@@ -53,7 +53,8 @@
                 <div class="container">
                     <ul class="nav nav-tabs">
                         <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link active nav-tab-toggle" data-toggle="tab" href="#Grouped-by-sub-sector" >{% translate "Grouped by sector" %}</a></li>
-                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link nav-tab-toggle" data-toggle="tab" href="#Grouped-by-sector" >{% translate "Grouped by sector" %}</a></li>
+                        {% comment %} <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link nav-tab-toggle" data-toggle="tab" href="#Grouped-by-sector" >{% translate "Grouped by sector" %}</a></li> {% endcomment %}
+                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link nav-tab-toggle" data-toggle="tab" href="#Grouped-by-type" >{% translate "Grouped by type" %}</a></li>
                     </ul>
 
                     <div class="tab-content">
@@ -72,7 +73,7 @@
 
                         </div>
 
-                        <div id="Grouped-by-sector" class="tab-pane fade">
+                        {% comment %} <div id="Grouped-by-sector" class="tab-pane fade">
                             <div class="card">
                                 <div class="card-body">
                                     <div id="grouped-by-sector-list">
@@ -80,6 +81,20 @@
                                     </div>
                                 </div>
                                 <div class="overlay" id="grouped-by-sector-spin">
+                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                                </div>
+                            </div>
+
+                        </div> {% endcomment %}
+
+                        <div id="Grouped-by-type" class="tab-pane fade">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div id="grouped-by-type-list">
+                                        <h3>{% translate "Grouped by type" %}</h3>
+                                    </div>
+                                </div>
+                                <div class="overlay" id="grouped-by-type-spin">
                                     <i class="fas fa-2x fa-sync-alt fa-spin"></i>
                                 </div>
                             </div>
@@ -111,6 +126,8 @@
             let subprojects_number = $('#grouped-by-sector-list');
             let subprojects_sub_number_spin = $('#grouped-by-sub-sector-spin');
             let subprojects_sub_number = $('#grouped-by-sub-sector-list');
+            let subprojects_by_type_spin = $('#grouped-by-type-spin');
+            let subprojects_by_type = $('#grouped-by-type-list');
             var administrative_level_id = null;
             var administrative_level_type = null;
             var current_nav_link = 'Grouped-by-sub-sector';
@@ -149,7 +166,7 @@
             function goupedBySectorSub(administrative_level_id=null, administrative_level_type=null) {
                 subprojects_sub_number_spin.show();
                 subprojects_sub_number.html('');
-                console.log("777");
+                
                 $.ajax({
                     type: "GET",
                     url: "{% url 'subprojects:display_grouped:display_grouped_by_sector_sub' %}",
@@ -175,13 +192,43 @@
                 });
             }
 
+
+            function goupedByTypeSub(administrative_level_id=null, administrative_level_type=null) {
+                subprojects_by_type_spin.show();
+                subprojects_by_type.html('');
+                $.ajax({
+                    type: "GET",
+                    url: "{% url 'subprojects:display_grouped:display_grouped_by_type_sub' %}",
+                    data: {
+                        administrative_level_id: administrative_level_id,
+                        administrative_level_type: administrative_level_type,
+                        id_subproject_sectors: $('#id_subproject_sectors').val(),
+                        id_subproject_types: $('#id_subproject_types').val(),
+                        id_works_type_of_subproject: $('#id_works_type_of_subproject').val(),
+                        id_subproject_step: $('#id_subproject_step').val(),
+                    },
+                    success: function (response) {
+                        subprojects_by_type_spin.hide();
+                        
+                        subprojects_by_type.html(response);
+
+                        current_nav_links.push('Grouped-by-type');
+                    },
+                    error: function (data) {
+                        subprojects_by_type_spin.hide();
+                        alert(error_server_message + "Error " + data.status);
+                    }
+                });
+            }
+
             
             function callNavLinkPage(){
-                console.log(current_nav_link);
                 if(!current_nav_links.includes('Grouped-by-sector') && current_nav_link.includes('Grouped-by-sector')){
                     goupedBySector(administrative_level_id, administrative_level_type);
                 }else if(!current_nav_links.includes('Grouped-by-sub-sector') && current_nav_link.includes('Grouped-by-sub-sector')){
                     goupedBySectorSub(administrative_level_id, administrative_level_type);
+                }else if(!current_nav_links.includes('Grouped-by-type') && current_nav_link.includes('Grouped-by-type')){
+                    goupedByTypeSub(administrative_level_id, administrative_level_type);
                 }
             }
             
@@ -197,7 +244,7 @@
                 }
                 administrative_level_id = null;
                 administrative_level_type = null;
-                console.log($(this).val());
+                
                 if($(this).attr('id') && $(this).val().length != 0){
                     administrative_level_type = $(this).attr('id').split('_')[1];
                     administrative_level_id = $(this).val();

@@ -7,12 +7,13 @@
 
 <div class="card">
     <div class="card-header">
-        <h5 class="font-weight-bold">{% translate "Sub-projects grouped by sector" %}</h5>
+        <h5 class="font-weight-bold">{% translate "Sub-projects grouped by sector" %}: <span style="font-size:11px;">(T: {{ subprojects_number }})</span></h5>
     </div>
 
 <div id="accordion" class="panel-heading">
                                             
             {% for k_data, v_data in datas_on_liste.items %}
+            {% with k_data_label=k_data k_data=k_data|format_id %}
 
             {% comment %} <br />
             <hr />
@@ -23,7 +24,7 @@
                         <button id="heading-{{ k_data }}" style="width: 100%;"
                             class="btn btn-link accordion-toggle" data-toggle="collapse" data-target="#collapse-{{ k_data }}" 
                             data-parent="#accordion" aria-expanded="false" aria-controls="collapse-{{ k_data }}">
-                            <span style="float: left;">{{ k_data }} <span style="font-size:11px;">(T: {{ v_data|length }})</span></span>
+                            <span style="float: left;">{{ k_data_label }} <span style="font-size:11px;">(T: {{ v_data|length }})</span></span>
                         </button>
                     </h5>
                 </div>
@@ -96,6 +97,7 @@
 
 
 
+                {% endwith %}
                 {% endfor %}
                 </div>
 </div>
@@ -142,6 +144,7 @@
         });
         }    
         {% for k_data, v_data in datas.items %}
+            {% with k_data=k_data|format_id %}
             
             
             ttt("{{ k_data }}");
@@ -179,6 +182,8 @@
 
         });
         {% endif %} 
+
+        {% endwith %}
         {% endfor %}
 
                         

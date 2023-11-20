@@ -212,3 +212,7 @@ def get_step_color(key):
 @register.filter
 def get_type_sub_project_color(key):
     return TYPES_OF_SUB_PROJECT_COLOR.get(key, '#00ffff') #Default e-Aqua f-Aqua
+
+@register.filter
+def format_id(value: str):
+    return value.replace("&","").replace("(","").replace(")","").replace(".","").replace("'","").replace("\"","").replace(" ","").replace("+","")
