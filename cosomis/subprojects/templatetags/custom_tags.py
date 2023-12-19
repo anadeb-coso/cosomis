@@ -1,6 +1,7 @@
 from django import template
 from django.utils.translation import gettext_lazy
 from subprojects.models import Project, Financier
+from datetime import datetime
 
 from cosomis.constants import SUB_PROJECT_STATUS_COLOR, TYPES_OF_SUB_PROJECT_COLOR
 
@@ -216,3 +217,10 @@ def get_type_sub_project_color(key):
 @register.filter
 def format_id(value: str):
     return value.replace("&","").replace("(","").replace(")","").replace(".","").replace("'","").replace("\"","").replace(" ","").replace("+","")
+
+
+@register.simple_tag
+def get_days_until_today(date_time):
+    date = datetime.strptime(date_time, '%Y-%m-%dT%H:%M:%S.%fZ')
+    delta = datetime.now() - date
+    return delta.days

@@ -1,0 +1,93 @@
+{% load static i18n custom_tags %}
+<h6>{% translate "Total" %}: {{ total_issues }}</h6>
+<table id="table table-bordered" class="table">
+    <thead class="primary">
+    <tr>
+        <th>{% translate 'ID Number' %}</th>
+        <th>{% translate 'Access Code' %}</th>
+        <th>{% translate 'Summary' %}</th>
+        <th>{% translate 'Assigned to' %}</th>
+        <th>{% translate 'Days Open' %}</th>
+        <th>{% translate 'Category' %}</th>
+        {% comment %} <th>{% translate 'Type' %}</th> {% endcomment %}
+        <th>{% translate 'Status' %}</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for issue in issues %}
+        <tr 
+        style="
+        {% if issue.status.id == 1 %}
+        color: red; font-weight: bold;
+        {% elif issue.status.id == 2 %}
+        color: purple;
+        {% elif issue.status.id == 3 %}
+        color: green;
+        {% elif issue.status.id == 4 %}
+        color: red;
+        {% endif %}
+        "
+        
+        >
+            <td>
+                <a target="_blank"
+                    href="http://grm-2-env.eba-speiyafz.us-west-1.elasticbeanstalk.com/fr/grm/issue-detail/{{ issue.auto_increment_id }}/" >
+                    {% if issue.internal_code %}
+                        {{ issue.internal_code }}
+                    {% else %}
+                        {{ issue.tracking_code }}
+                    {% endif %}
+                </a>
+            </td>
+            <td>{{ issue.tracking_code }}</td>
+            <td align="left">
+                {% if "b'" in issue.description %}
+                    ***
+                {% else %}
+                    {{ issue.description }}
+                {% endif %}
+            </td>
+            <td>{{ issue.assignee.name }}</td>
+            <td>{% get_days_until_today issue.created_date %}</td>
+            <td align="left">{{ issue.category.name }}</td>
+            {% comment %} <td>{{ issue.issue_type.name }}</td> {% endcomment %}
+            <td>{{ issue.status.name }}</td>
+        </tr>
+    {% empty %}
+        <td class="text-center" colspan="8">
+            {% translate 'No issues found' %}
+        </td>
+    {% endfor %}
+    </tbody>
+</table>
+
+
+<script>
+
+    try{
+        total_issues = parseInt("{{ total_issues }}");
+        console.log(total_issues + " ======");
+    }catch(e){
+        console.log(e);
+    }
+
+    if(current_total_issues == null){
+        current_total_issues = parseInt("{{ issues|length }}");
+
+        $.ajax({
+            type: "GET",
+            url: "{% url 'administrativelevels:grm:issues_statistics' %}",
+            success: function (response) {
+                $("#current_total_issues").html(
+                    '(T: {{ total_issues }}/' + response['count'] + ')'
+                );
+            },
+            error: function (data) {
+                alert(error_server_message + "Error " + data.status);
+            }
+        });
+
+
+        
+    }
+</script>

@@ -1,0 +1,131 @@
+{% load static i18n custom_tags %}
+
+<script type="text/javascript">
+    let spin_grm = $("#spin-grm");
+    let grm_body = $("#grm-body");
+    spin_grm.show();
+grm_body.html(`
+    <h4>{% translate 'Complaints mechanism' %} 1.1</h4>
+    <div class="col-12" class="input-group mb-3 search-bar">
+        <div method="get" class="d-flex">
+            <div class="input-group-prepend">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+            </div>
+            <input class="form-control" id="search_grm" placeholder="{% translate 'Search in table' %}...">
+        </div>
+    </div>
+    <div class="table-responsive-sm">
+        <table class="table table-bordered" id="table_grm">
+            <thead>
+                <tr>
+                    <th style="width:5% !important" scope="col-1">{% translate 'ID Number' %}</th>
+                    <th style="width:5% !important" scope="col-3">{% translate 'Access Code' %}</th>
+                    <th style="width:48% !important" scope="col-1">{% translate 'Summary' %}</th>
+                    <th style="width:10% !important" scope="col-1">{% translate 'Assigned to' %}</th>
+                    <th style="width:5% !important" scope="col-1">{% translate 'Days Open' %}</th>
+                    <th style="width:15% !important" scope="col-1">{% translate 'Category' %}</th>
+                    <th style="width:7% !important" scope="col-1">{% translate 'Status' %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for k, v in datas.groups_priorities_1_1.items %}
+                    {% for priority in v %}
+                    <tr>
+                        <td>
+                            {{ priority|get:"rang" }}
+                        </td>
+                        <td style="" align="left">
+                            {% if "Autre" in priority|get:"besoinSelectionne" %}
+                                {{ priority|get:"besoinSelectionne" }}
+                            {% else %}
+                                {{ priority|get:"besoinSelectionne" }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ priority|get:"score" }}
+                        </td>
+                        <td>
+                            {{ k }}
+                        </td>
+                        <td>###</td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th rowspan="1" colspan="1">
+                    </th>
+                    <th rowspan="1" colspan="1">
+                    </th>
+                    <th rowspan="1" colspan="1">
+                    </th>
+                    <th rowspan="1" colspan="1">
+                    </th>
+                    <th rowspan="1" colspan="1">
+                    </th>
+                    <th rowspan="1" colspan="1">
+                    </th>
+                    <th rowspan="1" colspan="1">
+                    </th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+`);
+
+
+
+
+    $(document).ready(function () {
+        {% get_current_language as lang %}
+
+        ["table_grm"].forEach(function(item){
+            
+            var t_grm = $(`#${item}`).DataTable({
+                language: {
+                    url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}')
+                },
+                dom: "ltipr",
+                initComplete: function () {
+                    this.api()
+                        .columns()
+                        .every(function () {
+                            var column = this;
+                            
+                            // Create select element and listener
+                            var select = $('<select style="width:175px !important;"><option value=""></option></select>')
+                                .appendTo($(column.footer()).empty())
+                                .on('change', function () {
+                                    var val = $(`#${item}`).DataTable.util.escapeRegex($(this).val());
+            
+                                    column.search(val ? '^' + val + '$' : '', true, false).draw();
+                                });
+            
+                            // Add list of options
+                            column
+                                .data()
+                                .unique()
+                                .sort()
+                                .each(function (d, j) {
+                                    select.append('<option value="' + d + '">' + d + '</option>');
+                                });
+                        });
+                }, 
+                lengthMenu: [10, 50, 100],
+                pageLength: 10,
+                order: [[0, 'asc']]
+            });
+            $(`#search_${item}`).on('keyup', function () {
+                t_grm.search($(this).val()).draw();
+            });
+
+        });
+        
+    });
+
+
+    spin_grm.hide();
+
+</script>

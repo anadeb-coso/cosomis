@@ -1,0 +1,259 @@
+{% load bootstrap4 static i18n %}
+
+            <h5>{% translate "Grievance Redress Mechanism" %} <span style="font-size:11px;" id="current_total_issues"></span></h5>
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-4 text-left">
+                            {% comment %} <div class="fs28 lh35 text-primary text-bold-family mb-4">
+                                {% translate 'Search Results' %}<br>
+                            </div> {% endcomment %}
+                            <div class="row mr-5 issues-filter">
+                                <div class="col-12">
+                                    {% bootstrap_field form.start_date layout='horizontal' %}
+                                    {% bootstrap_field form.end_date layout='horizontal' %}
+                                    {% if publish_option %}{% bootstrap_field form.publish layout='horizontal' %}{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-8 border-left">
+                            <div class="row issues-filter">
+                                <div class="col-6">
+                                    {% bootstrap_field form.code show_label=False %}
+                                    {% bootstrap_field form.other show_label=False %}
+                                </div>
+                                <div class="col-6">
+                                    {% bootstrap_field form.status show_label=False %}
+                                    {% bootstrap_field form.category show_label=False %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body table-responsive">
+                    <div id="issue-list"></div>
+                    <div class="text-right">
+                        <a id="previous" class="btn text-primary hidden">
+                            <i class="fa fa-chevron-left fs20 align-middle"></i>
+                        </a>
+                        <div id="current-page" class="d-inline-block fs14 text-regular-family ml-4 mr-4"></div>
+                        <a id="next" class="btn text-primary hidden">
+                            <i class="fa fa-chevron-right fs20 align-middle"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="overlay" id="spin">
+                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                </div>
+            </div>
+
+
+
+
+
+
+    <script type="text/javascript">
+        let spin = $('#spin');
+        let index = 0;
+        const offset = 10;
+        let previous = $('#previous');
+        let next = $('#next');
+        let issues = $('#issue-list');
+        var total_issues = 0;
+        let current_page = $('#current-page');
+        let start_date = $('#id_start_date');
+        let end_date = $('#id_end_date');
+        let code = $('#id_code');
+        let category = $('#id_category');
+        let type = $('#id_type');
+        let status = $('#id_status');
+        let other = $('#id_other');
+        let administrative_region = $('#id_administrative_region');
+        {% if publish_option %}let publish = $('#id_publish');{% endif %}
+        let current_region_id = "{{ current_region_id }}";
+        var current_total_issues = null;
+
+        function loadIssues() {
+            spin.show();
+            $.ajax({
+                type: "GET",
+                url: "{% url 'administrativelevels:grm:issue_list' %}",
+                data: {
+                    index: index,
+                    offset: offset,
+                    start_date: start_date.val(),
+                    end_date: end_date.val(),
+                    code: code.val(),
+                    category: category.val(),
+                    type: type.val(),
+                    status: status.val(),
+                    other: other.val(),
+                    {% if publish_option %}publish: publish.val(),{% endif %}
+                    region: current_region_id
+                },
+                success: function (response) {
+                    issues.html(response);
+                    spin.hide();
+                    if (index - offset >= 0) {
+                        previous.show();
+                    } else {
+                        previous.hide();
+                    }
+                    if (index + offset < total_issues) {
+                        next.show();
+                    } else {
+                        next.hide();
+                    }
+                    if (response.trim()) {
+                        current_page.html(Math.floor(index / offset) + 1 + " / " + Math.ceil(total_issues / offset));
+                    } else {
+                        current_page.html("")
+                    }
+                },
+                error: function (data) {
+                    spin.hide();
+                    alert(error_server_message + "Error " + data.status);
+                    current_page.html("");
+                }
+            });
+        }
+
+        function setTotalIssues() {
+            $.ajax({
+                type: "GET",
+                url: "{% url 'administrativelevels:grm:issues_statistics' %}",
+                success: function (response) {
+                    total_issues = response['count'];
+                    loadIssues();
+                },
+                error: function (data) {
+                    alert(error_server_message + "Error " + data.status);
+                }
+            });
+        }
+        loadIssues();
+        //setTotalIssues();
+
+        previous.click(function () {
+            index -= offset;
+            loadIssues();
+        });
+
+        next.click(function () {
+            index += offset;
+            loadIssues();
+        });
+
+        let dp1 = '<div class="input-group-prepend" data-target="#{id}" data-toggle="datetimepicker">' +
+            '<div class="input-group-text"><i class="fa fa-calendar text-primary"></i></div></div>';
+        let dp2 = '<div class="input-group date" id="{id}" data-target-input="nearest"></div>';
+        $('#id_start_date').before(dp1.replace('{id}', 'start_date')).parent().wrapInner(
+            dp2.replace('{id}', 'start_date'));
+        $('#id_end_date').before(dp1.replace('{id}', 'end_date')).parent().wrapInner(
+            dp2.replace('{id}', 'end_date'));
+
+        //Datemask dd/mm/yyyy
+        $('.datetimepicker-input').inputmask({alias: "datetime", inputFormat: "dd/mm/yyyy"});
+
+        let options = {
+            //maxDate: Date.now(),
+            useCurrent: false,
+            format: "DD/MM/YYYY",
+            widgetPositioning: {
+                vertical: 'bottom',
+            }
+        };
+
+        function dateChanged(e) {
+            if (e.oldDate !== e.date) {
+                loadIssues();
+            }
+        }
+
+        $('#start_date').datetimepicker(options);
+        $('#start_date').on("change.datetimepicker", dateChanged);
+        $('#end_date').datetimepicker(options);
+        $('#end_date').on("change.datetimepicker", dateChanged);
+        $('.issues-filter input').on('change keyup', function () {
+            if (!$(this).val()) {
+                loadIssues();
+            }
+        });
+        code.on('change keyup', delay(function () {
+            if ($(this).val()) {
+                loadIssues();
+            }
+        }, 500));
+        $('.issues-filter select').on('change', function () {
+            loadIssues();
+        });
+
+
+
+
+        function changeRegionTrigger(url, placeholder) {
+            $(document).on("change", ".region", function () {
+                let current_input_value = $(this).val();
+                if (current_input_value) {
+                    current_region_id = current_input_value;
+                } else {
+                    current_region_id = $("select.region").eq(-2).val();
+                }
+                loadNextLevelRegions($(this), url, placeholder);
+                if(current_region_id) loadIssues();
+            });
+        }
+
+        let get_choices_url = '{% url 'administrativelevels:utils:get_choices_for_next_administrative_level' %}';
+        let choice_placeholder = "{% translate 'Click to select location' %}";
+        changeRegionTrigger(get_choices_url, choice_placeholder);
+
+
+
+        $("#clear_all_filters").on("click", function () {
+            $('.issues-filter input').val('');
+            $('.issues-filter select').val(null).trigger('change.select2');
+            $('.regions-filter select').val(null).trigger('change.select2');
+            loadIssues();
+            current_region_id = null;
+            loadNextLevelRegions($("#id_administrative_region"), '', '');
+        });
+
+
+
+    </script>
+
+<script src="{% static 'js/dynamicRegionSelector.js' %}"></script>
+    <script type="text/javascript">
+        $("#id_category").select2({
+            placeholder: "{% translate 'Category' %}",
+            allowClear: true,
+            width: '100%'
+        });
+        $("#id_status").select2({
+            placeholder: "{% translate 'Status' %}",
+            allowClear: true,
+            width: '100%'
+        });
+        $("#id_other").select2({
+            placeholder: "{% translate 'Escalated' %}",
+            allowClear: true,
+            width: '100%'
+        });
+        {% if publish_option %}
+        $("#id_publish").select2({
+            placeholder: "{% translate 'Publish' %}",
+            allowClear: true,
+            width: '100%'
+        });
+        {% endif %}
+
+        $('b[role="presentation"]').hide();
+        $('.select2-selection__arrow').append(
+            '<i class="fas fa-chevron-circle-down text-primary" style="margin-top:12px;"></i>');
+
+    </script>
+

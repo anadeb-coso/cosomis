@@ -33,6 +33,7 @@ urlpatterns = [
 
     path('utils/', include('administrativelevels.utils.urls')),
     path('components/', include('administrativelevels.urls_component')),
+    path('grm/', include('administrativelevels.grm.urls')),
 
 
     path('get-administrative-level-by-type-view/', views_json.GetAdministrativeLevelByTypeView.as_view(), name='get_administrative_level_by_type'), #Get AdministrativeLevel by type

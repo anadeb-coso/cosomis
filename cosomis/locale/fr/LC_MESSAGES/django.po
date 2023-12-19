@@ -2486,3 +2486,51 @@ msgstr "Sous-projets regroupés par secteur"
 #: .\subprojects
 msgid "Grouped by type"
 msgstr "Groupé par type"
+
+#: .\subprojects
+msgid "Grievance Redress Mechanism"
+msgstr "Mécanisme de gestion de plaintes"
+
+#: .\administrativelevels
+msgid "ID Number"
+msgstr "Nombre ID"
+
+#: .\administrativelevels
+msgid "Access Code"
+msgstr "Code d'accès"
+
+#: .\administrativelevels
+msgid "Days Open"
+msgstr "Jours d'ouverture"
+
+#: .\administrativelevels
+msgid "Open Issue"
+msgstr "Ouvrir la plainte"
+
+#: .\administrativelevels
+msgid "Category"
+msgstr "Catégorie"
+
+#: .\administrativelevels
+msgid "Escalated"
+msgstr "Remontée"
+
+#: .\administrativelevels
+msgid "Start Date"
+msgstr "Date de début"
+
+#: .\administrativelevels
+msgid "End Date"
+msgstr "Date de fin"
+
+#: .\administrativelevels
+msgid "ID Number / Access Code"
+msgstr "Nombre ID / Code d'accès"
+
+#: .\administrativelevels
+msgid "Assigned to"
+msgstr "Assigné à"
+
+#: .\administrativelevels
+msgid "Tasks"
+msgstr "Tâches"
