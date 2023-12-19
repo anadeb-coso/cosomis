@@ -298,7 +298,62 @@
                             </div>
                         </div>
                         <div id="financial_informations" class="tab-pane fade">
-                            <h3>{% translate "In construction" %}</h3>
+                            <div class="row">
+                                <div class="col-12"></div>
+                            </div>
+                            <div class="card">
+                                <div class="card-body panel-heading" id="accordion" >
+                                    <div class="card">
+                                        
+                                        <div class="card">
+                                            <div class="card-header" >
+                                                <h5 class="mb-0">
+                                                    <button id="heading-financial-informations" style="width: 100%;"
+                                                        class="btn btn-link accordion-toggle" data-toggle="collapse" data-target="#collapse-financial-informations" 
+                                                        data-parent="#accordion" aria-expanded="false" aria-controls="collapse-financial-informations">
+                                                        <span style="float: left;">{% translate "Financial informations" %}</span>
+                                                    </button>
+                                                </h5>
+                                            </div>
+                                            <div id="collapse-financial-informations" class="collapse" aria-labelledby="heading-financial-informations" data-parent="#accordion">
+                                                <div class="card-body">
+                                                    <div id="financial-informations">
+                                                        <h5>{% translate "Financial informations" %}</h5>
+                                                    </div>
+                                                </div>
+                                                    
+                                                <div class="overlay" id="spin-financial-informations">
+                                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="card">
+                                            <div class="card-header" >
+                                                <h5 class="mb-0">
+                                                    <button id="heading-allocation-cvd" style="width: 100%;"
+                                                        class="btn btn-link accordion-toggle" data-toggle="collapse" data-target="#collapse-allocation-cvd" 
+                                                        data-parent="#accordion" aria-expanded="false" aria-controls="collapse-allocation-cvd">
+                                                        <span style="float: left;">{% translate "CVD Financial informations" %}</span>
+                                                    </button>
+                                                </h5>
+                                            </div>
+                                            <div id="collapse-allocation-cvd" class="collapse" aria-labelledby="heading-allocation-cvd" data-parent="#accordion">
+                                                <div class="card-body">
+                                                    <div id="allocation-cvd">
+                                                        <h5>{% translate "CVD Financial informations" %}</h5>
+                                                    </div>
+                                                </div>
+                                                    
+                                                <div class="overlay" id="spin-allocation-cvd">
+                                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div id="grm" class="tab-pane fade">
                             <div class="row">
@@ -447,7 +502,50 @@
         //End Summary GRM
 
 
+        //Financial Informations
+        let subprojects_sectors_steps_number_spin = $("#spin-financial-informations");
+        let subprojects_sectors_steps_number = $("#financial-informations");
+        subprojects_sectors_steps_number_spin.show();
+        $.ajax({
+            type: "GET",
+            url: "{% url 'dashboard:dashboard_subprojects_sectors_and_steps' %}",
+            data: {
+                administrative_level_id: [parseInt("{{ object.pk }}")],
+                administrative_level_type: "{{ object.type }}",
+                table_title: "{% translate 'Information summary' %}"
+            },
+            success: function (response) {
+                subprojects_sectors_steps_number_spin.hide();
+                subprojects_sectors_steps_number.html(response);
+            },
+            error: function (data) {
+                subprojects_sectors_steps_number_spin.hide();
+                alert(error_server_message + "Error " + data.status);
+            }
+        });
+
         
+        let allocation_cvd_spin = $("#spin-allocation-cvd");
+        let allocation_cvd = $("#allocation-cvd");
+        allocation_cvd_spin.show();
+        $.ajax({
+            type: "GET",
+            url: "{% url 'dashboard:dashboard_summary_allocation_cvd' %}",
+            data: {
+                administrative_level_id: [parseInt("{{ object.pk }}")],
+                administrative_level_type: "{{ object.type }}",
+                table_title: "{% translate 'CVD Allocations' %}"
+            },
+            success: function (response) {
+                allocation_cvd_spin.hide();
+                allocation_cvd.html(response);
+            },
+            error: function (data) {
+                allocation_cvd_spin.hide();
+                alert(error_server_message + "Error " + data.status);
+            }
+        });
+        //End Financial Informations
 
     });
 </script>

@@ -2534,3 +2534,23 @@ msgstr "Assigné à"
 #: .\administrativelevels
 msgid "Tasks"
 msgstr "Tâches"
+
+#: .\administrativelevels
+msgid "Information summary"
+msgstr "Résumé des informations"
+
+#: .\administrativelevels
+msgid "CVD Allocations"
+msgstr "Allocations du CVD"
+
+#: .\administrativelevels
+msgid "Canton Allocations"
+msgstr "Allocations du Canton"
+
+#: .\administrativelevels
+msgid "Canton Financial informations"
+msgstr "Informations Financières du canton"
+
+#: .\administrativelevels
+msgid "CVD Financial informations"
+msgstr "Informations Financières du CVD"

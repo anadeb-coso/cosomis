@@ -4,6 +4,7 @@ from django.views import generic
 from django.http import Http404
 from functools import reduce
 import re as re_module
+from django.db.models import Q
 
 from cosomis.mixins import AJAXRequestMixin, JSONResponseMixin
 from no_sql_client import NoSQLClient
@@ -628,3 +629,27 @@ class AdministrativeLevelPrioritiesComponent(AdministrativeLevelMixin, AJAXReque
             'subprojects': SubprojectSerializer(subprojects, many=True).data,
             'summary_subprojects': summary_subprojects
         }, safe=False)
+    
+
+
+class AdministrativeLevelFinancialInformationsComponent(AdministrativeLevelMixin, LoginRequiredMixin, generic.ListView):
+    template_name = 'components/financial_informations.html'
+    context_object_name = 'financial_informations'
+
+    def get_queryset(self):
+        villages = []
+        if self.administrative_level.type == "Canton":
+            villages = self.administrative_level.administrativelevel_set.get_queryset()
+        elif self.administrative_level.type == "Village":
+            villages = [self.administrative_level]
+        
+        administrative_levels_ids = [obj.id for obj in villages]
+
+        subprojects = Subproject.objects.filter(
+            Q(location_subproject_realized__id__in=administrative_levels_ids) | 
+            Q(canton__id__in=administrative_levels_ids)
+        )
+        
+        return {
+            
+        }

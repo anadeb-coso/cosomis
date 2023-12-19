@@ -381,9 +381,9 @@ class DashboardSubprojectsSectorsAndStepsListView(DashboardSubprojectsMixin, AJA
             if _sum:
                 datas[k_data][count] = _sum #str(_sum).rjust(characters_length,'0')
         # End All sum
-
+        table_title = self.request.GET.get('table_title')
         return {
-            'title': _("Subprojects by village, sector and step"),
+            'title': table_title if table_title else _("Subprojects by village, sector and step"),
             'datas': datas,
             'length_loop': range(0, count+1),
             'values': list(datas.values())

@@ -20,6 +20,7 @@ urlpatterns = [
     path('waves-times/', views_administrativelevels.DashboardWaveTimesListView.as_view(), name='dashboard_waves_times'),
     path('summary-administrativel-levels-number/', views_administrativelevels.DashboardSummaryAdministrativeLevelNumberListView.as_view(), name='dashboard_summary_administrativel_levels_number'),
     path('summary-allocation/', views_administrativelevels.DashboardSummaryAdministrativeLevelAllocationListView.as_view(), name='dashboard_summary_allocation'),
+    path('summary-allocation-cvd/', views_administrativelevels.DashboardSummaryCVDAllocationListView.as_view(), name='dashboard_summary_allocation_cvd'),
 
     path('download-excel-file/', views_excel.DownloadExcelFile.as_view(), name='dashboard_download_excel_file'),
 ]
