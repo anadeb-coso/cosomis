@@ -67,6 +67,9 @@ class AdministrativeLevelOverviewComponent(AdministrativeLevelMixin, LoginRequir
         national_or_international_NGO, municipal_agent, regional_departmental_civil_servant = None, None, None
 
 
+        phases, activities, tasks = [], [], []
+
+
         villages = []
         if self.administrative_level.type == "Canton":
             villages = self.administrative_level.administrativelevel_set.get_queryset()
@@ -110,7 +113,12 @@ class AdministrativeLevelOverviewComponent(AdministrativeLevelMixin, LoginRequir
                     if village_id in villages_cvds_ids:
                         for _task in docs:
                             _task = _task.get('doc')
+                            if _task.get('type') == 'phase' and village_id == _task.get('administrative_level_id'):
+                                phases.append(_task)
+                            if _task.get('type') == 'activity' and village_id == _task.get('administrative_level_id'):
+                                activities.append(_task)
                             if _task.get('type') == 'task' and village_id == _task.get('administrative_level_id'):
+                                tasks.append(_task)
                                 form_response = _task.get("form_response")
 
                                 if ((not last_task_completed and _task.get('completed')) or (
@@ -546,7 +554,12 @@ class AdministrativeLevelOverviewComponent(AdministrativeLevelMixin, LoginRequir
             "agricultural_supervisor": agricultural_supervisor, "Women_s_Group": Women_s_Group,
             "national_or_international_NGO": national_or_international_NGO, 
             "municipal_agent": municipal_agent, 
-            "regional_departmental_civil_servant": regional_departmental_civil_servant
+            "regional_departmental_civil_servant": regional_departmental_civil_servant,
+
+            #Planning cycle information
+            'phases': phases,
+            'activities': activities,
+            'tasks': tasks
         }
     
     def get_queryset(self):

@@ -1,0 +1,265 @@
+{% load static i18n custom_tags %}
+<style>
+    .small-text-table td {
+        font-size: 9px !important;
+    }
+</style>
+
+
+<script type="text/javascript">
+    let spin_planning_cycle_informations = $("#spin-planning-cycle-informations");
+    let planning_cycle_informations = $("#planning-cycle-informations");
+    spin_planning_cycle_informations.show();
+planning_cycle_informations.html(`
+    <h4>{% translate 'Planning Cycle' %}</h4>
+
+
+
+    
+    <div class="row table-responsive-sm small-text-table">
+
+        <div class="col-3">
+            <table class="table" id="table_phases" >
+                <thead>
+                    <tr>
+                        <th scope="col-1">{% translate "Phases" %}</th>
+                    </tr>
+                </thead>
+                <tbody id="table_body_phases">
+                    {% for phase in datas.phases %}
+                        <tr id="phase_{{ phase|get:'_id' }}">
+                            <td align="left" style="cursor: pointer;">
+                                {{ phase.name }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>  
+        </div>
+
+
+        
+        <div class="col-3">
+            <table class="table" id="table_activities">
+                <thead>
+                    <tr>
+                        <th scope="col-1">{% translate "Activities" %}</th>
+                    </tr>
+                </thead>
+                <tbody id="table_body_activities">
+                    {% for activity in datas.activities %}
+                        <tr id="activity_{{ activity|get:'_id' }}_{{ activity.phase_id }}">
+                            <td align="left" style="cursor: pointer;">
+                                {{ activity.name }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>  
+        </div>
+
+
+        
+        <div class="col-6">
+            <table class="table" id="table_tasks">
+                <thead>
+                    <tr>
+                        <th scope="col-1" colspan="2">{% translate "Tasks" %}</th>
+                    </tr>
+                </thead>
+                <tbody id="table_body_tasks">
+                    {% for task in datas.tasks %}
+                        <tr id="task_{{ task|get:'_id' }}_{{ task.activity_id }}_{{ task.phase_id }}" 
+                            style="background-color: #18e5e5;">
+                            <td align="left">
+                                <a href="#" style="cursor: pointer; color: black;text-decoration: underline;{% if task.completed %}font-weight: bold;{% endif %}">{{ task.name }}</a>
+                            </td>
+                            <td align="center">
+                                {% if task.completed %}
+                                    {% translate "Completed" %}
+                                {% elif task.last_updated != "0000-00-00 00:00:00" %}
+                                    {% translate "In progress" %}
+                                {% else %}
+                                    {% translate "Not started" %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>  
+        </div>
+
+    </div>
+    
+`);
+
+
+
+
+    $(document).ready(function () {
+        {% get_current_language as lang %}
+
+      
+        
+    });
+
+
+    spin_planning_cycle_informations.hide();
+
+    
+
+    $('#table_phases tr').click(function(event){
+        event.preventDefault();
+        $('#table_phases tr').each(function(){
+            this.style.backgroundColor = "white";
+            this.style.opacity= 1;
+        });
+        let phase_id = this.id.split('_')[1];
+        this.style.backgroundColor = "#18e5e5";
+        this.style.opacity= 0.5;
+
+        let body_activities = $('#table_body_activities');
+        let body_activities_children = body_activities.children();
+        let activity_id;
+        let phase_ids = [];
+        for(let i=0;i<body_activities_children.length;i++){
+            activity_phase_id = body_activities_children[i].id.split('_')[2];
+            if(phase_id != activity_phase_id){
+                {% comment %} body_activities_children[i].style.display = 'none'; {% endcomment %}
+                body_activities_children[i].style.backgroundColor = "white";
+                body_activities_children[i].style.opacity= 1;
+            }else{
+                {% comment %} body_activities_children[i].style.display = 'block'; {% endcomment %}
+                body_activities_children[i].style.backgroundColor = "#18e5e5";
+                body_activities_children[i].style.opacity= 0.5;
+                phase_ids.push(activity_phase_id);
+            }
+        }
+
+
+        let body_tasks = $('#table_body_tasks');
+        let body_tasks_str = '';
+        {% for task_tr in datas.tasks %}
+            if(phase_ids.includes("{{ task_tr.phase_id }}")){
+                body_tasks_str += `
+                    <tr id="task_{{ task_tr|get:'_id' }}_{{ task_tr.activity_id }}_{{ task_tr.phase_id }}" 
+                        style="background-color: #18e5e5;">
+                        <td align="left">
+                            <a href="#" style="cursor: pointer; color: black;text-decoration: underline;{% if task_tr.completed %}font-weight: bold;{% endif %}">{{ task_tr.name }}</a>
+                        </td>
+                        <td align="center">
+                            {% if task_tr.completed %}
+                                {% translate "Completed" %}
+                            {% elif task_tr.last_updated != "0000-00-00 00:00:00" %}
+                                {% translate "In progress" %}
+                            {% else %}
+                                {% translate "Not started" %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                `;
+            }
+        {% endfor %}
+        body_tasks.html(body_tasks_str);
+
+    });
+
+
+
+    
+
+    $('#table_activities tr').click(function(event){
+        event.preventDefault();
+        $('#table_phases tr').each(function(){
+            this.style.backgroundColor = "white";
+            this.style.opacity= 1;
+        });
+        $('#table_activities tr').each(function(){
+            this.style.backgroundColor = "white";
+            this.style.opacity= 1;
+        });
+        let activity_id = this.id.split('_')[1];
+        let activity_phase_id = this.id.split('_')[2];
+        this.style.backgroundColor = "#18e5e5";
+        this.style.opacity= 0.5;
+        
+        $('#phase_'+activity_phase_id).css({
+            'background-color': '#18e5e5',
+            'opacity': 0.5
+        });
+
+        let body_tasks = $('#table_body_tasks');
+        
+        let body_tasks_str = '';
+        {% for task_tr in datas.tasks %}
+            if(activity_id == "{{ task_tr.activity_id }}"){
+                body_tasks_str += `
+                    <tr id="task_{{ task_tr|get:'_id' }}_{{ task_tr.activity_id }}_{{ task_tr.phase_id }}"
+                        style="background-color: #18e5e5;">
+                        <td align="left">
+                            <a href="#" style="cursor: pointer; color: black;text-decoration: underline;{% if task_tr.completed %}font-weight: bold;{% endif %}">{{ task_tr.name }}</a>
+                        </td>
+                        <td align="center">
+                            {% if task_tr.completed %}
+                                {% translate "Completed" %}
+                            {% elif task_tr.last_updated != "0000-00-00 00:00:00" %}
+                                {% translate "In progress" %}
+                            {% else %}
+                                {% translate "Not started" %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                `;
+            }
+        {% endfor %}
+        body_tasks.html(body_tasks_str);
+        
+    });
+
+    function activities_completed(){
+        let t;
+        let c;
+        {% for activity_tr in datas.activities %}
+            t = 0;
+            c = 0;
+            {% for task_tr in datas.tasks %}
+                {% if activity_tr|get:'_id' == task_tr.activity_id %}
+                    t++;
+                    if("{{ task_tr.completed }}" == "True"){
+                        c++;
+                    }
+                {% endif %}
+            {% endfor %}
+
+            if(t == c){
+                $("#activity_{{ activity_tr|get:'_id' }}_{{ activity_tr.phase_id }}").css('font-weight', 'bold');
+            }
+        {% endfor %}
+    }
+
+    function phases_completed(){
+        let t;
+        let c;
+        {% for phase_tr in datas.phases %}
+            t = 0;
+            c = 0;
+            {% for task_tr in datas.tasks %}
+                {% if phase_tr|get:'_id' == task_tr.phase_id %}
+                    t++;
+                    if("{{ task_tr.completed }}" == "True"){
+                        c++;
+                    }
+                {% endif %}
+            {% endfor %}
+
+            if(t == c){
+                $("#phase_{{ phase_tr|get:'_id' }}").css('font-weight', 'bold');
+            }
+        {% endfor %}
+    }
+
+    activities_completed();
+    phases_completed();
+
+
+</script>

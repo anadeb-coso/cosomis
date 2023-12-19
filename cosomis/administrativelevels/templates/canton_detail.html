@@ -234,7 +234,28 @@
                             <h3>{% translate "In construction" %}</h3>
                         </div>
                         <div id="grm" class="tab-pane fade">
-                            <h3>{% translate "In construction" %}</h3>
+                            <div class="row">
+                                <div class="col-12"></div>
+                            </div>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <div id="grm-body">
+                                                        <h5>{% translate "Grievance Redress Mechanism" %}</h5>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="overlay" id="spin-grm">
+                                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         {% comment %} <div id="subprojects" class="tab-pane fade">
                             <h3>{% translate "In construction" %}</h3>
@@ -338,6 +359,30 @@
         //End Summary Subprojects
 
 
+        
+        //Summary GRM
+        let spin_grm = $("#spin-grm");
+        let grm_body = $("#grm-body");
+        spin_grm.show();
+        $.ajax({
+            type: 'GET',
+            url: "{% url 'administrativelevels:grm:review_issues' object.pk %}",
+            data: {
+
+            },
+            success: function (data_summary) {
+                spin_grm.hide();
+                grm_body.html(data_summary);
+            },
+            error: function (data_summary) {
+                spin_grm.hide();
+                alert(error_server_message + "Error " + data_summary.status);
+            }
+            }).done(function () {
+                    spin_grm.hide();
+                }
+            );
+        //End Summary GRM
         
 
     });
