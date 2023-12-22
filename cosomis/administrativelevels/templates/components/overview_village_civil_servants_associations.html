@@ -7,6 +7,7 @@
     <br />
     <div class="row" style="margin: auto;">
         <div class="col-6" style="margin: auto;">
+            {% if not datas.all_civil_servants_and_associations %}
             <span>
                 {% if datas.villages_canton_quartier_chief and datas.villages_canton_quartier_chief|get:"chefVillage" %}
                 <b><i class="fa fa-check" aria-hidden="true"></i></b>
@@ -45,6 +46,21 @@
                 {% endif %} 
                 {% translate "Women's Group" %}
             </span><br />
+            {% else %}
+                {% comment %} {% for civil_servant_ass in datas.all_civil_servants_and_associations %} {% endcomment %}
+                    {% for k, v in datas.all_civil_servants_and_associations.items %}
+                        <span>
+                            {% if v == 'Oui' %}
+                            <b><i class="fa fa-check" aria-hidden="true"></i></b>
+                            {% endif %} 
+                            {{ k }}
+                            {% if k == "Comité de développement villageois" and datas.village_dev_committee and datas.village_dev_committee|get:"description" %}
+                            ({{ datas.village_dev_committee|get:"description" }})
+                            {% endif %}
+                        </span><br />
+                    {% endfor %}
+                {% comment %} {% endfor %} {% endcomment %}
+            {% endif %}
         </div>
     </div>
     `);

@@ -1113,6 +1113,10 @@ msgstr "Transport public motorisé ou par voie d'eau"
 
 #: .\administrativelevels\templates\canton_detail.html
 msgid "Main means of transport"
+msgstr "Principaux moyens de transport"
+
+#: .\administrativelevels\templates\canton_detail.html
+msgid "Main mean of transport"
 msgstr "Principal moyen de transport"
 
 #: .\administrativelevels\templates\canton_detail.html
@@ -2554,3 +2558,31 @@ msgstr "Informations Financières du canton"
 #: .\administrativelevels
 msgid "CVD Financial informations"
 msgstr "Informations Financières du CVD"
+
+#: .\administrativelevels
+msgid "Motorcycle Tricycle"
+msgstr "Moto Tricycle"
+
+#: .\administrativelevels
+msgid "Cab Car"
+msgstr "Taxi Voiture"
+
+#: .\administrativelevels
+msgid "Train"
+msgstr "Train"
+
+#: .\administrativelevels
+msgid "Pirogue"
+msgstr "Pirogue"
+
+#: .\administrativelevels
+msgid "benefit information"
+msgstr "informations sur les allocations"
+
+#: .\administrativelevels
+msgid "Another country's network"
+msgstr "Réseau d'un autre Pays"
+
+#: .\administrativelevels
+msgid "Financed subprojects"
+msgstr "Les sous-projets financés"

@@ -7,23 +7,25 @@
     <br />
     <div class="row">
         <div class="col-4">
+            {% if datas.object.type == "Canton" %}
             <div class="row">
                 <div class="col-6">
                     <b>{% translate "Topography in the canton" %}:</b>
                 </div>
                 <div class="col-6">###</div>
             </div>
+            {% endif %}
             <div class="row">
                 <div class="col-6">
                     <b>{% translate "Motorized or waterborne public transport" %}:</b>
                 </div>
-                <div class="col-6">###</div>
+                <div class="col-6">{% if datas.main_access_road %}{{ datas.main_access_road }}{% else %}-{% endif %}</div>
             </div>
             <div class="row">
                 <div class="col-6">
-                    <b>{% translate "Main means of transport" %}:</b>
+                    <b>{% translate "Main mean of transport" %}:</b>
                 </div>
-                <div class="col-6">###</div>
+                <div class="col-6">{% if datas.main_mean_of_transport %}{{ datas.main_mean_of_transport }}{% else %}-{% endif %}</div>
             </div>
         </div>
         <div class="col-4">
@@ -31,16 +33,28 @@
                 <div class="col-6">
                     <b>{% translate "Main business activities" %}:</b>
                 </div>
-                <div class="col-6">###</div>
+                <div class="col-6">
+                    {% if datas.main_activities %}
+                        {% for main_activity in datas.main_activities %}
+                            <span>{% if forloop.counter != 1 %}, {% endif %}{{ main_activity }}{% if forloop.last %}.{% endif %}</span>
+                        {% endfor %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
             </div>
             <div class="row">
                 <div class="col-6">
                     <b>{% translate "Climate data" %}:</b>
                 </div>
                 <div class="col-6">
-                    {% for climate in datas.climate_datas %}
-                        <span>{% if forloop.counter != 1 %}, {% endif %}{{ climate }}{% if forloop.last %}.{% endif %}</span>
-                    {% endfor %}
+                    {% if datas.climate_datas %}
+                        {% for climate in datas.climate_datas %}
+                            <span>{% if forloop.counter != 1 %}, {% endif %}{{ climate }}{% if forloop.last %}.{% endif %}</span>
+                        {% endfor %}
+                    {% else %}
+                        -
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -49,7 +63,15 @@
                 <div class="col-6">
                     <b>{% translate "Access water network" %}:</b>
                 </div>
-                <div class="col-6">###</div>
+                <div class="col-6">
+                    {% if datas.access_waters_network %}
+                        {% for access_water_network in datas.access_waters_network %}
+                            <span>{% if forloop.counter != 1 %}, {% endif %}{{ access_water_network }}{% if forloop.last %}.{% endif %}</span>
+                        {% endfor %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -69,7 +91,7 @@
                         <div class="col-6">
                             <b>{% translate "Frequency of main means of transport" %}:</b>
                         </div>
-                        <div class="col-6">###</div>
+                        <div class="col-6">{% if datas.frequence_main_mean_of_transport %}{{ datas.frequence_main_mean_of_transport }}{% else %}-{% endif %}</div>
                     </div>
                 </div>
                 <div class="col-4">
@@ -77,7 +99,15 @@
                         <div class="col-6">
                             <b>{% translate "Accessible public transport" %}:</b>
                         </div>
-                        <div class="col-6">###</div>
+                        <div class="col-6">
+                            {% if datas.main_means_of_transport %}
+                                {% for main_mean_of_transport in datas.main_means_of_transport %}
+                                    <span>{% if forloop.counter != 1 %}, {% endif %}{{ main_mean_of_transport }}{% if forloop.last %}.{% endif %}</span>
+                                {% endfor %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -90,7 +120,15 @@
                 <div class="col-6">
                     <b>{% translate "Available cell phone networks" %}:</b>
                 </div>
-                <div class="col-6">###</div>
+                <div class="col-6">
+                    {% if datas.available_cell_phone_networks %}
+                        {% for available_cell_phone_network in datas.available_cell_phone_networks %}
+                            <span>{% if forloop.counter != 1 %}, {% endif %}{{ available_cell_phone_network }}{% if forloop.last %}.{% endif %}</span>
+                        {% endfor %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
             </div>
         </div>
         <div class="col-8">

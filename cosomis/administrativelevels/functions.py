@@ -485,13 +485,35 @@ def get_cvds(facilitator):
 
     return CVDs
 
-def get_datas_dict(reponses_datas, key, level: int = 1):
-    for i in range(len(reponses_datas)):
-        elt = reponses_datas[i]
-        if level == 1:
-            for k,v in elt.items():
-                if k == key:
-                    return v
+def get_datas_dict(datas, key, level: int = 1, form_options_fields=False):
+    for i in range(len(datas)):
+        if form_options_fields:
+            if level == 1:
+                for elt in datas:
+                    try:
+                        return elt['options']['fields'][key]['fields']
+                    except:
+                        pass
+            # elif level == 2:
+            #     for elt in datas:
+            #         fields = elt['options']['fields']
+            #         for k1, v1 in fields.items():
+            #             for k2, v2 in v1['fields'].items():
+            #                 if k2 == key:
+            #                     return v2
+            return {}
+        else:
+            elt = datas[i]
+            if level == 1:
+                for k,v in elt.items():
+                    if k == key:
+                        return v
+            elif level == 2:
+                for k,v in elt.items():
+                    if v and type(v) == dict:
+                        for kk,vv in v.items():
+                            if kk == key:
+                                return vv
                 
 def verifiy_if_element_has_a_key_who_has_a_value(liste, key, value):
     for i in range(len(liste)):

@@ -41,9 +41,13 @@ class AdministrativeLevelOverviewComponent(AdministrativeLevelMixin, LoginRequir
     def get_results(self):
 
         population, nbr_menages, nbr_men, nbr_women, young, elderly, handicap = 0, 0, 0, 0, 0, 0, 0
-        fermers_breeders, nbr_ethnic_minorities = 0, 0
+        fermers_breeders, nbr_ethnic_minorities, households_added_due_to_conflict, households_added = 0, 0, 0, 0
         average_distance_from_nearest_town = None
         liste_minorities, languages, religions, climate_datas, infras  = [], [], [], [], []
+        main_activities, main_means_of_transport, available_cell_phone_networks, access_waters_network = [], [], [], []
+        main_activities_dict = {}
+        main_mean_of_transport, main_access_road, frequence_main_mean_of_transport = None, None, None
+        access_water_network = None
         attachments = []
         attachment_image_principal = {}
         minorities = ""
@@ -66,6 +70,7 @@ class AdministrativeLevelOverviewComponent(AdministrativeLevelMixin, LoginRequir
         villages_canton_quartier_chief, village_dev_committee, school_committee = None, {}, None
         health_committee, agricultural_cooperative, agricultural_supervisor, Women_s_Group = None, None, None, None
         national_or_international_NGO, municipal_agent, regional_departmental_civil_servant = None, None, None
+        all_civil_servants_and_associations = {}
 
 
         phases, activities, tasks = [], [], []
@@ -151,26 +156,93 @@ class AdministrativeLevelOverviewComponent(AdministrativeLevelMixin, LoginRequir
                                 if form_response:
                                     if _task.get('sql_id') == 20: #Etablissement du profil du village
                                         try:
-                                            _ = get_datas_dict(form_response, "population", 1)["populationTotaleDuVillage"]
-                                            population += _
+                                            try:
+                                                _ = get_datas_dict(form_response, "population", 1)["populationTotaleDuVillage"]
+                                            except:
+                                                _ = get_datas_dict(form_response, "generalitiesSurVillage", 1)["populationVillage"]
+                                            population += (_ if _ else 0)
                                             cvd_infos['population'] = _
                                         except Exception as exc:
                                             population = population
                                         
                                         try:
-                                            nbr_menages += get_datas_dict(form_response, "generalitiesSurVillage", 1)["totalHouseHolds"]
+                                            _nbr_menages = get_datas_dict(form_response, "generalitiesSurVillage", 1)["totalHouseHolds"]
+                                            nbr_menages += (_nbr_menages if _nbr_menages else 0)
                                         except Exception as exc:
                                             nbr_menages = nbr_menages
                                         
                                         try:
-                                            nbr_men += get_datas_dict(form_response, "population", 1)["populationNombreDeHommes"]
+                                            try:
+                                                _nbr_men = get_datas_dict(form_response, "population", 1)["populationNombreDeHommes"]
+                                            except:
+                                                _nbr_men = (
+                                                    get_datas_dict(form_response, "generalitiesSurVillage", 1)["totalHommesMoins35"] + \
+                                                    get_datas_dict(form_response, "generalitiesSurVillage", 1)["totalHommesPlus35"]
+                                                )
+                                            nbr_men += (_nbr_men if _nbr_men else 0)
                                         except Exception as exc:
                                             nbr_men = nbr_men
                                         
                                         try:
-                                            nbr_women += get_datas_dict(form_response, "population", 1)["populationNombreDeFemmes"]
+                                            try:
+                                                _nbr_women = get_datas_dict(form_response, "population", 1)["populationNombreDeFemmes"]
+                                            except:
+                                                _nbr_women = (
+                                                    get_datas_dict(form_response, "generalitiesSurVillage", 1)["totalFemmesMoins35"] + \
+                                                    get_datas_dict(form_response, "generalitiesSurVillage", 1)["totalFemmesPlus35"]
+                                                )
+                                                nbr_women += (_nbr_women if _nbr_women else 0)
                                         except Exception as exc:
                                             nbr_women = nbr_women
+                                        
+                                        try:
+                                            try:
+                                               _young = get_datas_dict(form_response, "populationPersonnesJeunes", 2)["populationPersonnesJeunesTotal"]
+                                            except:
+                                                _young = (
+                                                    get_datas_dict(form_response, "generalitiesSurVillage", 1)["totalHommesMoins35"] + \
+                                                    get_datas_dict(form_response, "generalitiesSurVillage", 1)["totalFemmesMoins35"]
+                                                )
+                                                young += (_young if _young else 0)
+                                        except Exception as exc:
+                                            young = young
+                                        
+                                        try:
+                                            try:
+                                                _elderly = get_datas_dict(form_response, "populationPersonnesAgees", 2)["populationPersonnesAgeesTotal"]
+                                            except:
+                                                _elderly = 0
+                                            elderly += (_elderly if _elderly else 0)
+                                        except Exception as exc:
+                                            elderly = elderly
+                                        
+                                        try:
+                                            try:
+                                                _handicap = get_datas_dict(form_response, "populationPersonnesHandicape", 2)["populationPersonnesHandicapeTotal"]
+                                            except:
+                                                _handicap = 0
+                                            handicap += (_handicap if _handicap else 0)
+                                        except Exception as exc:
+                                            handicap = handicap
+                                        
+                                        try:
+                                            try:
+                                                _households_added = get_datas_dict(form_response, "situationDesMenages", 1)['totalNouveauxMenages']
+                                            except:
+                                                _households_added = 0
+                                            households_added += (_households_added if _households_added else 0)
+                                        except Exception as exc:
+                                            households_added = households_added
+                                        
+                                        try:
+                                            try:
+                                                _households_added_due_to_conflict = get_datas_dict(form_response, "situationDesMenages", 1)['nbrNouveauxMenagesRaisonConflits']
+                                            except:
+                                                _households_added_due_to_conflict = 0
+                                            households_added_due_to_conflict += (_households_added_due_to_conflict if _households_added_due_to_conflict else 0)
+                                        except Exception as exc:
+                                            households_added_due_to_conflict = households_added_due_to_conflict
+                                        
                                         
                                         try:
                                             _ = get_datas_dict(form_response, "population", 1)["populationEthniqueMinoritaire"]
@@ -190,6 +262,15 @@ class AdministrativeLevelOverviewComponent(AdministrativeLevelMixin, LoginRequir
                                                         _copy = (strip_accents(ethnic["NomEthnicité"]).strip()).title().replace('-', ' ')
                                                         if _copy and _copy not in _l and _copy not in IGNORES and 'Pas De ' not in _copy:
                                                             _l += [i.strip() for i in re_module.split('[,;/]|Et', _copy)]
+                                            else:
+                                                for i in range(1, 4):
+                                                    lang = get_datas_dict(form_response, "principaleLanguesParlees", 1)[f"principaleLangueParlee{i}"]
+                                                    if not lang:
+                                                        lang = get_datas_dict(form_response, "principaleLanguesParlees", 1)[f"autrePrincipaleLangueParlee{i}"]
+                                                        if lang in ('-', None, ''):
+                                                            lang = None
+                                                    if lang:
+                                                        _l.append(lang)
                                             languages += _l
                                             if 'Autres' in _l:
                                                 _l.remove('Autres')
@@ -207,6 +288,15 @@ class AdministrativeLevelOverviewComponent(AdministrativeLevelMixin, LoginRequir
                                                         _copy = (strip_accents(religion["NomReligion"]).strip()).title().replace('-', ' ')
                                                         if _copy and _copy not in _l and _copy not in IGNORES and 'Pas De ' not in _copy:
                                                             _l += [i.strip() for i in re_module.split('[,;/]|Et', _copy)]
+                                            else:
+                                                for i in range(1, 4):
+                                                    religion = get_datas_dict(form_response, "principaleReligions", 1)[f"principaleReligion{i}"]
+                                                    if not religion:
+                                                        religion = get_datas_dict(form_response, "principaleReligions", 1)[f"autrePrincipaleReligion{i}"]
+                                                        if religion in ('-', None, ''):
+                                                            religion = None
+                                                    if religion:
+                                                        _l.append(religion)
                                             religions += _l
                                             if 'Autres' in _l:
                                                 _l.remove('Autres')
@@ -236,14 +326,89 @@ class AdministrativeLevelOverviewComponent(AdministrativeLevelMixin, LoginRequir
                                             pass
                                         
                                         try:
+                                            access_water_network = get_datas_dict(form_response, "sourceEauSaisonSeche", 2)['sourceEauSaisonSeche1']
+                                            access_water_network_2 = get_datas_dict(form_response, "sourceEauSaisonSeche", 2)['sourceEauSaisonSeche2']
+                                            if access_water_network:
+                                                access_waters_network.append(access_water_network)
+                                            if access_water_network_2:
+                                                access_waters_network.append(access_water_network_2)
+                                        except Exception as exc:
+                                            pass
+                                        
+                                        try:
+                                            main_mean_of_transport = get_datas_dict(form_response, "principalMoyenTransport", 1)
+                                        except Exception as exc:
+                                            pass
+
+                                        try:
+                                            couvertureReseauMoov = get_datas_dict(form_response, "couvertureReseauMoov", 1)
+                                            couvertureReseauTogocom = get_datas_dict(form_response, "couvertureReseauTogocom", 1)
+                                            couvertureReseauPaysVoisin = get_datas_dict(form_response, "couvertureReseauPaysVoisin", 1)
+                                            if couvertureReseauMoov == "Oui":
+                                                available_cell_phone_networks.append("Moov")
+                                            if couvertureReseauTogocom == "Oui":
+                                                available_cell_phone_networks.append("Togocom")
+                                            if couvertureReseauPaysVoisin == "Oui":
+                                                available_cell_phone_networks.append(gettext_lazy("Another country's network"))
+                                        except Exception as exc:
+                                            pass
+
+                                        try:
+                                            main_access_road = get_datas_dict(form_response, "voiePrincipaleDacces", 1)
+                                        except Exception as exc:
+                                            pass
+
+                                        try:
+                                            frequence_main_mean_of_transport = get_datas_dict(form_response, "frequencePrincipalMoyenTransport", 1)
+                                        except Exception as exc:
+                                            pass
+                                        
+                                        try:
+                                            _main_activities = get_datas_dict(form_response, "principalesActivites", 1)
+                                            _l = []
+                                            for i in range(1, 3):
+                                                activit = _main_activities[f"principaleActivite{i}"]
+                                                activit_another = _main_activities[f"autrePrincipaleActivite{i}"]
+                                                # if activit and activit_another not in ('-', None, ''):
+                                                #     activit = f"{activit} ({activit_another})"
+                                                # elif not activit:
+                                                #     activit = activit_another
+                                                if not activit:
+                                                    activit = activit_another
+                                                if main_activities_dict.get(activit):
+                                                    main_activities_dict[activit] += f",{activit_another}" if activit_another not in ('-', None, '') else ''
+                                                else:
+                                                    main_activities_dict[activit] = activit_another if activit_another not in ('-', None, '') else ''
+                                                
+                                                _l.append(activit)
+                                            
+                                            # main_activities += _l
+                                            if 'Autres' in _l:
+                                                _l.remove('Autres')
+                                                _l.append('Autres')
+                                            cvd_infos['main_activities'] = _l
+                                        except Exception as exc:
+                                            pass
+                                        
+                                        try:
                                             _ = get_datas_dict(form_response, "equipementEtInfrastructures", 1)
+                                            if not _:
+                                                _ = get_datas_dict(form_response, "equipementEtInfrastructures", 2)
                                             if _:
                                                 for key, value in _.items():
+                                                    if not value or type(value) is not dict:
+                                                        value = _
                                                     for k, v in value.items():
                                                         if v:
                                                             if v == "Oui":
-                                                                _copy = _task['form'][7]['options']['fields']['equipementEtInfrastructures']['fields'][key]['fields'][k]['label']
-                                                                if _copy not in infras:
+                                                                try:
+                                                                    _copy = _task['form'][7]['options']['fields']['equipementEtInfrastructures']['fields'][key]['fields'][k]['label']
+                                                                except:
+                                                                    try:
+                                                                        _copy = _task['form'][11]['options']['fields']['existenceEtAccessibilitAuxServicesSociaux']['fields']['equipementEtInfrastructures']['fields'][k]['label']
+                                                                    except:
+                                                                        _copy = None
+                                                                if _copy and _copy not in infras:
                                                                     infras.append(_copy)
                                                             elif v != "Non":
                                                                 _copy = (strip_accents(v).strip()).title().replace('-', ' ')
@@ -252,6 +417,17 @@ class AdministrativeLevelOverviewComponent(AdministrativeLevelMixin, LoginRequir
                                         except Exception as exc:
                                             pass
 
+                                        try:
+                                            _ = get_datas_dict(form_response, "personnesOuGroupementsAssociatifsExistent", 1)
+                                            if _:
+                                                personnesOuGroupementsAssociatifsExistent = get_datas_dict(_task['form'], "personnesOuGroupementsAssociatifsExistent", 1, True)
+                                                for k, v in _.items():
+                                                    _copy = personnesOuGroupementsAssociatifsExistent[k]['label']
+                                                    if _copy not in all_civil_servants_and_associations:
+                                                        all_civil_servants_and_associations[_copy] = v
+                                        except Exception as exc:
+                                            pass
+                                                            
                                     if _task.get('sql_id') == 15: #Vérification de l'existence d'un comité cantonal de développement (CCD)
                                         try:
                                             village_dev_committee["description"] = gettext_lazy("New").__str__() if get_datas_dict(form_response, "existenceCDD", 1) == "Non" else None
@@ -422,7 +598,8 @@ class AdministrativeLevelOverviewComponent(AdministrativeLevelMixin, LoginRequir
             climate_datas.append('Autres')
         
         for attach in attachments:
-            if attach and attach.get("type") and "image" in attach.get("type") and attach.get("attachment"):
+            attach_name = str(attach.get("name")).lower()
+            if attach and attach.get("type") and "image" in attach.get("type") and attach.get("attachment") and 'photo de la réunion' in attach_name:
                 attachment_image_principal = attach
 
         liste_combine_priorities = p_g_farmers_breeders_1_1 + p_g_women_1_1 + p_g_young_1_1 + p_g_ethnic_minorities_1_1
@@ -514,15 +691,30 @@ class AdministrativeLevelOverviewComponent(AdministrativeLevelMixin, LoginRequir
         priorities_1_2_b["propose_by"] = list(set(priorities_1_2_b["propose_by"]))
         #End 1.2 b
 
+        for k, v in main_activities_dict.items():
+            if v:
+                _copy = (strip_accents(v).strip()).title().replace('-', ' ')
+                main_activities_description = ', '.join(list(set([i.strip() for i in re_module.split('[,;/]|Et', _copy)])))
+                main_activities.append(f"{k} ({main_activities_description})")
+            else:
+                main_activities.append(k)
         return {
             "population": population, "nbr_menages": nbr_menages,
             "nbr_men": nbr_men, "nbr_women": nbr_women,
             "minorities": ', '.join(liste_minorities), 
             "nbr_ethnic_minorities": len(liste_minorities),
-            "young": 0, "elderly": 0, "handicap": 0, "fermers_breeders": 0,
+            "young": young, "elderly": elderly, "handicap": handicap, "fermers_breeders": 0,
+            "households_added": households_added, 
+            "households_added_due_to_conflict": households_added_due_to_conflict,
             "nbr_villages": len(villages),
             "languages": languages, "religions": religions, "climate_datas": climate_datas,
             "average_distance_from_nearest_town": average_distance_from_nearest_town, "infras": infras,
+            "main_activities": list(set(main_activities)), "main_means_of_transport": list(set(main_means_of_transport)),
+            "available_cell_phone_networks": list(set(available_cell_phone_networks)),
+            "main_mean_of_transport": main_mean_of_transport,
+            "main_access_road": main_access_road, "access_waters_network": list(set(access_waters_network)),
+            "access_water_network": access_water_network,
+            "frequence_main_mean_of_transport": frequence_main_mean_of_transport,
             "cvds_infos": cvds_infos, "attachment_image_principal": attachment_image_principal,
             "attachments": attachments, "exists_at_least_attachment": len(attachments) != 0,
             "object": self.administrative_level, "last_task_completed": last_task_completed,
@@ -556,6 +748,7 @@ class AdministrativeLevelOverviewComponent(AdministrativeLevelMixin, LoginRequir
             "national_or_international_NGO": national_or_international_NGO, 
             "municipal_agent": municipal_agent, 
             "regional_departmental_civil_servant": regional_departmental_civil_servant,
+            "all_civil_servants_and_associations": all_civil_servants_and_associations,
 
             #Planning cycle information
             'phases': phases,

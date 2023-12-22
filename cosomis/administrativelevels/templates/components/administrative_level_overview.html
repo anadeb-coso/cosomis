@@ -4,7 +4,7 @@
         <span class="font-weight-bold">{% translate "Total population" %}</span><br/>
     </div>
     <div class="col-6">
-        <span>{{ datas.population }}</span><br/>
+        <span>{% if datas.population %}{{ datas.population }}{% else %}-{% endif %}</span><br/>
     </div>
 </div>
 
@@ -13,7 +13,7 @@
         <span class="font-weight-bold">{% translate "Number of households" %}</span><br/>
     </div>
     <div class="col-6">
-        <span>{{ datas.nbr_menages }}</span><br/>
+        <span>{% if datas.nbr_menages %}{{ datas.nbr_menages }}{% else %}-{% endif %}</span><br/>
     </div>
 </div>
 {% if datas.object.type != "Village" %}
@@ -22,7 +22,7 @@
         <span class="font-weight-bold">{% translate "Villages" %}</span><br/>
     </div>
     <div class="col-6">
-        <span>{{ datas.nbr_villages }}</span><br/>
+        <span>{% if datas.nbr_villages %}{{ datas.nbr_villages }}{% else %}-{% endif %}</span><br/>
     </div>
 </div>
 {% endif %}
@@ -32,7 +32,7 @@
         <span class="font-weight-bold">{% translate "Men" %}/{% translate "Women" %}</span><br/>
     </div>
     <div class="col-6">
-        <span>{{ datas.nbr_men }}/{{ datas.nbr_women }}</span><br/>
+        <span>{% if datas.nbr_men or datas.nbr_women %}{{ datas.nbr_men }}/{{ datas.nbr_women }}{% else %}-{% endif %}</span><br/>
     </div>
 </div>
 
@@ -41,7 +41,7 @@
         <span class="font-weight-bold">{% translate "Young" %}</span><br/>
     </div>
     <div class="col-6">
-        <span>###</span><br/>
+        <span>{% if datas.young %}{{ datas.young }}{% else %}-{% endif %}</span><br/>
     </div>
 </div>
 
@@ -50,7 +50,7 @@
         <span class="font-weight-bold">{% translate "Elderly" %}</span><br/>
     </div>
     <div class="col-6">
-        <span>###</span><br/>
+        <span>{% if datas.elderly %}{{ datas.elderly }}{% else %}-{% endif %}</span><br/>
     </div>
 </div>
 
@@ -59,7 +59,7 @@
         <span class="font-weight-bold">{% translate "Handicap" %}</span><br/>
     </div>
     <div class="col-6">
-        <span>###</span><br/>
+        <span>{% if datas.handicap %}{{ datas.handicap }}{% else %}-{% endif %}</span><br/>
     </div>
 </div>
 
@@ -68,7 +68,7 @@
         <span class="font-weight-bold">{% translate "Farmers" %}/{% translate "Breeders" %}</span><br/>
     </div>
     <div class="col-6">
-        <span>###</span><br/>
+        <span>-</span><br/>
     </div>
 </div>
 
@@ -77,7 +77,7 @@
         <span class="font-weight-bold">{% translate "Ethnic minorities" %}</span><br/>
     </div>
     <div class="col-6">
-        <span>{{ datas.nbr_ethnic_minorities }}</span><br/>
+        <span>{% if datas.nbr_ethnic_minorities %}{{ datas.nbr_ethnic_minorities }}{% else %}-{% endif %}</span><br/>
     </div>
 </div>
 
@@ -86,7 +86,7 @@
         <span class="font-weight-bold">{% translate "Minorities" %}</span><br/>
     </div>
     <div class="col-6">
-        <span>{{ datas.minorities }}</span><br/>
+        <span>{% if datas.minorities %}{{ datas.minorities }}{% else %}-{% endif %}</span><br/>
     </div>
 </div>
 
@@ -102,5 +102,5 @@
     {% include 'components/villages_overview_under_canton.html' with datas=datas %}
 {% endif %}
 
-{% include 'components/overview_canton_infrastructure_and_services.html' with datas=datas %}
-{% include 'components/overview_canton_community_details.html' with datas=datas %}
+{% include 'components/overview_administrative_level_infrastructure_and_services.html' with datas=datas %}
+{% include 'components/overview_administrative_level_community_details.html' with datas=datas %}

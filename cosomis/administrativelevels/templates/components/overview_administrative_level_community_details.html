@@ -7,11 +7,11 @@
     <br />
     <div class="row">
         <div class="col-6">
-            <p><b>{% translate "Households added last year" %}:</b> ###</p>
-            <p><b>{% translate "Added due to conflict" %}:</b> ###</p>
+            <p><b>{% translate "Households added last year" %}:</b> {% if datas.households_added %}{{ datas.households_added }}{% else %}-{% endif %}</p>
+            <p><b>{% translate "Added due to conflict" %}:</b> {% if datas.households_added_due_to_conflict %}{{ datas.households_added_due_to_conflict }}{% else %}-{% endif %}</p>
         </div>
         <div class="col-6">
-            <p><b>{% translate "Demographic trends" %}: ###</b></p>
+            <p><b>{% translate "Demographic trends" %}: -</b></p>
         </div>
     </div>
     <div class="row" style="margin: auto; background-color: #dafefe; padding: 11px;">
