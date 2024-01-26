@@ -249,7 +249,7 @@ def save_subproject_tracking():
                         step_company_selected
                     ]
                 )
-            elif current_level == "Acheve".title() or current_status_of_the_site == "Acheve".title(): #Acheve
+            elif current_level in ("Acheve".title(), "Acheve non receptionne".title()) or current_status_of_the_site  in ("Acheve".title(), "Acheve non receptionne".title()): #Acheve
                 print("Acheve")
                 set_step(
                     subproject, 
@@ -298,6 +298,16 @@ def save_subproject_tracking():
                     subproject, 
                     [
                         step_identifie, step_approved, step_dao_progress
+                    ]
+                )
+            elif current_level == "Arret travaux".title() or current_status_of_the_site == "Arret travaux".title():
+                print("Arrêt travaux")
+                set_step(
+                    subproject, 
+                    [
+                        step_identifie, step_approved, step_dao_progress, 
+                        step_company_selected, step_contract_signed, step_site_handover,
+                        step_progress, step_interrupted
                     ]
                 )
             elif current_level == "En cours".title() or current_status_of_the_site == "En cours".title():

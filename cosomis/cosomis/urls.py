@@ -32,7 +32,7 @@ urlpatterns = [
     path('set-language/', 
          views.set_language, 
          name='set_language'),
-    path('api/', include('cosomis.urls_api')),
+    path('api/', include('cosomis.urls_api'))
 ]
 
 urlpatterns += i18n_patterns(

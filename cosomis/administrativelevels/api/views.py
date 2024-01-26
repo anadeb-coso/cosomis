@@ -43,7 +43,7 @@ class RestGetAdministrativeLevelByUser(APIView):
         print(administrative_levels)
         paginator = CustomPagination()
         paginated_data = paginator.paginate_queryset(administrative_levels, request)
-        serializer = AdministrativeLevelSerializer(paginated_data, many=True)
+        serializer = AdministrativeLevelSerializer(paginated_data, many=True, initial= {'user': user})
         
         return paginator.get_paginated_response(serializer.data)
     
@@ -84,6 +84,6 @@ class RestGetACVDByUser(APIView):
 
         paginator = CustomPagination()
         paginated_data = paginator.paginate_queryset(cvds, request)
-        serializer = CVDWithAdministrativeLevelSerializer(paginated_data, many=True)
+        serializer = CVDWithAdministrativeLevelSerializer(paginated_data, many=True, initial= {'user': user})
         print(serializer.data)
         return paginator.get_paginated_response(serializer.data)

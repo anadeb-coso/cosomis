@@ -24,6 +24,7 @@ class RestGetSubprojectsByUser(APIView):
 
         administrativelevel_id = request.GET.get("administrativelevel_id", None)
         cvd_id = request.GET.get("cvd_id", None)
+        project_id = request.GET.get("project_id", None)
 
         search = request.GET.get("search", None)
         page_number = request.GET.get("page", None)
@@ -32,19 +33,19 @@ class RestGetSubprojectsByUser(APIView):
         if not hasattr(user, 'no_sql_user'):
             if search:
                 if search == "All":
-                    subprojects = Subproject.objects.filter(link_to_subproject=None)
+                    subprojects = Subproject.objects.filter()
                 search = search.upper()
                 subprojects =    Subproject.objects.filter(
-                        Q(link_to_subproject=None, full_title_of_approved_subproject__icontains=search) | 
-                        Q(link_to_subproject=None, location_subproject_realized__name__icontains=search) | 
-                        Q(link_to_subproject=None, subproject_sector__icontains=search) | 
-                        Q(link_to_subproject=None, type_of_subproject__icontains=search) | 
-                        Q(link_to_subproject=None, works_type__icontains=search) | 
-                        Q(link_to_subproject=None, cvd__name__icontains=search) | 
-                        Q(link_to_subproject=None, facilitator_name__icontains=search)
+                        Q(full_title_of_approved_subproject__icontains=search) | 
+                        Q(location_subproject_realized__name__icontains=search) | 
+                        Q(lsubproject_sector__icontains=search) | 
+                        Q(type_of_subproject__icontains=search) | 
+                        Q(works_type__icontains=search) | 
+                        Q(cvd__name__icontains=search) | 
+                        Q(facilitator_name__icontains=search)
                     )
             else:
-                subprojects =    Subproject.objects.filter(link_to_subproject=None)
+                subprojects =    Subproject.objects.filter()
         else:
             subprojects = get_subprojects_by_facilitator_id_and_project_id(user.id, 1)
 
@@ -57,10 +58,20 @@ class RestGetSubprojectsByUser(APIView):
             )
             print(subprojects)
         
-        if cvd_id:
+        elif cvd_id:
             cvd_id = int(cvd_id)
             subprojects = subprojects.filter(
                 Q(link_to_subproject=None, cvd__id=cvd_id)
+            )
+        
+        elif project_id:
+            project_id = int(project_id)
+            subprojects = subprojects.filter(
+                Q(link_to_subproject__id=project_id)
+            )
+        else:
+            subprojects = subprojects.filter(
+                link_to_subproject=None
             )
         
         paginator = CustomPagination()
@@ -84,6 +95,34 @@ class RestGetSubprojectByUser(APIView):
         try:
             return Response(
                 SubprojectWithChildrenLinkedSerializer(Subproject.objects.get(id=pk)).data, 
+                status=status.HTTP_200_OK
+            )
+        except Exception as exc:
+            return Response(
+                {'error': exc.__str__()}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        
+
+class SaveSubprojectsGeoLocation(APIView):
+    throttle_classes = ()
+    permission_classes = ()
+    serializer_class = CheckUserSerializer
+    
+    def post(self, request, pk, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data
+
+        try:
+            subproject = Subproject.objects.get(id=pk)
+            subproject.latitude = request.data['latitude']
+            subproject.longitude = request.data['longitude']
+            subproject = subproject.save_and_return_object()
+            
+            return Response(
+                SubprojectWithChildrenLinkedSerializer(subproject).data, 
                 status=status.HTTP_200_OK
             )
         except Exception as exc:

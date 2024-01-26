@@ -4,6 +4,7 @@ import locale
 from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import post_save
 from typing import TypeVar, Any
+from django.db.models import Q
 
 from administrativelevels.models import AdministrativeLevel, CVD
 from subprojects import SUB_PROJECT_TYPE_DESIGNATION, SUB_PROJECT_SECTORS, TYPES_OF_SUB_PROJECT
@@ -233,7 +234,9 @@ class Subproject(BaseModel):
         
         return estimated_cost_str.replace("$", "")
 
-
+    def get_files(self):
+        return self.subprojectfile_set.get_queryset().filter().order_by("-date_taken")
+    
     def get_all_images(self, order=False):
         if order:
             return sorted(self.subprojectfile_set.get_queryset().filter(file_type__icontains="image"), key=lambda o: o.order)
@@ -369,7 +372,7 @@ class SubprojectStep(_Step):
     
     def get_levels(self, order=True):
         if order:
-            return self.level_set.get_queryset().order_by("-begin")
+            return self.level_set.get_queryset().order_by("-begin", "-ranking", "-id")
             #sorted(self.level_set.get_queryset(), key=lambda o: o.begin, reverse=True)
         return self.level_set.get_queryset()
     
@@ -379,10 +382,17 @@ class SubprojectStep(_Step):
                 return True
         return False
     
+    def get_files(self):
+        if self.wording == "En cours":
+            return SubprojectFile.objects.filter(
+                Q(subproject_level__subproject_step__id=self.id) | Q(subproject_step__id=self.id)
+            ).order_by("-date_taken")
+        return self.subprojectfile_set.get_queryset().filter().order_by("-date_taken")
+    
     def get_images(self):
         if self.wording == "En cours":
             return SubprojectFile.objects.filter(
-                subproject_level__subproject_step__id=self.id,
+                Q(subproject_level__subproject_step__id=self.id) | Q(subproject_step__id=self.id),
                 file_type__icontains="image"
             ).order_by("-date_taken")
         return self.subprojectfile_set.get_queryset().filter(file_type__icontains="image").order_by("-date_taken")
@@ -390,7 +400,7 @@ class SubprojectStep(_Step):
     def get_exclude_images(self):
         if self.wording == "En cours":
             return SubprojectFile.objects.filter(
-                subproject_level__subproject_step__id=self.id
+                Q(subproject_level__subproject_step__id=self.id) | Q(subproject_step__id=self.id)
             ).exclude(
                 file_type__icontains="image"
             ).order_by("-date_taken")
@@ -415,6 +425,9 @@ class Level(_Step):
     percent = CustomerFloatRangeField(verbose_name=_("Percent"), min_value=0, max_value=100)
     begin = models.DateField(verbose_name=_("Begin"))
     end = models.DateField(null=True, blank=True, verbose_name=_("End"))
+    
+    def get_files(self):
+        return self.subprojectfile_set.get_queryset().filter().order_by("-date_taken")
     
     def get_images(self):
         return self.subprojectfile_set.get_queryset().filter(file_type__icontains="image").order_by("-date_taken")

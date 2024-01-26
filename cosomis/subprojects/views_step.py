@@ -187,7 +187,7 @@ class SubprojectStepAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequiredM
         subproject_step = subproject_step.save_and_return_object()
 
         if not self._obj:
-            if subproject_step.step.ranking < 8:
+            if subproject_step.step.ranking < 8 and subproject_step.step.ranking != 2:
                 self.subproject.current_status_of_the_site = "Identifié"
             elif subproject_step.step.ranking == 9:
                 self.subproject.current_status_of_the_site = "Abandon"
@@ -197,6 +197,10 @@ class SubprojectStepAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequiredM
                 self.subproject.current_status_of_the_site = "Réception provisoire"
             else:
                 self.subproject.current_status_of_the_site = subproject_step.step.wording
+
+            if subproject_step.step.ranking == 3:
+                self.subproject.approval_date_cora = subproject_step.begin
+
             self.subproject.current_level_of_physical_realization_of_the_work = str(subproject_step.step.percent if subproject_step.step.percent else subproject_step.step.wording)
             self.subproject.save()
 

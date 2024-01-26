@@ -3,6 +3,26 @@ from subprojects.models import *
 from administrativelevels.serializers import AdministrativeLevelSerializer, CVDSerializer
 
 
+class SubprojectFileSerializer(serializers.ModelSerializer):
+	class Meta:
+		"""docstring for Meta"""
+		model = SubprojectFile
+		fields = '__all__'
+  
+	def to_representation(self, instance):
+		data = super().to_representation(instance)
+		if instance.subproject_step:
+			data['description'] = instance.subproject_step.description
+		elif instance.subproject_level:
+			if instance.subproject_level.description:
+				data['description'] = instance.subproject_level.description
+			else:
+				data['description'] = instance.subproject_level.subproject_step.description
+		else:
+			data['description'] = None
+
+		return data
+  
 class ComponentSerializer(serializers.ModelSerializer):
 	class Meta:
 		"""docstring for Meta"""
@@ -43,6 +63,12 @@ class LevelSerializer(serializers.ModelSerializer):
 		model = Level
 		fields = '__all__'
 
+	def to_representation(self, instance):
+		data = super().to_representation(instance)
+		
+		data['files'] = SubprojectFileSerializer(instance.get_files(), many=True).data
+			
+		return data
 
 class SubprojectStepSerializer(serializers.ModelSerializer):
 	class Meta:
@@ -54,6 +80,7 @@ class SubprojectStepSerializer(serializers.ModelSerializer):
 		data = super().to_representation(instance)
 		
 		data['levels'] = LevelSerializer(instance.get_levels(), many=True).data
+		data['files'] = SubprojectFileSerializer(instance.get_files(), many=True).data
 			
 		return data
 
@@ -71,6 +98,14 @@ class SubprojectSerializer(serializers.ModelSerializer):
 		"""docstring for Meta"""
 		model = Subproject
 		fields = '__all__'
+	def to_representation(self, instance):
+		data = super().to_representation(instance)
+			
+		data['current_subproject_step_and_level'] = instance.get_current_subproject_step_and_level
+		data['files'] = SubprojectFileSerializer(instance.get_files(), many=True).data
+
+		return data
+
 
 class SubprojectWithParentLinkSerializer(SubprojectSerializer):
 
@@ -79,8 +114,6 @@ class SubprojectWithParentLinkSerializer(SubprojectSerializer):
 		if instance.link_to_subproject:
 			data['link_to_subproject'] = SubprojectSerializer(instance.link_to_subproject).data
 			
-		data['current_subproject_step_and_level'] = instance.get_current_subproject_step_and_level
-
 		return data
 
 class SubprojectWithChildrenLinkedSerializer(SubprojectSerializer):
@@ -90,8 +123,6 @@ class SubprojectWithChildrenLinkedSerializer(SubprojectSerializer):
 		print(instance.subproject_set.get_queryset())
 		if instance.subproject_set.get_queryset():
 			data['subprojects_linked'] = SubprojectSerializer(instance.subproject_set.get_queryset(), many=True).data
-			
-		data['current_subproject_step_and_level'] = instance.get_current_subproject_step_and_level
 			
 		return data
 	
