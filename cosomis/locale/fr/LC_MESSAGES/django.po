@@ -2586,3 +2586,11 @@ msgstr "Réseau d'un autre Pays"
 #: .\administrativelevels
 msgid "Financed subprojects"
 msgstr "Les sous-projets financés"
+
+#: .\attachments\serializers.py
+msgid ""
+"Select a file size less than or equal to %(max_size)s. The selected file "
+"size is %(size)s."
+msgstr ""
+"Sélectionnez une taille de fichier inférieure ou égale à %(max_size)s. Le fichier sélectionné "
+"est %(size)s."
