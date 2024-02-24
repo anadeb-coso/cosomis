@@ -102,7 +102,7 @@ class UploadSubprojectStepAttachmentAPIView(generics.GenericAPIView):
         file = data['file']
         
         if file.content_type and 'image' in str(file.content_type).lower():
-            file = compress_image(file.read(), 0.7 if file.size > (1 * 1024 * 1024) else (0.5 if file.size > (0.5 * 1024 * 1024) else (file.size/(1024 * 1024))))
+            file = compress_image(file, 0.7 if file.size > (1 * 1024 * 1024) else (0.5 if file.size > (0.5 * 1024 * 1024) else (file.size/(1024 * 1024))))
         
         if file and (('subproject_step' in data and data['subproject_step']) or ('subproject_level' in data and data['subproject_level'])):     
             
