@@ -151,7 +151,7 @@ class UploadSubprojectStepAttachmentAPIView(generics.GenericAPIView):
                 subproject_file.order = data['order']
                 subproject_file.subproject = subproject
                 subproject_file.principal = principal
-                if data['subproject_step']:
+                if 'subproject_step' in data and data['subproject_step']:
                     subproject_file.subproject_step = step_object
                 else:
                     subproject_file.subproject_level = step_object
