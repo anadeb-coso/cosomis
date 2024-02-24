@@ -131,52 +131,53 @@ class UploadSubprojectStepAttachmentAPIView(generics.GenericAPIView):
             )
             
             media_storage = S3Boto3Storage()
-            if not media_storage.exists(file_path_within_bucket):  # avoid overwriting existing file
-                media_storage.save(file_path_within_bucket,file)
-                
-                file_url = media_storage.url(file_path_within_bucket)
-                
-                principal = False
-                if len(images) == 0:
-                    principal = True
+            # print(1)
+            # if not media_storage.exists(file_path_within_bucket):  # avoid overwriting existing file
+            media_storage.save(file_path_within_bucket,file)
+            # print(2)
+            file_url = media_storage.url(file_path_within_bucket)
+            
+            principal = False
+            if len(images) == 0:
+                principal = True
 
+            
+            
+            if not subproject_file:
+                subproject_file = SubprojectFile()
+                subproject_file.order = data['order']
+                subproject_file.subproject = subproject
+                subproject_file.principal = principal
+                if data['subproject_step']:
+                    subproject_file.subproject_step = step_object
+                else:
+                    subproject_file.subproject_level = step_object
                 
-                
-                if not subproject_file:
-                    subproject_file = SubprojectFile()
-                    subproject_file.order = data['order']
-                    subproject_file.subproject = subproject
-                    subproject_file.principal = principal
-                    if data['subproject_step']:
-                        subproject_file.subproject_step = step_object
-                    else:
-                        subproject_file.subproject_level = step_object
-                    
-                    subproject_file.file_type = file.content_type
+                subproject_file.file_type = file.content_type
 
-                subproject_file.url = file_url
-                subproject_file.date_taken = datetime.strptime(data['date_taken'], '%Y-%m-%d').date()
-                subproject_file.name = step_object.wording
-                subproject_file = subproject_file.save_and_return_object()
-                
-                return Response(
-                    SubprojectFileSerializer(subproject_file).data, 
-                    status=status.HTTP_200_OK
-                )
-                # if 'subproject_step' in data and data['subproject_step']:
-                #     return Response(
-                #         SubprojectFileSerializer(
-                #             SubprojectFile.objects.filter(subproject_step_id=step_object.id, file_type=file.content_type),
-                #             many=True).data, 
-                #         status=status.HTTP_200_OK
-                #     )
-                # else:
-                #     return Response(
-                #         SubprojectFileSerializer(
-                #             SubprojectFile.objects.filter(subproject_level_id=step_object.id, file_type=file.content_type),
-                #             many=True).data, 
-                #         status=status.HTTP_200_OK
-                #     )
+            subproject_file.url = file_url
+            subproject_file.date_taken = datetime.strptime(data['date_taken'], '%Y-%m-%d').date()
+            subproject_file.name = step_object.wording
+            subproject_file = subproject_file.save_and_return_object()
+            
+            return Response(
+                SubprojectFileSerializer(subproject_file).data, 
+                status=status.HTTP_200_OK
+            )
+            # if 'subproject_step' in data and data['subproject_step']:
+            #     return Response(
+            #         SubprojectFileSerializer(
+            #             SubprojectFile.objects.filter(subproject_step_id=step_object.id, file_type=file.content_type),
+            #             many=True).data, 
+            #         status=status.HTTP_200_OK
+            #     )
+            # else:
+            #     return Response(
+            #         SubprojectFileSerializer(
+            #             SubprojectFile.objects.filter(subproject_level_id=step_object.id, file_type=file.content_type),
+            #             many=True).data, 
+            #         status=status.HTTP_200_OK
+            #     )
                 
 
         return Response({

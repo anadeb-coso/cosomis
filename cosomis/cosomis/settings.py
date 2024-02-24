@@ -201,6 +201,8 @@ AWS_ACCESS_KEY_ID = env('S3_ACCESS')
 
 AWS_SECRET_ACCESS_KEY = env('S3_SECRET')
 
+AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME')
+
 #REST API
 REST_FRAMEWORK = {
     # https://github.com/tfranzel/drf-spectacular
@@ -214,4 +216,4 @@ REST_FRAMEWORK = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 100MB
+MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
