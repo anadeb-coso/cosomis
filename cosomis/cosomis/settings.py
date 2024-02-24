@@ -217,3 +217,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB, adjust as needed
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB, adjust as needed

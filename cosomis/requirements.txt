@@ -32,3 +32,4 @@ botocore==1.27.61
 django-storages==1.13.1
 djangorestframework==3.13.1
 drf-spectacular==0.23.1
+pillow==10.2.0
