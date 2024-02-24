@@ -79,8 +79,8 @@ class UploadSubprojectStepAttachmentAPIView(generics.GenericAPIView):
     def convert_objects(self, data):
         for k, v in data.items():
             if v:
-                if str(v).isdigit():
-                    data[k] = int(v)
+                if str(v).replace('.','',1).replace(',','',1).isdigit():
+                    data[k] = int(float(v))
                 elif k == 'file_type' and v == 'undefined':
                     data[k] = 'application/pdf' if '.pdf' in data['url'] else 'image/*'
                 elif v and v in ('null', 'undefined'):
@@ -94,7 +94,7 @@ class UploadSubprojectStepAttachmentAPIView(generics.GenericAPIView):
         
     def post(self, request, *args, **kwargs):
         data = self.convert_objects(request.data)
-        print(data)
+        # print(data)
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.validated_data
@@ -129,9 +129,11 @@ class UploadSubprojectStepAttachmentAPIView(generics.GenericAPIView):
                 file_directory_within_bucket,
                 f'{str(time.time())}-{file.name}'
             )
+            
             media_storage = S3Boto3Storage()
             if not media_storage.exists(file_path_within_bucket):  # avoid overwriting existing file
                 media_storage.save(file_path_within_bucket,file)
+                
                 file_url = media_storage.url(file_path_within_bucket)
                 
                 principal = False
