@@ -56,7 +56,7 @@ class RestGetSubprojectsByUser(APIView):
                 Q(link_to_subproject=None, location_subproject_realized__parent__id=administrativelevel_id) | 
                 Q(link_to_subproject=None, canton__id=administrativelevel_id)
             )
-            print(subprojects)
+            # print(subprojects)
         
         elif cvd_id:
             cvd_id = int(cvd_id)

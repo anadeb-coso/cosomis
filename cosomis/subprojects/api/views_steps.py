@@ -139,7 +139,7 @@ class RestSaveSubprojectLevel(APIView):
             serializer = self.serializer_class(Level.objects.get(id=id), data=request.data, context={'request': request})
         else:
             serializer = self.serializer_class(data=request.data, context={'request': request})
-        print(request.data)
+        # print(request.data)
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
         serializer.save()

@@ -25,3 +25,4 @@ class CallObjects:
 
 
 cdd_objects_call = CallObjects('cdd')
+grm_objects_call = CallObjects('grm')

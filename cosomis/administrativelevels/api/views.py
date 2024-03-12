@@ -8,7 +8,11 @@ from rest_framework.pagination import PageNumberPagination
 from usermanager.api.auth.login import CheckUserSerializer
 from administrativelevels.serializers import AdministrativeLevelSerializer, CVDWithAdministrativeLevelSerializer
 from administrativelevels.models import AdministrativeLevel, CVD
-from assignments.functions import get_administrativelevels_by_facilitator_id_and_project_id
+from assignments.functions import (
+    # get_administrativelevels_by_facilitator_id_and_project_id,
+    # get_stabilized_administrativelevels_of_facilitators_by_project_id,
+    combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id
+)
 from subprojects.api.custom import CustomPagination
 from cosomis.types import _QS
 
@@ -36,11 +40,22 @@ class RestGetAdministrativeLevelByUser(APIView):
                     administrative_levels = AdministrativeLevel.objects.filter(type=type_adl.title())
         else:
             if type_adl.title() in ("Village", "Canton"):
-                if parent_id:
-                    administrative_levels = get_administrativelevels_by_facilitator_id_and_project_id(user.id, project_id, type_adl=type_adl.title(), parent_id=parent_id)
-                else:
-                    administrative_levels = get_administrativelevels_by_facilitator_id_and_project_id(user.id, project_id, type_adl.title())
-        print(administrative_levels)
+                # if parent_id:
+                # administrative_levels_stabilized = get_stabilized_administrativelevels_of_facilitators_by_project_id(user, project_id, type_adl=type_adl.title(), parent_id=parent_id)
+                # administrative_levels_assigned_for_cdd_process = get_administrativelevels_by_facilitator_id_and_project_id(user.id, project_id, type_adl=type_adl.title(), parent_id=parent_id)
+                # else:
+                #     administrative_levels_stabilized = get_stabilized_administrativelevels_of_facilitators_by_project_id(user, project_id, type_adl.title())
+                #     administrative_levels_assigned_for_cdd_process = get_administrativelevels_by_facilitator_id_and_project_id(user.id, project_id, type_adl.title())
+                # administrative_levels = list(
+                #     set(
+                #         list(administrative_levels_stabilized) + list(administrative_levels_assigned_for_cdd_process)
+                #     )
+                # )
+                
+                administrative_levels = combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id(
+                    user, project_id, type_adl=type_adl.title(), parent_id=parent_id
+                )
+                
         paginator = CustomPagination()
         paginated_data = paginator.paginate_queryset(administrative_levels, request)
         serializer = AdministrativeLevelSerializer(paginated_data, many=True, initial= {'user': user})
@@ -70,11 +85,13 @@ class RestGetACVDByUser(APIView):
             else:
                 administrative_levels = AdministrativeLevel.objects.filter(type="Village")
         else:
-            if parent_id:
-                administrative_levels = get_administrativelevels_by_facilitator_id_and_project_id(user.id, project_id, type_adl="Village", parent_id=parent_id)
-            else:
-                administrative_levels = get_administrativelevels_by_facilitator_id_and_project_id(user.id, project_id, "Village")
-        
+            # if parent_id:
+            #     administrative_levels = get_administrativelevels_by_facilitator_id_and_project_id(user.id, project_id, type_adl="Village", parent_id=parent_id)
+            # else:
+            #     administrative_levels = get_administrativelevels_by_facilitator_id_and_project_id(user.id, project_id, "Village")
+            administrative_levels = combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id(
+                user, project_id, type_adl="Village", parent_id=parent_id
+            )
         cvds = CVD.objects.filter(
             pk__in=[
                 adl.cvd.id for adl in administrative_levels if adl.cvd
@@ -85,5 +102,5 @@ class RestGetACVDByUser(APIView):
         paginator = CustomPagination()
         paginated_data = paginator.paginate_queryset(cvds, request)
         serializer = CVDWithAdministrativeLevelSerializer(paginated_data, many=True, initial= {'user': user})
-        print(serializer.data)
+        
         return paginator.get_paginated_response(serializer.data)

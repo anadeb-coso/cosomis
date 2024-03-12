@@ -120,7 +120,7 @@ class SubprojectWithChildrenLinkedSerializer(SubprojectSerializer):
 
 	def to_representation(self, instance):
 		data = super().to_representation(instance)
-		print(instance.subproject_set.get_queryset())
+		# print(instance.subproject_set.get_queryset())
 		if instance.subproject_set.get_queryset():
 			data['subprojects_linked'] = SubprojectSerializer(instance.subproject_set.get_queryset(), many=True).data
 			

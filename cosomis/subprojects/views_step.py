@@ -164,7 +164,7 @@ class SubprojectStepAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequiredM
                             ranking = 8
                                 
                     ranking = ranking + 1
-            print(data['step'].ranking, ranking)
+            # print(data['step'].ranking, ranking)
             if (data.get('step') and ranking and data['step'].ranking != ranking) or (not ranking and data['step'].ranking != 1):
                 msg = _("You must follow each step...")
             else:

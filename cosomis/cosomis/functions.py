@@ -82,7 +82,6 @@ def compress_file(file_content, target_size_mb: float=1):
 
     # Iteratively adjust compression quality to achieve target file size
     while True:
-        print(compression_quality)
         # Compress the file content using gzip
         compressed_content = gzip.compress(file_content, compresslevel=compression_quality)
 
@@ -96,7 +95,6 @@ def compress_file(file_content, target_size_mb: float=1):
         if abs(current_size_bytes - target_size_bytes) < 1024 or compression_quality < 1 or compression_quality >= 9:  # Adjust the tolerance as needed
             break
         
-        print(current_size_bytes, target_size_bytes)
         # Adjust compression quality based on the difference
         if current_size_bytes > target_size_bytes:
             compression_quality += 1

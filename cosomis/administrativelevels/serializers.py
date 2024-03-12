@@ -47,7 +47,6 @@ class AdministrativeLevelSerializer(serializers.ModelSerializer):
 			data['parent'] = AdministrativeLevelSerializer(instance.parent).data
 		
 		if self.user:
-			print(self.user)
 
 			if not hasattr(self.user, 'no_sql_user'):
 				subprojects = Subproject.objects.filter()
@@ -90,7 +89,6 @@ class CVDWithAdministrativeLevelSerializer(serializers.ModelSerializer):
 		data = super().to_representation(instance)
 
 		if self.user:
-			print(self.user)
 
 			if not hasattr(self.user, 'no_sql_user'):
 				subprojects = Subproject.objects.filter()
