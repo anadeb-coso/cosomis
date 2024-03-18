@@ -5,20 +5,28 @@ from cosomis.types import _QS
 from cosomis.call_objects_from_other_db import grm_objects_call
 from authentication.models import User as GrmUser
 from no_sql_client import NoSQLClient
+from authentication.models import Facilitator
 
 def get_subprojects_by_facilitator_id_and_project_id(facilitator_id, project_id) -> _QS:
-    assigns_to_facilitator = AssignAdministrativeLevelToFacilitator.objects.filter(
-        facilitator_id=facilitator_id, project_id=project_id, activated=True
-    )
+    # assigns_to_facilitator = AssignAdministrativeLevelToFacilitator.objects.filter(
+    #     facilitator_id=facilitator_id, project_id=project_id, activated=True
+    # )
 
     subprojects = []
-    for assign in assigns_to_facilitator:
-        if assign.administrative_level and assign.administrative_level.cvd and \
-            assign.administrative_level.cvd.headquarters_village and \
-            assign.administrative_level.cvd.headquarters_village.id == assign.administrative_level.id:
-            for subproject in assign.administrative_level.get_list_subprojects():
-                if project_id in subproject.get_projects_ids():
-                    subprojects.append(subproject)
+    # for assign in assigns_to_facilitator:
+    #     if assign.administrative_level and assign.administrative_level.cvd and \
+    #         assign.administrative_level.cvd.headquarters_village and \
+    #         assign.administrative_level.cvd.headquarters_village.id == assign.administrative_level.id:
+    #         for subproject in assign.administrative_level.get_list_subprojects():
+    #             if project_id in subproject.get_projects_ids():
+    #                 subprojects.append(subproject)
+    
+    for adl in combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id(
+        Facilitator.objects.using('cdd').get(id=facilitator_id), project_id
+    ):
+        for subproject in adl.get_list_subprojects():
+            if project_id in subproject.get_projects_ids():
+                subprojects.append(subproject)
 
     return Subproject.objects.filter(pk__in=[s.pk for s in subprojects])
 
@@ -50,7 +58,7 @@ def get_stabilized_administrativelevels_of_facilitators_by_project_id(facilitato
     
     administrativelevels = []
     if facilitators_stabilized:
-        all_administrative_ids = facilitators_stabilized['administrative_regions']
+        all_administrative_ids = facilitators_stabilized[0]['administrative_regions']
         _administrativelevels = AdministrativeLevel.objects.filter(
             id__in=[int(elt) for elt in all_administrative_ids if str(elt).isdigit()]
         )
