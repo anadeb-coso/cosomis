@@ -394,7 +394,11 @@ def set_projects_images():
 def delete_subproject_step_training():
     start_date = timezone.make_aware(datetime.datetime(2023, 12, 15), timezone=timezone.get_current_timezone())
     end_date = timezone.make_aware(datetime.datetime(2024, 3, 18), timezone=timezone.get_current_timezone())
-
+    
+    objects_within_period = SubprojectStep.objects.filter(created_date__range=[start_date, end_date])
+    print(objects_within_period.count())
+    objects_within_period.delete()
+    
     objects_within_period = SubprojectStep.objects.filter(updated_date__range=[start_date, end_date])
     print(objects_within_period.count())
     objects_within_period.delete()
