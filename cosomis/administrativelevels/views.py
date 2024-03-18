@@ -213,13 +213,13 @@ class UploadCSVView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin,
                 datas = convert_file_to_dict.conversion_file_csv_to_dict(request.FILES.get('file'), request.POST.get('sheet_name'))
             except Exception as exc:
                 messages.info(request, _("An error has occurred..."))
-            try:
-                message, file_path = administrativelevels_functions.save_csv_datas_priorities_in_db(datas, 0, _type) # call function to save CSV datas in database
-                
-                return download_file.download(request, file_path, "text/plain")
+            # try:
+            message, file_path = administrativelevels_functions.save_csv_datas_priorities_in_db(datas, 0, _type) # call function to save CSV datas in database
             
-            except Exception as exc:
-                raise Http404
+            return download_file.download(request, file_path, "text/plain")
+            
+            # except Exception as exc:
+            #     raise Http404
         
         else:
             datas = convert_file_to_dict.conversion_file_xlsx_to_dict(request.FILES.get('file'))
