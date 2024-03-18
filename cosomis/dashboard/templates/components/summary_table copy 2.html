@@ -35,10 +35,13 @@
     </div>
     {% endif %}
 
-    <div class="card-body table-responsive">
-        <table id="table-{{ data_id }}" 
-            class="table {{ table_class_style }}" 
-            style="width: 100% !important;">
+    <div 
+    {% comment %} class="card-body table-responsive" {% endcomment %}
+    >
+        <table id="table-{{ data_id }}" border="1"
+            {% comment %} class="table {{ table_class_style }}"  {% endcomment %}
+            style="width: 100% !important;"
+            >
             <thead class="{{ table_thead_class_style }}">
             {% if queryset_results.administrative_level_type %}
             <tr>
@@ -109,6 +112,9 @@
                 {% endfor %}
             </tbody>
         </table>
+
+        <div id="pagination"></div>
+
     </div>
 </div>
 {% else %}
@@ -126,75 +132,171 @@
 <script src="{% static 'js/sort_html_table.js' %}"></script>
 
 <script type="text/javascript">
+$(document).ready(function () {
+    var tableId="table-{{ data_id }}";
+    var index_header = 0;
     // Add custom sorting method for numerical data
 jQuery.extend(jQuery.fn.dataTableExt.oSort, {
     "numeric-comma-pre": function (a) {
-        var x = (["-", "", " ", null].includes(a)) ? 0 : a.replace(" ", "").replace(/,/, ".");
+        var x = (a == "-") ? 0 : a.replace(/,/, ".").replace(" ", "");
         return parseFloat(x);
     },
 
     "numeric-comma-asc": function (a, b) {
-        var x = (["-", "", " ", null].includes(a)) ? 0 : a.replace(" ", "").replace(/,/, ".");
-        var y = (["-", "", " ", null].includes(b)) ? 0 : b.replace(" ", "").replace(/,/, ".");
-        console.log(a);
-        console.log(b);
+        var x = (a == "-") ? 0 : a.replace(/,/, ".").replace(" ", "");
+        var y = (b == "-") ? 0 : b.replace(/,/, ".").replace(" ", "");
         return parseFloat(x) - parseFloat(y);
     },
 
     "numeric-comma-desc": function (a, b) {
-        var x = (["-", "", " ", null].includes(a)) ? 0 : a.replace(" ", "").replace(/,/, ".");
-        var y = (["-", "", " ", null].includes(b)) ? 0 : b.replace(" ", "").replace(/,/, ".");
-        console.log(a);
-        console.log(b);
+        var x = (a == "-") ? 0 : a.replace(/,/, ".").replace(" ", "");
+        var y = (b == "-") ? 0 : b.replace(/,/, ".").replace(" ", "");
         return parseFloat(y) - parseFloat(x);
     }
 });
 
-jQuery.extend(jQuery.fn.dataTableExt.oSort, {
-    "numeric-comma-pre": function (a) {
-        var x = parseFloat(a.replace(/\s+/g, '').replace(',', '.')); // Remove spaces and replace comma with dot
-        return isNaN(x) ? 0 : x;
-    },
-    "numeric-comma-asc": function (a, b) {
-        return a - b;
-    },
-    "numeric-comma-desc": function (a, b) {
-        return b - a;
-    }
-});
 
-
-    var columns_number_filter_filter = [];
-    var columns_number_width = [];
+    var columns_number = [];
     if("{{ data_id }}" == "summary_administrative_level_waves"){
-        columns_number_filter = [0, 2, 3, 4, 5, 6];
+        columns_number = [0, 2, 3, 4, 5, 6];
     }
     else if("{{ data_id }}" == "summary_administrative_level_waves_times"){
-        columns_number_filter = [];
+        columns_number = [];
     }
     else if("{{ data_id }}" == "summary_administrative_level_children"){
-        columns_number_filter = [1, 2, 3, 4, 5];
+        columns_number = [1, 2, 3, 4, 5];
     }
     else if("{{ data_id }}" == "summary_administrative_level_allocation"){
-        columns_number_filter = [2, 3, 4, 5, 6];
-        columns_number_width = [2, 3, 4, 5, 6];
+        columns_number = [2, 3, 4, 5, 6];
+        console.log(columns_number);
     }
     else if("{{ data_id }}" == "summary_subprojects_by_sectors_1"){
-        columns_number_filter = [2, 3, 4, 5];
+        columns_number = [2, 3, 4, 5];
     }
     else if("{{ data_id }}" == "summary_amount_subprojects_by_sectors_1"){
-        columns_number_filter = [1, 2, 3, 4, 5, 6];
-        columns_number_width = [3, 4, 5, 6];
+        columns_number = [1, 2, 3, 4, 5, 6];
     }
     else if("{{ data_id }}" == "summary_subprojects_by_sectors_and_steps"){
-        columns_number_filter = [0, 5, 6, 7];
-        columns_number_width = [5, 6, 7];
+        columns_number = [0, 5, 6, 7];
     }
     else if("{{ data_id }}" == "summary_subprojects_by_steps_already_track"){
-        columns_number_filter = [1];
+        columns_number = [1];
     }
 
-    $(document).ready(function () {
+
+// Function to extract table data into a JavaScript list
+function extractTableData(tableId, index_header) {
+  const table = document.getElementById(tableId);
+  console.log(table);
+  const rows = table.getElementsByTagName('tr');
+  const dataHeader = {};
+  const dataList = [];
+
+  var cells = rows[index_header].getElementsByTagName('td');
+  for (let i = 0; i < cells.length; i++) {
+    dataHeader[i] = cells[i].innerText.trim();
+  }
+  
+  // Start loop from index 1 to skip header row
+  for (let i = 1; i < rows.length; i++) {
+    cells = rows[i].getElementsByTagName('td');
+    const rowData = {};
+    for (const [key, value] of Object.entries(dataHeader)) {
+        rowData[value] = cells[key].innerText.trim()
+    }
+    dataList.push(rowData);
+  }
+
+  return dataList;
+}
+function extractTableHeader(tableId, index_header) {
+  const table = document.getElementById(tableId);
+  console.log(table);
+  const rows = table.getElementsByTagName('tr');
+  const dataHeader = {};
+  const dataList = [];
+
+  var cells = rows[index_header].getElementsByTagName('td');
+  for (let i = 0; i < cells.length; i++) {
+    dataHeader[i] = cells[i].innerText.trim();
+  }
+
+  return dataHeader;
+}
+
+
+
+    // Sample data (replace this with your actual data)
+var dataHeader = extractTableHeader(tableId, index_header);
+var data = extractTableData(tableId, index_header);
+console.log(data);
+
+var pageSize = 5; // Number of rows per page
+var currentPage = 1;
+
+function displayTableData(tableId, data, page) {
+    var tableBody = document.getElementById(tableId);
+    console.log(tableBody);
+    tableBody.innerHTML = ""; // Clear existing rows
+
+    var start = (page - 1) * pageSize;
+    var end = start + pageSize;
+    var paginatedData = data.slice(start, end);
+
+    paginatedData.forEach(function (item) {
+        console.log(item)
+        var row = document.createElement("tr");
+        for (const [key, value] of Object.entries(dataHeader)) {
+        row.innerHTML += "<td>" + item[value] + "</td>";
+    }
+        
+        tableBody.appendChild(row);
+    });
+}
+
+function displayPagination(tableId, data) {
+    var totalPages = Math.ceil(data.length / pageSize);
+    var pagination = document.querySelector("#pagination");
+    pagination.innerHTML = "";
+
+    for (var i = 1; i <= totalPages; i++) {
+        var link = document.createElement("a");
+        link.href = "#";
+        link.textContent = i;
+        link.addEventListener("click", function (event) {
+            event.preventDefault();
+            currentPage = parseInt(event.target.textContent);
+            displayTableData(tableId, data, currentPage);
+            updatePaginationLinks();
+        });
+        pagination.appendChild(link);
+    }
+
+    updatePaginationLinks();
+}
+
+function updatePaginationLinks() {
+    var paginationLinks = document.querySelectorAll("#pagination a");
+    paginationLinks.forEach(function (link) {
+        if (parseInt(link.textContent) === currentPage) {
+            link.classList.add("active");
+        } else {
+            link.classList.remove("active");
+        }
+    });
+}
+
+// Initial display
+displayTableData(tableId, data, currentPage);
+displayPagination(tableId, data);
+
+
+
+
+
+
+
+    {% comment %} $(document).ready(function () {
         {% get_current_language as lang %}
         var columns_datatable = []        
 
@@ -207,14 +309,12 @@ jQuery.extend(jQuery.fn.dataTableExt.oSort, {
             dom: {% if not headers %}'Blrtip'{% else %}'Blfrtip'{% endif %},
 
             buttons: [ 'copy', 'excel', 'pdf', 'colvis' ],
-            {% comment %} columns: columns_datatable, {% endcomment %}
         
             lengthMenu: [4, 8, 10, 20, 50, 100, 200, 500, 1000, 10000],
             pageLength: 10,
             order: [],
             columnDefs: [
-                { type: 'numeric-comma', targets: columns_number_filter },
-                { width: '200px', targets: columns_number_width }
+                { type: 'numeric-comma', targets: columns_number }
             ]
         });
 
@@ -260,7 +360,12 @@ jQuery.extend(jQuery.fn.dataTableExt.oSort, {
         {% endif %}
 
                         
+    }); {% endcomment %}
+
+
     });
 </script>
 
 
+
+            {% comment %} columns: columns_datatable, {% endcomment %}
