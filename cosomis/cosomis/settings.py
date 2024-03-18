@@ -113,12 +113,12 @@ WSGI_APPLICATION = 'cosomis.wsgi.application'
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
 
 EXTERNAL_DATABASE_NAME = 'cdd'
-EXTERNAL_GRM_DATABASE_NAME = 'grm'
+# EXTERNAL_GRM_DATABASE_NAME = 'grm'
 
 DATABASES = {
     'default': env.db(),
     EXTERNAL_DATABASE_NAME: env.db('LEGACY_DATABASE_URL'),
-    EXTERNAL_GRM_DATABASE_NAME: env.db('LEGACY_GRM_DATABASE_URL')
+    # EXTERNAL_GRM_DATABASE_NAME: env.db('LEGACY_GRM_DATABASE_URL')
 }
 
 

@@ -115,6 +115,9 @@ class SubprojectsListView(PageMixin, LoginRequiredMixin, generic.ListView):
         ctx['total_without_link'] = all.filter(link_to_subproject=None, subproject_type_designation="Subproject").count()
         ctx['total_subproject'] = all.filter(subproject_type_designation="Subproject").count()
         ctx['total_infrastruture'] = all.filter(subproject_type_designation="Infrastructure").count()
+        ctx['total_latrine_blocks'] = all.filter(has_latrine_blocs=True).count()
+        ctx['total_fences'] = all.filter(has_fence=True).count()
+        ctx['total_infrastrutures'] = ctx['total'] + ctx['total_latrine_blocks'] + ctx['total_fences']
         return ctx
 
 class SubprojectsMapViewPage(generic.TemplateView):

@@ -19,7 +19,7 @@
                             <div class="input-group-prepend">
                                 <span class="input-group-text"><i class="fas fa-search"></i></span>
                             </div>
-                            <input class="form-control" name="search" placeholder="{% translate 'Search in database' %}...">
+                            <input class="form-control" name="search" value="{% if search %}{{ search }}{% endif %}" placeholder="{% translate 'Search in database' %}...">
                             <input class="btn btn-primary" type="submit" value="{% translate 'Search' %}">
                         </form>
                     </div>
@@ -124,7 +124,10 @@
                     {% comment %} <b>{{ total_without_link }}/{{ total }} {% translate 'Subprojects' %}</b> {% endcomment %}
                     
                     <b>{{ total_subproject }} ==> {% translate 'Total number of Subprojects' %}</b><br />
-                    <b>{{ total }} ==> {% translate 'Total number of structures/infrastructures' %}</b><br />
+                    <b>{{ total }} ==> {% translate 'Total number of structures/infrastructures without latrines and fences' %}</b><br />
+                    <b>{{ total_infrastrutures }} ==> {% translate 'Total number of structures/infrastructures' %}</b><br />
+                    <b>{{ total_latrine_blocks }} ==> {% translate 'Total latrines' %}</b><br />
+                    <b>{{ total_fences }} ==> {% translate 'Total fences' %}</b><br />
                     {% comment %} <b>{{ total_without_link }} ==> {% translate 'No duplication of ongoing sub-projects (such as (tracks, electrification, etc.) in several cantons)' %}</b><br /> {% endcomment %}
                     
 

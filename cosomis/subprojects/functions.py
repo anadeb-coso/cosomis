@@ -9,8 +9,12 @@ from sys import platform
 
 from administrativelevels.libraries import functions as libraries_functions
 from administrativelevels.models import AdministrativeLevel, CVD
-from subprojects.models import Subproject
-
+from subprojects.models import Subproject, Project, Component
+from cosomis.utils import (
+    link_infrastures_to_subproject, copy_cvd_to_list_of_beneficiary_villages,
+    attribute_project_to_subprojects, attribute_component_to_subprojects,
+    save_subproject_tracking
+)
 
 
 def get_value(elt):
@@ -126,7 +130,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
             
             try:
                 canton_file_data = str(datas_file["CANTON"][count]).upper()
-                _village = str(datas_file["VILLAGE"][count])
+                _village = str(datas_file["VILLAGE/CDV"][count])
                 __village = _village.upper()
                 number = get_value(datas_file["N°"][count])
                 joint_subproject_number = get_value(datas_file["num_kit"][count])
@@ -189,6 +193,11 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                 youth_group = get_value(datas_file["Groupe des jeunes"][count])
                 breeders_farmers_group = get_value(datas_file["Groupe des éleveurs/Agriculteurs"][count])
                 ethnic_minority_group = get_value(datas_file["Groupe des minorités ethniques"][count])
+                
+                has_latrine_blocs = get_value(datas_file["Blocs latrine? (Oui, Non)"][count])
+                number_of_latrine_blocks = get_value(datas_file["Nombre de blocs latrine (de 3 cabines)"][count])
+                number_of_classrooms = get_value(datas_file["Nombre de salle de classes"][count])
+                has_fence = get_value(datas_file["Clôture"][count])
 
 
                 list_of_villages_crossed_by_the_track_or_electrification = get_value(datas_file["LISTE DE VILLAGES TRAVERSÉ PAR LA PISTE OU L'ÉLECTRIFICATION"][count])
@@ -240,7 +249,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                                                     "PREFECTURE": get_value(datas_file["PREFECTURE"][count]),
                                                     "COMMUNE": get_value(datas_file["COMMUNE"][count]),
                                                     "CANTON": get_value(datas_file["CANTON"][count]),
-                                                    "VILLAGE": get_value(datas_file["VILLAGE"][count])
+                                                    "VILLAGE/CDV": get_value(datas_file["VILLAGE/CDV"][count])
                                                 })
                                             text_errors += (f'\nLine N°{count} [{_village}]: {exc.__str__()}' if text_errors else f'Line N°{count} [{_village}]: {exc.__str__()}')
                                             at_least_error_name = True
@@ -337,7 +346,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                                                         "PREFECTURE": get_value(datas_file["PREFECTURE"][count]),
                                                         "COMMUNE": get_value(datas_file["COMMUNE"][count]),
                                                         "CANTON": get_value(datas_file["CANTON"][count]),
-                                                        "VILLAGE": get_value(datas_file["VILLAGE"][count])
+                                                        "VILLAGE/CDV": get_value(datas_file["VILLAGE/CDV"][count])
                                                     })
                                                 text_errors += (f'\nLine N°{count} [{canton}]: {exc.__str__()}' if text_errors else f'Line N°{count} [{canton}]: {exc.__str__()}')
                                                 at_least_error_name = True
@@ -411,7 +420,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                     subproject.location_subproject_realized = administrative_level
                     subproject.number = number
                     subproject.joint_subproject_number = joint_subproject_number
-                    subproject.intervention_unit = intervention_unit
+                    # subproject.intervention_unit = intervention_unit
                     subproject.facilitator_name = facilitator_name
                     subproject.wave = wave
                     subproject.lot = lot
@@ -459,11 +468,11 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                         subproject.latitude = latitude
                         subproject.longitude = longitude
                     
-                    subproject.population = population
-                    subproject.direct_beneficiaries_men = direct_beneficiaries_men
-                    subproject.direct_beneficiaries_women = direct_beneficiaries_women
-                    subproject.indirect_beneficiaries_men = indirect_beneficiaries_men
-                    subproject.indirect_beneficiaries_women = indirect_beneficiaries_women
+                    # subproject.population = population
+                    # subproject.direct_beneficiaries_men = direct_beneficiaries_men
+                    # subproject.direct_beneficiaries_women = direct_beneficiaries_women
+                    # subproject.indirect_beneficiaries_men = indirect_beneficiaries_men
+                    # subproject.indirect_beneficiaries_women = indirect_beneficiaries_women
                     
                     if women_s_group != None:
                         subproject.women_s_group = bool(women_s_group)
@@ -473,6 +482,15 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                         subproject.breeders_farmers_group = bool(breeders_farmers_group)
                     if ethnic_minority_group != None:
                         subproject.ethnic_minority_group = bool(ethnic_minority_group)
+                        
+                    if has_latrine_blocs != None:
+                        subproject.has_latrine_blocs = bool(has_latrine_blocs)
+                    if number_of_latrine_blocks != None:
+                        subproject.number_of_latrine_blocks = number_of_latrine_blocks
+                    if number_of_classrooms != None:
+                        subproject.number_of_classrooms = number_of_classrooms
+                    if has_fence != None:
+                        subproject.has_fence = bool(has_fence)
 
                     subproject = subproject.save_and_return_object()
                     
@@ -504,7 +522,20 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
             count += 1
             # if count == 1:
             #     break
-            
+    print(count)
+    
+    subprojects = Subproject.objects.all()
+    link_infrastures_to_subproject() #Link each infrastructure to their subproject
+    copy_cvd_to_list_of_beneficiary_villages() #Link villages to theirs subprojects
+    attribute_project_to_subprojects(
+        subprojects, Project.objects.get(id=1)
+    ) #Link projects to COSO project
+    attribute_component_to_subprojects(
+        subprojects, Component.objects.get(id=2)
+    ) #Link projects to Component 1.1
+    
+    save_subproject_tracking() #Update Subproject Step-level
+    
     message = ""
     if at_least_one_save and not at_least_one_error:
         message = _("Success!")
@@ -558,7 +589,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
     #     "PREFECTURE": {},
     #     "COMMUNE": {},
     #     "CANTON": {},
-    #     "VILLAGE": {}
+    #     "VILLAGE/CDV": {}
     # }
     # count = 0
     # file_type = "excel"
@@ -569,7 +600,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
     #     datas["PREFECTURE"][count] = v_error.get("PREFECTURE")
     #     datas["COMMUNE"][count] = v_error.get("COMMUNE")
     #     datas["CANTON"][count] = v_error.get("CANTON")
-    #     datas["VILLAGE"][count] = v_error.get("VILLAGE")
+    #     datas["VILLAGE/CDV"][count] = v_error.get("VILLAGE/CDV")
     #     count += 1
 
     # if not os.path.exists("media/"+file_type+"/subprojects"):
@@ -610,7 +641,7 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         "PREFECTURE": {},
         "COMMUNE": {},
         "CANTON": {},
-        "VILLAGE": {},
+        "VILLAGE/CDV": {},
         "UNITE D'INTERVENTION": {},
         "POPULATION": {},
         "H (BENEFICIAIRES DIRECTS)": {},
@@ -792,9 +823,9 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
             datas["CANTON"][count] = None
         
         try:
-            datas["VILLAGE"][count] = elt.get_village().name
+            datas["VILLAGE/CDV"][count] = elt.get_village().name
         except Exception as exc:
-            datas["VILLAGE"][count] = None
+            datas["VILLAGE/CDV"][count] = None
         
 
         datas["N°"][count] = elt.number
@@ -874,6 +905,12 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         datas["Groupe des jeunes"][count] = 1 if elt.youth_group else (0 if elt.youth_group == False else "")
         datas["Groupe des éleveurs/Agriculteurs"][count] = 1 if elt.breeders_farmers_group else (0 if elt.breeders_farmers_group == False else "")
         datas["Groupe des minorités ethniques"][count] = 1 if elt.ethnic_minority_group else (0 if elt.ethnic_minority_group == False else "")
+
+        datas["Blocs latrine? (Oui, Non)"][count] = "Oui" if elt.has_latrine_blocs else ("Non" if elt.has_latrine_blocs == False else "")
+        datas["Nombre de blocs latrine (de 3 cabines)"][count] = elt.number_of_latrine_blocks if elt.number_of_latrine_blocks else ""
+        datas["Nombre de salle de classes"][count] = elt.number_of_classrooms if elt.number_of_classrooms else ""
+        datas["Clôture"][count] = "Oui" if elt.has_fence else ("Non" if elt.has_fence == False else "")
+
 
         datas["COMMENTAIRES"][count] = elt.comments
         

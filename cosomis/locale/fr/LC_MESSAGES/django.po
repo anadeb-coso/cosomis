@@ -2594,3 +2594,31 @@ msgid ""
 msgstr ""
 "Sélectionnez une taille de fichier inférieure ou égale à %(max_size)s. Le fichier sélectionné "
 "est %(size)s."
+
+#: .\subprojects
+msgid "Has a fence?"
+msgstr "A de clôture ?"
+
+#: .\subprojects
+msgid "Number of classrooms"
+msgstr "Nombre de salle de classes"
+
+#: .\subprojects
+msgid "Number of latrine blocks"
+msgstr "Nombre de blocs latrine"
+
+#: .\subprojects
+msgid "Latrine blocks?"
+msgstr "Blocs latrine?"
+
+#: .\subprojects
+msgid "Total number of structures/infrastructures without latrines and fences"
+msgstr "Nombre total de structures/infrastructures sans latrines ni clôtures"
+
+#: .\subprojects
+msgid "Total latrines"
+msgstr "Nombre total de latrines"
+
+#: .\subprojects
+msgid "Total fences"
+msgstr "Nombre total de clôtures"

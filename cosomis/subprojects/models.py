@@ -72,7 +72,7 @@ class Subproject(BaseModel):
     contract_amount_work_companies = models.FloatField(null=True, blank=True, verbose_name=_("Contract amount for works companies (ET)"))
     name_of_company_awarded_efme = models.CharField(max_length=255, null=True, blank=True, verbose_name=_("Name of contractor entreprises de fourniture de mobiliers et equipements (EFME)"))
     date_signature_contract_efme = models.DateField(null=True, blank=True, verbose_name=_("Date signature contrat entreprises de fourniture de mobiliers et equipements (EFME)"))
-    contract_companies_amount_for_efme = models.DateField(null=True, blank=True, verbose_name=_("Contract amount Entreprises de fourniture de mobiliers et equipements (EFME)"))
+    contract_companies_amount_for_efme = models.FloatField(null=True, blank=True, verbose_name=_("Contract amount Entreprises de fourniture de mobiliers et equipements (EFME)"))
     date_signature_contract_facilitator = models.DateField(null=True, blank=True, verbose_name=_("Date of signature of facilitator contract"))
     amount_of_the_facilitator_contract = models.FloatField(null=True, blank=True, verbose_name=_("Contract amount for facilitator"))
     launch_date_of_the_construction_site_in_the_village = models.DateField(null=True, blank=True, verbose_name=_("Date of start of work in the village (date of notification of service order)"))
@@ -120,7 +120,11 @@ class Subproject(BaseModel):
     breeders_farmers_group = models.BooleanField(null=True, blank=True, verbose_name=_("Breeders farmers group"))
     ethnic_minority_group = models.BooleanField(null=True, blank=True, verbose_name=_("Ethnic minority group"))
 
-
+    has_latrine_blocs = models.BooleanField(null=True, blank=True, verbose_name=_("Latrine blocks?"))
+    number_of_latrine_blocks = models.IntegerField(null=True, blank=True, verbose_name=_("Number of latrine blocks"))
+    number_of_classrooms = models.IntegerField(null=True, blank=True, verbose_name=_("Number of classrooms"))
+    has_fence = models.BooleanField(null=True, blank=True, verbose_name=_("Has a fence?"))
+    
     objects = CustomQuerySet.as_manager()
 
 
@@ -317,9 +321,9 @@ class Subproject(BaseModel):
                 return self.current_level_of_physical_realization_of_the_work
             _status = float(self.current_level_of_physical_realization_of_the_work)
             if _status > 0 and _status < 100:
-                return _("In progress") + " " + _status + "%"
+                return _("In progress") + f" {_status}%"
             elif _status >= 100:
-                return _("Completed") + " " + _status + "%"
+                return _("Completed") + f" {_status}%"
 
         return None
 

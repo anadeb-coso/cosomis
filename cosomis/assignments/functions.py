@@ -55,7 +55,7 @@ def get_stabilized_administrativelevels_of_facilitators_by_project_id(facilitato
 
 
 def combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id(facilitator, project_id, type_adl="Village", parent_id=None) -> _QS:
-    administrative_levels_stabilized = get_stabilized_administrativelevels_of_facilitators_by_project_id(facilitator, project_id, type_adl.title())
+    administrative_levels_stabilized = [] #get_stabilized_administrativelevels_of_facilitators_by_project_id(facilitator, project_id, type_adl.title())
     administrative_levels_assigned_for_cdd_process = get_administrativelevels_by_facilitator_id_and_project_id(facilitator.id, project_id, type_adl.title())
 
     return list(

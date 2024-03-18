@@ -1,4 +1,6 @@
 import datetime
+from datetime import timedelta
+from django.utils import timezone
 
 from subprojects.models import Subproject, Component, SubprojectStep, Level, Step, Project
 from no_sql_client import NoSQLClient
@@ -33,9 +35,9 @@ def get_facilitators_village_liste(develop_mode=False, training_mode=False, no_s
     return administrative_levels
 
 def attribute_component_to_subprojects(subprojects, component):
-    print("Start !")
+    print("Start attribute_component_to_subprojects!")
     for subproject in subprojects:
-        print(subproject.full_title_of_approved_subproject)
+        # print(subproject.full_title_of_approved_subproject)
         subproject.component = component
         subproject.save()
     print()
@@ -94,9 +96,9 @@ def delete_administrative_levels_who_are_not_id_in_sql_db():
 
 
 def attribute_project_to_subprojects(subprojects, project):
-    print("Start !")
+    print("Start attribute_project_to_subprojects!")
     for subproject in subprojects:
-        print(subproject.full_title_of_approved_subproject)
+        # print(subproject.full_title_of_approved_subproject)
         subproject.projects.add(project)
         subproject.save()
     print()
@@ -135,14 +137,14 @@ def save_facilitator_assignment_in_mis(project_id: int, develop_mode=False, trai
 
 
 def link_infrastures_to_subproject():
-    print("Start !")
+    print("Start link_infrastures_to_subproject!")
     subprojects = Subproject.objects.all().order_by('number', 'joint_subproject_number')
     for subproject in subprojects:
         for _subproject in subprojects:
             if subproject.id != _subproject.id and \
                 subproject.number < _subproject.number and \
                     subproject.joint_subproject_number == _subproject.joint_subproject_number:
-                print(_subproject.full_title_of_approved_subproject)
+                # print(_subproject.full_title_of_approved_subproject)
                 _subproject.link_to_subproject = subproject
                 _subproject.subproject_type_designation = "Infrastructure"
                 _subproject.save()
@@ -151,10 +153,10 @@ def link_infrastures_to_subproject():
 
 
 def copy_cvd_to_list_of_beneficiary_villages():
-    print("Start !")
+    print("Start copy_cvd_to_list_of_beneficiary_villages!")
     subprojects = Subproject.objects.all()
     for subproject in subprojects:
-        print(subproject.full_title_of_approved_subproject)
+        # print(subproject.full_title_of_approved_subproject)
         if subproject.cvd:
             for v in subproject.cvd.get_villages():
                 subproject.list_of_beneficiary_villages.add(v)
@@ -204,7 +206,7 @@ def set_step(subproject, liste):
 
 
 def save_subproject_tracking():
-    print("Start !")
+    print("Start save_subproject_tracking !")
     subprojects = Subproject.objects.all()
     sectors = []
     types = []
@@ -229,7 +231,7 @@ def save_subproject_tracking():
             current_level = strip_accents(subproject.current_level_of_physical_realization_of_the_work if subproject.current_level_of_physical_realization_of_the_work else "").title()
             current_status_of_the_site = strip_accents(subproject.current_status_of_the_site if subproject.current_status_of_the_site else "").title()
             if current_level == "Remise du site".title() or current_status_of_the_site == "Remise du site".title(): #Remise du site
-                print("Remise du site")
+                # print("Remise du site")
                 set_step(
                     subproject, 
                     [
@@ -238,10 +240,10 @@ def save_subproject_tracking():
                     ]
                 )
             elif "se de validation".title() in current_level or "se de validation".title() in current_status_of_the_site: #En phase de validation | En phse de validation
-                print("En phase de validation")
+                # print("En phase de validation")
                 set_step(subproject, [step_identifie])
             elif "notification de l'intention d'attribution".title() in current_level or "notification de l'intention d'attribution".title() in current_status_of_the_site: #En  phase  de notification de l'intention d'attribution  | En phse de notification de l'intention d'attribution
-                print("En  phase  de notification de l'intention d'attribution")
+                # print("En  phase  de notification de l'intention d'attribution")
                 set_step(
                     subproject, 
                     [
@@ -250,7 +252,7 @@ def save_subproject_tracking():
                     ]
                 )
             elif current_level in ("Acheve".title(), "Acheve non receptionne".title()) or current_status_of_the_site  in ("Acheve".title(), "Acheve non receptionne".title()): #Acheve
-                print("Acheve")
+                # print("Acheve")
                 set_step(
                     subproject, 
                     [
@@ -260,7 +262,7 @@ def save_subproject_tracking():
                     ]
                 )
             elif current_level == "Reception technique".title() or current_status_of_the_site == "Reception technique".title(): #Reception technique
-                print("Reception technique")
+                # print("Reception technique")
                 set_step(
                     subproject, 
                     [
@@ -270,7 +272,7 @@ def save_subproject_tracking():
                     ]
                 )
             elif current_level == "Reception provisoire".title() or current_status_of_the_site == "Reception provisoire".title(): #Reception provisoire
-                print("Reception provisoire")
+                # print("Reception provisoire")
                 set_step(
                     subproject, 
                     [
@@ -281,7 +283,7 @@ def save_subproject_tracking():
                     ]
                 )
             elif current_level == "Reception definitive".title() or current_status_of_the_site == "Reception definitive".title(): #Reception definitive
-                print("Reception definitive")
+                # print("Reception definitive")
                 set_step(
                     subproject, 
                     [
@@ -293,7 +295,7 @@ def save_subproject_tracking():
                     ]
                 )
             elif current_level == "Infructueux".title() or current_status_of_the_site == "Infructueux".title(): #Infructueux
-                print("Infructueux")
+                # print("Infructueux")
                 set_step(
                     subproject, 
                     [
@@ -301,7 +303,7 @@ def save_subproject_tracking():
                     ]
                 )
             elif current_level == "Arret travaux".title() or current_status_of_the_site == "Arret travaux".title():
-                print("Arrêt travaux")
+                # print("Arrêt travaux")
                 set_step(
                     subproject, 
                     [
@@ -311,7 +313,7 @@ def save_subproject_tracking():
                     ]
                 )
             elif current_level == "En cours".title() or current_status_of_the_site == "En cours".title():
-                print("En cours")
+                # print("En cours")
                 set_step(
                     subproject, 
                     [
@@ -322,7 +324,7 @@ def save_subproject_tracking():
                 )
                 
                 _percent = 0.0
-                _current_level_of_physical_realization_of_the_works = subproject.current_level_of_physical_realization_of_the_work.split("%")
+                _current_level_of_physical_realization_of_the_works = subproject.current_level_of_physical_realization_of_the_work.split("%") if subproject.current_level_of_physical_realization_of_the_work else []
                 if _current_level_of_physical_realization_of_the_works:
                     _current_level_of_physical_realization_of_the_work = _current_level_of_physical_realization_of_the_works[0]
                     if not _current_level_of_physical_realization_of_the_work \
@@ -330,7 +332,7 @@ def save_subproject_tracking():
                         _percent = 0.0
                     else:
                         _percent = float(_current_level_of_physical_realization_of_the_work.replace(',', '0'))
-                print(_percent)
+                # print(_percent)
                 subproject_step_progress = subproject.get_current_subproject_step
                 # if subproject_step_progress.step.has_levels and not subproject_step_progress.check_step(subproject.current_level_of_physical_realization_of_the_work):
                 if subproject_step_progress.step.has_levels:
@@ -343,10 +345,10 @@ def save_subproject_tracking():
                         subproject_level.begin = datetime.datetime.now().date()
                         subproject_level.save()
             else:
-                print("Identifié")
+                # print("Identifié")
                 set_step(subproject, [step_identifie])
         else:
-            print("Identifié")
+            # print("Identifié")
             set_step(subproject, [step_identifie])
         
         
@@ -387,3 +389,12 @@ def set_projects_images():
     print()
     print("Done !")
 
+
+
+def delete_subproject_step_training():
+    start_date = timezone.make_aware(datetime.datetime(2023, 12, 15), timezone=timezone.get_current_timezone())
+    end_date = timezone.make_aware(datetime.datetime(2024, 3, 18), timezone=timezone.get_current_timezone())
+
+    objects_within_period = SubprojectStep.objects.filter(updated_date__range=[start_date, end_date])
+    print(objects_within_period.count())
+    objects_within_period.delete()
