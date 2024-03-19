@@ -151,16 +151,16 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                 {
                     'label': _("Subproject"),
                     'backgroundColor': 'red',
-                    'data': [
+                    'data': [(elt if elt else 0) for elt in [
                         all_subprojects.filter(subproject_type_designation="Subproject", subproject_sector=sector).aggregate(Sum('estimated_cost'))['estimated_cost__sum'] for sector in sectors
-                    ]
+                    ]]
                 },
                 {
                     'label': _("Infrastructure"),
                     'backgroundColor': 'blue',
-                    'data': [
+                    'data': [(elt if elt else 0) for elt in [
                         all_subprojects.filter(subproject_sector=sector).aggregate(Sum('estimated_cost'))['estimated_cost__sum'] for sector in sectors
-                    ]
+                    ]]
                 }
                 # ,
                 # {
