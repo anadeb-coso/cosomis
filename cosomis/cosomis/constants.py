@@ -70,10 +70,17 @@ TYPES_OF_SUB_PROJECT_COLOR = {
     'Pédiatrie': "#92d492", #DarkSeaGreen f-Vert de mer foncé
     'Laboratoire': "#00ff00", #Lime f-citron vert
 
+
     'Batiment Scolaire au Pré-scolaire': "#808080", #Gray f-Gris
     'Batiment Scolaire au Primaire': "#808080", #Gray f-Gris
     'Batiment Scolaire au CEG': "#808080", #Gray f-Gris
-    'Batiment Scolaire au Lycée': "#808080", #Gray f-Gris
+    'Batiment Scolaire au Lycée': "#808080", #Gray f-
+    
+    'Bâtiment Scolaire au Pré-scolaire': "#808080", #Gray f-Gris
+    'Bâtiment Scolaire au Primaire': "#808080", #Gray f-Gris
+    'Bâtiment Scolaire au CEG': "#808080", #Gray f-Gris
+    'Bâtiment Scolaire au Lycée': "#808080", #Gray f-Gris
+    
     
     'Extension réseau électrique': "#ffff00", #Yellow f-jaune
     'Lampadaires solaire': "#9c9c14", #DarkYellow f-jaune sombre

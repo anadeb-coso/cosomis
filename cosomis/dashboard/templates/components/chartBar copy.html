@@ -1,0 +1,64 @@
+{% load static i18n bootstrap4 custom_tags %}
+
+<canvas id="status_pie_chart" class="pie-chart"></canvas>
+
+<script>
+  $(document).ready(function () {
+    const barChartCanvas = document.getElementById('status_pie_chart').getContext('2d');
+
+    const labels = ['Label 1', 'Label 2', 'Label 3', 'Label 4', 'Label 5', 'Label 6', 'Label 7'];
+    const DATA_COUNT = labels.length;
+    const datasets = [
+      {
+        label: 'Dataset 1',
+        data: generateRandomPositiveNumbers(DATA_COUNT),
+        borderColor: 'red',
+        backgroundColor: 'rgba(255, 0, 0, 0.5)',
+      },
+      {
+        label: 'Dataset 2',
+        data: generateRandomPositiveNumbers(DATA_COUNT),
+        borderColor: 'blue',
+        backgroundColor: 'rgba(0, 0, 255, 0.5)',
+      }
+    ];
+
+    const data = {
+      labels: labels,
+      datasets: datasets
+    };
+
+    const config = {
+      type: 'horizontalBar', // Change le type de graphique à horizontalBar
+      data: data,
+      options: {
+        indexAxis: 'y', // Définit l'axe d'index sur l'axe des y pour les graphiques horizontaux
+        elements: {
+          bar: {
+            borderWidth: 2,
+          }
+        },
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'right',
+          },
+          title: {
+            display: true,
+            text: 'Chart.js Horizontal Bar Chart'
+          }
+        }
+      }
+    };
+
+    let statusChart = new Chart(barChartCanvas, config);
+
+    function generateRandomPositiveNumbers(count) {
+      const numbers = [];
+      for (let i = 0; i < count; i++) {
+        numbers.push(Math.floor(Math.random() * 100) + 1); // génère des nombres aléatoires positifs entre 1 et 100
+      }
+      return numbers;
+    }
+  });
+</script>

@@ -138,6 +138,12 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                         _subp.canton_id in column[2]) and _subp.subproject_sector == _sectors[i] and \
                         _subp.subproject_type_designation in (["Infrastructure", "Subproject"] if (i+1)%2 == 0 else ["Subproject"]):
                         number += 1
+                        
+                        if (i+1)%2 == 0:
+                            if _subp.has_latrine_blocs:
+                                number += 1
+                            if _subp.has_fence:
+                                number += 1
                 
                 datas[column[1]][count] = number
                 number_toal += number
@@ -460,6 +466,8 @@ class DashboardSubprojectsStepsAlreadyTrackListView(DashboardSubprojectsMixin, A
             else:
                 datas[_("Number")][0] = (1 if datas[_("Number")].get(0) == None else datas[_("Number")].get(0) + 1)
 
+        datas[_("Step")][count] = _("Number of infrastructures")
+        datas[_("Number")][count] = all_subprojects.count()
 
 #         administrative_levels_ids_str = ', '.join(str(elt) for elt in administrative_levels_ids)
 #         count = 0
@@ -487,7 +495,7 @@ class DashboardSubprojectsStepsAlreadyTrackListView(DashboardSubprojectsMixin, A
         return {
             'title': _("Subprojects by step"),
             'datas': datas,
-            'length_loop': range(0, count),
+            'length_loop': range(0, count+1),
             'values': list(datas.values())
         }
     

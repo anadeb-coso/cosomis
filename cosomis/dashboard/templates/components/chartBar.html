@@ -1,0 +1,275 @@
+{% load static i18n bootstrap4 custom_tags %}
+
+<form style="margin-left: 20px;">
+  <input type="radio" id="horizontal_bar_{{ componentId }}" name="option" value="horizontal_bar" checked>
+  <label for="horizontal_bar_{{ componentId }}">{% translate "Horizontal" %}</label>
+  <input type="radio" id="vertical_bar_{{ componentId }}" name="option" value="vertical_bar">
+  <label for="vertical_bar_{{ componentId }}">{% translate "Vertical" %}</label>
+</form>
+
+<div id="div_horizontal_bar_{{ componentId }}">
+  <canvas id="horizontal_bar_chart_{{ componentId }}" class="bar-chart" ></canvas>
+</div>
+<div id="div_vertical_bar_{{ componentId }}">
+  <canvas id="vertical_bar_chart_{{ componentId }}" class="bar-chart" ></canvas>
+</div>
+
+
+
+<script>
+  $(document).ready(function () {
+    const horizontalBarChartCanvasDiv = document.getElementById('div_horizontal_bar_{{ componentId }}');
+    const verticalBarChartCanvasDiv = document.getElementById('div_vertical_bar_{{ componentId }}');
+
+    const horizontalBarChartCanvas = document.getElementById('horizontal_bar_chart_{{ componentId }}').getContext('2d');
+    const verticalBarChartCanvas = document.getElementById('vertical_bar_chart_{{ componentId }}').getContext('2d');
+
+    var verticalBarChart;
+    var horizontalBarChart;
+
+    const datas = {{ datas|safe }};
+    const labels = datas.sectors;
+    const DATA_COUNT = labels.length;
+
+    const datasets = datas.bars.map((item) => {
+        return {
+          label: item.label,
+          data: item.data,
+          borderColor: 'red',
+          backgroundColor: item.backgroundColor,
+        }
+    });
+    const data = {
+      labels: labels,
+      datasets: datasets
+    };
+
+    const config = {
+      type: 'horizontalBar',
+      data: data,
+      options: {
+        indexAxis: 'y',
+        elements: {
+          bar: {
+            borderWidth: 2,
+            borderRadius: 4,
+            barThickness: 15 // épaisseur des barres
+          }
+        },
+        layout: { // Ajustement de la hauteur du graphe
+          padding: {
+            top: 0, // Marge en haut
+            bottom: 0 // Marge en bas
+          },
+        },
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'right',
+          },
+          title: {
+            display: true,
+            text: 'Chart.js Horizontal Bar Chart'
+          },
+          {% comment %} tooltip: {
+            enabled: false // désactiver l'affichage des tooltips
+          } {% endcomment %}
+        },
+        {% comment %} scales: {
+          x: {
+            ticks: {
+              display: false // désactiver l'affichage des ticks sur l'axe x
+            }
+          }
+        }, {% endcomment %}
+        scales: {
+          x: {
+            ticks: {
+              color: 'black', // Couleur du texte de l'axe X
+              font: {
+                family: 'Arial', // Famille de police de l'axe X
+                size: 12, // Taille de la police de l'axe X
+                style: 'normal', // Style de la police de l'axe X
+                weight: 'normal', // Poids de la police de l'axe X
+              }
+            }
+          },
+          y: {
+            ticks: {
+              color: 'black', // Couleur du texte de l'axe Y
+              font: {
+                family: 'Arial', // Famille de police de l'axe Y
+                size: 12, // Taille de la police de l'axe Y
+                style: 'normal', // Style de la police de l'axe Y
+                weight: 'normal', // Poids de la police de l'axe Y
+              }
+            }
+          }
+        },
+        animation: {
+          onComplete: function () {
+            const ctx = this.chart.ctx;
+            ctx.font = Chart.helpers.fontString(14, 'bold', Chart.defaults.global.defaultFontFamily);
+            //Chart.helpers.fontString(Chart.defaults.global.defaultFontSize, 'normal', Chart.defaults.global.defaultFontFamily);
+            ctx.fillStyle = "black";
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+
+            this.data.datasets.forEach(function (dataset) {
+              for (var i = 0; i < dataset.data.length; i++) {
+                var model = dataset._meta[Object.keys(dataset._meta)[0]].data[i]._model;
+                ctx.fillText(dataset.data[i], model.x - 7, model.y + 7);
+              }
+            });
+          }
+        },
+        /*title: {
+          display: true,
+          text: 'Nombre de sous-projets par rapport aux infrastructures par secteurs', // Ajouter un titre au graphique
+          font: {
+            family: 'Arial',
+            size: 18,
+            style: 'normal',
+            weight: 'bold',
+          },
+          padding: 20,
+          color: 'black'
+        }*/
+      }
+    };
+
+
+
+    const configVertical = {
+      type: 'bar',
+      data: data,
+      options: {
+        indexAxis: 'y',
+        elements: {
+          bar: {
+            borderWidth: 2,
+            borderRadius: 4,
+            barThickness: 15 // épaisseur des barres
+          }
+        },
+        layout: { // Ajustement de la hauteur du graphe
+          padding: {
+            top: 0, // Marge en haut
+            bottom: 0 // Marge en bas
+          },
+        },
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'right',
+          },
+          title: {
+            display: true,
+            text: 'Chart.js Horizontal Bar Chart'
+          },
+          {% comment %} tooltip: {
+            enabled: false // désactiver l'affichage des tooltips
+          } {% endcomment %}
+        },
+        {% comment %} scales: {
+          x: {
+            ticks: {
+              display: false // désactiver l'affichage des ticks sur l'axe x
+            }
+          }
+        }, {% endcomment %}
+        scales: {
+          x: {
+            ticks: {
+              color: 'black', // Couleur du texte de l'axe X
+              font: {
+                family: 'Arial', // Famille de police de l'axe X
+                size: 12, // Taille de la police de l'axe X
+                style: 'normal', // Style de la police de l'axe X
+                weight: 'normal', // Poids de la police de l'axe X
+              }
+            }
+          },
+          y: {
+            ticks: {
+              color: 'black', // Couleur du texte de l'axe Y
+              font: {
+                family: 'Arial', // Famille de police de l'axe Y
+                size: 12, // Taille de la police de l'axe Y
+                style: 'normal', // Style de la police de l'axe Y
+                weight: 'normal', // Poids de la police de l'axe Y
+              }
+            }
+          }
+        },
+        animation: {
+          onComplete: function () {
+            const ctx = this.chart.ctx;
+            ctx.font = Chart.helpers.fontString(14, 'bold', Chart.defaults.global.defaultFontFamily);
+            //Chart.helpers.fontString(Chart.defaults.global.defaultFontSize, 'normal', Chart.defaults.global.defaultFontFamily);
+            ctx.fillStyle = "black";
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+
+            this.data.datasets.forEach(function (dataset) {
+              for (var i = 0; i < dataset.data.length; i++) {
+                var model = dataset._meta[Object.keys(dataset._meta)[0]].data[i]._model;
+                ctx.fillText(dataset.data[i], model.x - 7, model.y + 7);
+              }
+            });
+          }
+        },
+        /*title: {
+          display: true,
+          text: 'Nombre de sous-projets par rapport aux infrastructures par secteurs', // Ajouter un titre au graphique
+          font: {
+            family: 'Arial',
+            size: 18,
+            style: 'normal',
+            weight: 'bold',
+          },
+          padding: 20,
+          color: 'black'
+        }*/
+      }
+    };
+
+
+    verticalBarChartCanvasDiv.style.display = "none";
+    var horizontalBarChart = new Chart(horizontalBarChartCanvas, config);
+
+
+
+
+
+    // Get all radio buttons
+    const radioButtons = document.querySelectorAll('input[type=radio][name="option"]');
+    radioButtons.forEach(radioButton => {
+      radioButton.addEventListener('click', function() {
+        if (this.checked) {
+          destroyCharts();
+          if(this.value == "vertical_bar"){
+            verticalBarChartCanvasDiv.style.display = "block";
+            verticalBarChart = new Chart(verticalBarChartCanvas, configVertical);
+          }else{
+            horizontalBarChartCanvasDiv.style.display = "block";
+            horizontalBarChart = new Chart(horizontalBarChartCanvas, config);
+          }
+          
+        }
+      });
+    });
+
+    function destroyCharts(){
+      if(horizontalBarChart) {
+        horizontalBarChartCanvasDiv.style.display = "none";
+        horizontalBarChart.destroy();
+      }
+      if(verticalBarChart) {
+        verticalBarChartCanvasDiv.style.display = "none";
+        verticalBarChart.destroy();
+      }
+    }
+
+  });
+</script>

@@ -1,0 +1,141 @@
+{% load static i18n bootstrap4 custom_tags %}
+
+<style>
+    .card_image_transparent {
+        opacity: 0.5;
+        width: 60px; 
+        height: 60px; 
+        margin: auto !important; 
+        margin-top: 11px !important
+    }
+</style>
+
+
+<div class="row">
+    <div class="col-2">
+        <div class="card mb-0" style="max-width: 540px;">
+            <div class="row no-gutters">
+                <div class="col-md-4 ">
+                    <img 
+                        src="{% static 'images/subproject.png' %}" 
+                        class="card-img card_image_transparent" alt="infrastructure">
+                </div>
+                <div class="col-md-8">
+                    <div class="card-body">
+                        <h5 class="card-title" style="font-size: 10px;">{% translate "Subprojects" %}</h5><br />
+                        <p class="card-title" style="font-weight: bold !important">{{ total_subproject }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-2">
+        <div class="card mb-0" style="max-width: 540px;">
+            <div class="row no-gutters">
+                <div class="col-md-4">
+                    <img 
+                        src="{% static 'images/infrastructures_.png' %}" 
+                        class="card-img card_image_transparent" alt="infrastructure">
+                </div>
+                <div class="col-md-8">
+                    <div class="card-body">
+                        <h5 class="card-title" style="font-size: 10px;">{% translate "Infrastructures" %}</h5><br />
+                        <p class="card-title" style="font-weight: bold !important">{{ total }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-2">
+        <div class="card mb-0" style="max-width: 540px;">
+            <div class="row no-gutters">
+                <div class="col-md-4">
+                    <img 
+                        src="{% static 'images/infrastructure.png' %}" 
+                        class="card-img card_image_transparent" alt="infrastructure">
+                </div>
+                <div class="col-md-8">
+                    <div class="card-body">
+                        <h5 class="card-title" style="font-size: 10px;">{% translate "Infras with latrines/fences" %}</h5><br />
+                        <p class="card-title" style="font-weight: bold !important">{{ total_infrastrutures }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-2">
+        <div class="card mb-0" style="max-width: 540px;">
+            <div class="row no-gutters">
+                <div class="col-md-4">
+                    <img 
+                        src="{% static 'images/infrastructures_.png' %}" 
+                        class="card-img card_image_transparent" alt="infrastructure">
+                </div>
+                <div class="col-md-8">
+                    <div class="card-body">
+                        <h5 class="card-title" style="font-size: 10px;">{% translate "Infrastructures not start" %}</h5><br />
+                        <p class="card-title text-warning" style="font-weight: bold !important">{{ total_infrastruture_not_started }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-2">
+        <div class="card mb-0" style="max-width: 540px;">
+            <div class="row no-gutters">
+                <div class="col-md-4">
+                    <img 
+                        src="{% static 'images/subproject.png' %}" 
+                        class="card-img card_image_transparent" alt="infrastructure">
+                </div>
+                <div class="col-md-8">
+                    <div class="card-body">
+                        <h5 class="card-title" style="font-size: 10px;">{% translate "Infrastructures in progress" %}</h5><br />
+                        <p class="card-title text-info" style="font-weight: bold !important">{{ total_infrastruture_in_progress }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-2">
+        <div class="card mb-0" style="max-width: 540px;">
+            <div class="row no-gutters">
+                <div class="col-md-4">
+                    <img 
+                        src="{% static 'images/infrastructures_.png' %}" 
+                        class="card-img card_image_transparent" alt="infrastructure">
+                </div>
+                <div class="col-md-8">
+                    <div class="card-body">
+                        <h5 class="card-title" style="font-size: 10px;">{% translate "Infrastructures completed" %}</h5><br />
+                        <p class="card-title text-success" style="font-weight: bold !important">{{ total_infrastruture_completed }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<br />
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-0">
+            <div class="card-header">
+                <p class="font-weight-bold">{% translate "Number of subprojects in relation to infrastructure by sector" %}</p>
+            </div>
+            {% include 'components/chartBar.html' with componentId='1' datas=number_subproject_infrastrutures %}
+        </div>
+    </div>
+</div>
+
+<br />
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-0">
+            <div class="card-header">
+                <p class="font-weight-bold">{% translate "Amount of subprojects in relation to infrastructure by sector" %}</p>
+            </div>
+            {% include 'components/chartBar.html' with componentId='2' datas=amount_subproject_infrastrutures %}
+        </div>
+    </div>
+</div>

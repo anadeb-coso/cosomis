@@ -2622,3 +2622,43 @@ msgstr "Nombre total de latrines"
 #: .\subprojects
 msgid "Total fences"
 msgstr "Nombre total de clôtures"
+
+#: .\subprojects
+msgid "Infrastructures"
+msgstr "Infrastructures"
+
+#: .\subprojects
+msgid "Infras with latrines/fences"
+msgstr "Infras avec latrines/clôtures"
+
+#: .\subprojects
+msgid "Infrastructures not start"
+msgstr "Infrastructures non démarrées"
+
+#: .\subprojects
+msgid "Infrastructures in progress"
+msgstr "Infrastructures en cours"
+
+#: .\subprojects
+msgid "Infrastructures completed"
+msgstr "Infrastructures achevées"
+
+#: .\subprojects
+msgid "Number of subprojects in relation to infrastructure by sector"
+msgstr "Nombre de sous-projets par rapport aux infrastructures par secteurs"
+
+#: .\subprojects
+msgid "Amount of subprojects in relation to infrastructure by sector"
+msgstr "Montant des sous-projets par rapport aux infrastructures par secteurs"
+
+#: .\subprojects
+msgid "Vertical"
+msgstr "Vertical"
+
+#: .\subprojects
+msgid "Horizontal"
+msgstr "Horizontal"
+
+#: .\subprojects
+msgid "Financing Dashboard"
+msgstr "Tableau de bord des financements"
