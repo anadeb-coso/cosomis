@@ -40,6 +40,28 @@ class ModalFormMixin(object):
         return ctx
 
 
+class ModalListMixin(object):
+    template_name = 'common/modal_list.html'
+    id_list = 'list'
+    title = None
+    subtitle = None
+    picture = None
+    picture_class = None
+    submit_button = None
+    list_class_color = 'primary'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx.setdefault('id_list', self.id_list)
+        ctx.setdefault('title', self.title)
+        ctx.setdefault('subtitle', self.subtitle)
+        ctx.setdefault('picture', self.picture)
+        ctx.setdefault('picture_class', self.picture_class)
+        ctx.setdefault('submit_button', self.submit_button)
+        ctx.setdefault('list_class_color', self.list_class_color)
+        return ctx
+    
+
 class AJAXRequestMixin:
     def dispatch(self, request, *args, **kwargs):
         if request.headers.get('x-requested-with') != 'XMLHttpRequest':

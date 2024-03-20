@@ -1,0 +1,255 @@
+
+<div id="subprojects-data">
+{% load bootstrap4 static custom_tags i18n %}
+{% make_list "subprojects-number" as describe_amount %}
+<script src="{% static 'js/disableOnSubmit.js' %}"></script>
+<style>
+    #table-subprojects tr td, #table-subprojects tr th {
+        font-size: 10px !important;
+    }
+</style>
+<div class="modal-dialog modal-confirmation">
+    <div class="modal-content">
+        <div class="modal-header">
+            <div class="btn-group pull-left" >
+                <a class="btn btn-primary tab-subproject-other" href="#subprojects" data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}?type={{ type }}&search=All">
+                    {% translate 'See All' %}
+                </a>
+            </div>
+            <div class="modal-title mx-auto">
+                <div class="fs29 text-bold-family text-{% if list_class_color %}{{ list_class_color }}{% else %}primary{% endif %}">
+                    {{ title }}
+
+                </div>
+                {% if subtitle %}
+                    <p>
+                        <small class="subtitle">{{ subtitle }}</small>
+                    </p>
+                {% endif %}
+
+
+            </div>
+            <button type="button" class="border-0 bg-transparent close-modal" data-dismiss="modal" aria-label="Close">
+                <div class="circle-icon bg-{% if list_class_color %}{{ list_class_color }}{% else %}primary{% endif %}">
+                    <div class="center-27">
+                        <i class="fas fa-times"></i>
+                    </div>
+                </div>
+            </button>
+        </div>
+        
+        
+        
+
+
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body table-responsive">
+                        <table id="table-subprojects" class="table style-td">
+                            <thead>
+                            <tr>
+                                <th>{% translate 'N°' %}</th>
+                            <th>{% translate 'Sites' %}</th>
+                            <th>{% translate 'Region' %}</th>
+                            <th>{% translate "Full title of approved sub-project (description)" %}</th>
+                            <th>{% translate 'Type of structure' %}</th>
+                            <th>{% translate "Type d'ouvrage" %}</th>
+                            
+                            {% if list_type_search == "infrastrutures-with-latrines-fences" %}
+                            <th>{% translate 'Latrines' %}</th>
+                            <th>{% translate 'Fences' %}</th>
+                            {% endif %}
+
+                            <th>{% translate 'Status' %}</th>
+                            <th>{% translate 'Allocation' %} CFA</th>
+                            <th width="12%">{% translate 'Action' %}</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for subproject in subprojects %}
+                            <tr>
+                                <td>N{{ subproject.number }}.{{ subproject.joint_subproject_number }}</td>
+                                {% comment %} <td>{{ subproject.get_village.name }}</td>
+                                <td>{{ subproject.get_cantons_names }}</td> {% endcomment %}
+                                <td>
+                                    {% if '/' in subproject.get_cantons_names %}
+                                        {{ subproject.get_cantons_names }}
+                                    {% else %}
+                                        {{ subproject.get_village.name }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ subproject.get_canton.parent.parent.parent.name }}</td>
+                                <td>{{ subproject.full_title_of_approved_subproject }}</td>
+                                <td>{{ subproject.type_of_subproject }}</td>
+                                <td>{{ subproject.works_type }}</td>
+
+                                {% if list_type_search == "infrastrutures-with-latrines-fences" %}
+                                <td>{% if subproject.number_of_latrine_blocks %}{{ subproject.number_of_latrine_blocks }}{% else %}-{% endif %}</td>
+                                <td>{% if subproject.has_fence %}{% translate "No" %}{% else %}-{% endif %}</td>
+                                {% endif %}
+
+                                <td>
+                                    {% if subproject.get_current_subproject_step_and_level %}
+                                        {{ subproject.get_current_subproject_step_and_level }}
+                                    {% else %}
+                                        {% translate 'No start' %}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if list_type_search in describe_amount %}
+                                        {{ subproject.get_estimated_cost_str }}
+                                    {% else %}
+                                        {{ subproject.estimated_cost|separate_with_space:"CFA" }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'subprojects:detail' subproject.pk %}" style="font-size: 9px !important;"
+                                       class="btn btn-primary btn-xs" title="{% translate 'View details' %}" target="_blank" >
+                                        <i class="fa fa-eye"></i>
+                                    </a>
+                                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Infra" %}
+                                    <a href="{% url 'subprojects:update' subproject.pk %}" style="font-size: 9px !important;"
+                                       class="btn btn-primary btn-xs" title="{% translate 'Edit' %}" target="_blank">
+                                        <i class="fa fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                            </tbody>
+
+                            
+                        <tfoot>
+                            <tr>
+                                <th rowspan="1" colspan="1"></th>
+                                <th rowspan="1" colspan="1"></th>
+                                <th rowspan="1" colspan="1"></th>
+                                <th rowspan="1" colspan="1"></th>
+                                <th rowspan="1" colspan="1"></th>
+                                <th rowspan="1" colspan="1"></th>
+                                <th rowspan="1" colspan="1"></th>
+                                
+                                {% if list_type_search == "infrastrutures-with-latrines-fences" %}
+                                <th rowspan="1" colspan="1"></th>
+                                <th rowspan="1" colspan="1"></th>
+                                {% endif %}
+                                <th rowspan="1" colspan="1"></th>
+                            </tr>
+                        </tfoot>
+
+                        </table>
+
+                        {% if list_type_search == "infrastrutures-with-latrines-fences" %}
+                        <b>{{ total_latrine_blocks }} ==> {% translate 'Total latrines' %}</b><br />
+                        <b>{{ total_fences }} ==> {% translate 'Total fences' %}</b><br />
+                        {% endif %}
+
+                        <nav>
+                            <ul class="pagination justify-content-center">
+                                {% if subprojects.has_previous %}
+                                    <li>
+                                        <a class="page-link tab-subproject-other" href="#subprojects" data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}?page={{ subprojects.previous_page_number }}" 
+                                            >
+                                            {% comment %} <span aria-hiden="true">&laquo;</span> {% endcomment %}
+                                            <i class="fa fa-arrow-left text-bold"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                <li class="page-item">
+                                    <p class="page-link text-bold">
+                                        {% translate 'Page' %} {{ subprojects.number }} {% translate 'of' %} {{ subprojects.paginator.num_pages }}
+                                    </p>
+                                </li>
+                                {% if subprojects.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link tab-subproject-other" href="#subprojects" data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}?page={{ subprojects.next_page_number }}" 
+                                            >
+                                            <i class="fa fa-arrow-right text-bold"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+
+
+                    </div>
+
+                    <div class="overlay" id="subprojects-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+
+
+
+
+    </div>
+</div>
+
+
+
+{% include 'layouts/datatable-js.html' %}
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            {% get_current_language as lang %}
+            $("#subprojects-spin").hide()
+            let table_subprojects = $('#table-subprojects').DataTable({
+                retrieve: true,
+                language: {
+                    url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}')
+                },
+                dom: 'Blfrtip',
+                buttons: [ 'copy', 'excel', 'pdf', 'colvis' ],
+                lengthMenu: [10, 20, 50, 100],
+                pageLength: 10,
+                order: [],
+                initComplete: function () {
+                    this.api()
+                        .columns()
+                        .every(function () {
+                            var column = this;
+                            
+                            // Create select element and listener
+                            var select = $('<select style="width:50px !important;"><option value=""></option></select>')
+                                .appendTo($(column.footer()).empty())
+                                .on('change', function () {
+                                    var val = $(`#table`).DataTable.util.escapeRegex($(this).val());
+            
+                                    column.search(val ? '^' + val + '$' : '', true, false).draw();
+                                });
+            
+                            // Add list of options
+                            column
+                                .data()
+                                .unique()
+                                .sort()
+                                .each(function (d, j) {
+                                    select.append('<option value="' + d + '">' + d + '</option>');
+                                });
+                        });
+                }
+            });
+        
+            $('a.tab-subproject-other').on('click', function () {
+                var elt = $(this).attr('href').replace('#', '');
+                loadPage(
+                    $(this).attr('data-href'), $(`#${elt}-data`), $(`#${elt}-spin`),
+                    administrative_level_id={{ administrative_level_id|safe }},
+                    administrative_level_type="{{ administrative_level_type }}",
+                    list_type_search="{{ list_type_search }}"
+                );
+            });
+
+
+            
+        });
+    </script>
+    
+</div>

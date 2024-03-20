@@ -81,22 +81,31 @@
 
 <script>
 
-      function loadPage(url_path, elt_data_place, elt_spin, administrative_level_id=null, administrative_level_type=null) {
+      function loadPage(url_path, elt_data_place, elt_spin, administrative_level_id=null, administrative_level_type=null, list_type_search=null) {
             elt_spin.show();
             $.ajax({
                   type: "GET",
                   url: url_path,
                   data: {
-                  administrative_level_id: administrative_level_id,
-                  administrative_level_type: administrative_level_type
+                        administrative_level_id: administrative_level_id,
+                        administrative_level_type: administrative_level_type,
+                        list_type_search: list_type_search
                   },
                   success: function (response) {
-                  elt_spin.hide();
-                  elt_data_place.html(response);
+                        elt_spin.hide();
+                        elt_data_place.html(response);
+                        try{
+                              if(elt_data_place.find('.modal-dialog')){
+                                    elt_data_place.find('.modal-dialog').addClass('modal-xl');
+                                    elt_data_place.modal('show');
+                              }
+                        }catch(e){
+                              console.error("Not modal")
+                        }
                   },
                   error: function (data) {
-                  elt_spin.hide();
-                  alert(error_server_message + "Error " + data.status);
+                        elt_spin.hide();
+                        alert(error_server_message + "Error " + data.status);
                   }
             });
       }

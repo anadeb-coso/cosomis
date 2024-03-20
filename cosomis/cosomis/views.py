@@ -13,7 +13,7 @@ from django.apps import apps
 from cosomis.mixins import AJAXRequestMixin, JSONResponseMixin, ModalFormMixin
 from cosomis.forms import DeleteConfirmForm
 from usermanager.permissions import AdminPermissionRequiredMixin
-
+from subprojects.models import SubprojectStep
 
 
 def set_language(request):
@@ -80,8 +80,32 @@ class DeleteObjectFormView(AJAXRequestMixin, ModalFormMixin, AdminPermissionRequ
         return self.render_to_json_response(context, safe=False)
     
     def _delete_object(self, obj):
+        _class = obj.__class__
         
         obj.delete()
+        
+        #SubprojetStep
+        if _class == SubprojectStep:
+            subproject: SubprojectStep = obj.subproject
+            current_subproject_step = subproject.get_current_subproject_step
+            if current_subproject_step:
+                if current_subproject_step.step.ranking < 8 and current_subproject_step.step.ranking != 2:
+                    subproject.current_status_of_the_site = "Identifié"
+                elif current_subproject_step.step.ranking == 9:
+                    subproject.current_status_of_the_site = "Abandon"
+                elif current_subproject_step.step.ranking == 10:
+                    subproject.current_status_of_the_site = "Arrêt"
+                elif current_subproject_step.step.ranking == 14:
+                    subproject.current_status_of_the_site = "Réception provisoire"
+                else:
+                    subproject.current_status_of_the_site = current_subproject_step.step.wording
+
+                if current_subproject_step.step.ranking == 3:
+                    subproject.approval_date_cora = current_subproject_step.begin
+
+                subproject.current_level_of_physical_realization_of_the_work = str(current_subproject_step.step.percent if current_subproject_step.step.percent else current_subproject_step.step.wording)
+                subproject.save()
+            
         
         msg = _("The Step was successfully removed.")
         messages.add_message(self.request, messages.SUCCESS, msg, extra_tags='success')

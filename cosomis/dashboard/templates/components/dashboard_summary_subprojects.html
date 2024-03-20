@@ -23,9 +23,17 @@
                 <div class="col-md-8">
                     <div class="card-body">
                         <h5 class="card-title" style="font-size: 10px;">{% translate "Subprojects" %}</h5><br />
-                        <p class="card-title" style="font-weight: bold !important">{{ total_subproject }}</p>
+                        <p class="card-title dashboard-model" 
+                            href="#subprojects-number" 
+                            data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                            style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                            {{ total_subproject }}
+                        </p>
                     </div>
                 </div>
+            </div>
+            <div class="overlay" id="subprojects-number-spin">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
             </div>
         </div>
     </div>
@@ -40,9 +48,17 @@
                 <div class="col-md-8">
                     <div class="card-body">
                         <h5 class="card-title" style="font-size: 10px;">{% translate "Infrastructures" %}</h5><br />
-                        <p class="card-title" style="font-weight: bold !important">{{ total }}</p>
+                        <p class="card-title dashboard-model" 
+                            href="#infrastrutures" 
+                            data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                            style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                            {{ total }}
+                        </p>
                     </div>
                 </div>
+            </div>
+            <div class="overlay" id="infrastrutures-spin">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
             </div>
         </div>
     </div>
@@ -57,9 +73,17 @@
                 <div class="col-md-8">
                     <div class="card-body">
                         <h5 class="card-title" style="font-size: 10px;">{% translate "Infras with latrines/fences" %}</h5><br />
-                        <p class="card-title" style="font-weight: bold !important">{{ total_infrastrutures }}</p>
+                        <p class="card-title dashboard-model" 
+                            href="#infrastrutures-with-latrines-fences" 
+                            data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                            style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                            {{ total_infrastrutures }}
+                        </p>
                     </div>
                 </div>
+            </div>
+            <div class="overlay" id="infrastrutures-with-latrines-fences-spin">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
             </div>
         </div>
     </div>
@@ -74,9 +98,17 @@
                 <div class="col-md-8">
                     <div class="card-body">
                         <h5 class="card-title" style="font-size: 10px;">{% translate "Infrastructures not start" %}</h5><br />
-                        <p class="card-title text-warning" style="font-weight: bold !important">{{ total_infrastruture_not_started }}</p>
+                        <p class="card-title text-warning dashboard-model" 
+                            href="#infrastruture-not-started" 
+                            data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                            style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                            {{ total_infrastruture_not_started }}
+                        </p>
                     </div>
                 </div>
+            </div>
+            <div class="overlay" id="infrastruture-not-started-spin">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
             </div>
         </div>
     </div>
@@ -91,9 +123,17 @@
                 <div class="col-md-8">
                     <div class="card-body">
                         <h5 class="card-title" style="font-size: 10px;">{% translate "Infrastructures in progress" %}</h5><br />
-                        <p class="card-title text-info" style="font-weight: bold !important">{{ total_infrastruture_in_progress }}</p>
+                        <p class="card-title text-info dashboard-model" 
+                            href="#infrastruture-in-progress" 
+                            data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                            style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                            {{ total_infrastruture_in_progress }}
+                        </p>
                     </div>
                 </div>
+            </div>
+            <div class="overlay" id="infrastruture-in-progress-spin">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
             </div>
         </div>
     </div>
@@ -108,9 +148,17 @@
                 <div class="col-md-8">
                     <div class="card-body">
                         <h5 class="card-title" style="font-size: 10px;">{% translate "Infrastructures completed" %}</h5><br />
-                        <p class="card-title text-success" style="font-weight: bold !important">{{ total_infrastruture_completed }}</p>
+                        <p class="card-title text-success dashboard-model" 
+                            href="#infrastruture-completed" 
+                            data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                            style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                            {{ total_infrastruture_completed }}
+                        </p>
                     </div>
                 </div>
+            </div>
+            <div class="overlay" id="infrastruture-completed-spin">
+                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
             </div>
         </div>
     </div>
@@ -139,3 +187,36 @@
         </div>
     </div>
 </div>
+
+<script src="{% static 'js/csrfSafeMethodAjax.js' %}"></script>
+<script src="{% static 'js/formAjaxSubmit.js' %}"></script>
+    <script type="text/javascript">
+            $("#subprojects-number-spin").hide();
+            $("#infrastrutures-spin").hide();
+            $("#infrastrutures-with-latrines-fences-spin").hide();
+            $("#infrastruture-completed-spin").hide();
+            $("#infrastruture-in-progress-spin").hide();
+            $("#infrastruture-not-started-spin").hide();
+            let details_modal_objects = $('#detailsModalObjects');
+            document.querySelectorAll('p.dashboard-model').forEach(function(element){
+                element.addEventListener('click', function (e) {
+                    console.log(88)
+                    e.preventDefault();	
+
+                    var elt = $(this).attr('href').replace('#', '');
+
+                    loadPage(
+                        $(this).attr('data-href'), details_modal_objects, $(`#${elt}-spin`),
+                        administrative_level_id={{ administrative_level_id|safe }},
+                        administrative_level_type="{{ administrative_level_type }}",
+                        list_type_search=elt
+                    );
+                    //details_modal_objects.find('.modal-dialog').addClass('');
+                    //details_modal_objects.modal('show');
+
+
+                }); // addEventListener
+            }) // forEach
+        
+        
+    </script>
