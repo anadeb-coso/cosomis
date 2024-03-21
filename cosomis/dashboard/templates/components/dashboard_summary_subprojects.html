@@ -10,158 +10,320 @@
     }
 </style>
 
+<div class="card">
+    <div class="card-body">
 
-<div class="row">
-    <div class="col-2">
-        <div class="card mb-0" style="max-width: 540px;">
-            <div class="row no-gutters">
-                <div class="col-md-4 ">
-                    <img 
-                        src="{% static 'images/subproject.png' %}" 
-                        class="card-img card_image_transparent" alt="infrastructure">
-                </div>
-                <div class="col-md-8">
-                    <div class="card-body">
-                        <h5 class="card-title" style="font-size: 10px;">{% translate "Subprojects" %}</h5><br />
-                        <p class="card-title dashboard-model" 
-                            href="#subprojects-number" 
-                            data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
-                            style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
-                            {{ total_subproject }}
-                        </p>
+        <div class="row">
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4 ">
+                            <img 
+                                src="{% static 'images/subproject.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Subprojects" %}</h5><br />
+                                <p class="card-title dashboard-model" 
+                                    href="#subprojects-number" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                                    {{ total_subproject }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="subprojects-number-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
                     </div>
                 </div>
             </div>
-            <div class="overlay" id="subprojects-number-spin">
-                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-2">
-        <div class="card mb-0" style="max-width: 540px;">
-            <div class="row no-gutters">
-                <div class="col-md-4">
-                    <img 
-                        src="{% static 'images/infrastructures_.png' %}" 
-                        class="card-img card_image_transparent" alt="infrastructure">
-                </div>
-                <div class="col-md-8">
-                    <div class="card-body">
-                        <h5 class="card-title" style="font-size: 10px;">{% translate "Infrastructures" %}</h5><br />
-                        <p class="card-title dashboard-model" 
-                            href="#infrastrutures" 
-                            data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
-                            style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
-                            {{ total }}
-                        </p>
+            
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4">
+                            <img 
+                                src="{% static 'images/subproject.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Subprojects not start" %}</h5><br />
+                                <p class="card-title text-warning dashboard-model" 
+                                    href="#subprojects-not-started" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                                    {{ total_subproject_not_started }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="subprojects-not-started-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
                     </div>
                 </div>
             </div>
-            <div class="overlay" id="infrastrutures-spin">
-                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-2">
-        <div class="card mb-0" style="max-width: 540px;">
-            <div class="row no-gutters">
-                <div class="col-md-4">
-                    <img 
-                        src="{% static 'images/infrastructure.png' %}" 
-                        class="card-img card_image_transparent" alt="infrastructure">
-                </div>
-                <div class="col-md-8">
-                    <div class="card-body">
-                        <h5 class="card-title" style="font-size: 10px;">{% translate "Infras with latrines/fences" %}</h5><br />
-                        <p class="card-title dashboard-model" 
-                            href="#infrastrutures-with-latrines-fences" 
-                            data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
-                            style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
-                            {{ total_infrastrutures }}
-                        </p>
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4">
+                            <img 
+                                src="{% static 'images/subproject.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Subprojects in progress" %}</h5><br />
+                                <p class="card-title text-info dashboard-model" 
+                                    href="#subprojects-in-progress" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                                    {{ total_subproject_in_progress }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="subprojects-in-progress-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
                     </div>
                 </div>
             </div>
-            <div class="overlay" id="infrastrutures-with-latrines-fences-spin">
-                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-2">
-        <div class="card mb-0" style="max-width: 540px;">
-            <div class="row no-gutters">
-                <div class="col-md-4">
-                    <img 
-                        src="{% static 'images/infrastructures_.png' %}" 
-                        class="card-img card_image_transparent" alt="infrastructure">
-                </div>
-                <div class="col-md-8">
-                    <div class="card-body">
-                        <h5 class="card-title" style="font-size: 10px;">{% translate "Infrastructures not start" %}</h5><br />
-                        <p class="card-title text-warning dashboard-model" 
-                            href="#infrastruture-not-started" 
-                            data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
-                            style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
-                            {{ total_infrastruture_not_started }}
-                        </p>
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4">
+                            <img 
+                                src="{% static 'images/subproject.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Subprojects completed" %}</h5><br />
+                                <p class="card-title text-success dashboard-model" 
+                                    href="#subprojects-completed" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                                    {{ total_subproject_completed }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="subprojects-completed-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
                     </div>
                 </div>
             </div>
-            <div class="overlay" id="infrastruture-not-started-spin">
-                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-            </div>
         </div>
-    </div>
-    <div class="col-2">
-        <div class="card mb-0" style="max-width: 540px;">
-            <div class="row no-gutters">
-                <div class="col-md-4">
-                    <img 
-                        src="{% static 'images/subproject.png' %}" 
-                        class="card-img card_image_transparent" alt="infrastructure">
-                </div>
-                <div class="col-md-8">
-                    <div class="card-body">
-                        <h5 class="card-title" style="font-size: 10px;">{% translate "Infrastructures in progress" %}</h5><br />
-                        <p class="card-title text-info dashboard-model" 
-                            href="#infrastruture-in-progress" 
-                            data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
-                            style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
-                            {{ total_infrastruture_in_progress }}
-                        </p>
+
+        <div class="row">
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4">
+                            <img 
+                                src="{% static 'images/infrastructures_.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Infrastructures" %}</h5><br />
+                                <p class="card-title dashboard-model" 
+                                    href="#infrastrutures" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                                    {{ total }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="infrastrutures-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
                     </div>
                 </div>
             </div>
-            <div class="overlay" id="infrastruture-in-progress-spin">
-                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-2">
-        <div class="card mb-0" style="max-width: 540px;">
-            <div class="row no-gutters">
-                <div class="col-md-4">
-                    <img 
-                        src="{% static 'images/infrastructures_.png' %}" 
-                        class="card-img card_image_transparent" alt="infrastructure">
-                </div>
-                <div class="col-md-8">
-                    <div class="card-body">
-                        <h5 class="card-title" style="font-size: 10px;">{% translate "Infrastructures completed" %}</h5><br />
-                        <p class="card-title text-success dashboard-model" 
-                            href="#infrastruture-completed" 
-                            data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
-                            style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
-                            {{ total_infrastruture_completed }}
-                        </p>
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4">
+                            <img 
+                                src="{% static 'images/infrastructures_.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Infrastructures not start" %}</h5><br />
+                                <p class="card-title text-warning dashboard-model" 
+                                    href="#infrastruture-not-started" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                                    {{ total_infrastruture_not_started }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="infrastruture-not-started-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
                     </div>
                 </div>
             </div>
-            <div class="overlay" id="infrastruture-completed-spin">
-                <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4">
+                            <img 
+                                src="{% static 'images/infrastructures_.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Infrastructures in progress" %}</h5><br />
+                                <p class="card-title text-info dashboard-model" 
+                                    href="#infrastruture-in-progress" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                                    {{ total_infrastruture_in_progress }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="infrastruture-in-progress-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4">
+                            <img 
+                                src="{% static 'images/infrastructures_.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Infrastructures completed" %}</h5><br />
+                                <p class="card-title text-success dashboard-model" 
+                                    href="#infrastruture-completed" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                                    {{ total_infrastruture_completed }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="infrastruture-completed-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+
+        <div class="row">
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4">
+                            <img 
+                                src="{% static 'images/infrastructure.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Infras with latrines/fences" %}</h5><br />
+                                <p class="card-title dashboard-model" 
+                                    href="#infrastrutures-with-latrines-fences" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                                    {{ total_infrastrutures }} ({{ total_latrine_blocks }}/{{ total_fences }})
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="infrastrutures-with-latrines-fences-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4">
+                            <img 
+                                src="{% static 'images/infrastructure.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Infras with latrines/fences not start" %}</h5><br />
+                                <p class="card-title text-warning dashboard-model" 
+                                    href="#infrastrutures-with-latrines-fences-not-started" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                                    {{ total_infrastrutures_not_started }} ({{ total_latrines_in_progress }}/{{ total_fences_not_started }})
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="infrastrutures-with-latrines-fences-not-started-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4">
+                            <img 
+                                src="{% static 'images/infrastructure.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Infras with latrines/fences in progress" %}</h5><br />
+                                <p class="card-title text-info dashboard-model" 
+                                    href="#infrastrutures-with-latrines-fences-in-progress" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                                    {{ total_infrastrutures_in_progress }} ({{ total_latrines_in_progress }}/{{ total_fences_in_progress }})
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="infrastrutures-with-latrines-fences-in-progress-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4">
+                            <img 
+                                src="{% static 'images/infrastructure.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Infras with latrines/fences completed" %}</h5><br />
+                                <p class="card-title text-success dashboard-model" 
+                                    href="#infrastrutures-with-latrines-fences-completed" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                                    {{ total_infrastrutures_completed }} ({{ total_latrines_completed }}/{{ total_fences_completed }})
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="infrastrutures-with-latrines-fences-completed-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div> 
 </div>
 
 <br />
@@ -188,19 +350,26 @@
     </div>
 </div>
 
-<script src="{% static 'js/csrfSafeMethodAjax.js' %}"></script>
-<script src="{% static 'js/formAjaxSubmit.js' %}"></script>
+
     <script type="text/javascript">
             $("#subprojects-number-spin").hide();
+            $("#subprojects-completed-spin").hide();
+            $("#subprojects-in-progress-spin").hide();
+            $("#subprojects-not-started-spin").hide();
+
             $("#infrastrutures-spin").hide();
             $("#infrastrutures-with-latrines-fences-spin").hide();
+            $("#infrastrutures-with-latrines-fences-completed-spin").hide();
+            $("#infrastrutures-with-latrines-fences-in-progress-spin").hide();
+            $("#infrastrutures-with-latrines-fences-not-started-spin").hide();
+            
             $("#infrastruture-completed-spin").hide();
             $("#infrastruture-in-progress-spin").hide();
             $("#infrastruture-not-started-spin").hide();
-            let details_modal_objects = $('#detailsModalObjects');
+            var details_modal_objects = $('#detailsModalObjects');
             document.querySelectorAll('p.dashboard-model').forEach(function(element){
                 element.addEventListener('click', function (e) {
-                    console.log(88)
+                    
                     e.preventDefault();	
 
                     var elt = $(this).attr('href').replace('#', '');

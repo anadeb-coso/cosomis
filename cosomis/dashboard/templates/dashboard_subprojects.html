@@ -41,7 +41,7 @@
                         <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link active nav-tab-toggle" data-toggle="tab" href="#Number-of-sub-projects-by-administrative-level-and-sector" >{% translate "Number of sub-projects by administrative level and sector" %}</a></li>
                         <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link nav-tab-toggle" data-toggle="tab" href="#Amount-of-sub-projects-by-administrative-level-and-sector" >{% translate "Amount of sub-projects by administrative level and sector" %}</a></li>
                         <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link nav-tab-toggle" data-toggle="tab" href="#Subprojects-by-village-sector-and-step" >{% translate "Subprojects by village, sector and step" %}</a></li>
-                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link nav-tab-toggle" data-toggle="tab" href="#Subprojects-by-step" >{% translate "Subprojects by step" %}</a></li>
+                        <li style="width: 25%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link nav-tab-toggle" data-toggle="tab" href="#Subprojects-by-step" >{% translate "Number of infrastructures by status" %}</a></li>
                         {% comment %} <li style="width: 20%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link" data-toggle="tab" href="#Subprojects-by-current-step">{% translate "Subprojects by current step" %}</a></li> {% endcomment %}
                     </ul>
 
@@ -95,7 +95,7 @@
                             <div class="card">
                                 <div class="card-body">
                                     <div id="subprojects-steps-number-list">
-                                        <h3>{% translate "Subprojects by step" %}</h3>
+                                        <h3>{% translate "Number of infrastructures by status" %}</h3>
                                     </div>
                                 </div>
                                 <div class="overlay" id="subprojects-steps-number-spin">
@@ -179,10 +179,21 @@
 {% block javascript %}
     {{ block.super }}
 
+    <script src="{% static 'js/csrfSafeMethodAjax.js' %}"></script>
+    <script src="{% static 'js/formAjaxSubmit.js' %}"></script>
+    <script src="{% static 'js/cascade_requests.js' %}"></script>
+
     <script type="text/javascript">
         $(document).ready(function () {
             {% get_current_language as lang %}
             let administrative_level_ids = ["id_region", "id_prefecture", "id_commune", "id_canton", "id_village"];
+            
+            let id_region = $('#id_region');
+            let id_prefecture = $('#id_prefecture');
+            let id_commune = $('#id_commune');
+            let id_canton = $('#id_canton');
+            let id_village = $('#id_village');
+            
             let subprojects_number_spin = $('#subprojects-number-spin');
             let subprojects_number = $('#subprojects-number-list');
             let subprojects_amount_spin = $('#subprojects-amount-spin');
@@ -332,26 +343,70 @@
             
             
             //loadSubprojectsCurrentSteps();
+            var cascaded = false;
             $('.administrative-level-filter select').on('change', function () {
-                let elt_id;
-                for(let i=0; i<administrative_level_ids.length; i++){
-                    elt_id = administrative_level_ids[i];
-                    if($(this).attr('id') != elt_id) $(`#${elt_id}`).val([]).trigger('change.select2');
+                if (!cascaded){
+                    cascaded = true;
+                
+                    let elt_id;
+                    for(let i=0; i<administrative_level_ids.length; i++){
+                        elt_id = administrative_level_ids[i];
+                        if($(this).attr('id') != elt_id) $(`#${elt_id}`).val([]).trigger('change.select2');
+                    }
+                    administrative_level_id = null;
+                    administrative_level_type = null;
+                    if($(this).attr('id')){// && $(this).val().length != 0){
+                        administrative_level_id = $(this).val();
+                        administrative_level_id = administrative_level_id && administrative_level_id.length != 0 ? administrative_level_id : null;
+                        administrative_level_type = administrative_level_id ? $(this).attr('id').split('_')[1] : null;
+                        current_nav_links = [];
+                        callNavLinkPage();
+                        /* loadSubprojects(administrative_level_id, administrative_level_type);
+                        loadSubprojectsAmount(administrative_level_id, administrative_level_type);
+                        loadSubprojectsSectorsAndSteps(administrative_level_id, administrative_level_type);
+                        loadSubprojectsSteps(administrative_level_id, administrative_level_type); */
+                        //loadSubprojectsCurrentSteps(administrative_level_id, administrative_level_type);
+                    }
+
+
+
+                    $(".administrative-level-filter select").attr('disabled', true);
+                    $.ajax({
+                        type: 'GET',
+                        url: "{% url 'administrativelevels:utils:get_choices_for_next_administrative_level_all' %}",
+                        data: {
+                            parent_id: $("#id_"+administrative_level_type).val()
+                        },
+                        success: function (data) {
+                            if(!administrative_level_type || administrative_level_type == "region" || $("#id_"+administrative_level_type).val().length == 0){
+                                set_datas_administrative_level(id_prefecture, data.prefectures);
+                                set_datas_administrative_level(id_commune, data.communes);
+                                set_datas_administrative_level(id_canton, data.cantons);
+                                set_datas_administrative_level(id_village, data.villages);
+                            }else if(administrative_level_type == "prefecture"){
+                                set_datas_administrative_level(id_commune, data.communes);
+                                set_datas_administrative_level(id_canton, data.cantons);
+                                set_datas_administrative_level(id_village, data.villages);
+                            }else if(administrative_level_type == "commune"){
+                                set_datas_administrative_level(id_canton, data.cantons);
+                                set_datas_administrative_level(id_village, data.villages);
+                            }else if(administrative_level_type == "canton"){
+                                set_datas_administrative_level(id_village, data.villages);
+                            }
+                            cascaded = false;
+                        },
+                        error: function (data) {
+                            alert(error_server_message + "Error " + data.status);
+                            $(".administrative-level-filter select").attr('disabled', false);
+                            cascaded = false;
+                        }
+                    }).done(function () {
+                            $(".administrative-level-filter select").attr('disabled', false);
+                            cascaded = false;
+                        }
+                    );
                 }
-                administrative_level_id = null;
-                administrative_level_type = null;
-                console.log($(this).val());
-                if($(this).attr('id') && $(this).val().length != 0){
-                    administrative_level_type = $(this).attr('id').split('_')[1];
-                    administrative_level_id = $(this).val();
-                    current_nav_links = [];
-                    callNavLinkPage();
-                    /* loadSubprojects(administrative_level_id, administrative_level_type);
-                    loadSubprojectsAmount(administrative_level_id, administrative_level_type);
-                    loadSubprojectsSectorsAndSteps(administrative_level_id, administrative_level_type);
-                    loadSubprojectsSteps(administrative_level_id, administrative_level_type); */
-                    //loadSubprojectsCurrentSteps(administrative_level_id, administrative_level_type);
-                }
+
             });
 
 

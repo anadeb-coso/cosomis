@@ -62,7 +62,7 @@ class DashboardAdministrativeLevelMixin:
                 ald_filter_ids.append(int(ald_id))
                 
         administrative_levels_ids = list(set(administrative_levels_ids))
-        administrative_levels = AdministrativeLevel.objects.filter(id__in=administrative_levels_ids)
+        administrative_levels = [] #AdministrativeLevel.objects.filter(id__in=administrative_levels_ids)
         if administrative_level_type == "All":
             administrative_levels = AdministrativeLevel.objects.filter(type="Region")
         elif ald_filter_ids and administrative_level_type != "All":

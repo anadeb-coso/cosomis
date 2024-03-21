@@ -71,9 +71,9 @@ class GetChoicesForNextAdministrativeLevelAllView(AJAXRequestMixin, JSONResponse
     def get(self, request, *args, **kwargs):
         parent_ids = request.GET.getlist('parent_id[]')
         datas = dict()
-        if not parent_ids:
+        if not parent_ids or "All" in parent_ids:
             parent_ids = [None]
-
+        print(parent_ids)
         datas = {
             "prefectures": [],
             "communes": [],

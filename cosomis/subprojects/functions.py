@@ -420,7 +420,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                     subproject.location_subproject_realized = administrative_level
                     subproject.number = number
                     subproject.joint_subproject_number = joint_subproject_number
-                    subproject.intervention_unit = intervention_unit #
+                    # subproject.intervention_unit = intervention_unit #
                     subproject.facilitator_name = facilitator_name
                     subproject.wave = wave
                     subproject.lot = lot
@@ -468,11 +468,11 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                         subproject.latitude = latitude
                         subproject.longitude = longitude
                     
-                    subproject.population = population #
-                    subproject.direct_beneficiaries_men = direct_beneficiaries_men #
-                    subproject.direct_beneficiaries_women = direct_beneficiaries_women #
-                    subproject.indirect_beneficiaries_men = indirect_beneficiaries_men #
-                    subproject.indirect_beneficiaries_women = indirect_beneficiaries_women #
+                    # subproject.population = population #
+                    # subproject.direct_beneficiaries_men = direct_beneficiaries_men #
+                    # subproject.direct_beneficiaries_women = direct_beneficiaries_women #
+                    # subproject.indirect_beneficiaries_men = indirect_beneficiaries_men #
+                    # subproject.indirect_beneficiaries_women = indirect_beneficiaries_women #
                     
                     if women_s_group != None:
                         subproject.women_s_group = bool(women_s_group)
@@ -484,13 +484,13 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                         subproject.ethnic_minority_group = bool(ethnic_minority_group)
                         
                     if has_latrine_blocs != None:
-                        subproject.has_latrine_blocs = bool(has_latrine_blocs)
+                        subproject.has_latrine_blocs = True if str(has_latrine_blocs).upper() in ("OUI", 1) else False
                     if number_of_latrine_blocks != None:
                         subproject.number_of_latrine_blocks = number_of_latrine_blocks
                     if number_of_classrooms != None:
                         subproject.number_of_classrooms = number_of_classrooms
                     if has_fence != None:
-                        subproject.has_fence = bool(has_fence)
+                        subproject.has_fence = True if str(has_fence).upper() in ("OUI", 1) else False
 
                     subproject = subproject.save_and_return_object()
                     

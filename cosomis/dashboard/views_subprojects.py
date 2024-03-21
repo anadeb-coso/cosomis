@@ -58,7 +58,7 @@ class DashboardSubprojectsMixin:
                 ald_filter_ids.append(ald_id)
 
         administrative_levels_ids = list(set(administrative_levels_ids))
-        administrative_levels = AdministrativeLevel.objects.filter(id__in=administrative_levels_ids)
+        administrative_levels = [] #AdministrativeLevel.objects.filter(id__in=administrative_levels_ids)
         if administrative_level_type == "All":
             administrative_levels = AdministrativeLevel.objects.filter(type="Region")
         elif ald_filter_ids and administrative_level_type != "All":
@@ -76,7 +76,7 @@ class DashboardSubprojectsMixin:
         if not ald_filter_ids:
             pass
         else:
-            subprojects = Subproject.objects.filter(
+            subprojects = subprojects.filter(
                 Q(location_subproject_realized__id__in=administrative_levels_ids) | 
                 Q(canton__id__in=administrative_levels_ids)
             )
@@ -493,7 +493,7 @@ class DashboardSubprojectsStepsAlreadyTrackListView(DashboardSubprojectsMixin, A
 
 
         return {
-            'title': _("Subprojects by step"),
+            'title': _("Number of infrastructures by status"),
             'datas': datas,
             'length_loop': range(0, count+1),
             'values': list(datas.values())

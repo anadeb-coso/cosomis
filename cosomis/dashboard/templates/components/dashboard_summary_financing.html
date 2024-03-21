@@ -1,0 +1,184 @@
+{% load static i18n bootstrap4 custom_tags %}
+
+<style>
+    .card_image_transparent {
+        opacity: 0.5;
+        width: 60px; 
+        height: 60px; 
+        margin: auto !important; 
+        margin-top: 11px !important
+    }
+</style>
+
+<div class="card">
+    <div class="card-body">
+
+        <div class="row">
+            <div class="col-4">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4 ">
+                            <img 
+                                src="{% static 'images/financing_to.jpg' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Amount allocated to cantons" %}</h5><br />
+                                <p class="card-title dashboard-model" 
+                                    href="#cantons-amounts-allocation" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important;">
+                                    {{ total_allocations_cantons|separate_with_space:"CFA" }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="cantons-amounts-allocation-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4 ">
+                            <img 
+                                src="{% static 'images/financing_to_building.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Amount allocated to sub-projects" %}</h5><br />
+                                <p class="card-title dashboard-model" 
+                                    href="#subprojects-amounts-allocation" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important;">
+                                    {{ total_amount_subprojects_estimated_cost|separate_with_space:"CFA" }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="subprojects-amounts-allocation-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4 ">
+                            <img 
+                                src="{% static 'images/financing_remain.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Amount remaining after allocation" %}</h5><br />
+                                <p class="card-title dashboard-model" 
+                                    href="#amount-remaining-after-allocation" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important;">
+                                    {{ total_amount_remaining_after_allocation|separate_with_space:"CFA" }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="amount-remaining-after-allocation-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+
+        
+    </div> 
+</div>
+
+<br />
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-0">
+            <div class="card-header">
+                <p class="font-weight-bold">{% translate "Amount of subprojects in relation to infrastructure by sector" %}</p>
+            </div>
+            {% include 'components/chartBar.html' with componentId='3' datas=amount_subproject_infrastrutures type_bar='vertical' %}
+        </div>
+    </div>
+</div>
+{% comment %} 
+<br />
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-0">
+            <div class="card-header">
+                <p class="font-weight-bold">{% translate "Presentation of allocations, estimates and expenditure by canton - Component 1.1" %}</p>
+            </div>
+            {% include 'components/chartBar.html' with componentId='4' datas=amount_cantons_component_1_1 type_bar='vertical' display_value=False %}
+        </div>
+    </div>
+</div>
+
+<br />
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-0">
+            <div class="card-header">
+                <p class="font-weight-bold">{% translate "Presentation of allocations, estimates and expenditure by canton - Component 1.2" %}</p>
+            </div>
+            {% include 'components/chartBar.html' with componentId='5' datas=amount_cantons_component_1_2 type_bar='vertical' display_value=False %}
+        </div>
+    </div>
+</div>
+
+<br />
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-0">
+            <div class="card-header">
+                <p class="font-weight-bold">{% translate "Presentation of allocations, estimates and expenditure by canton - Component 1.3" %}</p>
+            </div>
+            {% include 'components/chartBar.html' with componentId='6' datas=amount_cantons_component_1_3 type_bar='vertical' display_value=False %}
+        </div>
+    </div>
+</div> {% endcomment %}
+
+<div class="card">
+    <div class="card-body">
+        <div class="tab-pane" id="p-diagnostics">
+            {% include 'common/under_construction_col.html' %}
+        </div>
+    </div>
+    <div class="overlay" >
+        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+    </div>
+</div>
+
+
+
+    <script type="text/javascript">
+            $("#subprojects-amounts-allocation-spin").hide();
+            $("#cantons-amounts-allocation-spin").hide();
+            $("#amount-remaining-after-allocation-spin").hide();
+            
+            {% comment %} var details_modal_objects = $('#detailsModalObjects');
+            document.querySelectorAll('p.dashboard-model').forEach(function(element){
+                element.addEventListener('click', function (e) {
+                    
+                    e.preventDefault();	
+
+                    var elt = $(this).attr('href').replace('#', '');
+
+                    loadPage(
+                        $(this).attr('data-href'), details_modal_objects, $(`#${elt}-spin`),
+                        administrative_level_id={{ administrative_level_id|safe }},
+                        administrative_level_type="{{ administrative_level_type }}",
+                        list_type_search=elt
+                    );
+
+                }); // addEventListener
+            }) // forEach {% endcomment %}
+        
+        
+    </script>

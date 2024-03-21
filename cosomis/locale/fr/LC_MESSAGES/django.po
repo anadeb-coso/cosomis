@@ -2613,7 +2613,7 @@ msgstr "Blocs latrine ?"
 
 #: .\subprojects
 msgid "Total number of structures/infrastructures without latrines and fences"
-msgstr "Nombre total de structures/infrastructures sans latrines ni clôtures"
+msgstr "Nombre total de infrastructures sans latrines ni clôtures"
 
 #: .\subprojects
 msgid "Total latrines"
@@ -2669,16 +2669,108 @@ msgstr "Nom du sous-project"
 
 #: .\subprojects
 msgid "Structures/infrastructures without latrines and fences"
-msgstr "Structures/infrastructures sans latrines ni clôtures"
+msgstr "Infrastructures sans latrines ni clôtures"
 
 #: .\subprojects
 msgid "Structures/infrastructures with latrines and fences"
-msgstr "Structures/infrastructures with latrines ni clôtures"
+msgstr "Infrastructures avec latrines et clôtures"
+
+#: .\subprojects
+msgid "Number of latrines"
+msgstr "Nombre de latrines"
 
 #: .\subprojects
 msgid "Latrines"
 msgstr "Latrines"
 
 #: .\subprojects
+msgid "Latrines?"
+msgstr "Latrines ?"
+
+#: .\subprojects
 msgid "Fences"
 msgstr "Clôtures"
+
+#: .\subprojects
+msgid "Number of infrastructures by status"
+msgstr "Nombre d'infrastructures par état d'avancement"
+
+#: .\subprojects
+msgid "Subprojects not start"
+msgstr "Sous-projets non démarrés"
+
+#: .\subprojects
+msgid "Infras with latrines/fences not start"
+msgstr "Infras avec latrines/clôtures non démarrées"
+
+#: .\subprojects
+msgid "Subprojects in progress"
+msgstr "Sous-projets en cours"
+
+#: .\subprojects
+msgid "Infras with latrines/fences in progress"
+msgstr "Infras avec latrines/clôtures en cours"
+
+#: .\subprojects
+msgid "Subprojects completed"
+msgstr "Sous-projets achevés"
+
+#: .\subprojects
+msgid "Infras with latrines/fences completed"
+msgstr "Infras avec latrines/clôtures achevées"
+
+#: .\subprojects
+msgid "Structures/infrastructures not start (excluding latrines and fences)"
+msgstr "Infrastructures non démarrées (sans compter latrines ni clôtures)"
+
+#: .\subprojects
+msgid "Structures/infrastructures in progress (excluding latrines and fences)"
+msgstr "Infrastructures en cours (sans compter latrines ni clôtures)"
+
+#: .\subprojects
+msgid "Structures/infrastructures completed (excluding latrines and fences)"
+msgstr "Infrastructures achevées (sans compter latrines ni clôtures)"
+
+#: .\subprojects
+msgid "Structures/infrastructures with latrines/fences not start"
+msgstr "Infrastructures avec latrines/clôtures non démarrées"
+
+#: .\subprojects
+msgid "Structures/infrastructures with latrines/fences in progress"
+msgstr "Infrastructures avec latrines/clôtures en cours"
+
+#: .\subprojects
+msgid "Structures/infrastructures with latrines/fences completed"
+msgstr "Infrastructures avec latrines/clôtures achevées"
+
+#: .\subprojects
+msgid "Amount allocated to sub-projects"
+msgstr "Montant alloué aux sous-projets"
+
+#: .\subprojects
+msgid "Amount allocated to cantons"
+msgstr "Montant alloué aux cantons"
+
+#: .\subprojects
+msgid "Presentation of allocations, estimates and expenditure by canton - Component 1.1"
+msgstr "Représentation des allocations, estimations et dépenses par cantons - Composante 1.1"
+
+#: .\subprojects
+msgid "Presentation of allocations, estimates and expenditure by canton - Component 1.2"
+msgstr "Représentation des allocations, estimations et dépenses par cantons - Composante 1.2"
+
+#: .\subprojects
+msgid "Presentation of allocations, estimates and expenditure by canton - Component 1.3"
+msgstr "Représentation des allocations, estimations et dépenses par cantons - Composante 1.3"
+
+#: .\subprojects
+msgid "Sub-project estimates"
+msgstr "Estimation des sous-projets"
+
+#: .\subprojects
+msgid "Spent"
+msgstr "Dépensés"
+
+#: .\subprojects
+msgid "Amount remaining after allocation"
+msgstr "Montant restant après l'allocation"

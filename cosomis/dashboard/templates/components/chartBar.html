@@ -1,9 +1,9 @@
 {% load static i18n bootstrap4 custom_tags %}
 
 <form style="margin-left: 20px;">
-  <input type="radio" id="horizontal_bar_{{ componentId }}" name="option" value="horizontal_bar" checked>
+  <input type="radio" id="horizontal_bar_{{ componentId }}" name="option" value="horizontal_bar" {% if type_bar == 'horizontal' %}checked{% endif %}>
   <label for="horizontal_bar_{{ componentId }}">{% translate "Horizontal" %}</label>
-  <input type="radio" id="vertical_bar_{{ componentId }}" name="option" value="vertical_bar">
+  <input type="radio" id="vertical_bar_{{ componentId }}" name="option" value="vertical_bar" {% if not type_bar or type_bar == 'vertical' %}checked{% endif %}>
   <label for="vertical_bar_{{ componentId }}">{% translate "Vertical" %}</label>
 </form>
 
@@ -108,19 +108,22 @@
         },
         animation: {
           onComplete: function () {
-            const ctx = this.chart.ctx;
-            ctx.font = Chart.helpers.fontString(14, 'bold', Chart.defaults.global.defaultFontFamily);
-            //Chart.helpers.fontString(Chart.defaults.global.defaultFontSize, 'normal', Chart.defaults.global.defaultFontFamily);
-            ctx.fillStyle = "black";
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'bottom';
+            {% if display_value == False %}
+            {% else %}
+              const ctx = this.chart.ctx;
+              ctx.font = Chart.helpers.fontString(14, 'bold', Chart.defaults.global.defaultFontFamily);
+              //Chart.helpers.fontString(Chart.defaults.global.defaultFontSize, 'normal', Chart.defaults.global.defaultFontFamily);
+              ctx.fillStyle = "black";
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'bottom';
 
-            this.data.datasets.forEach(function (dataset) {
-              for (var i = 0; i < dataset.data.length; i++) {
-                var model = dataset._meta[Object.keys(dataset._meta)[0]].data[i]._model;
-                ctx.fillText(dataset.data[i], model.x - 7, model.y + 7);
-              }
-            });
+              this.data.datasets.forEach(function (dataset) {
+                for (var i = 0; i < dataset.data.length; i++) {
+                  var model = dataset._meta[Object.keys(dataset._meta)[0]].data[i]._model;
+                  ctx.fillText(dataset.data[i], model.x - 7, model.y + 7);
+                }
+              });
+            {% endif %}
           }
         },
         /*title: {
@@ -204,19 +207,21 @@
         },
         animation: {
           onComplete: function () {
-            const ctx = this.chart.ctx;
-            ctx.font = Chart.helpers.fontString(14, 'bold', Chart.defaults.global.defaultFontFamily);
-            //Chart.helpers.fontString(Chart.defaults.global.defaultFontSize, 'normal', Chart.defaults.global.defaultFontFamily);
-            ctx.fillStyle = "black";
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'bottom';
-
-            this.data.datasets.forEach(function (dataset) {
-              for (var i = 0; i < dataset.data.length; i++) {
-                var model = dataset._meta[Object.keys(dataset._meta)[0]].data[i]._model;
-                ctx.fillText(dataset.data[i], model.x - 7, model.y + 7);
-              }
-            });
+            {% if display_value == False %}
+            {% else %}
+              const ctx = this.chart.ctx;
+              ctx.font = Chart.helpers.fontString(14, 'bold', Chart.defaults.global.defaultFontFamily);
+              //Chart.helpers.fontString(Chart.defaults.global.defaultFontSize, 'normal', Chart.defaults.global.defaultFontFamily);
+              ctx.fillStyle = "black";
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'bottom';
+              this.data.datasets.forEach(function (dataset) {
+                for (var i = 0; i < dataset.data.length; i++) {
+                  var model = dataset._meta[Object.keys(dataset._meta)[0]].data[i]._model;
+                  ctx.fillText(dataset.data[i], model.x - 7, model.y + 7);
+                }
+              });
+            {% endif %}
           }
         },
         /*title: {
@@ -234,11 +239,13 @@
       }
     };
 
-
+    {% if type_bar == 'horizontal' %}
     verticalBarChartCanvasDiv.style.display = "none";
-    var horizontalBarChart = new Chart(horizontalBarChartCanvas, config);
-
-
+    horizontalBarChart = new Chart(horizontalBarChartCanvas, config);
+    {% else %}
+    horizontalBarChartCanvasDiv.style.display = "none";
+    verticalBarChart = new Chart(verticalBarChartCanvas, configVertical);
+    {% endif %}
 
 
 

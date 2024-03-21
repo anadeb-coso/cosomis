@@ -28,4 +28,5 @@ urlpatterns = [
     path('summary/', views_summary.DashboardTemplateView.as_view(), name='dashboard_summary'),
     path('summary-subprojects/', views_summary.DashboardSubprojectsListView.as_view(), name='dashboard_summary_subprojects'),
     path('summary-subprojects-details/', views_summary.SubprojectsDetailsModalView.as_view(), name='dashboard_summary_subprojects_details'),
+    path('summary-financing/', views_summary.DashboardFinancingListView.as_view(), name='dashboard_summary_financing'),
 ]

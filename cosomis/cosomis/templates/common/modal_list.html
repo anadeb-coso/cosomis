@@ -7,17 +7,20 @@
     #table-subprojects tr td, #table-subprojects tr th {
         font-size: 10px !important;
     }
+    .modal-header .text-size {
+        font-size: 20px !important;
+    }
 </style>
 <div class="modal-dialog modal-confirmation">
     <div class="modal-content">
         <div class="modal-header">
             <div class="btn-group pull-left" >
-                <a class="btn btn-primary tab-subproject-other" href="#subprojects" data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}?type={{ type }}&search=All">
+                <a class="btn btn-primary tab-subproject-other text-size" href="#subprojects" data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}?type={{ type }}&search=All">
                     {% translate 'See All' %}
                 </a>
             </div>
             <div class="modal-title mx-auto">
-                <div class="fs29 text-bold-family text-{% if list_class_color %}{{ list_class_color }}{% else %}primary{% endif %}">
+                <div class="fs29 text-bold-family text-{% if list_class_color %}{{ list_class_color }}{% else %}primary{% endif %} text-size">
                     {{ title }}
 
                 </div>
@@ -57,8 +60,9 @@
                             <th>{% translate 'Type of structure' %}</th>
                             <th>{% translate "Type d'ouvrage" %}</th>
                             
-                            {% if list_type_search == "infrastrutures-with-latrines-fences" %}
-                            <th>{% translate 'Latrines' %}</th>
+                            {% if "infrastrutures-with-latrines-fences" in list_type_search %}
+                            <th>{% translate 'Latrines?' %}</th>
+                            <th>{% translate 'Number of latrines' %}</th>
                             <th>{% translate 'Fences' %}</th>
                             {% endif %}
 
@@ -85,9 +89,10 @@
                                 <td>{{ subproject.type_of_subproject }}</td>
                                 <td>{{ subproject.works_type }}</td>
 
-                                {% if list_type_search == "infrastrutures-with-latrines-fences" %}
+                                {% if "infrastrutures-with-latrines-fences" in list_type_search %}
+                                <td>{% if subproject.has_latrine_blocs == True %}{% translate "Yes" %}{% elif subproject.has_latrine_blocs == False %}{% translate "No" %}{% else %}-{% endif %}</td>
                                 <td>{% if subproject.number_of_latrine_blocks %}{{ subproject.number_of_latrine_blocks }}{% else %}-{% endif %}</td>
-                                <td>{% if subproject.has_fence %}{% translate "No" %}{% else %}-{% endif %}</td>
+                                <td>{% if subproject.has_fence %}{% translate "Yes" %}{% else %}-{% endif %}</td>
                                 {% endif %}
 
                                 <td>
@@ -131,7 +136,8 @@
                                 <th rowspan="1" colspan="1"></th>
                                 <th rowspan="1" colspan="1"></th>
                                 
-                                {% if list_type_search == "infrastrutures-with-latrines-fences" %}
+                                {% if "infrastrutures-with-latrines-fences" in list_type_search %}
+                                <th rowspan="1" colspan="1"></th>
                                 <th rowspan="1" colspan="1"></th>
                                 <th rowspan="1" colspan="1"></th>
                                 {% endif %}
@@ -141,7 +147,9 @@
 
                         </table>
 
-                        {% if list_type_search == "infrastrutures-with-latrines-fences" %}
+                        {% if "infrastrutures-with-latrines-fences" in list_type_search %}
+                        <b>{{ total }} ==> {% translate 'Total number of structures/infrastructures without latrines and fences' %}</b><br />
+                        <b>{{ total_infrastrutures }} ==> {% translate 'Total number of structures/infrastructures' %}</b><br />
                         <b>{{ total_latrine_blocks }} ==> {% translate 'Total latrines' %}</b><br />
                         <b>{{ total_fences }} ==> {% translate 'Total fences' %}</b><br />
                         {% endif %}

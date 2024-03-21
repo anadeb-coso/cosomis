@@ -97,3 +97,6 @@ TYPES_OF_SUB_PROJECT_COLOR = {
 
     'Piste + OF': "#000000", #Black f-noire
 }
+
+
+CURRENCY_UNIT = 'FCFA' #currency unit global variable
