@@ -355,7 +355,7 @@ def save_csv_datas_priorities_in_db(datas_file: dict, administrative_level_id=0,
                                 at_least_one_save = True
                             elif type_object == "priority":
                                 list_objects_exist.append(name_priority)
-                            elif type_object=="subproject" and not Subproject.objects.filter(short_name=name_priority, administrative_level=administrative_level, component=component):
+                            elif type_object=="subproject" and not Subproject.objects.filter(short_name=name_priority, administrative_level=administrative_level, component=component).get_actifs():
                                 
                                 if estimated_cost and estimated_cost != 0:
                                     villages = VillagePriority.objects.filter(administrative_level=administrative_level, component=component, estimated_cost=estimated_cost)

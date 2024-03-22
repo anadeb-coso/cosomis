@@ -103,6 +103,11 @@ def get_on_list(data, index):
         return None
 
 @register.filter
+def sum(data):
+    print(data)
+    return sum(data)
+
+@register.filter
 def isnumber(value):
     return str(value).replace('-','').replace('.','',1).replace(',','',1).isdigit()
 

@@ -312,7 +312,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                         subprojects = Subproject.objects.filter(
                             number=number
                             # full_title_of_approved_subproject=full_title_of_approved_subproject
-                            )
+                            ).get_actifs()
                         canton = get_value(datas_file["CANTON"][count])
                         
                         if canton:
@@ -388,7 +388,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                             # location_subproject_realized=administrative_level, 
                             # subproject_sector=subproject_sector,
                             # type_of_subproject=type_of_subproject
-                            )
+                            ).get_actifs()
                         # if subproject:
                         #     subproject = list(subproject)[0]
                         subproject = subprojects.first()
@@ -524,7 +524,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
             #     break
     print(count)
     
-    subprojects = Subproject.objects.all()
+    subprojects = Subproject.objects.all().get_actifs()
     link_infrastures_to_subproject() #Link each infrastructure to their subproject
     copy_cvd_to_list_of_beneficiary_villages() #Link villages to theirs subprojects
     attribute_project_to_subprojects(
@@ -783,13 +783,13 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
     subproject_type = params.get("subproject_type")
     for cvd in cvds:
         if sector != "All" and subproject_type != "All":
-            [_subprojects.append(o) for o in Subproject.objects.filter(Q(cvd=cvd, subproject_sector=sector, type_of_subproject=subproject_type) | Q(location_subproject_realized=cvd.headquarters_village, subproject_sector=sector, type_of_subproject=subproject_type) | Q(canton=cvd.get_canton(), subproject_sector=sector, type_of_subproject=subproject_type))]
+            [_subprojects.append(o) for o in Subproject.objects.filter(Q(cvd=cvd, subproject_sector=sector, type_of_subproject=subproject_type) | Q(location_subproject_realized=cvd.headquarters_village, subproject_sector=sector, type_of_subproject=subproject_type) | Q(canton=cvd.get_canton(), subproject_sector=sector, type_of_subproject=subproject_type)).get_actifs()]
         elif sector != "All" and subproject_type == "All":
-            [_subprojects.append(o) for o in Subproject.objects.filter(Q(cvd=cvd, subproject_sector=sector) | Q(location_subproject_realized=cvd.headquarters_village, subproject_sector=sector) | Q(canton=cvd.get_canton(), subproject_sector=sector))]
+            [_subprojects.append(o) for o in Subproject.objects.filter(Q(cvd=cvd, subproject_sector=sector) | Q(location_subproject_realized=cvd.headquarters_village, subproject_sector=sector) | Q(canton=cvd.get_canton(), subproject_sector=sector)).get_actifs()]
         elif sector == "All" and subproject_type != "All":
-            [_subprojects.append(o) for o in Subproject.objects.filter(Q(cvd=cvd, type_of_subproject=subproject_type) | Q(location_subproject_realized=cvd.headquarters_village, type_of_subproject=subproject_type) | Q(canton=cvd.get_canton(), type_of_subproject=subproject_type))]
+            [_subprojects.append(o) for o in Subproject.objects.filter(Q(cvd=cvd, type_of_subproject=subproject_type) | Q(location_subproject_realized=cvd.headquarters_village, type_of_subproject=subproject_type) | Q(canton=cvd.get_canton(), type_of_subproject=subproject_type)).get_actifs()]
         else:
-            [_subprojects.append(o) for o in Subproject.objects.filter(Q(cvd=cvd) | Q(location_subproject_realized=cvd.headquarters_village) | Q(canton_id=cvd.get_canton()))]
+            [_subprojects.append(o) for o in Subproject.objects.filter(Q(cvd=cvd) | Q(location_subproject_realized=cvd.headquarters_village) | Q(canton_id=cvd.get_canton())).get_actifs()]
 
     subprojects = []
     for s in _subprojects:

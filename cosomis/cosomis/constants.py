@@ -71,10 +71,10 @@ TYPES_OF_SUB_PROJECT_COLOR = {
     'Laboratoire': "#00ff00", #Lime f-citron vert
 
 
-    'Batiment Scolaire au Pré-scolaire': "#808080", #Gray f-Gris
-    'Batiment Scolaire au Primaire': "#808080", #Gray f-Gris
-    'Batiment Scolaire au CEG': "#808080", #Gray f-Gris
-    'Batiment Scolaire au Lycée': "#808080", #Gray f-
+    # 'Batiment Scolaire au Pré-scolaire': "#808080", #Gray f-Gris
+    # 'Batiment Scolaire au Primaire': "#808080", #Gray f-Gris
+    # 'Batiment Scolaire au CEG': "#808080", #Gray f-Gris
+    # 'Batiment Scolaire au Lycée': "#808080", #Gray f-
     
     'Bâtiment Scolaire au Pré-scolaire': "#808080", #Gray f-Gris
     'Bâtiment Scolaire au Primaire': "#808080", #Gray f-Gris
@@ -95,8 +95,47 @@ TYPES_OF_SUB_PROJECT_COLOR = {
     
     'Reboisement': "#faf0e6", #Linen f-Lin
 
-    'Piste + OF': "#000000", #Black f-noire
+    'Piste/OF': "#000000", #Black f-noire
 }
 
+
+TYPES_OF_STRUCTURE_COLOR = {
+    'Bâtiment Scolaire': "#808080", #Gray f-Gris
+    
+    'Forage Photovoltaïque': "#0000ff", #Blue f-blue
+    
+    'Latrine Scolaire': "#2f4f4f", #darkSlategray f-Gris sombre
+    
+    'Clôture Scolaire': "#000000",
+    
+    'Latrine Communautaire': "#191970", #MidNightBlue f-Blue sombre
+    
+    "Retenue d'eau": "#601ee0", #Blueviolet f-Blue violet
+    
+    "Pompe à motricité humaine (PMH)": "#1e90ff", #DodgerBlue f-Bleu cagnard
+    
+    'CMS': "#008200", #Green f-vert
+    'CHP': "#32cd32", #LimeGreen f-Vert de chaux
+    'USP': "#3b7024", #DarkOliveGreen f-Vert olive foncé
+    'Pharmacie': "#006400", #Darkgreen f-vert sombre
+    'Pédiatrie': "#92d492", #DarkSeaGreen f-Vert de mer foncé
+    'Clôture Pédiatrie': "#000000",
+    'Laboratoire': "#00ff00", #Lime f-citron vert
+    
+    'Extension réseau électrique': "#ffff00", #Yellow f-jaune
+    'Lampadaires solaire': "#9c9c14", #DarkYellow f-jaune sombre
+
+    'Centre Communautaire': "#ffa500", #Orange f-orange
+    'Salle de réunion': "#a75e06", #DarkOrange f-Orange sombre
+
+    'Maison des jeunes': "#ff0000", #Red f-rouge
+    'Terrain de Foot': "#7a1212", #DarkRed f-rouge sombre
+
+    'Magasin De Stockage': "#800080", #Purple f-Violet
+    
+    'Reboisement': "#faf0e6", #Linen f-Lin
+
+    'Piste/OF': "#000000", #Black f-noire
+}
 
 CURRENCY_UNIT = 'FCFA' #currency unit global variable

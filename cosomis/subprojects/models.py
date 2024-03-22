@@ -32,6 +32,9 @@ class CustomQuerySet(models.QuerySet):
                 l.append(o)
                 
         return Type.objects.filter(id__in=[o.id for o in l])
+    
+    def get_actifs(self):
+        return self.exclude(infrastructure_deleted=True)
 
 
 
@@ -125,6 +128,9 @@ class Subproject(BaseModel):
     number_of_classrooms = models.IntegerField(null=True, blank=True, verbose_name=_("Number of classrooms"))
     has_fence = models.BooleanField(null=True, blank=True, verbose_name=_("Has a fence?"))
     
+    infrastructure_changed = models.BooleanField(null=True, blank=True, verbose_name=_("Infrastructure changed?"))
+    infrastructure_deleted = models.BooleanField(null=True, blank=True, verbose_name=_("Infrastructure deleted?"))
+    
     objects = CustomQuerySet.as_manager()
 
 
@@ -145,7 +151,7 @@ class Subproject(BaseModel):
             return self.location_subproject_realized.parent.name
         elif self.canton: 
             cantons = self.canton.name
-            subprojects_link_objects = self.subproject_set.get_queryset()
+            subprojects_link_objects = self.get_all_subprojects_linked()
             if subprojects_link_objects:
                 cantons += "/"
             for i in range(len(subprojects_link_objects)):
@@ -206,7 +212,7 @@ class Subproject(BaseModel):
         return location
 
     def get_all_subprojects_linked(self):
-        return self.subproject_set.get_queryset()
+        return self.subproject_set.get_queryset().get_actifs()
     
     @property
     def has_subprojects_linked(self):
@@ -222,7 +228,8 @@ class Subproject(BaseModel):
     
     def get_estimated_cost(self):
         estimated_cost = self.estimated_cost
-        for o in self.subproject_set.get_queryset():
+        all_subprojects_linked = self.get_all_subprojects_linked()
+        for o in all_subprojects_linked:
             estimated_cost += o.estimated_cost
         return estimated_cost
 
@@ -230,9 +237,9 @@ class Subproject(BaseModel):
         locale.setlocale( locale.LC_ALL, '' )
         estimated_cost_str = ""
         estimated_cost_str += locale.currency(self.estimated_cost, grouping=True).__str__()
-        subproject_link_objects = self.subproject_set.get_queryset()
+        subproject_link_objects = self.get_all_subprojects_linked()
         if subproject_link_objects:
-            for o in self.subproject_set.get_queryset():
+            for o in subproject_link_objects:
                 estimated_cost_str += " + " + locale.currency(o.estimated_cost, grouping=True).__str__()
             return (locale.currency(self.get_estimated_cost(), grouping=True).__str__() + f' ({estimated_cost_str})').replace("$", "")
         

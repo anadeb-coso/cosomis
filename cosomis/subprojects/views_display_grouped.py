@@ -82,7 +82,7 @@ class DashboardSubprojectsMixin:
         if not administrative_levels:
             administrative_levels = AdministrativeLevel.objects.filter(id__in=ald_filter_ids)
 
-        # subprojects = Subproject.objects.filter()
+        # subprojects = Subproject.objects.filter().get_actifs()
 
         # if not ald_filter_ids:
         #     pass
@@ -90,14 +90,14 @@ class DashboardSubprojectsMixin:
         #     subprojects = Subproject.objects.filter(
         #         Q(location_subproject_realized__id__in=administrative_levels_ids) | 
         #         Q(canton__id__in=administrative_levels_ids)
-        #     )
+        #     ).get_actifs()
 
         adls = ald_filter_ids + administrative_levels_ids
 
         subprojects = Subproject.objects.filter(
             Q(location_subproject_realized__id__in=adls) | 
             Q(canton__id__in=adls)
-        )
+        ).get_actifs()
         sectors = sorted(list(set(list(subprojects.values_list('subproject_sector')))))
         
         
@@ -126,7 +126,7 @@ class DashboardSubprojectsMixin:
                             "Réception technique", "Réception provisoire", "Réception définitive"):
                         _subprojects.append(subproject)
 
-            subprojects = Subproject.objects.filter(id__in=[o.id for o in _subprojects])
+            subprojects = Subproject.objects.filter(id__in=[o.id for o in _subprojects]).get_actifs()
 
         return {
             'subprojects': subprojects,
@@ -290,7 +290,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListView(DashboardSubprojectsMi
         # all_subprojects = Subproject.objects.filter(
         #         Q(location_subproject_realized__id__in=adls) | 
         #         Q(canton__id__in=adls)
-        #     )
+        #     ).get_actifs()
         
         all_subprojects = ctx['queryset_results']['subprojects']
         
@@ -455,7 +455,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListSubView(DashboardSubproject
         # all_subprojects = Subproject.objects.filter(
         #         Q(location_subproject_realized__id__in=adls) | 
         #         Q(canton__id__in=adls)
-        #     )
+        #     ).get_actifs()
         
         all_subprojects = ctx['queryset_results']['subprojects']
         

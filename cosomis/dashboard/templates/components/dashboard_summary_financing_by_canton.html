@@ -1,0 +1,50 @@
+{% load static i18n bootstrap4 custom_tags %}
+
+<br />
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-0">
+            {% comment %} <div class="card-header">
+                <p class="font-weight-bold">{% translate "Presentation of allocations, estimates and expenditure by canton - Component 1.1" %}</p>
+            </div> {% endcomment %}
+            {% include 'components/chartBar.html' with componentId='4' datas=amount_cantons_component_1_1 type_bar='vertical' display_value=False %}
+        </div>
+    </div>
+</div>
+
+<br />
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-0">
+            {% comment %} <div class="card-header">
+                <p class="font-weight-bold">{% translate "Presentation of allocations, estimates and expenditure by canton - Component 1.2" %}</p>
+            </div> {% endcomment %}
+            {% include 'components/chartBar.html' with componentId='5' datas=amount_cantons_component_1_2 type_bar='vertical' display_value=False %}
+        </div>
+    </div>
+</div>
+
+<br />
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-0">
+            {% comment %} <div class="card-header">
+                <p class="font-weight-bold">{% translate "Presentation of allocations, estimates and expenditure by canton - Component 1.3" %}</p>
+            </div> {% endcomment %}
+            {% include 'components/chartBar.html' with componentId='6' datas=amount_cantons_component_1_3 type_bar='vertical' display_value=False %}
+        </div>
+    </div>
+</div>
+
+
+
+<div class="card">
+    <div class="card-body">
+        <div class="tab-pane" id="p-diagnostics">
+            {% include 'common/under_construction_col.html' %}
+        </div>
+    </div>
+    <div class="overlay" >
+        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+    </div>
+</div>

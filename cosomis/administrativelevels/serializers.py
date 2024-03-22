@@ -49,7 +49,7 @@ class AdministrativeLevelSerializer(serializers.ModelSerializer):
 		if self.user:
 
 			if not hasattr(self.user, 'no_sql_user'):
-				subprojects = Subproject.objects.filter()
+				subprojects = Subproject.objects.filter().get_actifs()
 			else:
 				subprojects = get_subprojects_by_facilitator_id_and_project_id(self.user.id, 1)
 				
@@ -91,7 +91,7 @@ class CVDWithAdministrativeLevelSerializer(serializers.ModelSerializer):
 		if self.user:
 
 			if not hasattr(self.user, 'no_sql_user'):
-				subprojects = Subproject.objects.filter()
+				subprojects = Subproject.objects.filter().get_actifs()
 			else:
 				subprojects = get_subprojects_by_facilitator_id_and_project_id(self.user.id, 1)
 				

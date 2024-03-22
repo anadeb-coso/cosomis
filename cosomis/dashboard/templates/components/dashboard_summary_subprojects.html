@@ -330,9 +330,101 @@
 <div class="row">
     <div class="col-12">
         <div class="card mb-0">
-            <div class="card-header">
-                <p class="font-weight-bold">{% translate "Number of subprojects in relation to infrastructure by sector" %}</p>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card mb-0">
+                        <table class="table border-0">
+                            <thead>
+                                <tr>
+                                    <th>{% translate "Level" %}</th>
+                                    <th>{% translate "Number by type of structure" %}</th>
+                                    <th>{% translate "Total" %}</th>
+                                <tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>{% translate "Identified" %}</td>
+                                    <td align="left">
+                                        {% with bars_type_structures|get_on_list:0 as elt %}
+                                            {% for nbr in elt.data %}
+                                                {% if nbr and nbr != 0 %}
+                                                    {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
+                                                    <span style="font-weight: bold;">{{ nbr }}</span> {{ type_structures|get_on_list:forloop.counter0 }}
+                                                    {% if forloop.last %}.{% endif %}
+                                                {% endif  %}
+                                            {% endfor %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        {{ sum_bars_type_structures|get_on_list:0 }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>{% translate "Not start" %}</td>
+                                    <td align="left">
+                                        {% with bars_type_structures|get_on_list:1 as elt %}
+                                            {% for nbr in elt.data %}
+                                                {% if nbr and nbr != 0 %}
+                                                    {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
+                                                    <span style="font-weight: bold;">{{ nbr }}</span> {{ type_structures|get_on_list:forloop.counter0 }}
+                                                    {% if forloop.last %}.{% endif %}
+                                                {% endif  %}
+                                            {% endfor %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        {{ sum_bars_type_structures|get_on_list:1 }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>{% translate "In progress" %}</td>
+                                    <td align="left">
+                                        {% with bars_type_structures|get_on_list:2 as elt %}
+                                            {% for nbr in elt.data %}
+                                                {% if nbr and nbr != 0 %}
+                                                    {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
+                                                    <span style="font-weight: bold;">{{ nbr }}</span> {{ type_structures|get_on_list:forloop.counter0 }}
+                                                    {% if forloop.last %}.{% endif %}
+                                                {% endif  %}
+                                            {% endfor %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        {{ sum_bars_type_structures|get_on_list:2 }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>{% translate "Completed" %}</td>
+                                    <td align="left">
+                                        {% with bars_type_structures|get_on_list:3 as elt %}
+                                            {% for nbr in elt.data %}
+                                                {% if nbr and nbr != 0 %}
+                                                    {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
+                                                    <span style="font-weight: bold;">{{ nbr }}</span> {{ type_structures|get_on_list:forloop.counter0 }}
+                                                    {% if forloop.last %}.{% endif %}
+                                                {% endif  %}
+                                            {% endfor %}
+                                        {% endwith %}
+                                    </td>
+                                    <td>
+                                        {{ sum_bars_type_structures|get_on_list:3 }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
+        </div>
+    </div>
+</div>
+
+
+<br />
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-0">
             {% include 'components/chartBar.html' with componentId='1' datas=number_subproject_infrastrutures %}
         </div>
     </div>
@@ -342,10 +434,16 @@
 <div class="row">
     <div class="col-12">
         <div class="card mb-0">
-            <div class="card-header">
-                <p class="font-weight-bold">{% translate "Amount of subprojects in relation to infrastructure by sector" %}</p>
-            </div>
             {% include 'components/chartBar.html' with componentId='2' datas=amount_subproject_infrastrutures %}
+        </div>
+    </div>
+</div>
+
+<br />
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-0">
+            {% include 'components/chartBar.html' with componentId='7' datas=number_structures_by_type %}
         </div>
     </div>
 </div>

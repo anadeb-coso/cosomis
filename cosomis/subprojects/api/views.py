@@ -33,7 +33,7 @@ class RestGetSubprojectsByUser(APIView):
         if not hasattr(user, 'no_sql_user'):
             if search:
                 if search == "All":
-                    subprojects = Subproject.objects.filter()
+                    subprojects = Subproject.objects.filter().get_actifs()
                 search = search.upper()
                 subprojects =    Subproject.objects.filter(
                         Q(full_title_of_approved_subproject__icontains=search) | 
@@ -43,9 +43,9 @@ class RestGetSubprojectsByUser(APIView):
                         Q(works_type__icontains=search) | 
                         Q(cvd__name__icontains=search) | 
                         Q(facilitator_name__icontains=search)
-                    )
+                    ).get_actifs()
             else:
-                subprojects =    Subproject.objects.filter()
+                subprojects =    Subproject.objects.filter().get_actifs()
         else:
             subprojects = get_subprojects_by_facilitator_id_and_project_id(user.id, 1)
 

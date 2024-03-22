@@ -25,7 +25,7 @@ class SubprojectCommonComponent(SubprojectMixin, LoginRequiredMixin, generic.Lis
     
 
     def get_results(self):
-        subprojects = Subproject.objects.filter(full_title_of_approved_subproject=self.subproject.full_title_of_approved_subproject)
+        subprojects = Subproject.objects.filter(full_title_of_approved_subproject=self.subproject.full_title_of_approved_subproject).get_actifs()
         return {
             "name": self.subproject.full_title_of_approved_subproject,
             'subprojects': subprojects,
@@ -46,14 +46,14 @@ class SubprojectsByAdministrativeLevelMixin(AdministrativeLevelMixin):
         self.villages = []
         if self.administrative_level.type == "Canton":
             self.villages = self.administrative_level.administrativelevel_set.get_queryset()
-            self.subprojects = list(Subproject.objects.filter(canton_id=self.administrative_level.id))
+            self.subprojects = list(Subproject.objects.filter(canton_id=self.administrative_level.id).get_actifs())
             self.canton_id = self.administrative_level.id
         elif self.administrative_level.type == "Village":
             self.villages = [self.administrative_level]
             self.canton_id = self.administrative_level.parent.id
             
         for v in self.villages:
-            self.subprojects += list(Subproject.objects.filter(location_subproject_realized_id=v.id))
+            self.subprojects += list(Subproject.objects.filter(location_subproject_realized_id=v.id).get_actifs())
             
         return super().dispatch(request, pk, *args, **kwargs)
     

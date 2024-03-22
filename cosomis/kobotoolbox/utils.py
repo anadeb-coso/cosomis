@@ -29,7 +29,7 @@ def get_gms_form_reponse_util():
     counter = 1
     for a in all_forms['results']:
         if a['type_georeferencement'] == "ouvrages_coso":
-            subprojects =  Subproject.objects.filter(number=int(float(a['serial'])))
+            subprojects =  Subproject.objects.filter(number=int(float(a['serial']))).get_actifs()
             if subprojects:
                 subproject = subprojects.first()
                 coordinates = a['gps'].split(' ')
@@ -39,7 +39,7 @@ def get_gms_form_reponse_util():
             counter += 1
         
     print(counter-1)
-    print(Subproject.objects.filter(latitude__isnull=True).count())
+    print(Subproject.objects.filter(latitude__isnull=True).get_actifs().count())
         
     
 
@@ -50,7 +50,7 @@ def get_gms_form_reponse_save_images_util():
     counter = 1
     for a in all_forms['results']:
         if a['type_georeferencement'] == "ouvrages_coso":
-            subprojects =  Subproject.objects.filter(number=int(float(a['serial'])))
+            subprojects =  Subproject.objects.filter(number=int(float(a['serial']))).get_actifs()
             if subprojects:
                 subproject = subprojects.first()
                 
@@ -82,6 +82,6 @@ def get_gms_form_reponse_save_images_util():
             
         
     print(counter-1)
-    print(Subproject.objects.filter(latitude__isnull=True).count())
+    print(Subproject.objects.filter(latitude__isnull=True).get_actifs().count())
         
     

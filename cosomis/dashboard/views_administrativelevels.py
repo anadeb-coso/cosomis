@@ -161,7 +161,7 @@ class DashboardWaveListView(DashboardAdministrativeLevelMixin, AJAXRequestMixin,
             subproject_filters = Subproject.objects.filter(
                     Q(location_subproject_realized__id__in=villages_ids) | 
                     Q(canton__id__in=cantons_ids)
-                )
+                ).get_actifs()
             datas[_("Number of subprojects selected")][count] = subproject_filters.filter(
                     subproject_type_designation__in=["Subproject"]
                 ).count()
@@ -423,13 +423,13 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
             subprojects = Subproject.objects.filter(
                 Q(location_subproject_realized__id__in=ids) | 
                 Q(canton__id__in=ids)
-            )
+            ).get_actifs()
         else:
             allocations_project = AdministrativeLevelAllocation.objects.filter(
                 project_id=project_id,
                 cvd=None
             )
-            subprojects = Subproject.objects.all()
+            subprojects = Subproject.objects.all().get_actifs()
 
         for line in lines:
             _ids = ([line.administrative_level.id] + get_administrative_level_ids_descendants(line.administrative_level.id, None, []))
@@ -615,13 +615,13 @@ class DashboardSummaryCVDAllocationListView(DashboardAdministrativeLevelMixin, A
             subprojects = Subproject.objects.filter(
                 Q(location_subproject_realized__id__in=ids) | 
                 Q(canton__id__in=ids)
-            )
+            ).get_actifs()
         else:
             allocations_project = AdministrativeLevelAllocation.objects.filter(
                 project_id=project_id,
                 administrative_level=None
             )
-            subprojects = Subproject.objects.all()
+            subprojects = Subproject.objects.all().get_actifs()
 
         for line in lines:
             _ids = [obj.id for obj in line.get_villages()]

@@ -40,7 +40,7 @@ class AdministrativeLevel(BaseModel):
     def get_list_subprojects(self):
         """Method to get the list of the all subprojects that the administrative is linked"""
         if self.cvd:
-            return self.cvd.subproject_set.get_queryset()
+            return self.cvd.subproject_set.get_queryset().get_actifs()
         return []
     
     def get_facilitator(self, projects_ids):
@@ -136,7 +136,7 @@ class CVD(BaseModel):
     
     def get_list_subprojects(self):
         """Method to get the list of the all subprojects"""
-        return self.subproject_set.get_queryset()
+        return self.subproject_set.get_queryset().get_actifs()
     
     def __str__(self):
         return self.get_name()

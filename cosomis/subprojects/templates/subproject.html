@@ -34,7 +34,7 @@
         <div class="row">
 
             <div class="col-{% if object.has_subprojects_linked %}7{% else %}12{% endif %}">
-                <div class="card">
+                <div class="card" {% if object.infrastructure_deleted %}style="background-color: red;"{% endif %}>
                     <div class="card-body">
 
                         <div class="clearfix">
@@ -72,7 +72,7 @@
                                         href="{% url 'administrativelevels:detail' object.canton.pk %}" >
                                         {{ object.canton.name }}
                                     </a>
-                                    {% for sp in object.subproject_set.get_queryset %}
+                                    {% for sp in object.get_all_subprojects_linked %}
                                         / <a style="color: #599cf7 !important;" target="_blank" 
                                             href="{% url 'administrativelevels:detail' sp.canton.pk %}" >
                                             {{ sp.canton.name }}

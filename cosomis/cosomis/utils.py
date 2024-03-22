@@ -138,7 +138,7 @@ def save_facilitator_assignment_in_mis(project_id: int, develop_mode=False, trai
 
 def link_infrastures_to_subproject():
     print("Start link_infrastures_to_subproject!")
-    subprojects = Subproject.objects.all().order_by('number', 'joint_subproject_number')
+    subprojects = Subproject.objects.all().get_actifs().order_by('number', 'joint_subproject_number')
     for subproject in subprojects:
         for _subproject in subprojects:
             if subproject.id != _subproject.id and \
@@ -154,7 +154,7 @@ def link_infrastures_to_subproject():
 
 def copy_cvd_to_list_of_beneficiary_villages():
     print("Start copy_cvd_to_list_of_beneficiary_villages!")
-    subprojects = Subproject.objects.all()
+    subprojects = Subproject.objects.all().get_actifs()
     for subproject in subprojects:
         # print(subproject.full_title_of_approved_subproject)
         if subproject.cvd:
@@ -207,7 +207,7 @@ def set_step(subproject, liste):
 
 def save_subproject_tracking():
     print("Start save_subproject_tracking !")
-    subprojects = Subproject.objects.all()
+    subprojects = Subproject.objects.all().get_actifs()
     sectors = []
     types = []
     step_identifie = Step.objects.get(ranking=1)

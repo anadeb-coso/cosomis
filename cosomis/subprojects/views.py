@@ -69,7 +69,7 @@ class SubprojectMixin:
 
 class SubprojectsListView(PageMixin, LoginRequiredMixin, generic.ListView):
     model = Subproject
-    queryset = [] #Subproject.objects.all()
+    queryset = [] #Subproject.objects.all().get_actifs()
     template_name = 'subprojects_list.html'
     context_object_name = 'subprojects'
     title = _('Subprojects')
@@ -83,13 +83,13 @@ class SubprojectsListView(PageMixin, LoginRequiredMixin, generic.ListView):
 
     # def get_queryset(self):
     #     # return super().get_queryset()
-    #     return Subproject.objects.filter(link_to_subproject=None)
+    #     return Subproject.objects.filter(link_to_subproject=None).get_actifs()
     def get_queryset(self):
         search = self.request.GET.get("search", None)
         page_number = self.request.GET.get("page", None)
         if search:
             if search == "All":
-                gs = Subproject.objects.filter(link_to_subproject=None)
+                gs = Subproject.objects.filter(link_to_subproject=None).get_actifs()
                 return Paginator(gs, gs.count()).get_page(page_number)
             search = search.upper()
             return Paginator(
@@ -103,14 +103,14 @@ class SubprojectsListView(PageMixin, LoginRequiredMixin, generic.ListView):
                     Q(link_to_subproject=None, works_type__icontains=search) | 
                     Q(link_to_subproject=None, cvd__name__icontains=search) | 
                     Q(link_to_subproject=None, facilitator_name__icontains=search)
-                ), 100).get_page(page_number)
+                ).get_actifs(), 100).get_page(page_number)
         else:
-            return Paginator(Subproject.objects.filter(link_to_subproject=None), 100).get_page(page_number)
+            return Paginator(Subproject.objects.filter(link_to_subproject=None).get_actifs(), 100).get_page(page_number)
         
     def get_context_data(self, **kwargs):
         ctx = super(SubprojectsListView, self).get_context_data(**kwargs)
         ctx['search'] = self.request.GET.get("search", None)
-        all = Subproject.objects.all()
+        all = Subproject.objects.all().get_actifs()
         ctx['total'] = all.count()
         ctx['total_without_link'] = all.filter(link_to_subproject=None, subproject_type_designation="Subproject").count()
         ctx['total_subproject'] = all.filter(subproject_type_designation="Subproject").count()
@@ -222,7 +222,7 @@ class SubprojectsMapView(generic.ListView):
             subprojects = Subproject.objects.filter(
                 Q(location_subproject_realized_id__in=liste_villages) | 
                 Q(list_of_villages_crossed_by_the_track_or_electrification__id__in=liste_villages)
-            )
+            ).get_actifs()
         elif (id_regions or id_prefectures or id_communes or id_cantons or id_villages):
             if id_villages:
                 _ids = id_villages
@@ -244,10 +244,10 @@ class SubprojectsMapView(generic.ListView):
             subprojects = Subproject.objects.filter(
                 Q(location_subproject_realized_id__in=liste_villages) | 
                 Q(list_of_villages_crossed_by_the_track_or_electrification__id__in=liste_villages)
-            )
+            ).get_actifs()
 
         else:
-            subprojects = Subproject.objects.all()
+            subprojects = Subproject.objects.all().get_actifs()
         
         if subproject_sectors:
             subprojects = subprojects.filter(subproject_sector__in=[elt for elt in subproject_sectors if elt])

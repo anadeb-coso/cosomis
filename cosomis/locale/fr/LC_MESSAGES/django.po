@@ -2774,3 +2774,23 @@ msgstr "Dépensés"
 #: .\subprojects
 msgid "Amount remaining after allocation"
 msgstr "Montant restant après l'allocation"
+
+#: .\subprojects
+msgid "Allocations, estimates and expenditure by canton and component"
+msgstr "Allocations, estimations et dépenses par canton et par composante"
+
+#: .\subprojects
+msgid "Structures by type"
+msgstr "Ouvrage par type"
+
+#: .\subprojects
+msgid "Not start"
+msgstr "No demarré"
+
+#: .\subprojects
+msgid "Number by type of structure"
+msgstr "Nombre par type d'ouvrage"
+
+#: .\subprojects
+msgid "Level"
+msgstr "Niveau"

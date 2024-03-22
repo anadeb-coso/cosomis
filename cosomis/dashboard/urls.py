@@ -29,4 +29,5 @@ urlpatterns = [
     path('summary-subprojects/', views_summary.DashboardSubprojectsListView.as_view(), name='dashboard_summary_subprojects'),
     path('summary-subprojects-details/', views_summary.SubprojectsDetailsModalView.as_view(), name='dashboard_summary_subprojects_details'),
     path('summary-financing/', views_summary.DashboardFinancingListView.as_view(), name='dashboard_summary_financing'),
+    path('summary-financing-canton/', views_summary.DashboardFinancingListByCantonView.as_view(), name='dashboard_summary_financing_canton'),
 ]

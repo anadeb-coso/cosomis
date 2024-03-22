@@ -73,6 +73,17 @@
                                     <i class="fas fa-2x fa-sync-alt fa-spin"></i>
                                 </div>
                             </div>
+
+                            <div class="card">
+                                <div class="card-body">
+                                    <div id="summary_financing_canton-list">
+                                        <h3>{% translate "Allocations, estimates and expenditure by canton and component" %}</h3>
+                                    </div>
+                                </div>
+                                <div class="overlay" id="summary_financing_canton-spin">
+                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                                </div>
+                            </div>
                         </div>
                         
                         <div id="summary_indicators" class="tab-pane">
@@ -172,6 +183,8 @@
             
             let summary_financing_spin = $('#summary_financing-spin');
             let summary_financing_number = $('#summary_financing-list');
+            let summary_financing_canton_spin = $('#summary_financing_canton-spin');
+            let summary_financing_canton_number = $('#summary_financing_canton-list');
 
             var administrative_level_id = null;
             var administrative_level_type = null;
@@ -202,6 +215,7 @@
                 });
             }
             
+            //Financing
             function loadFinancing(administrative_level_id=null, administrative_level_type=null) {
                 summary_financing_spin.show();
                 $.ajax({
@@ -224,6 +238,30 @@
                     }
                 });
             }
+            
+            function loadFinancingCanton(administrative_level_id=null, administrative_level_type=null) {
+                summary_financing_canton_spin.show();
+                $.ajax({
+                    type: "GET",
+                    url: "{% url 'dashboard:dashboard_summary_financing_canton' %}",
+                    data: {
+                        administrative_level_id: administrative_level_id,
+                        administrative_level_type: administrative_level_type
+                    },
+                    success: function (response) {
+                        summary_financing_canton_spin.hide();
+                        
+                        summary_financing_canton_number.html(response);
+
+                        //current_nav_links.push('summary_financing_canton');
+                    },
+                    error: function (data) {
+                        summary_financing_canton_spin.hide();
+                        alert(error_server_message + "Error " + data.status);
+                    }
+                });
+            }
+            //End Financing
 
 
             
@@ -232,6 +270,7 @@
                     loadSubprojects(administrative_level_id, administrative_level_type);
                 }else if(!current_nav_links.includes('summary_financing') && current_nav_link.includes('summary_financing')){
                     loadFinancing(administrative_level_id, administrative_level_type);
+                    loadFinancingCanton(administrative_level_id, administrative_level_type);
                 }
             }
             

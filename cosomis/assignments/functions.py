@@ -28,7 +28,7 @@ def get_subprojects_by_facilitator_id_and_project_id(facilitator_id, project_id)
             if project_id in subproject.get_projects_ids():
                 subprojects.append(subproject)
 
-    return Subproject.objects.filter(pk__in=[s.pk for s in subprojects])
+    return Subproject.objects.filter(pk__in=[s.pk for s in subprojects]).get_actifs()
 
 def get_administrativelevels_by_facilitator_id_and_project_id(facilitator_id, project_id, type_adl="Village", parent_id=None) -> _QS:
     assigns_to_facilitator = AssignAdministrativeLevelToFacilitator.objects.filter(

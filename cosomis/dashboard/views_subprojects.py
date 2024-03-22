@@ -69,7 +69,7 @@ class DashboardSubprojectsMixin:
         if not administrative_levels:
             administrative_levels = AdministrativeLevel.objects.filter(id__in=ald_filter_ids)
 
-        subprojects = Subproject.objects.filter()
+        subprojects = Subproject.objects.filter().get_actifs()
 
         sectors = sorted(list(set(list(subprojects.values_list('subproject_sector')))))
         
@@ -402,7 +402,7 @@ class DashboardSubprojectsSectorsAndStepsListView(DashboardSubprojectsMixin, AJA
         all_subprojects = Subproject.objects.filter(
                 Q(location_subproject_realized__id__in=adls) | 
                 Q(canton__id__in=adls)
-            )
+            ).get_actifs()
         
         # all_subprojects = ctx['queryset_results']['subprojects']
         

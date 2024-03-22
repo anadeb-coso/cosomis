@@ -14,7 +14,7 @@ from financial.models.allocation import AdministrativeLevelAllocation
 from process_manager.models import AdministrativeLevelWave
 from administrativelevels.functions import get_administrative_level_ids_descendants
 from . import forms
-
+from cosomis.constants import TYPES_OF_STRUCTURE_COLOR
 
 
 class DashboardTemplateView(PageMixin, LoginRequiredMixin, generic.TemplateView):
@@ -70,7 +70,7 @@ class DashboardSubprojectsMixin(ModalListMixin):
         if not administrative_levels:
             administrative_levels = AdministrativeLevel.objects.filter(id__in=ald_filter_ids)
 
-        subprojects = Subproject.objects.filter()
+        subprojects = Subproject.objects.filter().get_actifs()
 
         sectors = sorted(list(set(list(subprojects.values_list('subproject_sector')))))
         
@@ -132,7 +132,8 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
         ctx['total_infrastrutures_not_started'] = ctx['total_infrastruture_not_started'] + ctx['total_latrines_not_started'] + ctx['total_fences_not_started']
         
         ctx['number_subproject_infrastrutures'] = {
-            'sectors': sectors,
+            'title': _("Number of subprojects in relation to infrastructure by sector"),
+            'labels': sectors,
             'bars': [
                 {
                     'label': _("Subproject"),
@@ -164,7 +165,8 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
         
         
         ctx['amount_subproject_infrastrutures'] = {
-            'sectors': sectors,
+            'title': _("Amount of subprojects in relation to infrastructure by sector"),
+            'labels': sectors,
             'bars': [
                 # {
                 #     'label': _("Subproject"),
@@ -194,6 +196,74 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
         }
         
         
+        #Structure Graphe
+        # structures = dict(sorted(TYPES_OF_STRUCTURE_COLOR.items()))
+        # type_structures = sorted(list(structures.keys()))
+        type_structures = list(TYPES_OF_STRUCTURE_COLOR.keys())
+        ctx['type_structures'] = type_structures
+        bars_type_structures = [
+            {
+                'label': _("Structure"),
+                'backgroundColor': 'blue',
+                'data': [
+                    (
+                        (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True).count() if type_structure == 'Latrine Scolaire' else \
+                            (all_subprojects.filter(type_of_subproject__istartswith='Pédiatrie', has_fence=True).count() if type_structure == 'Clôture Pédiatrie' else \
+                                (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True).count()))) \
+                            if type_structure in ('Latrine Scolaire', 'Clôture Pédiatrie', 'Clôture Scolaire') \
+                            else all_subprojects.filter(type_of_subproject__istartswith=type_structure).count()
+                    ) for type_structure in type_structures
+                ]
+            },
+            {
+                'label': _("Not start"),
+                'backgroundColor': 'red',
+                'data': [
+                    (
+                        (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True).exclude(current_status_of_the_site__in=["En cours", "Achevé", "Réception technique", "Réception provisoire", "Réception définitive"]).count() if type_structure == 'Latrine Scolaire' else \
+                            (all_subprojects.filter(type_of_subproject__istartswith='Pédiatrie', has_fence=True).exclude(current_status_of_the_site__in=["En cours", "Achevé", "Réception technique", "Réception provisoire", "Réception définitive"]).count() if type_structure == 'Clôture Pédiatrie' else \
+                                (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True).exclude(current_status_of_the_site__in=["En cours", "Achevé", "Réception technique", "Réception provisoire", "Réception définitive"]).count()))) \
+                            if type_structure in ('Latrine Scolaire', 'Clôture Pédiatrie', 'Clôture Scolaire') \
+                            else all_subprojects.filter(type_of_subproject__istartswith=type_structure).exclude(current_status_of_the_site__in=["En cours", "Achevé", "Réception technique", "Réception provisoire", "Réception définitive"]).count()
+                    ) for type_structure in type_structures
+                ]
+            },
+            {
+                'label': _("In progress"),
+                'backgroundColor': 'purple',
+                'data': [
+                    (
+                        (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True, current_status_of_the_site="En cours").count() if type_structure == 'Latrine Scolaire' else \
+                            (all_subprojects.filter(type_of_subproject__istartswith='Pédiatrie', has_fence=True, current_status_of_the_site="En cours").count() if type_structure == 'Clôture Pédiatrie' else \
+                                (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True, current_status_of_the_site="En cours").count()))) \
+                            if type_structure in ('Latrine Scolaire', 'Clôture Pédiatrie', 'Clôture Scolaire') \
+                            else all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site="En cours").count()
+                    ) for type_structure in type_structures
+                ]
+            },
+            {
+                'label': _("Completed"),
+                'backgroundColor': 'green',
+                'data': [
+                    (
+                        (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True, current_status_of_the_site__in=["Achevé", "Réception technique", "Réception provisoire", "Réception définitive"]).count() if type_structure == 'Latrine Scolaire' else \
+                            (all_subprojects.filter(type_of_subproject__istartswith='Pédiatrie', has_fence=True, current_status_of_the_site__in=["Achevé", "Réception technique", "Réception provisoire", "Réception définitive"]).count() if type_structure == 'Clôture Pédiatrie' else \
+                                (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True, current_status_of_the_site__in=["Achevé", "Réception technique", "Réception provisoire", "Réception définitive"]).count()))) \
+                            if type_structure in ('Latrine Scolaire', 'Clôture Pédiatrie', 'Clôture Scolaire') \
+                            else all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site__in=["Achevé", "Réception technique", "Réception provisoire", "Réception définitive"]).count()
+                    ) for type_structure in type_structures
+                ]
+            }
+        ]
+        ctx['bars_type_structures'] = bars_type_structures
+        ctx['sum_bars_type_structures'] = [sum(elt.get('data')) for elt in bars_type_structures]
+        ctx['number_structures_by_type'] = {
+            'title': _("Structures by type"),
+            'labels': type_structures,
+            'bars': [bars_type_structures[0], bars_type_structures[3]]
+        }
+        
+        
         
         ctx['administrative_level_id'] = self.request.GET.getlist('administrative_level_id[]', [])
         administrative_level_type = self.request.GET.get('administrative_level_type', 'All').title()
@@ -210,10 +280,8 @@ class DashboardFinancingListView(DashboardSubprojectsMixin, AJAXRequestMixin, Lo
         ctx = super(DashboardFinancingListView, self).get_context_data(**kwargs)
         all_subprojects = ctx['queryset_results']['subprojects']
         sectors = ctx['queryset_results']['sectors']
-        # components = Component.objects.filter(parent__name="Composante 1")
         ids = ctx['queryset_results']['ald_filter_ids'].copy() + ctx['queryset_results']['administrative_levels_ids'].copy()
         if ids:
-            print("ici")
             allocations_project = AdministrativeLevelAllocation.objects.filter(
                 project_id=1,
                 cvd=None,
@@ -226,7 +294,6 @@ class DashboardFinancingListView(DashboardSubprojectsMixin, AJAXRequestMixin, Lo
                 cvd=None,
                 administrative_level__type="Canton"
             )
-        # allocations_project = AdministrativeLevelAllocation.objects.filter()
         
         ctx['total_amount_subprojects_estimated_cost'] = all_subprojects.aggregate(Sum('estimated_cost'))['estimated_cost__sum']
         ctx['total_amount_subprojects_estimated_cost'] = ctx['total_amount_subprojects_estimated_cost'] if ctx['total_amount_subprojects_estimated_cost'] else 0
@@ -237,9 +304,9 @@ class DashboardFinancingListView(DashboardSubprojectsMixin, AJAXRequestMixin, Lo
         ctx['total_amount_remaining_after_allocation'] = ctx['total_allocations_cantons'] - ctx['total_amount_subprojects_estimated_cost']
         
         
-        
         ctx['amount_subproject_infrastrutures'] = {
-            'sectors': sectors,
+            'title': _("Amount of subprojects in relation to infrastructure by sector"),
+            'labels': sectors,
             'bars': [
                 {
                     'label': _("Infrastructure"),
@@ -250,129 +317,162 @@ class DashboardFinancingListView(DashboardSubprojectsMixin, AJAXRequestMixin, Lo
                 }
             ]
         }
+
+        ctx['administrative_level_id'] = self.request.GET.getlist('administrative_level_id[]', [])
+        administrative_level_type = self.request.GET.get('administrative_level_type', 'All').title()
+        ctx['administrative_level_type'] = "All" if administrative_level_type in ("", "null", "undefined") else administrative_level_type
+        return ctx
+
+
+class DashboardFinancingListByCantonView(DashboardSubprojectsMixin, AJAXRequestMixin, LoginRequiredMixin, generic.ListView):
+    template_name = 'components/dashboard_summary_financing_by_canton.html'
+    context_object_name = 'queryset_results'
+    
+    def get_context_data(self, **kwargs):
+        ctx = super(DashboardFinancingListByCantonView, self).get_context_data(**kwargs)
+        all_subprojects = ctx['queryset_results']['subprojects']
+        # components = Component.objects.filter(parent__name="Composante 1")
+        ids = ctx['queryset_results']['ald_filter_ids'].copy() + ctx['queryset_results']['administrative_levels_ids'].copy()
+        if ids:
+            allocations_project = AdministrativeLevelAllocation.objects.filter(
+                project_id=1,
+                cvd=None,
+                administrative_level__id__in=ids,
+                administrative_level__type="Canton"
+            )
+        else:
+            allocations_project = AdministrativeLevelAllocation.objects.filter(
+                project_id=1,
+                cvd=None,
+                administrative_level__type="Canton"
+            )
+        allocations_project = AdministrativeLevelAllocation.objects.filter()
+
+        if ids:
+            lines = AdministrativeLevelWave.objects.filter(administrative_level__id__in=ids).order_by("administrative_level__name")
+            # admls = AdministrativeLevel.objects.filter(type="Canton", id__in=ids).order_by("name")
+        else:
+            #  admls = AdministrativeLevel.objects.filter(type="Canton").order_by("name")
+             lines = AdministrativeLevelWave.objects.all().order_by("administrative_level__name")
+        admls = [adl.administrative_level for adl in lines]
+        admls_children = [
+            (
+                adl, 
+                allocations_project.filter(
+                    administrative_level__id=adl.id
+                ),
+                ([adl.id] + get_administrative_level_ids_descendants(adl.id, None, []))) for adl in admls
+        ]
         
-        # if ids:
-        #     lines = AdministrativeLevelWave.objects.filter(administrative_level__id__in=ids).order_by("administrative_level__name")
-        #     # admls = AdministrativeLevel.objects.filter(type="Canton", id__in=ids).order_by("name")
-        # else:
-        #     #  admls = AdministrativeLevel.objects.filter(type="Canton").order_by("name")
-        #      lines = AdministrativeLevelWave.objects.all().order_by("administrative_level__name")
-        # admls = [adl.administrative_level for adl in lines]
-        # admls_children = [
-        #     (
-        #         adl, 
-        #         allocations_project.filter(
-        #             administrative_level__id=adl.id
-        #         ),
-        #         ([adl.id] + get_administrative_level_ids_descendants(adl.id, None, []))) for adl in admls
-        # ]
-        
-        # ctx['amount_cantons_component_1_1'] = {
-        #     'sectors': [adl.name for adl in admls],
-        #     'bars': [
-        #         {
-        #             'label': _("Allocation"),
-        #             'backgroundColor': 'blue',
-        #             'data': [(elt if elt else 0) for elt in [
-        #                 adml[1].filter(
-        #                     component_id=2
-        #                 ).aggregate(Sum('amount'))['amount__sum'] for adml in admls_children
-        #             ]]
-        #         },
-        #         {
-        #             'label': _("Sub-project estimates"),
-        #             'backgroundColor': 'red',
-        #             'data': [(elt if elt else 0) for elt in [
-        #                 all_subprojects.filter(
-        #                     Q(location_subproject_realized__id__in=adml[2]) | 
-        #                     Q(canton__id__in=adml[2]), component_id=2
-        #                 ).aggregate(Sum('estimated_cost'))['estimated_cost__sum'] for adml in admls_children
-        #             ]]
-        #         },
-        #         {
-        #             'label': _("Spent"),
-        #             'backgroundColor': 'green',
-        #             'data': [(elt if elt else 0) for elt in [
-        #                 all_subprojects.filter(
-        #                     Q(location_subproject_realized__id__in=adml[2]) | 
-        #                     Q(canton__id__in=adml[2]), component_id=2
-        #                 ).aggregate(Sum('exact_amount_spent'))['exact_amount_spent__sum'] for adml in admls_children
-        #             ]]
-        #         }
-        #     ]
-        # }
-        
-        
-        # ctx['amount_cantons_component_1_2'] = {
-        #     'sectors': [adl.name for adl in admls],
-        #     'bars': [
-        #         {
-        #             'label': _("Allocation"),
-        #             'backgroundColor': 'blue',
-        #             'data': [(elt if elt else 0) for elt in [
-        #                 adml[1].filter(
-        #                     component_id=3
-        #                 ).aggregate(Sum('amount'))['amount__sum'] for adml in admls_children
-        #             ]]
-        #         },
-        #         {
-        #             'label': _("Sub-project estimates"),
-        #             'backgroundColor': 'red',
-        #             'data': [(elt if elt else 0) for elt in [
-        #                 all_subprojects.filter(
-        #                     Q(location_subproject_realized__id__in=adml[2]) | 
-        #                     Q(canton__id__in=adml[2]), component_id=3
-        #                 ).aggregate(Sum('estimated_cost'))['estimated_cost__sum'] for adml in admls_children
-        #             ]]
-        #         },
-        #         {
-        #             'label': _("Spent"),
-        #             'backgroundColor': 'green',
-        #             'data': [(elt if elt else 0) for elt in [
-        #                 all_subprojects.filter(
-        #                     Q(location_subproject_realized__id__in=adml[2]) | 
-        #                     Q(canton__id__in=adml[2]), component_id=3
-        #                 ).aggregate(Sum('exact_amount_spent'))['exact_amount_spent__sum'] for adml in admls_children
-        #             ]]
-        #         }
-        #     ]
-        # }
+        ctx['amount_cantons_component_1_1'] = {
+            'title': _("Presentation of allocations, estimates and expenditure by canton - Component 1.1"),
+            'labels': [adl.name for adl in admls],
+            'bars': [
+                {
+                    'label': _("Allocation"),
+                    'backgroundColor': 'blue',
+                    'data': [(elt if elt else 0) for elt in [
+                        adml[1].filter(
+                            component_id=2
+                        ).aggregate(Sum('amount'))['amount__sum'] for adml in admls_children
+                    ]]
+                },
+                {
+                    'label': _("Sub-project estimates"),
+                    'backgroundColor': 'red',
+                    'data': [(elt if elt else 0) for elt in [
+                        all_subprojects.filter(
+                            Q(location_subproject_realized__id__in=adml[2]) | 
+                            Q(canton__id__in=adml[2]), component_id=2
+                        ).aggregate(Sum('estimated_cost'))['estimated_cost__sum'] for adml in admls_children
+                    ]]
+                },
+                {
+                    'label': _("Spent"),
+                    'backgroundColor': 'green',
+                    'data': [(elt if elt else 0) for elt in [
+                        all_subprojects.filter(
+                            Q(location_subproject_realized__id__in=adml[2]) | 
+                            Q(canton__id__in=adml[2]), component_id=2
+                        ).aggregate(Sum('exact_amount_spent'))['exact_amount_spent__sum'] for adml in admls_children
+                    ]]
+                }
+            ]
+        }
         
         
-        # ctx['amount_cantons_component_1_3'] = {
-        #     'sectors': [adl.name for adl in admls],
-        #     'bars': [
-        #         {
-        #             'label': _("Allocation"),
-        #             'backgroundColor': 'blue',
-        #             'data': [(elt if elt else 0) for elt in [
-        #                 adml[1].filter(
-        #                     component_id=6
-        #                 ).aggregate(Sum('amount'))['amount__sum'] for adml in admls_children
-        #             ]]
-        #         },
-        #         {
-        #             'label': _("Sub-project estimates"),
-        #             'backgroundColor': 'red',
-        #             'data': [(elt if elt else 0) for elt in [
-        #                 all_subprojects.filter(
-        #                     Q(location_subproject_realized__id__in=adml[2]) | 
-        #                     Q(canton__id__in=adml[2]), component_id=6
-        #                 ).aggregate(Sum('estimated_cost'))['estimated_cost__sum'] for adml in admls_children
-        #             ]]
-        #         },
-        #         {
-        #             'label': _("Spent"),
-        #             'backgroundColor': 'green',
-        #             'data': [(elt if elt else 0) for elt in [
-        #                 all_subprojects.filter(
-        #                     Q(location_subproject_realized__id__in=adml[2]) | 
-        #                     Q(canton__id__in=adml[2]), component_id=6
-        #                 ).aggregate(Sum('exact_amount_spent'))['exact_amount_spent__sum'] for adml in admls_children
-        #             ]]
-        #         }
-        #     ]
-        # }
+        ctx['amount_cantons_component_1_2'] = {
+            'title': _("Presentation of allocations, estimates and expenditure by canton - Component 1.2"),
+            'labels': [adl.name for adl in admls],
+            'bars': [
+                {
+                    'label': _("Allocation"),
+                    'backgroundColor': 'blue',
+                    'data': [(elt if elt else 0) for elt in [
+                        adml[1].filter(
+                            component_id=3
+                        ).aggregate(Sum('amount'))['amount__sum'] for adml in admls_children
+                    ]]
+                },
+                {
+                    'label': _("Sub-project estimates"),
+                    'backgroundColor': 'red',
+                    'data': [(elt if elt else 0) for elt in [
+                        all_subprojects.filter(
+                            Q(location_subproject_realized__id__in=adml[2]) | 
+                            Q(canton__id__in=adml[2]), component_id=3
+                        ).aggregate(Sum('estimated_cost'))['estimated_cost__sum'] for adml in admls_children
+                    ]]
+                },
+                {
+                    'label': _("Spent"),
+                    'backgroundColor': 'green',
+                    'data': [(elt if elt else 0) for elt in [
+                        all_subprojects.filter(
+                            Q(location_subproject_realized__id__in=adml[2]) | 
+                            Q(canton__id__in=adml[2]), component_id=3
+                        ).aggregate(Sum('exact_amount_spent'))['exact_amount_spent__sum'] for adml in admls_children
+                    ]]
+                }
+            ]
+        }
+        
+        
+        ctx['amount_cantons_component_1_3'] = {
+            'title': _("Presentation of allocations, estimates and expenditure by canton - Component 1.3"),
+            'labels': [adl.name for adl in admls],
+            'bars': [
+                {
+                    'label': _("Allocation"),
+                    'backgroundColor': 'blue',
+                    'data': [(elt if elt else 0) for elt in [
+                        adml[1].filter(
+                            component_id=6
+                        ).aggregate(Sum('amount'))['amount__sum'] for adml in admls_children
+                    ]]
+                },
+                {
+                    'label': _("Sub-project estimates"),
+                    'backgroundColor': 'red',
+                    'data': [(elt if elt else 0) for elt in [
+                        all_subprojects.filter(
+                            Q(location_subproject_realized__id__in=adml[2]) | 
+                            Q(canton__id__in=adml[2]), component_id=6
+                        ).aggregate(Sum('estimated_cost'))['estimated_cost__sum'] for adml in admls_children
+                    ]]
+                },
+                {
+                    'label': _("Spent"),
+                    'backgroundColor': 'green',
+                    'data': [(elt if elt else 0) for elt in [
+                        all_subprojects.filter(
+                            Q(location_subproject_realized__id__in=adml[2]) | 
+                            Q(canton__id__in=adml[2]), component_id=6
+                        ).aggregate(Sum('exact_amount_spent'))['exact_amount_spent__sum'] for adml in admls_children
+                    ]]
+                }
+            ]
+        }
         
         
         
@@ -380,6 +480,7 @@ class DashboardFinancingListView(DashboardSubprojectsMixin, AJAXRequestMixin, Lo
         administrative_level_type = self.request.GET.get('administrative_level_type', 'All').title()
         ctx['administrative_level_type'] = "All" if administrative_level_type in ("", "null", "undefined") else administrative_level_type
         return ctx
+
 
 
 

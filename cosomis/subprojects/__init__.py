@@ -25,7 +25,7 @@ TYPES_OF_SUB_PROJECT = (
     ('Centre Communautaire', _('Community Center')), 
     ('Forage Photovoltaïque (Centre communautaire)', _('Photovoltaic drilling (Community center)')), 
     ('Forage Photovoltaïque (Boisson)', _('Photovoltaic drilling (Beverage)')), 
-    ('Piste + OF', _('Track + OF')), 
+    ('Piste/OF', _('Track + OF')), 
     ('Batiment Scolaire au Lycée', _('School building at Lycée')), 
     ('Batiment Scolaire au CEG', _('School building at CEG')), 
     ('Batiment Scolaire au Primaire', _('Primary school building')), 

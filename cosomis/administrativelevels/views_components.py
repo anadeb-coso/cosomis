@@ -770,12 +770,12 @@ class AdministrativeLevelPrioritiesComponent(AdministrativeLevelMixin, AJAXReque
         villages = []
         if self.administrative_level.type == "Canton":
             villages = self.administrative_level.administrativelevel_set.get_queryset()
-            subprojects = list(Subproject.objects.filter(canton_id=self.administrative_level.id))
+            subprojects = list(Subproject.objects.filter(canton_id=self.administrative_level.id).get_actifs())
         elif self.administrative_level.type == "Village":
             villages = [self.administrative_level]
 
         for v in villages:
-            subprojects += list(Subproject.objects.filter(location_subproject_realized_id=v.id))
+            subprojects += list(Subproject.objects.filter(location_subproject_realized_id=v.id).get_actifs())
         length_subprojects = len(subprojects)
         
         priorities_by_sector = {}
@@ -841,7 +841,7 @@ class AdministrativeLevelFinancialInformationsComponent(AdministrativeLevelMixin
         subprojects = Subproject.objects.filter(
             Q(location_subproject_realized__id__in=administrative_levels_ids) | 
             Q(canton__id__in=administrative_levels_ids)
-        )
+        ).get_actifs()
         
         return {
             
