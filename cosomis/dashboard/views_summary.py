@@ -108,6 +108,8 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
         ctx['total_subproject'] = all_subprojects.filter(subproject_type_designation="Subproject").count()
         ctx['total_infrastruture'] = all_subprojects.filter(subproject_type_designation="Infrastructure").count()
         ctx['total_latrine_blocks'] = all_subprojects.filter(has_latrine_blocs=True).count()
+        ctx['total_number_latrine_blocks'] = all_subprojects.filter(has_latrine_blocs=True).aggregate(Sum('number_of_latrine_blocks'))['number_of_latrine_blocks__sum']
+        ctx['total_number_latrine_blocks'] = ctx['total_number_latrine_blocks'] if ctx['total_number_latrine_blocks'] else 0
         ctx['total_fences'] = all_subprojects.filter(has_fence=True).count()
         ctx['total_infrastrutures'] = ctx['total'] + ctx['total_latrine_blocks'] + ctx['total_fences']
         
@@ -122,6 +124,12 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
         ctx['total_latrines_in_progress'] = all_subprojects.filter(current_status_of_the_site="En cours", has_latrine_blocs=True).count()
         ctx['total_latrines_completed'] = all_subprojects.filter(current_status_of_the_site__in=["Achevé", "Réception technique", "Réception provisoire", "Réception définitive"], has_latrine_blocs=True).count()
         ctx['total_latrines_not_started'] = ctx['total_latrine_blocks'] - (ctx['total_latrines_in_progress'] + ctx['total_latrines_completed'])
+        
+        ctx['total_number_latrine_in_progress'] = all_subprojects.filter(current_status_of_the_site="En cours", has_latrine_blocs=True).aggregate(Sum('number_of_latrine_blocks'))['number_of_latrine_blocks__sum']
+        ctx['total_number_latrine_in_progress'] = ctx['total_number_latrine_in_progress'] if ctx['total_number_latrine_in_progress'] else 0
+        ctx['total_number_latrine_completed'] = all_subprojects.filter(current_status_of_the_site__in=["Achevé", "Réception technique", "Réception provisoire", "Réception définitive"], has_latrine_blocs=True).aggregate(Sum('number_of_latrine_blocks'))['number_of_latrine_blocks__sum']
+        ctx['total_number_latrine_completed'] = ctx['total_number_latrine_completed'] if ctx['total_number_latrine_completed'] else 0
+        ctx['total_number_latrine_not_started'] = ctx['total_number_latrine_blocks'] - (ctx['total_number_latrine_in_progress'] + ctx['total_number_latrine_completed'])
         
         ctx['total_fences_in_progress'] = all_subprojects.filter(current_status_of_the_site="En cours", has_fence=True).count()
         ctx['total_fences_completed'] = all_subprojects.filter(current_status_of_the_site__in=["Achevé", "Réception technique", "Réception provisoire", "Réception définitive"], has_fence=True).count()
@@ -213,7 +221,12 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                             if type_structure in ('Latrine Scolaire', 'Clôture Pédiatrie', 'Clôture Scolaire') \
                             else all_subprojects.filter(type_of_subproject__istartswith=type_structure).count()
                     ) for type_structure in type_structures
-                ]
+                ],
+                'classrooms': [(elt if elt else 0) for elt in [
+                    (
+                        all_subprojects.filter(type_of_subproject__istartswith=type_structure, number_of_classrooms__isnull=False).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
+                    ) for type_structure in type_structures
+                ]]
             },
             {
                 'label': _("Not start"),
@@ -226,7 +239,12 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                             if type_structure in ('Latrine Scolaire', 'Clôture Pédiatrie', 'Clôture Scolaire') \
                             else all_subprojects.filter(type_of_subproject__istartswith=type_structure).exclude(current_status_of_the_site__in=["En cours", "Achevé", "Réception technique", "Réception provisoire", "Réception définitive"]).count()
                     ) for type_structure in type_structures
-                ]
+                ],
+                'classrooms': [(elt if elt else 0) for elt in [
+                    (
+                        all_subprojects.filter(type_of_subproject__istartswith=type_structure, number_of_classrooms__isnull=False).exclude(current_status_of_the_site__in=["En cours", "Achevé", "Réception technique", "Réception provisoire", "Réception définitive"]).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
+                    ) for type_structure in type_structures
+                ]]
             },
             {
                 'label': _("In progress"),
@@ -239,7 +257,12 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                             if type_structure in ('Latrine Scolaire', 'Clôture Pédiatrie', 'Clôture Scolaire') \
                             else all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site="En cours").count()
                     ) for type_structure in type_structures
-                ]
+                ],
+                'classrooms': [(elt if elt else 0) for elt in [
+                    (
+                        all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site="En cours", number_of_classrooms__isnull=False).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
+                    ) for type_structure in type_structures
+                ]]
             },
             {
                 'label': _("Completed"),
@@ -252,7 +275,12 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                             if type_structure in ('Latrine Scolaire', 'Clôture Pédiatrie', 'Clôture Scolaire') \
                             else all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site__in=["Achevé", "Réception technique", "Réception provisoire", "Réception définitive"]).count()
                     ) for type_structure in type_structures
-                ]
+                ],
+                'classrooms': [(elt if elt else 0) for elt in [
+                    (
+                        all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site__in=["Achevé", "Réception technique", "Réception provisoire", "Réception définitive"], number_of_classrooms__isnull=False).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
+                    ) for type_structure in type_structures
+                ]]
             }
         ]
         ctx['bars_type_structures'] = bars_type_structures
@@ -552,6 +580,29 @@ class SubprojectsDetailsModalView(DashboardSubprojectsMixin, AJAXRequestMixin,
             elif list_type_search == 'infrastrutures-with-latrines-fences-not-started':
                 list_name_search = _("Structures/infrastructures with latrines and fences not start")
                 all_subprojects = all_subprojects.exclude(current_status_of_the_site__in=["En cours", "Achevé", "Réception technique", "Réception provisoire", "Réception définitive"])
+            
+            context['total'] = all_subprojects.count()
+            context['total_latrine_blocks'] = all_subprojects.filter(has_latrine_blocs=True).count()
+            context['total_fences'] = all_subprojects.filter(has_fence=True).count()
+            context['total_infrastrutures'] = context['total'] + context['total_latrine_blocks'] + context['total_fences']
+            list_name_search += f"\
+                ({context['total_latrine_blocks']}/{context['total_fences']})"
+        
+        elif 'latrines-and-fences' in list_type_search:
+            all_subprojects = all_subprojects.filter(Q(has_latrine_blocs=True) | Q(has_fence=True))
+            
+            if list_type_search == 'latrines-and-fences':
+                list_name_search = _("Latrines and fences")
+            elif list_type_search == 'latrines-and-fences-completed':
+                list_name_search = _("Latrines and fences completed")
+                all_subprojects = all_subprojects.filter(current_status_of_the_site__in=["Achevé", "Réception technique", "Réception provisoire", "Réception définitive"])
+            elif list_type_search == 'latrines-and-fences-in-progress':
+                list_name_search = _("Latrines and fences in progress")
+                all_subprojects = all_subprojects.filter(current_status_of_the_site="En cours")
+            elif list_type_search == 'latrines-and-fences-not-started':
+                list_name_search = _("Latrines and fences not start")
+                all_subprojects = all_subprojects.exclude(current_status_of_the_site__in=["En cours", "Achevé", "Réception technique", "Réception provisoire", "Réception définitive"])
+            
             
             context['total'] = all_subprojects.count()
             context['total_latrine_blocks'] = all_subprojects.filter(has_latrine_blocs=True).count()

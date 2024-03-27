@@ -60,7 +60,7 @@
                             <th>{% translate 'Type of structure' %}</th>
                             <th>{% translate "Type d'ouvrage" %}</th>
                             
-                            {% if "infrastrutures-with-latrines-fences" in list_type_search %}
+                            {% if "infrastrutures-with-latrines-fences" in list_type_search or "latrines-and-fences" in list_type_search %}
                             <th>{% translate 'Latrines?' %}</th>
                             <th>{% translate 'Number of latrines' %}</th>
                             <th>{% translate 'Fences' %}</th>
@@ -89,7 +89,7 @@
                                 <td>{{ subproject.type_of_subproject }}</td>
                                 <td>{{ subproject.works_type }}</td>
 
-                                {% if "infrastrutures-with-latrines-fences" in list_type_search %}
+                                {% if "infrastrutures-with-latrines-fences" in list_type_search or "latrines-and-fences" in list_type_search %}
                                 <td>{% if subproject.has_latrine_blocs == True %}{% translate "Yes" %}{% elif subproject.has_latrine_blocs == False %}{% translate "No" %}{% else %}-{% endif %}</td>
                                 <td>{% if subproject.number_of_latrine_blocks %}{{ subproject.number_of_latrine_blocks }}{% else %}-{% endif %}</td>
                                 <td>{% if subproject.has_fence %}{% translate "Yes" %}{% else %}-{% endif %}</td>
@@ -136,7 +136,7 @@
                                 <th rowspan="1" colspan="1"></th>
                                 <th rowspan="1" colspan="1"></th>
                                 
-                                {% if "infrastrutures-with-latrines-fences" in list_type_search %}
+                                {% if "infrastrutures-with-latrines-fences" in list_type_search or "latrines-and-fences" in list_type_search %}
                                 <th rowspan="1" colspan="1"></th>
                                 <th rowspan="1" colspan="1"></th>
                                 <th rowspan="1" colspan="1"></th>
@@ -150,6 +150,8 @@
                         {% if "infrastrutures-with-latrines-fences" in list_type_search %}
                         <b>{{ total }} ==> {% translate 'Total number of structures/infrastructures without latrines and fences' %}</b><br />
                         <b>{{ total_infrastrutures }} ==> {% translate 'Total number of structures/infrastructures' %}</b><br />
+                        {% endif %}
+                        {% if "infrastrutures-with-latrines-fences" in list_type_search or "latrines-and-fences" in list_type_search %}
                         <b>{{ total_latrine_blocks }} ==> {% translate 'Total latrines' %}</b><br />
                         <b>{{ total_fences }} ==> {% translate 'Total fences' %}</b><br />
                         {% endif %}

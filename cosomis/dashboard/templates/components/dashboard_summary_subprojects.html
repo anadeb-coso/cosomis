@@ -220,7 +220,7 @@
             </div>
         </div>
 
-        <div class="row">
+        {% comment %} <div class="row">
             <div class="col-3">
                 <div class="card mb-0" style="max-width: 540px;">
                     <div class="row no-gutters">
@@ -261,7 +261,7 @@
                                     href="#infrastrutures-with-latrines-fences-not-started" 
                                     data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
                                     style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
-                                    {{ total_infrastrutures_not_started }} ({{ total_latrines_in_progress }}/{{ total_fences_not_started }})
+                                    {{ total_infrastrutures_not_started }} ({{ total_latrines_not_started }}/{{ total_fences_not_started }})
                                 </p>
                             </div>
                         </div>
@@ -321,7 +321,114 @@
                     </div>
                 </div>
             </div>
+        </div> {% endcomment %}
+                <div class="row">
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4">
+                            <img 
+                                src="{% static 'images/infrastructure.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Latrines and fences" %}</h5><br />
+                                <p class="card-title dashboard-model" 
+                                    href="#latrines-and-fences" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                                    {{ total_latrine_blocks }} ({{ total_number_latrine_blocks }}) / {{ total_fences }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="latrines-and-fences-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4">
+                            <img 
+                                src="{% static 'images/infrastructure.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Latrines and fences not start" %}</h5><br />
+                                <p class="card-title text-warning dashboard-model" 
+                                    href="#latrines-and-fences-not-started" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                                    {{ total_latrines_not_started }} ({{ total_number_latrine_not_started }}) / {{ total_fences_not_started }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="latrines-and-fences-not-started-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4">
+                            <img 
+                                src="{% static 'images/infrastructure.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Latrines and fences in progress" %}</h5><br />
+                                <p class="card-title text-info dashboard-model" 
+                                    href="#latrines-and-fences-in-progress" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                                    {{ total_latrines_in_progress }} ({{ total_number_latrine_in_progress }}) / {{ total_fences_in_progress }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="latrines-and-fences-in-progress-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4">
+                            <img 
+                                src="{% static 'images/infrastructure.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 10px;">{% translate "Latrines and fences completed" %}</h5><br />
+                                <p class="card-title text-success dashboard-model" 
+                                    href="#latrines-and-fences-completed" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; cursor: pointer; text-decoration: underline;">
+                                    {{ total_latrines_completed }}({{ total_number_latrine_completed }}) / {{ total_fences_completed }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overlay" id="latrines-and-fences-completed-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div>
+                </div>
+            </div>
         </div>
+
+
+
+
+
         
     </div> 
 </div>
@@ -350,7 +457,13 @@
                                             {% for nbr in elt.data %}
                                                 {% if nbr and nbr != 0 %}
                                                     {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
-                                                    <span style="font-weight: bold;">{{ nbr }}</span> {{ type_structures|get_on_list:forloop.counter0 }}
+                                                    <span style="font-weight: bold;">
+                                                        {{ nbr }}
+                                                        {% if elt.classrooms|get_on_list:forloop.counter0 %} 
+                                                            ({{ elt.classrooms|get_on_list:forloop.counter0 }})
+                                                        {% endif %}
+                                                    </span> 
+                                                    {{ type_structures|get_on_list:forloop.counter0 }}
                                                     {% if forloop.last %}.{% endif %}
                                                 {% endif  %}
                                             {% endfor %}
@@ -361,20 +474,26 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>{% translate "Not start" %}</td>
+                                    <td>{% translate "Completed" %}</td>
                                     <td align="left">
-                                        {% with bars_type_structures|get_on_list:1 as elt %}
+                                        {% with bars_type_structures|get_on_list:3 as elt %}
                                             {% for nbr in elt.data %}
                                                 {% if nbr and nbr != 0 %}
                                                     {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
-                                                    <span style="font-weight: bold;">{{ nbr }}</span> {{ type_structures|get_on_list:forloop.counter0 }}
+                                                    <span style="font-weight: bold;">
+                                                        {{ nbr }}
+                                                        {% if elt.classrooms|get_on_list:forloop.counter0 %} 
+                                                            ({{ elt.classrooms|get_on_list:forloop.counter0 }})
+                                                        {% endif %}
+                                                    </span> 
+                                                    {{ type_structures|get_on_list:forloop.counter0 }}
                                                     {% if forloop.last %}.{% endif %}
                                                 {% endif  %}
                                             {% endfor %}
                                         {% endwith %}
                                     </td>
                                     <td>
-                                        {{ sum_bars_type_structures|get_on_list:1 }}
+                                        {{ sum_bars_type_structures|get_on_list:3 }}
                                     </td>
                                 </tr>
                                 <tr>
@@ -384,7 +503,13 @@
                                             {% for nbr in elt.data %}
                                                 {% if nbr and nbr != 0 %}
                                                     {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
-                                                    <span style="font-weight: bold;">{{ nbr }}</span> {{ type_structures|get_on_list:forloop.counter0 }}
+                                                    <span style="font-weight: bold;">
+                                                        {{ nbr }}
+                                                        {% if elt.classrooms|get_on_list:forloop.counter0 %} 
+                                                            ({{ elt.classrooms|get_on_list:forloop.counter0 }})
+                                                        {% endif %}
+                                                    </span> 
+                                                    {{ type_structures|get_on_list:forloop.counter0 }}
                                                     {% if forloop.last %}.{% endif %}
                                                 {% endif  %}
                                             {% endfor %}
@@ -395,20 +520,26 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>{% translate "Completed" %}</td>
+                                    <td>{% translate "Not start" %}</td>
                                     <td align="left">
-                                        {% with bars_type_structures|get_on_list:3 as elt %}
+                                        {% with bars_type_structures|get_on_list:1 as elt %}
                                             {% for nbr in elt.data %}
                                                 {% if nbr and nbr != 0 %}
                                                     {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
-                                                    <span style="font-weight: bold;">{{ nbr }}</span> {{ type_structures|get_on_list:forloop.counter0 }}
+                                                    <span style="font-weight: bold;">
+                                                        {{ nbr }}
+                                                        {% if elt.classrooms|get_on_list:forloop.counter0 %} 
+                                                            ({{ elt.classrooms|get_on_list:forloop.counter0 }})
+                                                        {% endif %}
+                                                    </span> 
+                                                    {{ type_structures|get_on_list:forloop.counter0 }}
                                                     {% if forloop.last %}.{% endif %}
                                                 {% endif  %}
                                             {% endfor %}
                                         {% endwith %}
                                     </td>
                                     <td>
-                                        {{ sum_bars_type_structures|get_on_list:3 }}
+                                        {{ sum_bars_type_structures|get_on_list:1 }}
                                     </td>
                                 </tr>
                             </tbody>
@@ -460,6 +591,11 @@
             $("#infrastrutures-with-latrines-fences-completed-spin").hide();
             $("#infrastrutures-with-latrines-fences-in-progress-spin").hide();
             $("#infrastrutures-with-latrines-fences-not-started-spin").hide();
+            
+            $("#latrines-and-fences-spin").hide();
+            $("#latrines-and-fences-completed-spin").hide();
+            $("#latrines-and-fences-in-progress-spin").hide();
+            $("#latrines-and-fences-not-started-spin").hide();
             
             $("#infrastruture-completed-spin").hide();
             $("#infrastruture-in-progress-spin").hide();

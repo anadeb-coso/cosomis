@@ -701,7 +701,7 @@ msgstr "Centre De Santé"
 
 #: .\subprojects\templates\components\download_subprojects.html
 msgid "School building at the College"
-msgstr "Batiment Scolaire au CEG"
+msgstr "Bâtiment Scolaire au CEG"
 
 #: .\subprojects\templates\components\download_subprojects.html
 msgid "Track + Bridge"
@@ -709,11 +709,11 @@ msgstr "Piste + Pont"
 
 #: .\subprojects\templates\components\download_subprojects.html
 msgid "School building at the primary level"
-msgstr "Batiment Scolaire au Primaire"
+msgstr "Bâtiment Scolaire au Primaire"
 
 #: .\subprojects\templates\components\download_subprojects.html
 msgid "School building at the Lycée"
-msgstr "Batiment Scolaire au Lycée"
+msgstr "Bâtiment Scolaire au Lycée"
 
 #: .\subprojects\templates\components\download_subprojects.html
 msgid "Water retention"
@@ -1829,7 +1829,7 @@ msgstr "Piste + OF"
 
 #: .\subprojects\components\subproject_tracking_graph.html
 msgid "School building at CEG"
-msgstr "Batiment Scolaire au CEG"
+msgstr "Bâtiment Scolaire au CEG"
 
 #: .\subprojects\components\subproject_tracking_graph.html
 msgid "Photovoltaic drilling (School)"
@@ -1865,11 +1865,11 @@ msgstr "Forage Photovoltaïque (Maraichage)"
 
 #: .\subprojects\components\subproject_tracking_graph.html
 msgid "School building at Lycée"
-msgstr "Batiment Scolaire au Lycée"
+msgstr "Bâtiment Scolaire au Lycée"
 
 #: .\subprojects\components\subproject_tracking_graph.html
 msgid "Primary school building"
-msgstr "Batiment Scolaire au Primaire"
+msgstr "Bâtiment Scolaire au Primaire"
 
 #: .\subprojects\components\subproject_tracking_graph.html
 msgid "Pharmacy"
@@ -2465,7 +2465,7 @@ msgstr "Pompe à motricité humaine (PMH)"
 
 #: .\subprojects
 msgid "Pre-school school building"
-msgstr "Batiment Scolaire au Pré-scolaire"
+msgstr "Bâtiment Scolaire au Pré-scolaire"
 
 #: .\subprojects
 msgid "Linked to allocation"
@@ -2794,3 +2794,19 @@ msgstr "Nombre par type d'ouvrage"
 #: .\subprojects
 msgid "Level"
 msgstr "Niveau"
+
+#: .\subprojects
+msgid "Latrines and fences"
+msgstr "Latrines et clôtures"
+
+#: .\subprojects
+msgid "Latrines and fences not start"
+msgstr "Latrines et clôtures non démarrées"
+
+#: .\subprojects
+msgid "Latrines and fences in progress"
+msgstr "Latrines et clôtures en cours"
+
+#: .\subprojects
+msgid "Latrines and fences completed"
+msgstr "Latrines et clôtures achevées"

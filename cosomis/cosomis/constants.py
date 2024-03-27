@@ -51,25 +51,6 @@ SUB_PROJECT_STATUS_COLOR_TRANSLATE = {
 }
 
 TYPES_OF_SUB_PROJECT_COLOR = {
-    'Forage Photovoltaïque (Boisson)': "#0000ff", #Blue f-blue
-    'Forage Photovoltaïque (Centre communautaire)': "#0000ff", #Blue f-blue
-    'Forage Photovoltaïque (Ecole)': "#0000ff", #Blue f-blue
-    'Forage Photovoltaïque (Latrines)': "#0000ff", #Blue f-blue
-    'Forage Photovoltaïque (Maison des jeunes)': "#0000ff", #Blue f-blue
-    'Forage Photovoltaïque (Maraichage)': "#0000ff", #Blue f-blue
-    'Forage Photovoltaïque (Salle de réunion)': "#0000ff", #Blue f-blue
-    "Retenue d'eau": "#601ee0", #Blueviolet f-Blue violet
-    "Pompe à motricité humaine (PMH)": "#1e90ff", #DodgerBlue f-Bleu cagnard
-
-    'Latrine Communautaire': "#191970", #MidNightBlue f-Blue sombre
-
-    'CMS': "#008200", #Green f-vert
-    'CHP': "#32cd32", #LimeGreen f-Vert de chaux
-    'USP': "#3b7024", #DarkOliveGreen f-Vert olive foncé
-    'Pharmacie': "#006400", #Darkgreen f-vert sombre
-    'Pédiatrie': "#92d492", #DarkSeaGreen f-Vert de mer foncé
-    'Laboratoire': "#00ff00", #Lime f-citron vert
-
 
     # 'Batiment Scolaire au Pré-scolaire': "#808080", #Gray f-Gris
     # 'Batiment Scolaire au Primaire': "#808080", #Gray f-Gris
@@ -81,6 +62,23 @@ TYPES_OF_SUB_PROJECT_COLOR = {
     'Bâtiment Scolaire au CEG': "#808080", #Gray f-Gris
     'Bâtiment Scolaire au Lycée': "#808080", #Gray f-Gris
     
+    'Forage Photovoltaïque (Boisson)': "#0000ff", #Blue f-blue
+    'Forage Photovoltaïque (Centre communautaire)': "#0000ff", #Blue f-blue
+    'Forage Photovoltaïque (Ecole)': "#0000ff", #Blue f-blue
+    'Forage Photovoltaïque (Latrines)': "#0000ff", #Blue f-blue
+    'Forage Photovoltaïque (Maison des jeunes)': "#0000ff", #Blue f-blue
+    'Forage Photovoltaïque (Maraichage)': "#0000ff", #Blue f-blue
+    'Forage Photovoltaïque (Salle de réunion)': "#0000ff", #Blue f-blue
+    "Pompe à motricité humaine (PMH)": "#1e90ff", #DodgerBlue f-Bleu cagnard
+    "Retenue d'eau": "#601ee0", #Blueviolet f-Blue violet
+
+    'CMS': "#008200", #Green f-vert
+    'CHP': "#32cd32", #LimeGreen f-Vert de chaux
+    'USP': "#3b7024", #DarkOliveGreen f-Vert olive foncé
+    'Pharmacie': "#006400", #Darkgreen f-vert sombre
+    'Pédiatrie': "#92d492", #DarkSeaGreen f-Vert de mer foncé
+    'Laboratoire': "#00ff00", #Lime f-citron vert
+
     
     'Extension réseau électrique': "#ffff00", #Yellow f-jaune
     'Lampadaires solaire': "#9c9c14", #DarkYellow f-jaune sombre
@@ -96,6 +94,8 @@ TYPES_OF_SUB_PROJECT_COLOR = {
     'Reboisement': "#faf0e6", #Linen f-Lin
 
     'Piste/OF': "#000000", #Black f-noire
+
+    'Latrine Communautaire': "#191970", #MidNightBlue f-Blue sombre
 }
 
 
@@ -103,23 +103,14 @@ TYPES_OF_STRUCTURE_COLOR = {
     'Bâtiment Scolaire': "#808080", #Gray f-Gris
     
     'Forage Photovoltaïque': "#0000ff", #Blue f-blue
-    
-    'Latrine Scolaire': "#2f4f4f", #darkSlategray f-Gris sombre
-    
-    'Clôture Scolaire': "#000000",
-    
-    'Latrine Communautaire': "#191970", #MidNightBlue f-Blue sombre
-    
-    "Retenue d'eau": "#601ee0", #Blueviolet f-Blue violet
-    
     "Pompe à motricité humaine (PMH)": "#1e90ff", #DodgerBlue f-Bleu cagnard
+    "Retenue d'eau": "#601ee0", #Blueviolet f-Blue violet
     
     'CMS': "#008200", #Green f-vert
     'CHP': "#32cd32", #LimeGreen f-Vert de chaux
     'USP': "#3b7024", #DarkOliveGreen f-Vert olive foncé
     'Pharmacie': "#006400", #Darkgreen f-vert sombre
     'Pédiatrie': "#92d492", #DarkSeaGreen f-Vert de mer foncé
-    'Clôture Pédiatrie': "#000000",
     'Laboratoire': "#00ff00", #Lime f-citron vert
     
     'Extension réseau électrique': "#ffff00", #Yellow f-jaune
@@ -127,15 +118,20 @@ TYPES_OF_STRUCTURE_COLOR = {
 
     'Centre Communautaire': "#ffa500", #Orange f-orange
     'Salle de réunion': "#a75e06", #DarkOrange f-Orange sombre
-
     'Maison des jeunes': "#ff0000", #Red f-rouge
     'Terrain de Foot': "#7a1212", #DarkRed f-rouge sombre
 
     'Magasin De Stockage': "#800080", #Purple f-Violet
-    
     'Reboisement': "#faf0e6", #Linen f-Lin
 
     'Piste/OF': "#000000", #Black f-noire
+    
+    'Latrine Communautaire': "#191970", #MidNightBlue f-Blue sombre
+    'Latrine Scolaire': "#2f4f4f", #darkSlategray f-Gris sombre
+    
+    'Clôture Scolaire': "#000000",
+    'Clôture Pédiatrie': "#000000",
+    
 }
 
 CURRENCY_UNIT = 'FCFA' #currency unit global variable
