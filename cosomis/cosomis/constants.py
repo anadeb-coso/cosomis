@@ -135,3 +135,7 @@ TYPES_OF_STRUCTURE_COLOR = {
 }
 
 CURRENCY_UNIT = 'FCFA' #currency unit global variable
+
+STRUCTURE_NOT_START_STATUS = ['Identifié']
+STRUCTURE_IN_PROGRESS_STATUS = ['En cours']
+STRUCTURE_COMPLETED_STATUS = ["Achevé", "Réception technique", "Réception provisoire", "Réception définitive"]

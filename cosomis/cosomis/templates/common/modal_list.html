@@ -1,7 +1,7 @@
 
 <div id="subprojects-data">
 {% load bootstrap4 static custom_tags i18n %}
-{% make_list "subprojects-number" as describe_amount %}
+{% make_list "subprojects-number" "subprojects-completed" "subprojects-in-progress" "subprojects-not-started" as describe_amount %}
 <script src="{% static 'js/disableOnSubmit.js' %}"></script>
 <style>
     #table-subprojects tr td, #table-subprojects tr th {

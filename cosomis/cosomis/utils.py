@@ -391,14 +391,24 @@ def set_projects_images():
 
 
 
-def delete_subproject_step_training():
-    start_date = timezone.make_aware(datetime.datetime(2023, 12, 15), timezone=timezone.get_current_timezone())
-    end_date = timezone.make_aware(datetime.datetime(2024, 3, 18), timezone=timezone.get_current_timezone())
+# def delete_subproject_step_training():
+#     start_date = timezone.make_aware(datetime.datetime(2023, 12, 15), timezone=timezone.get_current_timezone())
+#     end_date = timezone.make_aware(datetime.datetime(2024, 3, 18), timezone=timezone.get_current_timezone())
     
-    objects_within_period = SubprojectStep.objects.filter(created_date__range=[start_date, end_date])
-    print(objects_within_period.count())
-    objects_within_period.delete()
+#     objects_within_period = SubprojectStep.objects.filter(created_date__range=[start_date, end_date])
+#     print(objects_within_period.count())
+#     objects_within_period.delete()
     
-    objects_within_period = SubprojectStep.objects.filter(updated_date__range=[start_date, end_date])
-    print(objects_within_period.count())
-    objects_within_period.delete()
+#     objects_within_period = SubprojectStep.objects.filter(updated_date__range=[start_date, end_date])
+#     print(objects_within_period.count())
+#     objects_within_period.delete()
+    
+def change_subproject_attr_val_non_entame_to_identifie():
+    print("Start change_subproject_attr_val_non_entame_to_identifie!")
+    subprojects = Subproject.objects.filter(current_status_of_the_site='Non entamé')
+    for subproject in subprojects:
+        # print(subproject.full_title_of_approved_subproject)
+        subproject.current_status_of_the_site = "Identifié"
+        subproject.save()
+    print()
+    print("Done !")
