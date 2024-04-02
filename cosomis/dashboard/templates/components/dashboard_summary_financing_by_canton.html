@@ -2,6 +2,11 @@
 
 <br />
 <div class="row">
+    {% comment %} <div class="col-3">
+        <div class="card mb-0">
+            {% include 'components/chartPie.html' with componentId='8' datas=pie_graphes|get_on_list:0 sectors_colors=administrative_level_colors %}
+        </div>
+    </div> {% endcomment %}
     <div class="col-12">
         <div class="card mb-0">
             {% comment %} <div class="card-header">
@@ -38,7 +43,7 @@
 
 
 
-<div class="card">
+{% comment %} <div class="card">
     <div class="card-body">
         <div class="tab-pane" id="p-diagnostics">
             {% include 'common/under_construction_col.html' %}
@@ -47,4 +52,4 @@
     <div class="overlay" >
         <i class="fas fa-2x fa-sync-alt fa-spin"></i>
     </div>
-</div>
+</div> {% endcomment %}

@@ -267,12 +267,17 @@
 <br />
 
 <div class="row">
-    <div class="col-12">
+    <div class="col-9">
         <div class="card mb-0">
             {% comment %} <div class="card-header">
                 <p class="font-weight-bold">{% translate "Amount of subprojects in relation to infrastructure by sector" %}</p>
             </div> {% endcomment %}
             {% include 'components/chartBar.html' with componentId='3' datas=amount_subproject_infrastrutures type_bar='vertical' %}
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="card mb-0">
+            {% include 'components/chartPie.html' with componentId='7' datas=pie_graphes|get_on_list:4 sectors_colors=SUB_PROJECT_SECTORS_COLOR %}
         </div>
     </div>
 </div>

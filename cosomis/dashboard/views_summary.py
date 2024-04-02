@@ -534,8 +534,8 @@ class DashboardFinancingListView(DashboardSubprojectsMixin, AJAXRequestMixin, Lo
                 'type': _("Wording"),
                 'type_value_label': _("Amount"),
                 'title': _("Amount of infrastructures by status") + f" {component}",
-                'labels': [_("Allocation"), _("Spent")],
-                'data': [financing_components[component]['total_allocations_cantons'], financing_components[component]['total_amount_subprojects_contract_amount_work_companies']],
+                'labels': [_("Residual"), _("Spent")],
+                'data': [financing_components[component]['total_amount_residual'], financing_components[component]['total_amount_subprojects_contract_amount_work_companies']],
                 'sorted': 0
             })
             
@@ -556,7 +556,7 @@ class DashboardFinancingListView(DashboardSubprojectsMixin, AJAXRequestMixin, Lo
         
         
         ctx['amount_subproject_infrastrutures'] = {
-            'title': _("Amount of subprojects in relation to infrastructure by sector"),
+            'title': _("Amount of infrastructures by sector"),
             'labels': sectors,
             'bars': [
                 {
@@ -573,15 +573,26 @@ class DashboardFinancingListView(DashboardSubprojectsMixin, AJAXRequestMixin, Lo
             'type': _("Wording"),
             'type_value_label': _("Amount"),
             'title': _("Amount of infrastructures by status"),
-            'labels': [_("Allocation"), _("Spent")],
-            'data': [ctx['total_allocations_cantons'], ctx['total_amount_subprojects_contract_amount_work_companies']],
+            'labels': [_("Residual"), _("Spent")],
+            'data': [ctx['total_amount_residual'], ctx['total_amount_subprojects_contract_amount_work_companies']],
             'sorted': 0
+        })
+        
+        ctx['pie_graphes'].append({
+            'type': _("Sectors"),
+            'type_value_label': _("Amount"),
+            'title': _("Amount of infrastructures by sector"),
+            'labels': sectors,
+            'data': ctx['amount_subproject_infrastrutures']['bars'][0]['data'],
+            'sorted': 1,
+            'columnSorted': 1
         })
 
         ctx['administrative_level_id'] = self.request.GET.getlist('administrative_level_id[]', [])
         administrative_level_type = self.request.GET.get('administrative_level_type', 'All').title()
         ctx['administrative_level_type'] = "All" if administrative_level_type in ("", "null", "undefined") else administrative_level_type
         ctx['FINANCING_COLOR'] = FINANCING_COLOR
+        ctx['SUB_PROJECT_SECTORS_COLOR'] = SUB_PROJECT_SECTORS_COLOR
         return ctx
 
 
@@ -736,10 +747,50 @@ class DashboardFinancingListByCantonView(DashboardSubprojectsMixin, AJAXRequestM
         }
         
         
+        # ctx['pie_graphes'] = [
+        #     {
+        #         'type': _("Locality"),
+        #         'type_value_label': _("Amount"),
+        #         'title': _("Presentation of allocations by canton - Component 1.1"),
+        #         'labels': [adl.name for adl in admls],
+        #         'data': ctx['amount_cantons_component_1_1']['bars'][0]['data'],
+        #         'sorted': 1,
+        #         'columnSorted': 1
+        #     },
+        #     {
+        #         'type': _("Locality"),
+        #         'type_value_label': _("Amount"),
+        #         'title': _("Presentation of allocations by canton - Component 1.2"),
+        #         'labels': [adl.name for adl in admls],
+        #         'data': ctx['amount_cantons_component_1_2']['bars'][0]['data'],
+        #         'sorted': 1,
+        #         'columnSorted': 1
+        #     },
+        #     {
+        #         'type': _("Locality"),
+        #         'type_value_label': _("Amount"),
+        #         'title': _("Presentation of allocations by canton - Component 1.3"),
+        #         'labels': [adl.name for adl in admls],
+        #         'data': ctx['amount_cantons_component_1_3']['bars'][0]['data'],
+        #         'sorted': 1,
+        #         'columnSorted': 1
+        #     }
+        # ]
+        
         
         ctx['administrative_level_id'] = self.request.GET.getlist('administrative_level_id[]', [])
         administrative_level_type = self.request.GET.get('administrative_level_type', 'All').title()
         ctx['administrative_level_type'] = "All" if administrative_level_type in ("", "null", "undefined") else administrative_level_type
+        
+        # ctx['administrative_level_colors'] = {}
+        # adl_colors = list(SUB_PROJECT_SECTORS_COLOR.values())*5
+        # _admls = admls[:]
+        # for i in range(len(_admls)):
+        #     try:
+        #         ctx['administrative_level_colors'][_admls[i].name] = adl_colors[i]
+        #     except:
+        #         ctx['administrative_level_colors'][_admls[i].name] = '#000000'
+            
         return ctx
 
 

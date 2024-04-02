@@ -2853,8 +2853,12 @@ msgstr "Représentation par type d'ouvrage"
 
 #: .\subprojects
 msgid "Amount of subprojects in relation to infrastructure by sector"
-msgstr "Montant des sous-projets liés à l'infrastructure par secteur"
+msgstr "Montant des sous-projets par rapport aux infrastructures par secteur"
 
 #: .\subprojects
 msgid "Amount of infrastructures by status"
 msgstr "Nombre d'infrastructures par statut"
+
+#: .\subprojects
+msgid "Amount of infrastructures by sector"
+msgstr "Montant des infrastructures par secteur"

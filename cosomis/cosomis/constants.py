@@ -154,7 +154,12 @@ SUB_PROJECT_SECTORS_COLOR = {
 
 FINANCING_COLOR = {
     'Allocation': '#0000ff', #Blue f-blue
-    'Reste': '#000000', #Black f-noire
+    'Residual': '#000000', #Black f-noire
+    'Spent': '#008200', #Green f-vert
+    'Estimate': "#ff0000", #Red f-Rouge
+    
+    'Allocation': '#0000ff', #Blue f-blue
+    'Reliquat': '#000000', #Black f-noire
     'Dépensés': '#008200', #Green f-vert
     'Estimé': "#ff0000", #Red f-Rouge
 }
