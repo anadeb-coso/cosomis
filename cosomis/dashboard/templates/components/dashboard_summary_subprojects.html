@@ -10,6 +10,9 @@
     }
 </style>
 
+
+
+
 <div class="card">
     <div class="card-body">
 
@@ -433,151 +436,323 @@
     </div> 
 </div>
 
-<br />
-<div class="row">
-    <div class="col-12">
-        <div class="card mb-0">
 
-        <div class="row">
-            <div class="col-12">
-                <div class="card mb-0">
-                        <table class="table border-0">
-                            <thead>
-                                <tr>
-                                    <th>{% translate "Level" %}</th>
-                                    <th>{% translate "Number by type of structure" %}</th>
-                                    <th>{% translate "Total" %}</th>
-                                <tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>{% translate "Identified" %}</td>
-                                    <td align="left">
-                                        {% with bars_type_structures|get_on_list:0 as elt %}
-                                            {% for nbr in elt.data %}
-                                                {% if nbr and nbr != 0 %}
-                                                    {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
-                                                    <span style="font-weight: bold;">
-                                                        {{ nbr }}
-                                                        {% if elt.classrooms|get_on_list:forloop.counter0 %} 
-                                                            ({{ elt.classrooms|get_on_list:forloop.counter0 }})
-                                                        {% endif %}
-                                                    </span> 
-                                                    {{ type_structures|get_on_list:forloop.counter0 }}
-                                                    {% if forloop.last %}.{% endif %}
-                                                {% endif  %}
-                                            {% endfor %}
-                                        {% endwith %}
-                                    </td>
-                                    <td>
-                                        {{ sum_bars_type_structures|get_on_list:0 }}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>{% translate "Completed" %}</td>
-                                    <td align="left">
-                                        {% with bars_type_structures|get_on_list:3 as elt %}
-                                            {% for nbr in elt.data %}
-                                                {% if nbr and nbr != 0 %}
-                                                    {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
-                                                    <span style="font-weight: bold;">
-                                                        {{ nbr }}
-                                                        {% if elt.classrooms|get_on_list:forloop.counter0 %} 
-                                                            ({{ elt.classrooms|get_on_list:forloop.counter0 }})
-                                                        {% endif %}
-                                                    </span> 
-                                                    {{ type_structures|get_on_list:forloop.counter0 }}
-                                                    {% if forloop.last %}.{% endif %}
-                                                {% endif  %}
-                                            {% endfor %}
-                                        {% endwith %}
-                                    </td>
-                                    <td>
-                                        {{ sum_bars_type_structures|get_on_list:3 }}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>{% translate "In progress" %}</td>
-                                    <td align="left">
-                                        {% with bars_type_structures|get_on_list:2 as elt %}
-                                            {% for nbr in elt.data %}
-                                                {% if nbr and nbr != 0 %}
-                                                    {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
-                                                    <span style="font-weight: bold;">
-                                                        {{ nbr }}
-                                                        {% if elt.classrooms|get_on_list:forloop.counter0 %} 
-                                                            ({{ elt.classrooms|get_on_list:forloop.counter0 }})
-                                                        {% endif %}
-                                                    </span> 
-                                                    {{ type_structures|get_on_list:forloop.counter0 }}
-                                                    {% if forloop.last %}.{% endif %}
-                                                {% endif  %}
-                                            {% endfor %}
-                                        {% endwith %}
-                                    </td>
-                                    <td>
-                                        {{ sum_bars_type_structures|get_on_list:2 }}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>{% translate "Not start" %}</td>
-                                    <td align="left">
-                                        {% with bars_type_structures|get_on_list:1 as elt %}
-                                            {% for nbr in elt.data %}
-                                                {% if nbr and nbr != 0 %}
-                                                    {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
-                                                    <span style="font-weight: bold;">
-                                                        {{ nbr }}
-                                                        {% if elt.classrooms|get_on_list:forloop.counter0 %} 
-                                                            ({{ elt.classrooms|get_on_list:forloop.counter0 }})
-                                                        {% endif %}
-                                                    </span> 
-                                                    {{ type_structures|get_on_list:forloop.counter0 }}
-                                                    {% if forloop.last %}.{% endif %}
-                                                {% endif  %}
-                                            {% endfor %}
-                                        {% endwith %}
-                                    </td>
-                                    <td>
-                                        {{ sum_bars_type_structures|get_on_list:1 }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+
+
+<br />
+
+<div class="card">
+
+
+    <div class="container">
+        <ul class="nav nav-tabs">
+            <li style="width: 50%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link active nav-tab-toggle" data-toggle="tab" href="#representation_by_sectors" >{% translate "Representation by sector" %}</a></li>
+            <li style="width: 50%;" class="nav-item btn"><a style="font-size: 11px;" class="nav-link nav-tab-toggle" data-toggle="tab" href="#representation_by_type_of_structure" >{% translate "Representation by type of structure" %}</a></li>
+        </ul>
+
+        <div class="tab-content">
+
+                    
+            <div id="representation_by_sectors" class="tab-pane active">
+
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card mb-0">
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="card mb-0">
+                                            <table class="table  table-striped table-secondary table-bordered">
+                                                <thead>
+                                                    <tr>
+                                                        <th>{% translate "Level" %}</th>
+                                                        <th>{% translate "Number of structure by sector" %}</th>
+                                                        <th>{% translate "Total" %}</th>
+                                                    <tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for status, sectors in number_subproject_infrastrutures_by_sectors_and_type.items %}
+                                                    <tr>
+                                                        <td>{{ status }}</td>
+                                                        <td align="left">
+                                                            {% for sector, typess in sectors.items %}
+                                                                {% if sector != "total" %}
+                                                                    {% with typess|get:"total" as total %}
+                                                                    {% if total|get:"infrastructures_with_latrines_and_fences" %}
+                                                                        {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
+                                                                        <span title='({{ total|get:"subprojects" }} | {{ total|get:"infrastructures" }} | {{ total|get:"infrastructures_with_latrines_and_fences" }})'>
+                                                                            <span style="font-weight: bold;">
+                                                                                {{ total|get:"infrastructures_with_latrines_and_fences" }} 
+                                                                            </span> {{ sector }}
+                                                                        </span>
+                                                                        {% if forloop.last %}.{% endif %}
+                                                                    {% endif  %}
+                                                                    {% endwith %}
+                                                                {% else  %}
+                                                                .
+                                                                {% endif  %}
+                                                            {% endfor %}
+                                                        </td>
+                                                        <td>
+                                                            {% with sectors|get:"total" as total %}
+                                                                {{ total }}
+                                                            {% endwith %}
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                        </div>
                     </div>
                 </div>
+
+                <div class="row">
+                    <div class="col-6">
+                        <div class="card mb-0">
+                            {% include 'components/chartPie.html' with componentId='1' datas=pie_graphes|get_on_list:0 sectors_colors=SUB_PROJECT_STATUS_COLOR_TRANSLATE %}
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card mb-0">
+                            {% include 'components/chartPie.html' with componentId='2' datas=pie_graphes|get_on_list:1 sectors_colors=SUB_PROJECT_SECTORS_COLOR %}
+                        </div>
+                    </div>
+                </div>
+
+                <br />
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card mb-0">
+                            {% include 'components/chartBar.html' with componentId='1' datas=number_subproject_infrastrutures %}
+                        </div>
+                    </div>
+                </div>
+
+                <br />
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card mb-0">
+                            {% include 'components/chartBar.html' with componentId='2' datas=amount_subproject_infrastrutures %}
+                        </div>
+                    </div>
+                </div>
+
+                <br />
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card mb-0">
+                                <table class="table table-striped table-secondary table-bordered">
+                                    <thead >
+                                        <tr>
+                                            <th>{% translate "Level" %}</th>
+                                            <th>{% translate "Number by type of structure" %}</th>
+                                            <th>{% translate "Total" %}</th>
+                                        <tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for status, sectors in number_subproject_infrastrutures_by_sectors_and_type.items %}
+                                        <tr>
+                                            <td>{{ status }}</td>
+                                            <td align="left">
+                                                {% for sector, typess in sectors.items %}
+                                                    {% if sector != "total" %}
+                                                        {% with typess|get:"total" as total %}
+                                                        {% if total|get:"infrastructures_with_latrines_and_fences" %}
+                                                            <span style="font-weight: bold;">{{ forloop.counter }}-/ {{ sector }} (
+                                                                {{ total|get:"subprojects" }} | 
+                                                                {{ total|get:"infrastructures" }} | 
+                                                                {{ total|get:"infrastructures_with_latrines_and_fences" }}
+                                                            ) : </span> 
+                                                            {% with typess|get:"types" as types %}
+                                                                {% for type_infra, nbr in types.items %}
+                                                                    {% if nbr and nbr != 0 %}
+                                                                        {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
+                                                                        <span style="font-weight: bold;">
+                                                                            {{ nbr }}
+                                                                            {% comment %} {% if elt.classrooms|get_on_list:forloop.counter0 %} 
+                                                                                ({{ elt.classrooms|get_on_list:forloop.counter0 }})
+                                                                            {% endif %} {% endcomment %}
+                                                                        </span> 
+                                                                        {{ type_infra }}
+                                                                        {% if forloop.last %}.{% endif %}
+                                                                    {% endif  %}
+                                                                {% endfor %}
+                                                            {% endwith %}
+                                                            <br />
+                                                        {% endif  %}
+                                                        {% endwith %}
+                                                    {% endif  %}
+                                                {% endfor %}
+                                            </td>
+                                            <td>
+                                                {% with sectors|get:"total" as total %}
+                                                    {{ total }}
+                                                {% endwith %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                        </div>
+                    </div>
+                </div>
+
+
             </div>
+
+
+            <div id="representation_by_type_of_structure" class="tab-pane">
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card mb-0">
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="card mb-0">
+                                            <table class="table border-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>{% translate "Level" %}</th>
+                                                        <th>{% translate "Number by type of structure" %}</th>
+                                                        <th>{% translate "Total" %}</th>
+                                                    <tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>{% translate "Identified" %}</td>
+                                                        <td align="left">
+                                                            {% with bars_type_structures|get_on_list:0 as elt %}
+                                                                {% for nbr in elt.data %}
+                                                                    {% if nbr and nbr != 0 %}
+                                                                        {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
+                                                                        <span style="font-weight: bold;">
+                                                                            {{ nbr }}
+                                                                            {% if elt.classrooms|get_on_list:forloop.counter0 %} 
+                                                                                ({{ elt.classrooms|get_on_list:forloop.counter0 }})
+                                                                            {% endif %}
+                                                                        </span> 
+                                                                        {{ type_structures|get_on_list:forloop.counter0 }}
+                                                                        {% if forloop.last %}.{% endif %}
+                                                                    {% endif  %}
+                                                                {% endfor %}
+                                                            {% endwith %}
+                                                        </td>
+                                                        <td>
+                                                            {{ sum_bars_type_structures|get_on_list:0 }}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>{% translate "Completed" %}</td>
+                                                        <td align="left">
+                                                            {% with bars_type_structures|get_on_list:3 as elt %}
+                                                                {% for nbr in elt.data %}
+                                                                    {% if nbr and nbr != 0 %}
+                                                                        {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
+                                                                        <span style="font-weight: bold;">
+                                                                            {{ nbr }}
+                                                                            {% if elt.classrooms|get_on_list:forloop.counter0 %} 
+                                                                                ({{ elt.classrooms|get_on_list:forloop.counter0 }})
+                                                                            {% endif %}
+                                                                        </span> 
+                                                                        {{ type_structures|get_on_list:forloop.counter0 }}
+                                                                        {% if forloop.last %}.{% endif %}
+                                                                    {% endif  %}
+                                                                {% endfor %}
+                                                            {% endwith %}
+                                                        </td>
+                                                        <td>
+                                                            {{ sum_bars_type_structures|get_on_list:3 }}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>{% translate "In progress" %}</td>
+                                                        <td align="left">
+                                                            {% with bars_type_structures|get_on_list:2 as elt %}
+                                                                {% for nbr in elt.data %}
+                                                                    {% if nbr and nbr != 0 %}
+                                                                        {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
+                                                                        <span style="font-weight: bold;">
+                                                                            {{ nbr }}
+                                                                            {% if elt.classrooms|get_on_list:forloop.counter0 %} 
+                                                                                ({{ elt.classrooms|get_on_list:forloop.counter0 }})
+                                                                            {% endif %}
+                                                                        </span> 
+                                                                        {{ type_structures|get_on_list:forloop.counter0 }}
+                                                                        {% if forloop.last %}.{% endif %}
+                                                                    {% endif  %}
+                                                                {% endfor %}
+                                                            {% endwith %}
+                                                        </td>
+                                                        <td>
+                                                            {{ sum_bars_type_structures|get_on_list:2 }}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>{% translate "Not start" %}</td>
+                                                        <td align="left">
+                                                            {% with bars_type_structures|get_on_list:1 as elt %}
+                                                                {% for nbr in elt.data %}
+                                                                    {% if nbr and nbr != 0 %}
+                                                                        {% if forloop.first %}{% elif forloop.last %} {% translate 'And' %} {% else %}, {% endif %}
+                                                                        <span style="font-weight: bold;">
+                                                                            {{ nbr }}
+                                                                            {% if elt.classrooms|get_on_list:forloop.counter0 %} 
+                                                                                ({{ elt.classrooms|get_on_list:forloop.counter0 }})
+                                                                            {% endif %}
+                                                                        </span> 
+                                                                        {{ type_structures|get_on_list:forloop.counter0 }}
+                                                                        {% if forloop.last %}.{% endif %}
+                                                                    {% endif  %}
+                                                                {% endfor %}
+                                                            {% endwith %}
+                                                        </td>
+                                                        <td>
+                                                            {{ sum_bars_type_structures|get_on_list:1 }}
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+
+                <br />
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card mb-0">
+                            {% include 'components/chartBar.html' with componentId='7' datas=number_structures_by_type %}
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+            </div>
+
+
         </div>
+
+
     </div>
+
+
+
+        
 </div>
 
 
-<br />
-<div class="row">
-    <div class="col-12">
-        <div class="card mb-0">
-            {% include 'components/chartBar.html' with componentId='1' datas=number_subproject_infrastrutures %}
-        </div>
-    </div>
-</div>
-
-<br />
-<div class="row">
-    <div class="col-12">
-        <div class="card mb-0">
-            {% include 'components/chartBar.html' with componentId='2' datas=amount_subproject_infrastrutures %}
-        </div>
-    </div>
-</div>
-
-<br />
-<div class="row">
-    <div class="col-12">
-        <div class="card mb-0">
-            {% include 'components/chartBar.html' with componentId='7' datas=number_structures_by_type %}
-        </div>
-    </div>
-</div>
 
 
     <script type="text/javascript">

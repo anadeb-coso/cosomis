@@ -359,7 +359,7 @@ class DashboardSubprojectsSectorsAndStepsListView(DashboardSubprojectsMixin, AJA
             )
             datas[_("Companies")][count] = subproject.name_of_the_awarded_company_works_companies if subproject.name_of_the_awarded_company_works_companies else "-"
             datas[_("Estimated cost") + " FCFA"][count] = subproject.estimated_cost if subproject.estimated_cost else 0
-            datas[_("Amount FCFA TTC")][count] = subproject.exact_amount_spent if subproject.exact_amount_spent else 0
+            datas[_("Amount FCFA TTC")][count] = subproject.contract_amount_work_companies if subproject.contract_amount_work_companies else 0
             
             step_level = subproject.get_current_subproject_step_and_level_object
             

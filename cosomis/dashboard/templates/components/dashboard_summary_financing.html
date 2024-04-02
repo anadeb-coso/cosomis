@@ -14,7 +14,7 @@
     <div class="card-body">
 
         <div class="row">
-            <div class="col-4">
+            <div class="col-3">
                 <div class="card mb-0" style="max-width: 540px;">
                     <div class="row no-gutters">
                         <div class="col-md-4 ">
@@ -24,11 +24,11 @@
                         </div>
                         <div class="col-md-8">
                             <div class="card-body">
-                                <h5 class="card-title" style="font-size: 10px;">{% translate "Amount allocated to cantons" %}</h5><br />
+                                <h5 class="card-title" style="font-size: 8px;">{% translate "Allocations to cantons" %}</h5><br />
                                 <p class="card-title dashboard-model" 
                                     href="#cantons-amounts-allocation" 
                                     data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
-                                    style="font-weight: bold !important;">
+                                    style="font-weight: bold !important; font-size: 11px;">
                                     {{ total_allocations_cantons|separate_with_space:"CFA" }}
                                 </p>
                             </div>
@@ -39,7 +39,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-4">
+            <div class="col-3">
                 <div class="card mb-0" style="max-width: 540px;">
                     <div class="row no-gutters">
                         <div class="col-md-4 ">
@@ -49,12 +49,38 @@
                         </div>
                         <div class="col-md-8">
                             <div class="card-body">
-                                <h5 class="card-title" style="font-size: 10px;">{% translate "Amount allocated to sub-projects" %}</h5><br />
+                                <h5 class="card-title" style="font-size: 8px;">{% translate "Estimated" %}</h5><br />
+                                <p class="card-title dashboard-model" 
+                                    href="#amount-remaining-after-allocation" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; font-size: 11px;">
+                                    {{ total_amount_subprojects_estimated_cost|separate_with_space:"CFA" }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% comment %} <div class="overlay" id="amount-remaining-after-allocation-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div> {% endcomment %}
+                </div>
+            </div>
+            
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4 ">
+                            <img 
+                                src="{% static 'images/financing_to_building.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 8px;">{% translate "Spent" %}</h5><br />
                                 <p class="card-title dashboard-model" 
                                     href="#subprojects-amounts-allocation" 
                                     data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
-                                    style="font-weight: bold !important;">
-                                    {{ total_amount_subprojects_estimated_cost|separate_with_space:"CFA" }}
+                                    style="font-weight: bold !important; font-size: 11px;">
+                                    {{ total_amount_subprojects_contract_amount_work_companies|separate_with_space:"CFA" }}
                                 </p>
                             </div>
                         </div>
@@ -64,7 +90,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-4">
+            <div class="col-3">
                 <div class="card mb-0" style="max-width: 540px;">
                     <div class="row no-gutters">
                         <div class="col-md-4 ">
@@ -74,12 +100,12 @@
                         </div>
                         <div class="col-md-8">
                             <div class="card-body">
-                                <h5 class="card-title" style="font-size: 10px;">{% translate "Amount remaining after allocation" %}</h5><br />
+                                <h5 class="card-title" style="font-size: 8px;">{% translate "Residual" %}</h5><br />
                                 <p class="card-title dashboard-model" 
                                     href="#amount-remaining-after-allocation" 
                                     data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
-                                    style="font-weight: bold !important;">
-                                    {{ total_amount_remaining_after_allocation|separate_with_space:"CFA" }}
+                                    style="font-weight: bold !important; font-size: 11px;">
+                                    {{ total_amount_residual|separate_with_space:"CFA" }}
                                 </p>
                             </div>
                         </div>
@@ -92,11 +118,154 @@
             
         </div>
 
+
+        {% for compo, compo_vals in financing_components.items %}
+        <div class="row">
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4 ">
+                            <img 
+                                src="{% static 'images/financing_to.jpg' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 8px;">{% translate "Allocations to cantons" %} ({{ compo }})</h5><br />
+                                <p class="card-title dashboard-model" 
+                                    href="#cantons-amounts-allocation" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; font-size: 11px;">
+                                    {% with compo_vals|get:"total_allocations_cantons" as v %}
+                                        {{ v|separate_with_space:"CFA" }}
+                                    {% endwith %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% comment %} <div class="overlay" id="cantons-amounts-allocation-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div> {% endcomment %}
+                </div>
+            </div>
+            
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4 ">
+                            <img 
+                                src="{% static 'images/financing_to_building.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 8px;">{% translate "Estimated" %}</h5><br />
+                                <p class="card-title dashboard-model" 
+                                    href="#amount-remaining-after-allocation" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; font-size: 11px;">
+                                    {% with compo_vals|get:"total_amount_subprojects_estimated_cost" as v %}
+                                        {{ v|separate_with_space:"CFA" }}
+                                    {% endwith %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% comment %} <div class="overlay" id="amount-remaining-after-allocation-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div> {% endcomment %}
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4 ">
+                            <img 
+                                src="{% static 'images/financing_to_building.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 8px;">{% translate "Spent" %}</h5><br />
+                                <p class="card-title dashboard-model" 
+                                    href="#subprojects-amounts-allocation" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; font-size: 11px;">
+                                    {% with compo_vals|get:"total_amount_subprojects_contract_amount_work_companies" as v %}
+                                        {{ v|separate_with_space:"CFA" }}
+                                    {% endwith %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% comment %} <div class="overlay" id="subprojects-amounts-allocation-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div> {% endcomment %}
+                </div>
+            </div>
+            
+            <div class="col-3">
+                <div class="card mb-0" style="max-width: 540px;">
+                    <div class="row no-gutters">
+                        <div class="col-md-4 ">
+                            <img 
+                                src="{% static 'images/financing_remain.png' %}" 
+                                class="card-img card_image_transparent" alt="infrastructure">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="card-body">
+                                <h5 class="card-title" style="font-size: 8px;">{% translate "Residual" %}</h5><br />
+                                <p class="card-title dashboard-model" 
+                                    href="#amount-remaining-after-allocation" 
+                                    data-href="{% url 'dashboard:dashboard_summary_subprojects_details' %}"
+                                    style="font-weight: bold !important; font-size: 11px;">
+                                    {% with compo_vals|get:"total_amount_residual" as v %}
+                                        {{ v|separate_with_space:"CFA" }}
+                                    {% endwith %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% comment %} <div class="overlay" id="amount-remaining-after-allocation-spin">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div> {% endcomment %}
+                </div>
+            </div>
+            
+        </div>
+        {% endfor %}
+
         
     </div> 
 </div>
 
 <br />
+
+<div class="row">
+    <div class="col-3">
+        <div class="card mb-0">
+            {% include 'components/chartPie.html' with componentId='6' datas=pie_graphes|get_on_list:3 sectors_colors=FINANCING_COLOR %}
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="card mb-0">
+            {% include 'components/chartPie.html' with componentId='3' datas=pie_graphes|get_on_list:0 sectors_colors=FINANCING_COLOR %}
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="card mb-0">
+            {% include 'components/chartPie.html' with componentId='4' datas=pie_graphes|get_on_list:1 sectors_colors=FINANCING_COLOR %}
+        </div>
+    </div>
+    <div class="col-3">
+        <div class="card mb-0">
+            {% include 'components/chartPie.html' with componentId='5' datas=pie_graphes|get_on_list:2 sectors_colors=FINANCING_COLOR %}
+        </div>
+    </div>
+</div>
+
+<br />
+
 <div class="row">
     <div class="col-12">
         <div class="card mb-0">

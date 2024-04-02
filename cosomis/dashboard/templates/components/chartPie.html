@@ -1,0 +1,272 @@
+{% load static i18n bootstrap4 custom_tags %}
+
+{% comment %} <div id="div_pie_{{ componentId }}">
+  <canvas id="pie_chart_{{ componentId }}" class="bar-pie" ></canvas>
+</div> {% endcomment %}
+<style>
+  .table-responsive td, .table-responsive th, .table-responsive p, .table-responsive span, .table-responsive a, .table-responsive div {
+    font-size: 9px !important;
+  }
+</style>
+<div class="row">
+
+
+                    <div class="col-lg-12" style="margin-left: auto !important;margin-right: auto !important;">
+                        <div class="card">
+                            {% comment %} <div class="card-header border-0">
+                                <div class="card-title">
+                                    <div class="pt-1 lh25 text-primary text-bold-family" style="font-size: 11px;">
+                                        {{ datas.title }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="status_pie_chart" class="pie-chart"></canvas>
+                            </div> {% endcomment %}
+                            <canvas id="status_pie_chart_{{ componentId }}" class="pie-chart"></canvas>
+                        </div>
+                        <div class="card">
+                            <div class="card-body table-responsive">
+                                <table id="table_{{ componentId }}" class="table">
+                                    <thead class="primary">
+                                    <tr>
+                                        <th>{{ datas.type }}</th>
+                                        <th>{% if datas.type_value_label %}{{ datas.type_value_label }}{% else %}{% translate  "Number" %}{% endif %}</th>
+                                        <th>{% translate  "Percent" %}</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="status-stats_{{ componentId }}">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+
+<!-- DataTables export files -->
+{% include 'layouts/datatable-js.html' %}
+<script>
+jQuery.extend(jQuery.fn.dataTableExt.oSort, {
+    "numeric-comma-pre": function (a) {
+        var x = parseFloat(a.replace(/\s+/g, '').replace(',', '.')); // Remove spaces and replace comma with dot
+        return isNaN(x) ? 0 : x;
+    },
+    "numeric-comma-asc": function (a, b) {
+        return a - b;
+    },
+    "numeric-comma-desc": function (a, b) {
+        return b - a;
+    }
+});
+
+  $(document).ready(function () {
+    {% comment %} const pieChartCanvasDiv = document.getElementById('div_pie_{{ componentId }}');
+    const pieChartCanvas = document.getElementById('pie_chart_{{ componentId }}').getContext('2d'); {% endcomment %}
+    let statusPieChartCanvas = $('#status_pie_chart_{{ componentId }}').get(0).getContext('2d');
+
+    const datas = {{ datas|safe }};
+    const labels = datas.labels;
+    const data = datas.data;
+    const sectors_colors = {{ sectors_colors|safe }}
+
+    const total = data.reduce((acc, value) => acc + value, 0);
+    const percentages = data.map(value => ((value / total) * 100).toFixed(2));
+
+    const pieConfig = {
+      type: 'pie',
+      data: {
+        //labels: labels.map((label, index) => `${label} (${percentages[index]}%)`),
+        datasets: [{
+          data: data,
+          backgroundColor: labels.map((label, index) => sectors_colors[label]), // Couleurs des secteurs
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom', // Position de la légende
+          },
+          title: {
+            display: true,
+            text: 'Graphique en Secteurs avec Pourcentages', // Titre du graphique
+          }
+        },
+        animation: {
+          onComplete: function(animation) {
+            const ctx = this.chart.ctx;
+            //ctx.font = Chart.helpers.fontString(Chart.defaults.global.defaultFontSize, 'normal', Chart.defaults.global.defaultFontFamily);
+            ctx.font = Chart.helpers.fontString(14, 'bold', Chart.defaults.global.defaultFontFamily);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            this.data.datasets.forEach(function (dataset) {
+              for (var i = 0; i < dataset.data.length; i++) {
+                var model = dataset._meta[Object.keys(dataset._meta)[0]].data[i]._model;
+                var total = dataset._meta[0].total;
+                var mid_radius = model.innerRadius + (model.outerRadius - model.innerRadius) / 2;
+                var start_angle = model.startAngle;
+                var end_angle = model.endAngle;
+                var mid_angle = start_angle + (end_angle - start_angle) / 2;
+
+                var x = mid_radius * Math.cos(mid_angle);
+                var y = mid_radius * Math.sin(mid_angle);
+
+                ctx.fillStyle = '#fff'; // Couleur du texte
+                var percent = String(Math.round(dataset.data[i] / total * 100)) + "%";
+                // Ajuster l'emplacement du texte pour éviter le chevauchement avec les autres secteurs
+                {% comment %} if (dataset.data[i] / total > 0.25) {
+                  ctx.fillText(percent, model.x + x * 1.5, model.y + y * 1.5);
+                } else {
+                  ctx.fillText(percent, model.x + x * 2.5, model.y + y * 2.5);
+                } {% endcomment %}
+                ctx.fillText(percent, model.x + x * 1.5, model.y + y * 1.5);
+              }
+            });
+          }
+        },
+        title: {
+          display: true,
+          text: datas.title, // Ajouter un titre au graphique
+          font: {
+            family: 'Arial',
+            size: 18,
+            style: 'normal',
+            weight: 'bold',
+          },
+          padding: 20,
+          color: 'black'
+        }
+      }
+    };
+
+
+    {% comment %} new Chart(pieChartCanvas, pieConfig); {% endcomment %}
+
+
+
+
+let pieOptions = {
+            maintainAspectRatio: false,
+            responsive: true,
+            legend: {
+                display: false
+            },
+        title: {
+          display: true,
+          text: datas.title, // Ajouter un titre au graphique
+          font: {
+            family: 'Arial',
+            size: 18,
+            style: 'normal',
+            weight: 'bold',
+          },
+          padding: 20,
+          color: 'black'
+        },
+        animation: {
+          onComplete: function(animation) {
+            const ctx = this.chart.ctx;
+            //ctx.font = Chart.helpers.fontString(Chart.defaults.global.defaultFontSize, 'normal', Chart.defaults.global.defaultFontFamily);
+            ctx.font = Chart.helpers.fontString(14, 'bold', Chart.defaults.global.defaultFontFamily);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            this.data.datasets.forEach(function (dataset) {
+              for (var i = 0; i < dataset.data.length; i++) {
+                var model = dataset._meta[Object.keys(dataset._meta)[0]].data[i]._model;
+                var total = 100;//dataset._meta[0].total;
+                var mid_radius = model.innerRadius + (model.outerRadius - model.innerRadius) / 2;
+                var start_angle = model.startAngle;
+                var end_angle = model.endAngle;
+                var mid_angle = start_angle + (end_angle - start_angle) / 2;
+
+                var x = mid_radius * Math.cos(mid_angle);
+                var y = mid_radius * Math.sin(mid_angle);
+
+                ctx.fillStyle = '#fff'; // Couleur du texte
+                var percent = String(Math.round(dataset.data[i] / total * 100)) + "%";
+                // Ajuster l'emplacement du texte pour éviter le chevauchement avec les autres secteurs
+                {% comment %} if (dataset.data[i] / total > 0.25) {
+                  ctx.fillText(percent, model.x + x * 1.5, model.y + y * 1.5);
+                } else {
+                  ctx.fillText(percent, model.x + x * 2.5, model.y + y * 2.5);
+                } {% endcomment %}
+                ctx.fillText(percent, model.x + x * 1.5, model.y + y * 1.5);
+              }
+            });
+          }
+        }
+        };
+    let statusChart = new Chart(statusPieChartCanvas, {
+                        type: 'pie',
+                        data: {
+                            labels: [],
+                            datasets: [
+                                {
+                                    data: [],
+                                    backgroundColor: [],
+                                }
+                            ]
+                        },
+                        options: pieOptions
+                    });
+    function fillStats(labels_pie, table_selector, chart = null) {
+            let stats_table = document.createElement('div');
+            let index = 0;
+            $.each(labels_pie, function (key, label) {
+                const tr = document.createElement('tr');
+                const td_name = document.createElement('td');
+                td_name.setAttribute('align', 'left');
+                td_name.innerHTML = label;
+                tr.appendChild(td_name);
+                const td_issues = document.createElement('td');
+                td_issues.innerHTML = moneyFormat(data[key], '');
+                tr.appendChild(td_issues);
+                const td_percentage = document.createElement('td');
+                td_percentage.innerHTML = percentages[key] + '%';
+                tr.appendChild(td_percentage);
+                tr.style.backgroundColor = sectors_colors[label];
+                tr.style.color = 'white';
+                stats_table.append(tr);
+
+                if (chart) {
+                    chart.data.labels.push(label);
+                    chart.data.datasets[0].data.push(percentages[key]);
+                    chart.data.datasets[0].backgroundColor.push(sectors_colors[label]);
+                    index++;
+                }
+            });
+            table_selector.html(stats_table.innerHTML);
+            chart && chart.update();
+        }
+fillStats(labels, $('#status-stats_{{ componentId }}'), statusChart);
+
+
+
+        {% get_current_language as lang %}
+
+        let data_table =  {
+            dom: 'Blrtip',
+            language: {
+                url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}')
+            },
+            buttons: ['copy', 'excel', 'pdf'],
+        
+            lengthMenu: [2, 3, 4, 8, 10, 20, 50],
+            pageLength: 3,
+            order: [],
+            columnDefs: [
+                { type: 'numeric-comma', targets: [1, 2] }
+            ]
+        }
+        
+        if(datas.sorted == 1 && datas.columnSorted == 1){
+          data_table['order'] = [[datas.columnSorted, 'desc']];
+        }
+
+        $('#table_{{ componentId }}').DataTable(data_table);
+        
+
+    });
+</script>

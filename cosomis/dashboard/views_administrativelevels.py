@@ -451,7 +451,7 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
 
                     datas[_("Allocation") + " FCFA"][count] = amount__sum if amount__sum else ""
                 except:
-                    datas[_("Allocation") + " FCFA"][count] = ""
+                    datas[_("Allocation") + " FCFA"][count] = 0
                 
                 subproject_filter = subproject_filter_adl_project.filter(
                         component_id=component.id
@@ -461,14 +461,14 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
 
                     datas[_("Total estimate for subprojects") + " FCFA"][count] = estimated_cost__sum if estimated_cost__sum else ""
                 except:
-                    datas[_("Total estimate for subprojects") + " FCFA"][count] = ""
+                    datas[_("Total estimate for subprojects") + " FCFA"][count] = 0
                 
                 try:
-                    exact_amount_spent__sum = subproject_filter.aggregate(Sum('exact_amount_spent'))['exact_amount_spent__sum']
+                    contract_amount_work_companies__sum = subproject_filter.aggregate(Sum('contract_amount_work_companies'))['contract_amount_work_companies__sum']
 
-                    datas[_("Exact amount spent on subprojects") + " FCFA"][count] = exact_amount_spent__sum if exact_amount_spent__sum else ""
+                    datas[_("Exact amount spent on subprojects") + " FCFA"][count] = contract_amount_work_companies__sum if contract_amount_work_companies__sum else ""
                 except:
-                    datas[_("Exact amount spent on subprojects") + " FCFA"][count] = ""
+                    datas[_("Exact amount spent on subprojects") + " FCFA"][count] = 0
                 
                 if datas[_("Allocation") + " FCFA"][count] and datas[_("Total estimate for subprojects") + " FCFA"][count]:
                     datas[_("Remainder after estimated cost") + " FCFA"][count] = datas[_("Allocation") + " FCFA"][count] - datas[_("Total estimate for subprojects") + " FCFA"][count]
@@ -482,8 +482,8 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
                 # except:
                 #     pass
 
-                datas[_("Exact amount spent on subprojects") + " FCFA"][count] = 0     
-                datas[_("Remaining amount") + " FCFA"][count] = 0        
+                # datas[_("Exact amount spent on subprojects") + " FCFA"][count] = 0     
+                # datas[_("Remaining amount") + " FCFA"][count] = 0        
                 
                 count += 1
 
@@ -503,8 +503,8 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
             estimated_cost__sum = subproject_filter.aggregate(Sum('estimated_cost'))['estimated_cost__sum']
             datas[_("Total estimate for subprojects") + " FCFA"][count+c] = estimated_cost__sum if estimated_cost__sum else ""
             
-            exact_amount_spent__sum = subproject_filter.aggregate(Sum('exact_amount_spent'))['exact_amount_spent__sum']
-            datas[_("Exact amount spent on subprojects") + " FCFA"][count+c] = exact_amount_spent__sum if exact_amount_spent__sum else ""
+            contract_amount_work_companies__sum = subproject_filter.aggregate(Sum('contract_amount_work_companies'))['contract_amount_work_companies__sum']
+            datas[_("Exact amount spent on subprojects") + " FCFA"][count+c] = contract_amount_work_companies__sum if contract_amount_work_companies__sum else ""
             
             if datas[_("Allocation") + " FCFA"][count+c] and datas[_("Total estimate for subprojects") + " FCFA"][count+c]:
                 datas[_("Remainder after estimated cost") + " FCFA"][count+c] = datas[_("Allocation") + " FCFA"][count+c] - datas[_("Total estimate for subprojects") + " FCFA"][count+c]
@@ -516,8 +516,8 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
             else:
                 datas[_("Remaining amount") + " FCFA"][count+c] = datas[_("Allocation") + " FCFA"][count+c]
             
-            datas[_("Exact amount spent on subprojects") + " FCFA"][count+c] = 0     
-            datas[_("Remaining amount") + " FCFA"][count+c] = 0   
+            # datas[_("Exact amount spent on subprojects") + " FCFA"][count+c] = 0     
+            # datas[_("Remaining amount") + " FCFA"][count+c] = 0   
         
             
             c += 1
@@ -529,8 +529,8 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
         estimated_cost__sum = subprojects.aggregate(Sum('estimated_cost'))['estimated_cost__sum']
         datas[_("Total estimate for subprojects") + " FCFA"][count+c] = estimated_cost__sum if estimated_cost__sum else ""
 
-        exact_amount_spent__sum = subprojects.aggregate(Sum('exact_amount_spent'))['exact_amount_spent__sum']
-        datas[_("Exact amount spent on subprojects") + " FCFA"][count+c] = exact_amount_spent__sum if exact_amount_spent__sum else ""
+        contract_amount_work_companies__sum = subprojects.aggregate(Sum('contract_amount_work_companies'))['contract_amount_work_companies__sum']
+        datas[_("Exact amount spent on subprojects") + " FCFA"][count+c] = contract_amount_work_companies__sum if contract_amount_work_companies__sum else ""
         if datas[_("Allocation") + " FCFA"][count+c] and datas[_("Total estimate for subprojects") + " FCFA"][count+c]:
             datas[_("Remainder after estimated cost") + " FCFA"][count+c] = datas[_("Allocation") + " FCFA"][count+c] - datas[_("Total estimate for subprojects") + " FCFA"][count+c]
         else:
@@ -541,8 +541,8 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
         else:
             datas[_("Remaining amount") + " FCFA"][count+c] = datas[_("Allocation") + " FCFA"][count+c]
 
-        datas[_("Exact amount spent on subprojects") + " FCFA"][count+c] = 0     
-        datas[_("Remaining amount") + " FCFA"][count+c] = 0   
+        # datas[_("Exact amount spent on subprojects") + " FCFA"][count+c] = 0     
+        # datas[_("Remaining amount") + " FCFA"][count+c] = 0   
 
         # columns_skip = [ _("Cantons")]
         # for k_data in datas.keys():
@@ -643,7 +643,7 @@ class DashboardSummaryCVDAllocationListView(DashboardAdministrativeLevelMixin, A
 
                     datas[_("Allocation") + " FCFA"][count] = amount__sum if amount__sum else ""
                 except:
-                    datas[_("Allocation") + " FCFA"][count] = ""
+                    datas[_("Allocation") + " FCFA"][count] = 0
                 
                 subproject_filter = subproject_filter_adl_project.filter(
                         component_id=component.id
@@ -653,14 +653,14 @@ class DashboardSummaryCVDAllocationListView(DashboardAdministrativeLevelMixin, A
 
                     datas[_("Total estimate for subprojects") + " FCFA"][count] = estimated_cost__sum if estimated_cost__sum else ""
                 except:
-                    datas[_("Total estimate for subprojects") + " FCFA"][count] = ""
+                    datas[_("Total estimate for subprojects") + " FCFA"][count] = 0
                 
                 try:
-                    exact_amount_spent__sum = subproject_filter.aggregate(Sum('exact_amount_spent'))['exact_amount_spent__sum']
+                    contract_amount_work_companies__sum = subproject_filter.aggregate(Sum('contract_amount_work_companies'))['contract_amount_work_companies__sum']
 
-                    datas[_("Exact amount spent on subprojects") + " FCFA"][count] = exact_amount_spent__sum if exact_amount_spent__sum else ""
+                    datas[_("Exact amount spent on subprojects") + " FCFA"][count] = contract_amount_work_companies__sum if contract_amount_work_companies__sum else ""
                 except:
-                    datas[_("Exact amount spent on subprojects") + " FCFA"][count] = ""
+                    datas[_("Exact amount spent on subprojects") + " FCFA"][count] = 0
                 
                 if datas[_("Allocation") + " FCFA"][count] and datas[_("Total estimate for subprojects") + " FCFA"][count]:
                     datas[_("Remainder after estimated cost") + " FCFA"][count] = datas[_("Allocation") + " FCFA"][count] - datas[_("Total estimate for subprojects") + " FCFA"][count]
@@ -674,8 +674,8 @@ class DashboardSummaryCVDAllocationListView(DashboardAdministrativeLevelMixin, A
                 # except:
                 #     pass
 
-                datas[_("Exact amount spent on subprojects") + " FCFA"][count] = 0     
-                datas[_("Remaining amount") + " FCFA"][count] = 0        
+                # datas[_("Exact amount spent on subprojects") + " FCFA"][count] = 0     
+                # datas[_("Remaining amount") + " FCFA"][count] = 0        
                 
                 count += 1
 
@@ -695,8 +695,8 @@ class DashboardSummaryCVDAllocationListView(DashboardAdministrativeLevelMixin, A
             estimated_cost__sum = subproject_filter.aggregate(Sum('estimated_cost'))['estimated_cost__sum']
             datas[_("Total estimate for subprojects") + " FCFA"][count+c] = estimated_cost__sum if estimated_cost__sum else ""
             
-            exact_amount_spent__sum = subproject_filter.aggregate(Sum('exact_amount_spent'))['exact_amount_spent__sum']
-            datas[_("Exact amount spent on subprojects") + " FCFA"][count+c] = exact_amount_spent__sum if exact_amount_spent__sum else ""
+            contract_amount_work_companies__sum = subproject_filter.aggregate(Sum('contract_amount_work_companies'))['contract_amount_work_companies__sum']
+            datas[_("Exact amount spent on subprojects") + " FCFA"][count+c] = contract_amount_work_companies__sum if contract_amount_work_companies__sum else ""
             
             if datas[_("Allocation") + " FCFA"][count+c] and datas[_("Total estimate for subprojects") + " FCFA"][count+c]:
                 datas[_("Remainder after estimated cost") + " FCFA"][count+c] = datas[_("Allocation") + " FCFA"][count+c] - datas[_("Total estimate for subprojects") + " FCFA"][count+c]
@@ -708,8 +708,8 @@ class DashboardSummaryCVDAllocationListView(DashboardAdministrativeLevelMixin, A
             else:
                 datas[_("Remaining amount") + " FCFA"][count+c] = datas[_("Allocation") + " FCFA"][count+c]
             
-            datas[_("Exact amount spent on subprojects") + " FCFA"][count+c] = 0     
-            datas[_("Remaining amount") + " FCFA"][count+c] = 0   
+            # datas[_("Exact amount spent on subprojects") + " FCFA"][count+c] = 0     
+            # datas[_("Remaining amount") + " FCFA"][count+c] = 0   
         
             
             c += 1
@@ -721,8 +721,8 @@ class DashboardSummaryCVDAllocationListView(DashboardAdministrativeLevelMixin, A
         estimated_cost__sum = subprojects.aggregate(Sum('estimated_cost'))['estimated_cost__sum']
         datas[_("Total estimate for subprojects") + " FCFA"][count+c] = estimated_cost__sum if estimated_cost__sum else ""
 
-        exact_amount_spent__sum = subprojects.aggregate(Sum('exact_amount_spent'))['exact_amount_spent__sum']
-        datas[_("Exact amount spent on subprojects") + " FCFA"][count+c] = exact_amount_spent__sum if exact_amount_spent__sum else ""
+        contract_amount_work_companies__sum = subprojects.aggregate(Sum('contract_amount_work_companies'))['contract_amount_work_companies__sum']
+        datas[_("Exact amount spent on subprojects") + " FCFA"][count+c] = contract_amount_work_companies__sum if contract_amount_work_companies__sum else ""
         if datas[_("Allocation") + " FCFA"][count+c] and datas[_("Total estimate for subprojects") + " FCFA"][count+c]:
             datas[_("Remainder after estimated cost") + " FCFA"][count+c] = datas[_("Allocation") + " FCFA"][count+c] - datas[_("Total estimate for subprojects") + " FCFA"][count+c]
         else:
@@ -733,8 +733,8 @@ class DashboardSummaryCVDAllocationListView(DashboardAdministrativeLevelMixin, A
         else:
             datas[_("Remaining amount") + " FCFA"][count+c] = datas[_("Allocation") + " FCFA"][count+c]
 
-        datas[_("Exact amount spent on subprojects") + " FCFA"][count+c] = 0     
-        datas[_("Remaining amount") + " FCFA"][count+c] = 0   
+        # datas[_("Exact amount spent on subprojects") + " FCFA"][count+c] = 0     
+        # datas[_("Remaining amount") + " FCFA"][count+c] = 0   
 
 
         table_title = self.request.GET.get('table_title')

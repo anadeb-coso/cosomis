@@ -120,7 +120,7 @@
               this.data.datasets.forEach(function (dataset) {
                 for (var i = 0; i < dataset.data.length; i++) {
                   var model = dataset._meta[Object.keys(dataset._meta)[0]].data[i]._model;
-                  ctx.fillText(dataset.data[i], model.x - 7, model.y + 7);
+                  ctx.fillText(moneyFormat(dataset.data[i], ''), model.x, model.y + 7);
                 }
               });
             {% endif %}
@@ -218,7 +218,7 @@
               this.data.datasets.forEach(function (dataset) {
                 for (var i = 0; i < dataset.data.length; i++) {
                   var model = dataset._meta[Object.keys(dataset._meta)[0]].data[i]._model;
-                  ctx.fillText(dataset.data[i], model.x - 7, model.y + 7);
+                  ctx.fillText(moneyFormat(dataset.data[i], ''), model.x - 7, model.y + 7);
                 }
               });
             {% endif %}

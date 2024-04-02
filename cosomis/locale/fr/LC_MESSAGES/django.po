@@ -2644,12 +2644,12 @@ msgid "Infrastructures completed"
 msgstr "Infrastructures achevées"
 
 #: .\subprojects
-msgid "Number of subprojects in relation to infrastructure by sector"
-msgstr "Nombre de sous-projets par rapport aux infrastructures par secteurs"
+msgid "Number of subprojects selected in relation to infrastructure by sector"
+msgstr "Nombre de sous-projets retenus par rapport aux infrastructures par secteurs"
 
 #: .\subprojects
-msgid "Amount of subprojects in relation to infrastructure by sector"
-msgstr "Montant des sous-projets par rapport aux infrastructures par secteurs"
+msgid "Amount of subprojects selected in relation to infrastructure by sector"
+msgstr "Montant des sous-projets retenus par rapport aux infrastructures par secteurs"
 
 #: .\subprojects
 msgid "Vertical"
@@ -2810,3 +2810,51 @@ msgstr "Latrines et clôtures en cours"
 #: .\subprojects
 msgid "Latrines and fences completed"
 msgstr "Latrines et clôtures achevées"
+
+#: .\subprojects
+msgid "Residual"
+msgstr "Reliquat"
+
+#: .\subprojects
+msgid "Component 1.1"
+msgstr "Composante 1.1"
+
+#: .\subprojects
+msgid "Component 1.2"
+msgstr "Composante 1.2"
+
+#: .\subprojects
+msgid "Component 1.3"
+msgstr "Composante 1.3"
+
+#: .\subprojects
+msgid "Allocations to cantons"
+msgstr "Allocations aux cantons"
+
+#: .\subprojects
+msgid "Estimated"
+msgstr "Estimés"
+
+#: .\subprojects
+msgid "Number of subprojects selected by sector"
+msgstr "Nombre de sous-projets retenus par secteur"
+
+#: .\subprojects
+msgid "Number of structure by sector"
+msgstr "Nombre d'ouvrage par secteur"
+
+#: .\subprojects
+msgid "Representation by sector"
+msgstr "Représentation par secteurs"
+
+#: .\subprojects
+msgid "Representation by type of structure"
+msgstr "Représentation par type d'ouvrage"
+
+#: .\subprojects
+msgid "Amount of subprojects in relation to infrastructure by sector"
+msgstr "Montant des sous-projets liés à l'infrastructure par secteur"
+
+#: .\subprojects
+msgid "Amount of infrastructures by status"
+msgstr "Nombre d'infrastructures par statut"

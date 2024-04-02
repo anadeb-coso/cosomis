@@ -1,0 +1,94 @@
+{% load static i18n bootstrap4 custom_tags %}
+
+<div id="div_pie_{{ componentId }}">
+  <canvas id="pie_chart_{{ componentId }}" class="bar-pie" ></canvas>
+</div>
+
+
+
+<script>
+  $(document).ready(function () {
+    const pieChartCanvasDiv = document.getElementById('div_pie_{{ componentId }}');
+    const pieChartCanvas = document.getElementById('pie_chart_{{ componentId }}').getContext('2d');
+    
+    const datas = {{ datas|safe }};
+    const labels = datas.labels;
+    const data = datas.data;
+    const sectors_colors = {{ sectors_colors|safe }}
+
+    const total = data.reduce((acc, value) => acc + value, 0);
+    const percentages = data.map(value => ((value / total) * 100).toFixed(2));
+
+    const pieConfig = {
+      type: 'pie',
+      data: {
+        //labels: labels.map((label, index) => `${label} (${percentages[index]}%)`),
+        datasets: [{
+          data: data,
+          backgroundColor: labels.map((label, index) => sectors_colors[label]), // Couleurs des secteurs
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom', // Position de la légende
+          },
+          title: {
+            display: true,
+            text: 'Graphique en Secteurs avec Pourcentages', // Titre du graphique
+          }
+        },
+        animation: {
+          onComplete: function(animation) {
+            const ctx = this.chart.ctx;
+            //ctx.font = Chart.helpers.fontString(Chart.defaults.global.defaultFontSize, 'normal', Chart.defaults.global.defaultFontFamily);
+            ctx.font = Chart.helpers.fontString(14, 'bold', Chart.defaults.global.defaultFontFamily);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            this.data.datasets.forEach(function (dataset) {
+              for (var i = 0; i < dataset.data.length; i++) {
+                var model = dataset._meta[Object.keys(dataset._meta)[0]].data[i]._model;
+                var total = dataset._meta[0].total;
+                var mid_radius = model.innerRadius + (model.outerRadius - model.innerRadius) / 2;
+                var start_angle = model.startAngle;
+                var end_angle = model.endAngle;
+                var mid_angle = start_angle + (end_angle - start_angle) / 2;
+
+                var x = mid_radius * Math.cos(mid_angle);
+                var y = mid_radius * Math.sin(mid_angle);
+
+                ctx.fillStyle = '#fff'; // Couleur du texte
+                var percent = String(Math.round(dataset.data[i] / total * 100)) + "%";
+                // Ajuster l'emplacement du texte pour éviter le chevauchement avec les autres secteurs
+                {% comment %} if (dataset.data[i] / total > 0.25) {
+                  ctx.fillText(percent, model.x + x * 1.5, model.y + y * 1.5);
+                } else {
+                  ctx.fillText(percent, model.x + x * 2.5, model.y + y * 2.5);
+                } {% endcomment %}
+                ctx.fillText(percent, model.x + x * 1.5, model.y + y * 1.5);
+              }
+            });
+          }
+        },
+        title: {
+          display: true,
+          text: datas.title, // Ajouter un titre au graphique
+          font: {
+            family: 'Arial',
+            size: 18,
+            style: 'normal',
+            weight: 'bold',
+          },
+          padding: 20,
+          color: 'black'
+        }
+      }
+    };
+
+
+    new Chart(pieChartCanvas, pieConfig);
+
+  });
+</script>

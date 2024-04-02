@@ -17,7 +17,7 @@ PEULS = ('Peulh', 'Peuhl', 'Paulh', 'Pauhl', 'Peuls', 'Peul', 'Peul...', 'Peul.'
 SUB_PROJECT_STATUS_COLOR = {
     "Identifié": "#000000", #Black f-noire
     "Non approuvé": "#c5c5c5", #Darkwhite f-blanche sombre
-    "Approuvé": "#ffff00", #Yellow f-jaune
+    "Approuvé": "#939301", #Olive f-Olive
     "DAO lancé": "#ffa500", #Orange f-orange
     "Entreprise sélectionné": "#ff7f50", #Coral f-Corail
     "Contrat signé avec attributaire": "#d2691e", #Chocolate f-chocolat
@@ -33,9 +33,10 @@ SUB_PROJECT_STATUS_COLOR = {
 }
 
 SUB_PROJECT_STATUS_COLOR_TRANSLATE = {
+    _("Not start"): "#000000", #Black f-noire
     _("Identified"): "#000000", #Black f-noire
     _("Not approved"): "#c5c5c5", #Darkwhite f-blanche sombre
-    _("Approved"): "#ffff00", #Yellow f-jaune
+    _("Approved"): "#939301", #Olive f-Olive
     _("DAO launched"): "#ffa500", #Orange f-orange
     _("Company selected"): "#ff7f50", #Coral f-Corail
     _("Contract signed with contractor"): "#d2691e", #Chocolate f-chocolat
@@ -80,7 +81,7 @@ TYPES_OF_SUB_PROJECT_COLOR = {
     'Laboratoire': "#00ff00", #Lime f-citron vert
 
     
-    'Extension réseau électrique': "#ffff00", #Yellow f-jaune
+    'Extension réseau électrique': "#939301", #Olive f-Olive
     'Lampadaires solaire': "#9c9c14", #DarkYellow f-jaune sombre
 
     'Centre Communautaire': "#ffa500", #Orange f-orange
@@ -91,7 +92,7 @@ TYPES_OF_SUB_PROJECT_COLOR = {
 
     'Magasin De Stockage': "#800080", #Purple f-Violet
     
-    'Reboisement': "#faf0e6", #Linen f-Lin
+    'Reboisement': "#deb887", #Burlywood f-Bois massif
 
     'Piste/OF': "#000000", #Black f-noire
 
@@ -113,7 +114,7 @@ TYPES_OF_STRUCTURE_COLOR = {
     'Pédiatrie': "#92d492", #DarkSeaGreen f-Vert de mer foncé
     'Laboratoire': "#00ff00", #Lime f-citron vert
     
-    'Extension réseau électrique': "#ffff00", #Yellow f-jaune
+    'Extension réseau électrique': "#939301", #Olive f-Olive
     'Lampadaires solaire': "#9c9c14", #DarkYellow f-jaune sombre
 
     'Centre Communautaire': "#ffa500", #Orange f-orange
@@ -122,7 +123,7 @@ TYPES_OF_STRUCTURE_COLOR = {
     'Terrain de Foot': "#7a1212", #DarkRed f-rouge sombre
 
     'Magasin De Stockage': "#800080", #Purple f-Violet
-    'Reboisement': "#faf0e6", #Linen f-Lin
+    'Reboisement': "#deb887", #Burlywood f-Bois massif
 
     'Piste/OF': "#000000", #Black f-noire
     
@@ -132,6 +133,30 @@ TYPES_OF_STRUCTURE_COLOR = {
     'Clôture Scolaire': "#000000",
     'Clôture Pédiatrie': "#000000",
     
+}
+
+OTHER_STRUCUTURES = [
+    'Latrine Scolaire', 'Clôture Pédiatrie', 'Clôture Scolaire'
+]
+
+SUB_PROJECT_SECTORS_COLOR = {
+    'Developpement–a–la–Base': "#ffa500", #Orange f-orange
+    'Eau–Hydraulique': '#0000ff', #Blue f-blue
+    'Pistes': '#000000', #Black f-noire
+    'Education': '#808080', #Gray f-Gris
+    'Agriculture': "#601ee0", #Blueviolet f-Blue violet
+    'Sante': '#008200', #Green f-vert
+    'Energie': '#939301', #Olive f-Olive
+    'Sport–Loisir': "#7a1212", #DarkRed f-rouge sombre
+    'Assainissement': "#191970", #MidNightBlue f-Blue sombre
+    'Environnement': "#deb887", #Burlywood f-Bois massif
+}
+
+FINANCING_COLOR = {
+    'Allocation': '#0000ff', #Blue f-blue
+    'Reste': '#000000', #Black f-noire
+    'Dépensés': '#008200', #Green f-vert
+    'Estimé': "#ff0000", #Red f-Rouge
 }
 
 CURRENCY_UNIT = 'FCFA' #currency unit global variable
