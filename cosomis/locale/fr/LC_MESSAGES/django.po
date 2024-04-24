@@ -2862,3 +2862,19 @@ msgstr "Nombre d'infrastructures par statut"
 #: .\subprojects
 msgid "Amount of infrastructures by sector"
 msgstr "Montant des infrastructures par secteur"
+
+#: .\subprojects
+msgid "Storage capacity"
+msgstr "Capacité de stockage"
+
+#: .\subprojects
+msgid "Number of streetlights installed"
+msgstr "Nombre de lampadaires installés"
+
+#: .\subprojects
+msgid "Distance covered by streetlights (km)"
+msgstr "Distance couverte par les lampadaires (km)"
+
+#: .\subprojects
+msgid "Extension length (km)"
+msgstr "Longueur de l'extension (km)"

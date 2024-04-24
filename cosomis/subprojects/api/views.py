@@ -4,7 +4,9 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from usermanager.api.auth.login import CheckUserSerializer
-from subprojects.serializers import SubprojectWithChildrenLinkedSerializer
+from subprojects.serializers import (
+    SubprojectWithChildrenLinkedSerializer, SaveSubprojectSerializer,
+    SubprojectStandardSerializer)
 from subprojects.models import Subproject
 from assignments.functions import get_subprojects_by_facilitator_id_and_project_id
 from .custom import CustomPagination
@@ -131,3 +133,32 @@ class SaveSubprojectsGeoLocation(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
         
+        
+class RestSaveSubproject(APIView):
+    throttle_classes = ()
+    permission_classes = ()
+    serializer_class = SaveSubprojectSerializer
+    
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        
+        s = CheckUserSerializer(data).data
+        request.data['pk'] = request.data.get('id', None)
+        subproject = Subproject.objects.get(id=request.data['pk'])
+        s = SubprojectStandardSerializer(instance=subproject,data=request.data)
+        s.is_valid(raise_exception=True)
+        sub = Subproject.objects.get(id=request.data['pk'])
+        
+        try:
+            s.save()
+            return Response(
+                SubprojectWithChildrenLinkedSerializer(Subproject.objects.get(id=request.data['pk'])).data, 
+                status=status.HTTP_200_OK
+            )
+        except Exception as exc:
+            return Response(
+                {'error': exc.__str__()}, 
+                status=status.HTTP_404_NOT_FOUND
+            )

@@ -703,6 +703,10 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         "Groupe des éleveurs/Agriculteurs": {},
         "Groupe des minorités ethniques": {},
         "COMMENTAIRES": {},
+        "Blocs latrine? (Oui, Non)": {},
+        "Nombre de blocs latrine (de 3 cabines)": {},
+        "Nombre de salle de classes": {},
+        "Clôture": {}
     }
 
     # administratives_levels = []

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from subprojects.models import *
 from administrativelevels.serializers import AdministrativeLevelSerializer, CVDSerializer
+from usermanager.api.auth.login import CheckUserSerializer
 
 
 class SubprojectFileSerializer(serializers.ModelSerializer):
@@ -88,8 +89,9 @@ class SubprojectStepSerializer(serializers.ModelSerializer):
 
 class SubprojectSerializer(serializers.ModelSerializer):
 	location_subproject_realized = AdministrativeLevelSerializer(many=False)
+	list_of_villages_crossed_by_the_track_or_electrification = AdministrativeLevelSerializer(many=True)
 	cvd = CVDSerializer(many=False)
-	canton = AdministrativeLevelSerializer(many=False)
+	canton = AdministrativeLevelSerializer(many=False, )
 	component = ComponentSerializer(many=False)
 	priorities = VillagePrioritySerializer(many=True)
 	projects = ProjectSerializer(many=True)
@@ -106,6 +108,12 @@ class SubprojectSerializer(serializers.ModelSerializer):
 
 		return data
 
+class SubprojectStandardSerializer(serializers.ModelSerializer):
+	class Meta:
+		"""docstring for Meta"""
+		model = Subproject
+		fields = '__all__'
+	
 
 class SubprojectWithParentLinkSerializer(SubprojectSerializer):
 
@@ -127,3 +135,5 @@ class SubprojectWithChildrenLinkedSerializer(SubprojectSerializer):
 
 		return data
 
+class SaveSubprojectSerializer(SubprojectStandardSerializer, CheckUserSerializer):
+	pass

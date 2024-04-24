@@ -111,8 +111,8 @@ class Subproject(BaseModel):
     component = models.ForeignKey('Component', null=True, on_delete=models.CASCADE, verbose_name=_("Component (Subcomponent)"))
     priorities = models.ManyToManyField('VillagePriority', default=[], blank=True, related_name='priorities_covered', verbose_name=_("Priorities"))
 
-    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, verbose_name=_("Latitude"))
-    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, verbose_name=_("Longitude"))
+    latitude = models.FloatField(null=True, blank=True, verbose_name=_("Latitude"))
+    longitude = models.FloatField(null=True, blank=True, verbose_name=_("Longitude"))
 
     projects = models.ManyToManyField('Project', default=[], blank=True, verbose_name=_("Projects")) #In Which projects that we finance the subproject
     financiers = models.ManyToManyField('Financier', default=[], blank=True, verbose_name=_("Financiers")) #Which Financiers finance this subproject (when its project is define, we don't need to specialize this attribute)
@@ -127,6 +127,10 @@ class Subproject(BaseModel):
     number_of_latrine_blocks = models.IntegerField(null=True, blank=True, verbose_name=_("Number of latrine blocks"))
     number_of_classrooms = models.IntegerField(null=True, blank=True, verbose_name=_("Number of classrooms"))
     has_fence = models.BooleanField(null=True, blank=True, verbose_name=_("Has a fence?"))
+    storage_capacity = models.IntegerField(null=True, blank=True, verbose_name=_("Storage capacity"))
+    extension_length = models.IntegerField(null=True, blank=True, verbose_name=_("Extension length (km)"))
+    distance_covered_by_streetlights = models.IntegerField(null=True, blank=True, verbose_name=_("Distance covered by streetlights (km)"))
+    number_of_streetlights = models.IntegerField(null=True, blank=True, verbose_name=_("Number of streetlights installed"))
     
     infrastructure_changed = models.BooleanField(null=True, blank=True, verbose_name=_("Infrastructure changed?"))
     infrastructure_deleted = models.BooleanField(null=True, blank=True, verbose_name=_("Infrastructure deleted?"))

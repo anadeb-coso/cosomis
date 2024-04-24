@@ -527,7 +527,7 @@ class DownloadCSVView(PageMixin, LoginRequiredMixin, generic.TemplateView):
             messages.info(request, _("An error has occurred..."))
 
         if not file_path:
-            return redirect('administrativelevels:list')
+            return redirect('subprojects:list')
         else:
             return download_file.download(
                 request, 

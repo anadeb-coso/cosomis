@@ -16,6 +16,8 @@ urlpatterns = [
     path('get-subproject-levels/<int:subproject_id>/', views_steps.RestGetSubprojectLevels.as_view(), name="get_subproject_levels"),
     path('save-subproject-level/', views_steps.RestSaveSubprojectLevel.as_view(), name="save_subproject_level"),
 
+    path('save-subproject/', views.RestSaveSubproject.as_view(), name="save_subproject"),
+    
 ]
 
 
