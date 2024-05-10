@@ -6,7 +6,7 @@ from datetime import datetime, date
 from kobotoolbox.api_call import get_all
 from administrativelevels.models import AdministrativeLevel
 from subprojects.models import Subproject, SubprojectFile
-from kobotoolbox.form_id_kobo import FORM_ID_KOBO_GMS
+from kobotoolbox.form_id_kobo import FORM_ID_KOBO
 from kobotoolbox.utils import (
     kobo_util, get_gms_form_reponse_save_images_util, get_gms_form_reponse_util
 )
