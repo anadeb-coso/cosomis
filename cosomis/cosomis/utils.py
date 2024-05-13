@@ -138,16 +138,28 @@ def save_facilitator_assignment_in_mis(project_id: int, develop_mode=False, trai
 
 def link_infrastures_to_subproject():
     print("Start link_infrastures_to_subproject!")
+    # subprojects = Subproject.objects.all().get_actifs().order_by('number', 'joint_subproject_number')
+    # for subproject in subprojects:
+    #     for _subproject in subprojects:
+    #         if subproject.id != _subproject.id and \
+    #             subproject.number < _subproject.number and \
+    #                 subproject.joint_subproject_number == _subproject.joint_subproject_number:
+    #             # print(_subproject.full_title_of_approved_subproject)
+    #             _subproject.link_to_subproject = subproject
+    #             _subproject.subproject_type_designation = "Infrastructure"
+    #             _subproject.save()
     subprojects = Subproject.objects.all().get_actifs().order_by('number', 'joint_subproject_number')
+    
     for subproject in subprojects:
-        for _subproject in subprojects:
-            if subproject.id != _subproject.id and \
-                subproject.number < _subproject.number and \
-                    subproject.joint_subproject_number == _subproject.joint_subproject_number:
-                # print(_subproject.full_title_of_approved_subproject)
-                _subproject.link_to_subproject = subproject
-                _subproject.subproject_type_designation = "Infrastructure"
-                _subproject.save()
+        _subprojects = Subproject.objects.filter(
+            joint_subproject_number=subproject.joint_subproject_number
+        ).get_actifs().order_by('number', 'joint_subproject_number')
+        if _subprojects.count() >= 2:
+            _subproject = _subprojects.first()
+            
+            subproject.link_to_subproject = _subproject
+            subproject.subproject_type_designation = "Infrastructure"
+            subproject.save()
     print()
     print("Done !")
 
