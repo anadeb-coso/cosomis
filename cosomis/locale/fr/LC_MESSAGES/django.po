@@ -2878,3 +2878,15 @@ msgstr "Distance couverte par les lampadaires (km)"
 #: .\subprojects
 msgid "Extension length (km)"
 msgstr "Longueur de l'extension (km)"
+
+#: .\subprojects
+msgid "Others infrastructures"
+msgstr "Autres infrastructures"
+
+#: .\subprojects
+msgid "Latrine blocks"
+msgstr "Blocs latrine"
+
+#: .\subprojects
+msgid "Fenced infrastructure"
+msgstr "Infrastructure clôturée"

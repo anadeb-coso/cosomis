@@ -12,8 +12,8 @@ from cosomis.models_base import BaseModel
 class AdministrativeLevel(BaseModel):
     name = models.CharField(max_length=255, verbose_name=_("Name"))
     parent = models.ForeignKey('AdministrativeLevel', null=True, blank=True, on_delete=models.CASCADE, verbose_name=_("Parent"))
-    geographical_unit = models.ForeignKey('GeographicalUnit', null=True, blank=True, on_delete=models.CASCADE, verbose_name=_("Geographical unit"))
-    cvd = models.ForeignKey('CVD', null=True, blank=True, on_delete=models.CASCADE, verbose_name=_("CVD"))
+    geographical_unit = models.ForeignKey('GeographicalUnit', null=True, blank=True, on_delete=models.SET_NULL, verbose_name=_("Geographical unit"))
+    cvd = models.ForeignKey('CVD', null=True, blank=True, on_delete=models.SET_NULL, verbose_name=_("CVD"))
     type = models.CharField(max_length=255, verbose_name=_("Type"))
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, verbose_name=_("Latitude"))
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, verbose_name=_("Longitude"))
@@ -22,6 +22,10 @@ class AdministrativeLevel(BaseModel):
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
     no_sql_db_id = models.CharField(null=True, blank=True, max_length=255)
+    
+    total_tasks = models.IntegerField(default=0)
+    total_tasks_completed = models.IntegerField(default=0)
+    last_activity = models.DateTimeField(blank=True, null=True)
 
     
     class Meta:
