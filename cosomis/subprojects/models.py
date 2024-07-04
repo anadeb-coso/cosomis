@@ -110,7 +110,8 @@ class Subproject(BaseModel):
 
     component = models.ForeignKey('Component', null=True, on_delete=models.CASCADE, verbose_name=_("Component (Subcomponent)"))
     priorities = models.ManyToManyField('VillagePriority', default=[], blank=True, related_name='priorities_covered', verbose_name=_("Priorities"))
-
+    priority = models.JSONField(blank=True, null=True, verbose_name=_('Priority'))
+    
     latitude = models.FloatField(null=True, blank=True, verbose_name=_("Latitude"))
     longitude = models.FloatField(null=True, blank=True, verbose_name=_("Longitude"))
 
@@ -231,20 +232,21 @@ class Subproject(BaseModel):
         return self.get_all_subprojects_linked().filter(subproject_type_designation="Subproject")
     
     def get_estimated_cost(self):
-        estimated_cost = self.estimated_cost
         all_subprojects_linked = self.get_all_subprojects_linked()
-        for o in all_subprojects_linked:
-            estimated_cost += o.estimated_cost
-        return estimated_cost
+        return (
+            (self.estimated_cost if self.estimated_cost else 0) + \
+            sum([o.estimated_cost for o in all_subprojects_linked if o.estimated_cost])
+        )
 
     def get_estimated_cost_str(self):
         locale.setlocale( locale.LC_ALL, '' )
         estimated_cost_str = ""
-        estimated_cost_str += locale.currency(self.estimated_cost, grouping=True).__str__()
+        estimated_cost_str += locale.currency(self.estimated_cost if self.estimated_cost else 0, grouping=True).__str__()
         subproject_link_objects = self.get_all_subprojects_linked()
         if subproject_link_objects:
             for o in subproject_link_objects:
-                estimated_cost_str += " + " + locale.currency(o.estimated_cost, grouping=True).__str__()
+                if o.estimated_cost:
+                    estimated_cost_str += " + " + locale.currency(o.estimated_cost, grouping=True).__str__()
             return (locale.currency(self.get_estimated_cost(), grouping=True).__str__() + f' ({estimated_cost_str})').replace("$", "")
         
         return estimated_cost_str.replace("$", "")
@@ -562,6 +564,24 @@ class Project(BaseModel):
     name = models.CharField(max_length=255)
     description = models.TextField()
     financier = models.ForeignKey('Financier', null=True, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+
+class  SubprojectSector(BaseModel):
+    name = models.CharField(max_length=255)
+    name_fr = models.CharField(max_length=255)
+    color = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.name
+    
+class SubprojectType(BaseModel):
+    name = models.CharField(max_length=255)
+    name_fr = models.CharField(max_length=255)
+    color = models.CharField(max_length=50)
+    sector = models.ForeignKey('SubprojectSector', null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return self.name
