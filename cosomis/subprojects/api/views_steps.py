@@ -8,7 +8,7 @@ from subprojects.serializers import SubprojectStepSerializer, StepSerializer, Le
 from subprojects.models import Subproject, Step, SubprojectStep, Level
 from assignments.functions import get_subprojects_by_facilitator_id_and_project_id
 from .custom import CustomPagination
-
+from subprojects.api.functions import convert_str_percent_to_float
 
 class RestGetSteps(APIView):
     throttle_classes = ()
@@ -73,22 +73,31 @@ class RestSaveSubprojectStep(APIView):
         step = validated_data.get('step')
         subproject = validated_data.get('subproject')
         
-        if step.ranking < 8 and step.ranking != 2:
-            subproject.current_status_of_the_site = "Identifié"
-        elif step.ranking == 9:
-            subproject.current_status_of_the_site = "Abandon"
-        elif step.ranking == 10:
-            subproject.current_status_of_the_site = "Arrêt"
-        elif step.ranking == 14:
-            subproject.current_status_of_the_site = "Réception provisoire"
-        else:
-            subproject.current_status_of_the_site = step.wording
-        
-        if step.ranking == 3:
-            subproject.approval_date_cora = validated_data.get('begin')
+        _step = subproject.get_current_subproject_step
+        if _step:
+            if _step.ranking < 8 and _step.ranking != 2:
+                subproject.current_status_of_the_site = "Identifié"
+            elif _step.ranking == 9:
+                subproject.current_status_of_the_site = "Abandon"
+            elif _step.ranking == 10:
+                subproject.current_status_of_the_site = "Arrêt"
+            elif _step.ranking == 14:
+                subproject.current_status_of_the_site = "Réception provisoire"
+            else:
+                subproject.current_status_of_the_site = _step.wording
             
-        subproject.current_level_of_physical_realization_of_the_work = str(step.percent if step.percent else step.wording)
-        subproject.save()
+            if step.ranking == 3:
+                subproject.approval_date_cora = validated_data.get('begin')
+            if step.ranking == 12:
+                subproject.date_of_technical_acceptance_of_work_contracts = validated_data.get('begin')
+            if step.ranking == 13:
+                subproject.date_of_provisional_acceptance_of_work_contracts = validated_data.get('begin')
+            if step.ranking == 14:
+                subproject.official_handover_date_of_the_microproject_to_the_community = validated_data.get('begin')
+            
+                
+            subproject.current_level_of_physical_realization_of_the_work = str(_step.percent if _step.percent else _step.wording)
+            subproject.save()
 
         try:
             return Response(
@@ -147,9 +156,16 @@ class RestSaveSubprojectLevel(APIView):
         subproject = subproject_step.subproject
         percent = validated_data.get('percent')
 
-        subproject.current_status_of_the_site = "En cours"
-        subproject.current_level_of_physical_realization_of_the_work = str(percent if percent else "0")
-        subproject.save()
+        _step = subproject.get_current_subproject_step
+        if _step and _step.wording == "En cours":
+            
+            old_percent = convert_str_percent_to_float(subproject.current_level_of_physical_realization_of_the_work)
+            new_percent = convert_str_percent_to_float(percent)
+            
+            if old_percent < new_percent:
+                subproject.current_status_of_the_site = "En cours"
+                subproject.current_level_of_physical_realization_of_the_work = str(percent if percent else "0")
+                subproject.save()
 
         try:
             return Response(

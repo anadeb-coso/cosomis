@@ -63,7 +63,7 @@ class SubprojectForm(forms.ModelForm):
     class Meta:
         model = Subproject
         # fields = '__all__' # specify the fields to be displayed
-        exclude = ('cvd', 'lot')
+        exclude = ('cvd', 'lot', 'has_latrine_blocs', 'number_of_latrine_blocks', 'has_fence')
 
 
 class VulnerableGroupForm(forms.ModelForm):

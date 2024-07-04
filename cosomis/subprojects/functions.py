@@ -121,8 +121,9 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
         '1.2a': 'COMPOSANTE 1.2a', '1.2b': 'COMPOSANTE 1.2b', '1.3': 'COMPOSANTE 1.3', 
         '2': 'COMPOSANTE 2', '3': 'COMPOSANTE 3', '4': 'COMPOSANTE 4', '5': 'COMPOSANTE 5'
     }
-    
+    _types = []
     if datas_file:
+        print(datas_file.keys())
         count = 0
         long = len(list(datas_file.values())[0])
         while count < long:
@@ -140,6 +141,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                 lot = get_value(datas_file["LOT"][count])
                 subproject_sector = get_value(datas_file["SECTEUR BENEFICIAIRE–SP"][count])
                 type_of_subproject = get_value(datas_file["TYPE D'OUVRAGE (INFRASTRUCTURE)"][count])
+                _types.append(type_of_subproject)
                 full_title_of_approved_subproject = get_value(datas_file["INTITULE COMPLET DU SOUS-PROJET APPROUVES (Description)"][count])
                 works_type = get_value(datas_file["TYPE DE TRAVAUX"][count])
                 estimated_cost = get_value(datas_file["COUT ESTIMATIF"][count])
@@ -194,11 +196,14 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                 breeders_farmers_group = get_value(datas_file["Groupe des éleveurs/Agriculteurs"][count])
                 ethnic_minority_group = get_value(datas_file["Groupe des minorités ethniques"][count])
                 
-                has_latrine_blocs = get_value(datas_file["Blocs latrine? (Oui, Non)"][count])
-                number_of_latrine_blocks = get_value(datas_file["Nombre de blocs latrine (de 3 cabines)"][count])
+                # has_latrine_blocs = get_value(datas_file["Blocs latrine? (Oui, Non)"][count])
+                # number_of_latrine_blocks = get_value(datas_file["Nombre de blocs latrine (de 3 cabines)"][count])
                 number_of_classrooms = get_value(datas_file["Nombre de salle de classes"][count])
-                has_fence = get_value(datas_file["Clôture"][count])
-
+                # has_fence = get_value(datas_file["Clôture"][count])
+                
+                infrastructure_changed = get_value(datas_file["Ouvrage changé"][count])
+                infrastructure_deleted = get_value(datas_file["Ouvrage supprimé"][count])
+                
 
                 list_of_villages_crossed_by_the_track_or_electrification = get_value(datas_file["LISTE DE VILLAGES TRAVERSÉ PAR LA PISTE OU L'ÉLECTRIFICATION"][count])
                 
@@ -312,7 +317,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                         subprojects = Subproject.objects.filter(
                             number=number
                             # full_title_of_approved_subproject=full_title_of_approved_subproject
-                            ).get_actifs()
+                            )#.get_actifs()
                         canton = get_value(datas_file["CANTON"][count])
                         
                         if canton:
@@ -388,9 +393,13 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                             # location_subproject_realized=administrative_level, 
                             # subproject_sector=subproject_sector,
                             # type_of_subproject=type_of_subproject
-                            ).get_actifs()
+                            )#.get_actifs()
                         # if subproject:
                         #     subproject = list(subproject)[0]
+                        if number in (48, 375, 480, 526):
+                            print("===============================================================================")
+                            print(type(number))
+                            print(subprojects)
                         subproject = subprojects.first()
 
                     # if is_link_to_subproject:
@@ -421,49 +430,93 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                     subproject.number = number
                     subproject.joint_subproject_number = joint_subproject_number
                     # subproject.intervention_unit = intervention_unit #
-                    subproject.facilitator_name = facilitator_name
-                    subproject.wave = wave
-                    subproject.lot = lot
-                    subproject.subproject_sector = subproject_sector
-                    subproject.type_of_subproject = type_of_subproject
-                    subproject.full_title_of_approved_subproject = full_title_of_approved_subproject
-                    subproject.works_type = works_type
-                    subproject.estimated_cost = estimated_cost
-                    subproject.level_of_achievement_donation_certificate = level_of_achievement_donation_certificate
-                    subproject.approval_date_cora = approval_date_cora
-                    subproject.date_of_signature_of_contract_for_construction_supervisors = date_of_signature_of_contract_for_construction_supervisors
-                    subproject.amount_of_the_contract_for_construction_supervisors = amount_of_the_contract_for_construction_supervisors
-                    subproject.date_signature_contract_controllers_in_SES = date_signature_contract_controllers_in_SES
-                    subproject.amount_of_the_controllers_contract_in_SES = amount_of_the_controllers_contract_in_SES
-                    subproject.convention = convention
-                    subproject.contract_number_of_work_companies = contract_number_of_work_companies
-                    subproject.name_of_the_awarded_company_works_companies = name_of_the_awarded_company_works_companies
-                    subproject.date_signature_contract_work_companies = date_signature_contract_work_companies
-                    subproject.contract_amount_work_companies = contract_amount_work_companies
-                    subproject.name_of_company_awarded_efme = name_of_company_awarded_efme
-                    subproject.date_signature_contract_efme = date_signature_contract_efme
-                    subproject.contract_companies_amount_for_efme = contract_companies_amount_for_efme
-                    subproject.date_signature_contract_facilitator = date_signature_contract_facilitator
-                    subproject.amount_of_the_facilitator_contract = amount_of_the_facilitator_contract
-                    subproject.launch_date_of_the_construction_site_in_the_village = launch_date_of_the_construction_site_in_the_village
-                    subproject.current_level_of_physical_realization_of_the_work = _current_level_of_physical_realization_of_the_work
-                    subproject.length_of_the_track = length_of_the_track
-                    subproject.depth_of_drilling = depth_of_drilling
-                    subproject.drilling_flow_rate = drilling_flow_rate
-                    subproject.current_status_of_the_site = current_status_of_the_site
-                    subproject.expected_duration_of_the_work = _expected_duration_of_the_work
-                    subproject.expected_end_date_of_the_contract = expected_end_date_of_the_contract
-                    subproject.total_contract_amount_paid = total_contract_amount_paid
-                    subproject.amount_of_the_care_and_maintenance_fund_expected_to_be_mobilized = amount_of_the_care_and_maintenance_fund_expected_to_be_mobilized
-                    subproject.care_and_maintenance_amount_on_village_account = care_and_maintenance_amount_on_village_account
-                    subproject.existence_of_maintenance_and_upkeep_plan_developed_by_community = bool(existence_of_maintenance_and_upkeep_plan_developed_by_community) if existence_of_maintenance_and_upkeep_plan_developed_by_community else False
-                    subproject.date_of_technical_acceptance_of_work_contracts = date_of_technical_acceptance_of_work_contracts
-                    subproject.technical_acceptance_date_for_efme_contracts = technical_acceptance_date_for_efme_contracts
-                    subproject.date_of_provisional_acceptance_of_work_contracts = date_of_provisional_acceptance_of_work_contracts
-                    subproject.provisional_acceptance_date_for_efme_contracts = provisional_acceptance_date_for_efme_contracts
-                    subproject.official_handover_date_of_the_microproject_to_the_community = official_handover_date_of_the_microproject_to_the_community
-                    subproject.official_handover_date_of_the_microproject_to_the_sector = official_handover_date_of_the_microproject_to_the_sector
-                    subproject.comments = comments
+                    if facilitator_name:
+                        subproject.facilitator_name = facilitator_name
+                    if wave:
+                        subproject.wave = wave
+                    if lot:
+                        subproject.lot = lot
+                    if subproject_sector:
+                        subproject.subproject_sector = subproject_sector
+                    if type_of_subproject:
+                        subproject.type_of_subproject = type_of_subproject
+                    if full_title_of_approved_subproject:
+                        if str(full_title_of_approved_subproject).upper() != str(subproject.full_title_of_approved_subproject).upper():
+                            subproject.infrastructure_changed = True
+                        subproject.full_title_of_approved_subproject = full_title_of_approved_subproject
+                    if works_type:
+                        subproject.works_type = works_type
+                    if estimated_cost:
+                        subproject.estimated_cost = estimated_cost
+                    if level_of_achievement_donation_certificate:
+                        subproject.level_of_achievement_donation_certificate = level_of_achievement_donation_certificate
+                    if approval_date_cora:
+                        subproject.approval_date_cora = approval_date_cora
+                    if date_of_signature_of_contract_for_construction_supervisors:
+                        subproject.date_of_signature_of_contract_for_construction_supervisors = date_of_signature_of_contract_for_construction_supervisors
+                    if amount_of_the_contract_for_construction_supervisors:
+                        subproject.amount_of_the_contract_for_construction_supervisors = amount_of_the_contract_for_construction_supervisors
+                    if date_signature_contract_controllers_in_SES:
+                        subproject.date_signature_contract_controllers_in_SES = date_signature_contract_controllers_in_SES
+                    if amount_of_the_controllers_contract_in_SES:
+                        subproject.amount_of_the_controllers_contract_in_SES = amount_of_the_controllers_contract_in_SES
+                    if convention:
+                        subproject.convention = convention
+                    if contract_number_of_work_companies:
+                        subproject.contract_number_of_work_companies = contract_number_of_work_companies
+                    if name_of_the_awarded_company_works_companies:
+                        subproject.name_of_the_awarded_company_works_companies = name_of_the_awarded_company_works_companies
+                    if date_signature_contract_work_companies:
+                        subproject.date_signature_contract_work_companies = date_signature_contract_work_companies
+                    if contract_amount_work_companies:
+                        subproject.contract_amount_work_companies = contract_amount_work_companies
+                    if name_of_company_awarded_efme:
+                        subproject.name_of_company_awarded_efme = name_of_company_awarded_efme
+                    if date_signature_contract_efme:
+                        subproject.date_signature_contract_efme = date_signature_contract_efme
+                    if contract_companies_amount_for_efme:
+                        subproject.contract_companies_amount_for_efme = contract_companies_amount_for_efme
+                    if date_signature_contract_facilitator:
+                        subproject.date_signature_contract_facilitator = date_signature_contract_facilitator
+                    if amount_of_the_facilitator_contract:
+                        subproject.amount_of_the_facilitator_contract = amount_of_the_facilitator_contract
+                    if launch_date_of_the_construction_site_in_the_village:
+                        subproject.launch_date_of_the_construction_site_in_the_village = launch_date_of_the_construction_site_in_the_village
+                    if _current_level_of_physical_realization_of_the_work:
+                        subproject.current_level_of_physical_realization_of_the_work = _current_level_of_physical_realization_of_the_work
+                    if length_of_the_track:
+                        subproject.length_of_the_track = length_of_the_track
+                    if depth_of_drilling:
+                        subproject.depth_of_drilling = depth_of_drilling
+                    if drilling_flow_rate:
+                        subproject.drilling_flow_rate = drilling_flow_rate
+                    if current_status_of_the_site:
+                        subproject.current_status_of_the_site = current_status_of_the_site
+                    if _expected_duration_of_the_work:
+                        subproject.expected_duration_of_the_work = _expected_duration_of_the_work
+                    if expected_end_date_of_the_contract:
+                        subproject.expected_end_date_of_the_contract = expected_end_date_of_the_contract
+                    if total_contract_amount_paid:
+                        subproject.total_contract_amount_paid = total_contract_amount_paid
+                    if amount_of_the_care_and_maintenance_fund_expected_to_be_mobilized:
+                        subproject.amount_of_the_care_and_maintenance_fund_expected_to_be_mobilized = amount_of_the_care_and_maintenance_fund_expected_to_be_mobilized
+                    if care_and_maintenance_amount_on_village_account:
+                        subproject.care_and_maintenance_amount_on_village_account = care_and_maintenance_amount_on_village_account
+                    if existence_of_maintenance_and_upkeep_plan_developed_by_community != None:
+                        subproject.existence_of_maintenance_and_upkeep_plan_developed_by_community = bool(existence_of_maintenance_and_upkeep_plan_developed_by_community) if existence_of_maintenance_and_upkeep_plan_developed_by_community else False
+                    if date_of_technical_acceptance_of_work_contracts:
+                        subproject.date_of_technical_acceptance_of_work_contracts = date_of_technical_acceptance_of_work_contracts
+                    if technical_acceptance_date_for_efme_contracts:
+                        subproject.technical_acceptance_date_for_efme_contracts = technical_acceptance_date_for_efme_contracts
+                    if date_of_provisional_acceptance_of_work_contracts:
+                        subproject.date_of_provisional_acceptance_of_work_contracts = date_of_provisional_acceptance_of_work_contracts
+                    if provisional_acceptance_date_for_efme_contracts:
+                        subproject.provisional_acceptance_date_for_efme_contracts = provisional_acceptance_date_for_efme_contracts
+                    if official_handover_date_of_the_microproject_to_the_community:
+                        subproject.official_handover_date_of_the_microproject_to_the_community = official_handover_date_of_the_microproject_to_the_community
+                    if official_handover_date_of_the_microproject_to_the_sector:
+                        subproject.official_handover_date_of_the_microproject_to_the_sector = official_handover_date_of_the_microproject_to_the_sector
+                    # subproject.comments = comments
                     if longitude and latitude:
                         subproject.latitude = latitude
                         subproject.longitude = longitude
@@ -483,14 +536,20 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                     if ethnic_minority_group != None:
                         subproject.ethnic_minority_group = bool(ethnic_minority_group)
                         
-                    if has_latrine_blocs != None:
-                        subproject.has_latrine_blocs = True if str(has_latrine_blocs).upper() in ("OUI", 1) else False
-                    if number_of_latrine_blocks != None:
-                        subproject.number_of_latrine_blocks = number_of_latrine_blocks
+                    # if has_latrine_blocs != None:
+                    #     subproject.has_latrine_blocs = True if str(has_latrine_blocs).upper() in ("OUI", "1") else False
+                    # if number_of_latrine_blocks != None:
+                    #     subproject.number_of_latrine_blocks = number_of_latrine_blocks
                     if number_of_classrooms != None:
                         subproject.number_of_classrooms = number_of_classrooms
-                    if has_fence != None:
-                        subproject.has_fence = True if str(has_fence).upper() in ("OUI", 1) else False
+                    # if has_fence != None:
+                    #     subproject.has_fence = True if str(has_fence).upper() in ("OUI", "1") else False
+
+                    if infrastructure_changed != None:
+                        subproject.infrastructure_changed = True if str(infrastructure_changed).upper() in ("OUI", "1") else False
+                    if infrastructure_deleted != None:
+                        subproject.infrastructure_deleted = True if str(infrastructure_deleted).upper() in ("OUI", "1") else False
+                    
 
                     subproject = subproject.save_and_return_object()
                     
@@ -524,7 +583,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
             #     break
     print(count)
     
-    subprojects = Subproject.objects.all().get_actifs()
+    subprojects = Subproject.objects.all()#.get_actifs()
     link_infrastures_to_subproject() #Link each infrastructure to their subproject
     copy_cvd_to_list_of_beneficiary_villages() #Link villages to theirs subprojects
     attribute_project_to_subprojects(
@@ -580,7 +639,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
     f = open("media/"+file_path, "a")
     f.write(summary_errors)
     f.close()
-
+    print(list(set(_types)))
     return (message, file_path.replace("/", "\\\\") if platform == "win32" else file_path)
 
     #Excel error
@@ -706,7 +765,9 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         "Blocs latrine? (Oui, Non)": {},
         "Nombre de blocs latrine (de 3 cabines)": {},
         "Nombre de salle de classes": {},
-        "Clôture": {}
+        "Clôture": {},
+        "Ouvrage changé": {},
+        "Ouvrage supprimé": {}
     }
 
     # administratives_levels = []
@@ -910,12 +971,14 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         datas["Groupe des éleveurs/Agriculteurs"][count] = 1 if elt.breeders_farmers_group else (0 if elt.breeders_farmers_group == False else "")
         datas["Groupe des minorités ethniques"][count] = 1 if elt.ethnic_minority_group else (0 if elt.ethnic_minority_group == False else "")
 
-        datas["Blocs latrine? (Oui, Non)"][count] = "Oui" if elt.has_latrine_blocs else ("Non" if elt.has_latrine_blocs == False else "")
-        datas["Nombre de blocs latrine (de 3 cabines)"][count] = elt.number_of_latrine_blocks if elt.number_of_latrine_blocks else ""
+        # datas["Blocs latrine? (Oui, Non)"][count] = "Oui" if elt.has_latrine_blocs else ("Non" if elt.has_latrine_blocs == False else "")
+        # datas["Nombre de blocs latrine (de 3 cabines)"][count] = elt.number_of_latrine_blocks if elt.number_of_latrine_blocks else ""
         datas["Nombre de salle de classes"][count] = elt.number_of_classrooms if elt.number_of_classrooms else ""
-        datas["Clôture"][count] = "Oui" if elt.has_fence else ("Non" if elt.has_fence == False else "")
+        # datas["Clôture"][count] = "Oui" if elt.has_fence else ("Non" if elt.has_fence == False else "")
 
-
+        datas["Ouvrage changé"][count] = "Oui" if elt.infrastructure_changed else ""
+        datas["Ouvrage supprimé"][count] = "Oui" if elt.infrastructure_deleted else ""
+        
         datas["COMMENTAIRES"][count] = elt.comments
         
         count += 1

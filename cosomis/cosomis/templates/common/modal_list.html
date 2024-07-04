@@ -89,11 +89,11 @@
                                 <td>{{ subproject.type_of_subproject }}</td>
                                 <td>{{ subproject.works_type }}</td>
 
-                                {% if "infrastrutures-with-latrines-fences" in list_type_search or "latrines-and-fences" in list_type_search %}
+                                {% comment %} {% if "infrastrutures-with-latrines-fences" in list_type_search or "latrines-and-fences" in list_type_search %}
                                 <td>{% if subproject.has_latrine_blocs == True %}{% translate "Yes" %}{% elif subproject.has_latrine_blocs == False %}{% translate "No" %}{% else %}-{% endif %}</td>
                                 <td>{% if subproject.number_of_latrine_blocks %}{{ subproject.number_of_latrine_blocks }}{% else %}-{% endif %}</td>
                                 <td>{% if subproject.has_fence %}{% translate "Yes" %}{% else %}-{% endif %}</td>
-                                {% endif %}
+                                {% endif %} {% endcomment %}
 
                                 <td>
                                     {% if subproject.get_current_subproject_step_and_level %}

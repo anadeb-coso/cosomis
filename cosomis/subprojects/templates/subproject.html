@@ -164,6 +164,17 @@
                                             <br />
                                         {% endfor %}
                                     </div>
+                                    {% comment %} <div>
+                                        {% if object.has_latrine_blocs or object.has_fence %}
+                                            {% translate 'Others infrastructures' %} : 
+                                            {% if object.has_latrine_blocs %}
+                                                {{ object.number_of_latrine_blocks }} {% translate 'Latrine blocks' %}<br />
+                                            {% endif %}
+                                            {% if object.has_fence %}
+                                                {% translate 'Fenced infrastructure' %}<br />
+                                            {% endif %}
+                                        {% endif %}
+                                    </div> {% endcomment %}
                                     <div>
                                         {% if object.get_subprojects_linked|length > 1 %}
                                             {% translate 'Subprojects' %} : 

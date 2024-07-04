@@ -20,6 +20,7 @@ from subprojects.models import SubprojectStep, Level, SubprojectFile
 from usermanager.permissions import (
     InfraPermissionRequiredMixin, 
 )
+from subprojects.api.functions import convert_str_percent_to_float
 
 class SubprojectFormMixin(SubprojectMixin, generic.FormView):
 
@@ -186,22 +187,31 @@ class SubprojectStepAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequiredM
         subproject_step.ranking = subproject_step.step.ranking
         subproject_step = subproject_step.save_and_return_object()
 
-        if not self._obj:
-            if subproject_step.step.ranking < 8 and subproject_step.step.ranking != 2:
+        # if not self._obj:
+        _subproject_step = self.subproject.get_current_subproject_step
+        if _subproject_step:
+            if _subproject_step.step.ranking < 8 and _subproject_step.step.ranking != 2:
                 self.subproject.current_status_of_the_site = "Identifié"
-            elif subproject_step.step.ranking == 9:
+            elif _subproject_step.step.ranking == 9:
                 self.subproject.current_status_of_the_site = "Abandon"
-            elif subproject_step.step.ranking == 10:
+            elif _subproject_step.step.ranking == 10:
                 self.subproject.current_status_of_the_site = "Arrêt"
-            elif subproject_step.step.ranking == 14:
+            elif _subproject_step.step.ranking == 14:
                 self.subproject.current_status_of_the_site = "Réception provisoire"
             else:
-                self.subproject.current_status_of_the_site = subproject_step.step.wording
+                self.subproject.current_status_of_the_site = _subproject_step.step.wording
 
             if subproject_step.step.ranking == 3:
                 self.subproject.approval_date_cora = subproject_step.begin
-
-            self.subproject.current_level_of_physical_realization_of_the_work = str(subproject_step.step.percent if subproject_step.step.percent else subproject_step.step.wording)
+            if subproject_step.step.ranking == 12:
+                self.subproject.date_of_technical_acceptance_of_work_contracts = subproject_step.begin
+            if subproject_step.step.ranking == 13:
+                self.subproject.date_of_provisional_acceptance_of_work_contracts = subproject_step.begin
+            if subproject_step.step.ranking == 14:
+                self.subproject.official_handover_date_of_the_microproject_to_the_community = subproject_step.begin
+            
+            
+            self.subproject.current_level_of_physical_realization_of_the_work = str(_subproject_step.step.percent if _subproject_step.step.percent else _subproject_step.step.wording)
             self.subproject.save()
 
         images = subproject_step.subproject.get_all_images()
@@ -287,10 +297,17 @@ class SubprojectLevelAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequired
         subproject_level.subproject_step = subproject_step
         subproject_level = subproject_level.save_and_return_object()
 
-        if not self._obj:
-            self.subproject.current_status_of_the_site = "En cours"
-            self.subproject.current_level_of_physical_realization_of_the_work = str(subproject_level.percent if subproject_level.percent else "0")
-            self.subproject.save()
+        # if not self._obj:
+        _step = self.subproject.get_current_subproject_step
+        if _step and _step.wording == "En cours":
+            
+            old_percent = convert_str_percent_to_float(self.subproject.current_level_of_physical_realization_of_the_work)
+            new_percent = convert_str_percent_to_float(subproject_level.percent)
+            
+            if old_percent < new_percent:
+                self.subproject.current_status_of_the_site = "En cours"
+                self.subproject.current_level_of_physical_realization_of_the_work = str(subproject_level.percent if subproject_level.percent else "0")
+                self.subproject.save()
 
         images = subproject_level.subproject_step.subproject.get_all_images()
         for file in [self.request.FILES.get('level_image'), self.request.FILES.get('level_other_file')]:

@@ -81,9 +81,10 @@ class DashboardSubprojectsMixin(ModalListMixin):
         if not ald_filter_ids:
             pass
         else:
+            adls = ald_filter_ids + administrative_levels_ids
             subprojects = subprojects.filter(
-                Q(location_subproject_realized__id__in=administrative_levels_ids) | 
-                Q(canton__id__in=administrative_levels_ids)
+                Q(location_subproject_realized__id__in=adls) | 
+                Q(canton__id__in=adls)
             )
         administrative_level = administrative_levels.first()
 
@@ -111,373 +112,390 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
         ctx['total_without_link'] = all_subprojects.filter(link_to_subproject=None, subproject_type_designation="Subproject").count()
         ctx['total_subproject'] = all_subprojects.filter(subproject_type_designation="Subproject").count()
         ctx['total_infrastruture'] = all_subprojects.filter(subproject_type_designation="Infrastructure").count()
-        ctx['total_latrine_blocks'] = all_subprojects.filter(has_latrine_blocs=True).count()
-        ctx['total_number_latrine_blocks'] = all_subprojects.filter(has_latrine_blocs=True).aggregate(Sum('number_of_latrine_blocks'))['number_of_latrine_blocks__sum']
-        ctx['total_number_latrine_blocks'] = ctx['total_number_latrine_blocks'] if ctx['total_number_latrine_blocks'] else 0
-        ctx['total_fences'] = all_subprojects.filter(has_fence=True).count()
-        ctx['total_infrastrutures'] = ctx['total'] + ctx['total_latrine_blocks'] + ctx['total_fences']
+        # ctx['total_latrine_blocks'] = all_subprojects.filter(has_latrine_blocs=True).count()
+        # ctx['total_number_latrine_blocks'] = all_subprojects.filter(has_latrine_blocs=True).aggregate(Sum('number_of_latrine_blocks'))['number_of_latrine_blocks__sum']
+        # ctx['total_number_latrine_blocks'] = ctx['total_number_latrine_blocks'] if ctx['total_number_latrine_blocks'] else 0
+        # ctx['total_fences'] = all_subprojects.filter(has_fence=True).count()
+        ctx['total_infrastrutures'] = ctx['total'] # + ctx['total_latrine_blocks'] + ctx['total_fences']
         
         # ctx['total_subproject_in_progress'] = all_subprojects.filter(subproject_type_designation="Subproject", current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()
         # ctx['total_subproject_completed'] = all_subprojects.filter(subproject_type_designation="Subproject", current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()
         _s = all_subprojects.filter(subproject_type_designation="Subproject")
         # Get SQL representation of the first filter's queryset
-        _sql, _params = _s.query.get_compiler('default').as_sql()
-        # Use the SQL representation in the raw query for the second filter
-        final_queryset = _s.raw(
-            f"""
-            SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
-            FROM subprojects_subproject AS sub_subp 
-            LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
-            WHERE (((sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS*2)} 
-                AND sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}) 
-                OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
-                AND (sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}))
-                OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS*2)})) 
-                AND sub_subp.id IN (
-                    SELECT sub.id FROM ({_sql}) AS sub 
-                ))
-            """, _params
-        )
-                                
-        ctx['total_subproject_in_progress'] = len(final_queryset)
-        final_queryset = _s.raw(
-            f"""
-            SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
-            FROM subprojects_subproject AS sub_subp 
-            LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
-            WHERE (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)}
-                AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)})) 
-                AND sub_subp.id IN (
-                    SELECT sub.id FROM ({_sql}) AS sub 
-                )
-            """, _params
-        )
-        ctx['total_subproject_completed'] = len(final_queryset)
-        ctx['total_subproject_not_started'] = ctx['total_subproject'] - (ctx['total_subproject_in_progress'] + ctx['total_subproject_completed'])
-        
-        ctx['total_infrastruture_in_progress'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()
-        ctx['total_infrastruture_completed'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()
-        ctx['total_infrastruture_not_started'] = ctx['total'] - (ctx['total_infrastruture_in_progress'] + ctx['total_infrastruture_completed'])
-        
-        ctx['total_latrines_in_progress'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS, has_latrine_blocs=True).count()
-        ctx['total_latrines_completed'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS, has_latrine_blocs=True).count()
-        ctx['total_latrines_not_started'] = ctx['total_latrine_blocks'] - (ctx['total_latrines_in_progress'] + ctx['total_latrines_completed'])
-        
-        ctx['total_number_latrine_in_progress'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS, has_latrine_blocs=True).aggregate(Sum('number_of_latrine_blocks'))['number_of_latrine_blocks__sum']
-        ctx['total_number_latrine_in_progress'] = ctx['total_number_latrine_in_progress'] if ctx['total_number_latrine_in_progress'] else 0
-        ctx['total_number_latrine_completed'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS, has_latrine_blocs=True).aggregate(Sum('number_of_latrine_blocks'))['number_of_latrine_blocks__sum']
-        ctx['total_number_latrine_completed'] = ctx['total_number_latrine_completed'] if ctx['total_number_latrine_completed'] else 0
-        ctx['total_number_latrine_not_started'] = ctx['total_number_latrine_blocks'] - (ctx['total_number_latrine_in_progress'] + ctx['total_number_latrine_completed'])
-        
-        ctx['total_fences_in_progress'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS, has_fence=True).count()
-        ctx['total_fences_completed'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS, has_fence=True).count()
-        ctx['total_fences_not_started'] = ctx['total_fences'] - (ctx['total_fences_in_progress'] + ctx['total_fences_completed'])
-        
-        ctx['total_infrastrutures_in_progress'] = ctx['total_infrastruture_in_progress'] + ctx['total_latrines_in_progress'] + ctx['total_fences_in_progress']
-        ctx['total_infrastrutures_completed'] = ctx['total_infrastruture_completed'] + ctx['total_latrines_completed'] + ctx['total_fences_completed']
-        ctx['total_infrastrutures_not_started'] = ctx['total_infrastruture_not_started'] + ctx['total_latrines_not_started'] + ctx['total_fences_not_started']
-        
-        ctx['number_subproject_infrastrutures'] = {
-            'title': _("Number of subprojects selected in relation to infrastructure by sector"),
-            'labels': sectors,
-            'bars': [
+        if _s.exists():
+            _sql, _params = _s.query.get_compiler('default').as_sql()
+            # Use the SQL representation in the raw query for the second filter
+            final_queryset = _s.raw(
+                f"""
+                SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
+                FROM subprojects_subproject AS sub_subp 
+                LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
+                WHERE (((sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS*2)} 
+                    AND sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}) 
+                    OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
+                    AND (sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}))
+                    OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS*2)})) 
+                    AND sub_subp.id IN (
+                        SELECT sub.id FROM ({_sql}) AS sub 
+                    ))
+                """, _params
+            )
+                                    
+            ctx['total_subproject_in_progress'] = len(final_queryset)
+            final_queryset = _s.raw(
+                f"""
+                SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
+                FROM subprojects_subproject AS sub_subp 
+                LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
+                WHERE (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)}
+                    AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)})) 
+                    AND sub_subp.id IN (
+                        SELECT sub.id FROM ({_sql}) AS sub 
+                    )
+                """, _params
+            )
+            ctx['total_subproject_completed'] = len(final_queryset)
+            ctx['total_subproject_not_started'] = ctx['total_subproject'] - (ctx['total_subproject_in_progress'] + ctx['total_subproject_completed'])
+            
+            ctx['total_infrastruture_in_progress'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()
+            ctx['total_infrastruture_completed'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()
+            ctx['total_infrastruture_not_started'] = ctx['total'] - (ctx['total_infrastruture_in_progress'] + ctx['total_infrastruture_completed'])
+            
+            # ctx['total_latrines_in_progress'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS, has_latrine_blocs=True).count()
+            # ctx['total_latrines_completed'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS, has_latrine_blocs=True).count()
+            # ctx['total_latrines_not_started'] = ctx['total_latrine_blocks'] - (ctx['total_latrines_in_progress'] + ctx['total_latrines_completed'])
+            
+            # ctx['total_number_latrine_in_progress'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS, has_latrine_blocs=True).aggregate(Sum('number_of_latrine_blocks'))['number_of_latrine_blocks__sum']
+            # ctx['total_number_latrine_in_progress'] = ctx['total_number_latrine_in_progress'] if ctx['total_number_latrine_in_progress'] else 0
+            # ctx['total_number_latrine_completed'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS, has_latrine_blocs=True).aggregate(Sum('number_of_latrine_blocks'))['number_of_latrine_blocks__sum']
+            # ctx['total_number_latrine_completed'] = ctx['total_number_latrine_completed'] if ctx['total_number_latrine_completed'] else 0
+            # ctx['total_number_latrine_not_started'] = ctx['total_number_latrine_blocks'] - (ctx['total_number_latrine_in_progress'] + ctx['total_number_latrine_completed'])
+            
+            # ctx['total_fences_in_progress'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS, has_fence=True).count()
+            # ctx['total_fences_completed'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS, has_fence=True).count()
+            # ctx['total_fences_not_started'] = ctx['total_fences'] - (ctx['total_fences_in_progress'] + ctx['total_fences_completed'])
+            
+            ctx['total_infrastrutures_in_progress'] = ctx['total_infrastruture_in_progress'] #+ ctx['total_latrines_in_progress'] + ctx['total_fences_in_progress']
+            ctx['total_infrastrutures_completed'] = ctx['total_infrastruture_completed'] #+ ctx['total_latrines_completed'] + ctx['total_fences_completed']
+            ctx['total_infrastrutures_not_started'] = ctx['total_infrastruture_not_started'] #+ ctx['total_latrines_not_started'] + ctx['total_fences_not_started']
+            
+            ctx['number_subproject_infrastrutures'] = {
+                'title': _("Number of subprojects selected in relation to infrastructure by sector"),
+                'labels': sectors,
+                'bars': [
+                    {
+                        'label': _("Subproject"),
+                        'backgroundColor': 'red',
+                        'data': [
+                            all_subprojects.filter(subproject_type_designation="Subproject", subproject_sector=sector).count() for sector in sectors
+                        ]
+                    },
+                    {
+                        'label': _("Infrastructure"),
+                        'backgroundColor': 'blue',
+                        'data': [
+                            all_subprojects.filter(subproject_sector=sector).count() for sector in sectors
+                        ]
+                    },
+                    {
+                        'label': _("Infras with latrines/fences"),
+                        'backgroundColor': 'green',
+                        'data': [
+                            (
+                                all_subprojects.filter(subproject_sector=sector).count() #+ \
+                                    # all_subprojects.filter(subproject_sector=sector, has_latrine_blocs=True).count() + \
+                                    #     all_subprojects.filter(subproject_sector=sector, has_fence=True).count()
+                            ) for sector in sectors
+                        ]
+                    }
+                ]
+            }
+            
+            
+            ctx['amount_subproject_infrastrutures'] = {
+                'title': _("Amount of subprojects selected in relation to infrastructure by sector"),
+                'labels': sectors,
+                'bars': [
+                    # {
+                    #     'label': _("Subproject"),
+                    #     'backgroundColor': 'red',
+                    #     'data': [(elt if elt else 0) for elt in [
+                    #         all_subprojects.filter(subproject_type_designation="Subproject", subproject_sector=sector).aggregate(Sum('estimated_cost'))['estimated_cost__sum'] for sector in sectors
+                    #     ]]
+                    # },
+                    {
+                        'label': _("Infrastructure"),
+                        'backgroundColor': 'blue',
+                        'data': [(elt if elt else 0) for elt in [
+                            all_subprojects.filter(subproject_sector=sector).aggregate(Sum('estimated_cost'))['estimated_cost__sum'] for sector in sectors
+                        ]]
+                    }
+                    # ,
+                    # {
+                    #     'label': _("Infras with latrines/fences"),
+                    #     'backgroundColor': 'green',
+                    #     'data': [
+                    #         (
+                    #             all_subprojects.filter(subproject_sector=sector).aggregate(Sum('estimated_cost'))['estimated_cost__sum']
+                    #         ) for sector in sectors
+                    #     ]
+                    # }
+                ]
+            }
+            
+            
+            #Structure Graphe
+            # structures = dict(sorted(TYPES_OF_STRUCTURE_COLOR.items()))
+            # type_structures = sorted(list(structures.keys()))
+            type_structures = list(TYPES_OF_STRUCTURE_COLOR.keys())
+            ctx['type_structures'] = type_structures
+            bars_type_structures = [
                 {
-                    'label': _("Subproject"),
-                    'backgroundColor': 'red',
-                    'data': [
-                        all_subprojects.filter(subproject_type_designation="Subproject", subproject_sector=sector).count() for sector in sectors
-                    ]
-                },
-                {
-                    'label': _("Infrastructure"),
+                    'label': _("Structure"),
                     'backgroundColor': 'blue',
                     'data': [
-                        all_subprojects.filter(subproject_sector=sector).count() for sector in sectors
-                    ]
+                        (
+                            # (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True).count() if type_structure == 'Latrine Scolaire' else \
+                            #     (all_subprojects.filter(type_of_subproject__istartswith='Pédiatrie', has_fence=True).count() if type_structure == 'Clôture Pédiatrie' else \
+                            #         (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True).count()))) \
+                            #     if type_structure in OTHER_STRUCUTURES \
+                            #     else 
+                                all_subprojects.filter(type_of_subproject__istartswith=type_structure).count()
+                        ) for type_structure in type_structures
+                    ],
+                    'classrooms': [(elt if elt else 0) for elt in [
+                        (
+                            all_subprojects.filter(type_of_subproject__istartswith=type_structure, number_of_classrooms__isnull=False).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
+                        ) for type_structure in type_structures
+                    ]]
                 },
                 {
-                    'label': _("Infras with latrines/fences"),
+                    'label': _("Not start"),
+                    'backgroundColor': 'red',
+                    'data': [
+                        (
+                            # (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True).exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)).count() if type_structure == 'Latrine Scolaire' else \
+                            #     (all_subprojects.filter(type_of_subproject__istartswith='Pédiatrie', has_fence=True).exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)).count() if type_structure == 'Clôture Pédiatrie' else \
+                            #         (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True).exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)).count()))) \
+                            #     if type_structure in OTHER_STRUCUTURES \
+                            #     else 
+                                all_subprojects.filter(type_of_subproject__istartswith=type_structure).exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)).count()
+                        ) for type_structure in type_structures
+                    ],
+                    'classrooms': [(elt if elt else 0) for elt in [
+                        (
+                            all_subprojects.filter(type_of_subproject__istartswith=type_structure, number_of_classrooms__isnull=False).exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
+                        ) for type_structure in type_structures
+                    ]]
+                },
+                {
+                    'label': _("In progress"),
+                    'backgroundColor': 'purple',
+                    'data': [
+                        (
+                            # (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count() if type_structure == 'Latrine Scolaire' else \
+                            #     (all_subprojects.filter(type_of_subproject__istartswith='Pédiatrie', has_fence=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count() if type_structure == 'Clôture Pédiatrie' else \
+                            #         (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()))) \
+                            #     if type_structure in OTHER_STRUCUTURES \
+                            #     else 
+                                all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()
+                        ) for type_structure in type_structures
+                    ],
+                    'classrooms': [(elt if elt else 0) for elt in [
+                        (
+                            all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS, number_of_classrooms__isnull=False).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
+                        ) for type_structure in type_structures
+                    ]]
+                },
+                {
+                    'label': _("Completed"),
                     'backgroundColor': 'green',
                     'data': [
                         (
-                            all_subprojects.filter(subproject_sector=sector).count() + \
-                                all_subprojects.filter(subproject_sector=sector, has_latrine_blocs=True).count() + \
-                                    all_subprojects.filter(subproject_sector=sector, has_fence=True).count()
-                        ) for sector in sectors
-                    ]
-                }
-            ]
-        }
-        
-        
-        ctx['amount_subproject_infrastrutures'] = {
-            'title': _("Amount of subprojects selected in relation to infrastructure by sector"),
-            'labels': sectors,
-            'bars': [
-                # {
-                #     'label': _("Subproject"),
-                #     'backgroundColor': 'red',
-                #     'data': [(elt if elt else 0) for elt in [
-                #         all_subprojects.filter(subproject_type_designation="Subproject", subproject_sector=sector).aggregate(Sum('estimated_cost'))['estimated_cost__sum'] for sector in sectors
-                #     ]]
-                # },
-                {
-                    'label': _("Infrastructure"),
-                    'backgroundColor': 'blue',
-                    'data': [(elt if elt else 0) for elt in [
-                        all_subprojects.filter(subproject_sector=sector).aggregate(Sum('estimated_cost'))['estimated_cost__sum'] for sector in sectors
+                            # (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count() if type_structure == 'Latrine Scolaire' else \
+                            #     (all_subprojects.filter(type_of_subproject__istartswith='Pédiatrie', has_fence=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count() if type_structure == 'Clôture Pédiatrie' else \
+                            #         (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()))) \
+                            #     if type_structure in OTHER_STRUCUTURES \
+                            #     else 
+                                all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()
+                        ) for type_structure in type_structures
+                    ],
+                    'classrooms': [(elt if elt else 0) for elt in [
+                        (
+                            all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS, number_of_classrooms__isnull=False).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
+                        ) for type_structure in type_structures
                     ]]
                 }
-                # ,
-                # {
-                #     'label': _("Infras with latrines/fences"),
-                #     'backgroundColor': 'green',
-                #     'data': [
-                #         (
-                #             all_subprojects.filter(subproject_sector=sector).aggregate(Sum('estimated_cost'))['estimated_cost__sum']
-                #         ) for sector in sectors
-                #     ]
-                # }
             ]
-        }
-        
-        
-        #Structure Graphe
-        # structures = dict(sorted(TYPES_OF_STRUCTURE_COLOR.items()))
-        # type_structures = sorted(list(structures.keys()))
-        type_structures = list(TYPES_OF_STRUCTURE_COLOR.keys())
-        ctx['type_structures'] = type_structures
-        bars_type_structures = [
-            {
-                'label': _("Structure"),
-                'backgroundColor': 'blue',
-                'data': [
-                    (
-                        (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True).count() if type_structure == 'Latrine Scolaire' else \
-                            (all_subprojects.filter(type_of_subproject__istartswith='Pédiatrie', has_fence=True).count() if type_structure == 'Clôture Pédiatrie' else \
-                                (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True).count()))) \
-                            if type_structure in OTHER_STRUCUTURES \
-                            else all_subprojects.filter(type_of_subproject__istartswith=type_structure).count()
-                    ) for type_structure in type_structures
-                ],
-                'classrooms': [(elt if elt else 0) for elt in [
-                    (
-                        all_subprojects.filter(type_of_subproject__istartswith=type_structure, number_of_classrooms__isnull=False).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
-                    ) for type_structure in type_structures
-                ]]
-            },
-            {
-                'label': _("Not start"),
-                'backgroundColor': 'red',
-                'data': [
-                    (
-                        (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True).exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)).count() if type_structure == 'Latrine Scolaire' else \
-                            (all_subprojects.filter(type_of_subproject__istartswith='Pédiatrie', has_fence=True).exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)).count() if type_structure == 'Clôture Pédiatrie' else \
-                                (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True).exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)).count()))) \
-                            if type_structure in OTHER_STRUCUTURES \
-                            else all_subprojects.filter(type_of_subproject__istartswith=type_structure).exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)).count()
-                    ) for type_structure in type_structures
-                ],
-                'classrooms': [(elt if elt else 0) for elt in [
-                    (
-                        all_subprojects.filter(type_of_subproject__istartswith=type_structure, number_of_classrooms__isnull=False).exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
-                    ) for type_structure in type_structures
-                ]]
-            },
-            {
-                'label': _("In progress"),
-                'backgroundColor': 'purple',
-                'data': [
-                    (
-                        (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count() if type_structure == 'Latrine Scolaire' else \
-                            (all_subprojects.filter(type_of_subproject__istartswith='Pédiatrie', has_fence=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count() if type_structure == 'Clôture Pédiatrie' else \
-                                (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()))) \
-                            if type_structure in OTHER_STRUCUTURES \
-                            else all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()
-                    ) for type_structure in type_structures
-                ],
-                'classrooms': [(elt if elt else 0) for elt in [
-                    (
-                        all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS, number_of_classrooms__isnull=False).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
-                    ) for type_structure in type_structures
-                ]]
-            },
-            {
-                'label': _("Completed"),
-                'backgroundColor': 'green',
-                'data': [
-                    (
-                        (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count() if type_structure == 'Latrine Scolaire' else \
-                            (all_subprojects.filter(type_of_subproject__istartswith='Pédiatrie', has_fence=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count() if type_structure == 'Clôture Pédiatrie' else \
-                                (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()))) \
-                            if type_structure in OTHER_STRUCUTURES \
-                            else all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()
-                    ) for type_structure in type_structures
-                ],
-                'classrooms': [(elt if elt else 0) for elt in [
-                    (
-                        all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS, number_of_classrooms__isnull=False).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
-                    ) for type_structure in type_structures
-                ]]
+            ctx['bars_type_structures'] = bars_type_structures
+            ctx['sum_bars_type_structures'] = [sum(elt.get('data')) for elt in bars_type_structures]
+            ctx['number_structures_by_type'] = {
+                'title': _("Structures by type"),
+                'labels': type_structures,
+                'bars': [bars_type_structures[0], bars_type_structures[3]]
             }
-        ]
-        ctx['bars_type_structures'] = bars_type_structures
-        ctx['sum_bars_type_structures'] = [sum(elt.get('data')) for elt in bars_type_structures]
-        ctx['number_structures_by_type'] = {
-            'title': _("Structures by type"),
-            'labels': type_structures,
-            'bars': [bars_type_structures[0], bars_type_structures[3]]
-        }
-        
-        
-        
-        ctx['number_subproject_infrastrutures_by_sectors_and_type'] = {
-            _('Identified'): dict([
-                (sector,{
-                    'types': dict([
-                        (t[0], all_subprojects.filter(subproject_sector=sector, type_of_subproject=t[0]).count()) for t in sorted(list(set(list(all_subprojects.filter(subproject_sector=sector).values_list('type_of_subproject')))))
-                    ] + [
-                        (type_structure,
-                        (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True).count() if type_structure == 'Latrine Scolaire' else \
-                            (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Pédiatrie', has_fence=True).count() if type_structure == 'Clôture Pédiatrie' else \
-                                (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True).count()))) 
-                    ) for type_structure in OTHER_STRUCUTURES
-                    ]), 
-                    'total': {
-                        'subprojects': all_subprojects.filter(subproject_type_designation="Subproject", subproject_sector=sector).count(),
-                        'infrastructures': all_subprojects.filter(subproject_sector=sector).count(),
-                        'infrastructures_with_latrines_and_fences': (
-                            all_subprojects.filter(subproject_sector=sector).count() + \
-                                all_subprojects.filter(subproject_sector=sector, has_latrine_blocs=True).count() + \
-                                    all_subprojects.filter(subproject_sector=sector, has_fence=True).count()
-                        )
-                    }
-                }) for sector in sectors
-            ] + [('total', ctx['total_infrastrutures'])]),
-            _('Completed'): dict([
-                (sector,{
-                    'types': dict([
-                        (t[0], all_subprojects.filter(subproject_sector=sector, type_of_subproject=t[0], current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()) for t in sorted(list(set(list(all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).values_list('type_of_subproject')))))
-                    ] + [
-                        (type_structure,
-                        (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count() if type_structure == 'Latrine Scolaire' else \
-                            (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Pédiatrie', has_fence=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count() if type_structure == 'Clôture Pédiatrie' else \
-                                (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()))) 
-                    ) for type_structure in OTHER_STRUCUTURES
-                    ]), 
-                    'total': {
-                        'subprojects': len(all_subprojects.raw(
-                            f"""
-                            SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
-                            FROM subprojects_subproject AS sub_subp 
-                            LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
-                            WHERE (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)}
-                                AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)})) 
-                                AND sub_subp.id IN (
-                                    SELECT sub.id FROM ({_sql}) AS sub 
-                                ) AND sub_subp.subproject_sector=%s
-                            """, _params + (sector,)
-                        )),
-                        'infrastructures': all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count(),
-                        'infrastructures_with_latrines_and_fences': (
-                            all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count() + \
-                                all_subprojects.filter(subproject_sector=sector, has_latrine_blocs=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count() + \
-                                    all_subprojects.filter(subproject_sector=sector, has_fence=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()
-                        )
-                    }
-                }) for sector in sectors
-            ] + [('total', ctx['total_infrastrutures_completed'])]),
-            _('In progress'): dict([
-                (sector,{
-                    'types': dict([
-                        (t[0], all_subprojects.filter(subproject_sector=sector, type_of_subproject=t[0], current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()) for t in sorted(list(set(list(all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).values_list('type_of_subproject')))))
-                    ] + [
-                        (type_structure,
-                        (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count() if type_structure == 'Latrine Scolaire' else \
-                            (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Pédiatrie', has_fence=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count() if type_structure == 'Clôture Pédiatrie' else \
-                                (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()))) 
-                    ) for type_structure in OTHER_STRUCUTURES
-                    ]), 
-                    'total': {
-                        'subprojects': len(all_subprojects.raw(
-                            f"""
-                            SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
-                            FROM subprojects_subproject AS sub_subp 
-                            LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
-                            WHERE (((sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS*2)} 
-                                AND sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}) 
-                                OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
-                                AND (sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}))
-                                OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS*2)})) 
-                                AND sub_subp.id IN (
-                                    SELECT sub.id FROM ({_sql}) AS sub 
-                                ) AND sub_subp.subproject_sector=%s)
-                            """, _params + (sector,)
-                        )),
-                        'infrastructures': all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count(),
-                        'infrastructures_with_latrines_and_fences': (
-                            all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count() + \
-                                all_subprojects.filter(subproject_sector=sector, has_latrine_blocs=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count() + \
-                                    all_subprojects.filter(subproject_sector=sector, has_fence=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()
-                        )
-                    }
-                }) for sector in sectors
-            ] + [('total', ctx['total_infrastrutures_in_progress'])]),
-            _('Not start'): dict([
-                (sector,{
-                    'types': dict([
-                        (t[0], all_subprojects.filter(subproject_sector=sector, type_of_subproject=t[0], current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count()) for t in sorted(list(set(list(all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).values_list('type_of_subproject')))))
-                    ] + [
-                        (type_structure,
-                        (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count() if type_structure == 'Latrine Scolaire' else \
-                            (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Pédiatrie', has_fence=True, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count() if type_structure == 'Clôture Pédiatrie' else \
-                                (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count()))) 
-                    ) for type_structure in OTHER_STRUCUTURES
-                    ]), 
-                    'total': {
-                        'subprojects': len(all_subprojects.raw(
-                            f"""
-                            SELECT sub_subp.id 
-                            FROM subprojects_subproject AS sub_subp 
-                            LEFT JOIN subprojects_subproject AS sub_infras ON sub_infras.link_to_subproject_id=sub_subp.id AND sub_infras.subproject_type_designation='Infrastructure' 
-                            WHERE (sub_subp.current_status_of_the_site NOT IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
-                                AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site NOT IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)})) 
-                                AND sub_subp.id IN (
-                                    SELECT sub.id FROM ({_sql}) AS sub 
-                                ) AND sub_subp.subproject_sector=%s
-                            """, _params + (sector,)
-                        )),
-                        'infrastructures': all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count(),
-                        'infrastructures_with_latrines_and_fences': (
-                            all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count() + \
-                                all_subprojects.filter(subproject_sector=sector, has_latrine_blocs=True, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count() + \
-                                    all_subprojects.filter(subproject_sector=sector, has_fence=True, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count()
-                        )
-                    }
-                }) for sector in sectors
-            ] + [('total', ctx['total_infrastrutures_not_started'])])
-        }
-        
-      
-        ctx['pie_graphes'] = [
-            {
-                'type': _("Level"),
-                'title': _("Number of infrastructures by status"),
-                'labels': [_("Completed"), _("In progress"), _("Not start")],
-                'data': [ctx['total_infrastrutures_completed'], ctx['total_infrastrutures_in_progress'], ctx['total_infrastrutures_not_started']],
-                'sorted': 0
-            },
-            {
-                'type': _("Sector"),
-                'title': _("Number of subprojects selected by sector"),
-                'labels': sectors,
-                'data': ctx['number_subproject_infrastrutures']['bars'][2]['data'],
-                'sorted': 1,
-                'columnSorted': 1
+            
+            
+            
+            ctx['number_subproject_infrastrutures_by_sectors_and_type'] = {
+                _('Identified'): dict([
+                    (sector,{
+                        'types': dict([
+                            (t[0], all_subprojects.filter(subproject_sector=sector, type_of_subproject=t[0]).count()) for t in sorted(list(set(list(all_subprojects.filter(subproject_sector=sector).values_list('type_of_subproject')))))
+                        ] 
+                        #               + [
+                        #     (type_structure,
+                        #     (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True).count() if type_structure == 'Latrine Scolaire' else \
+                        #         (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Pédiatrie', has_fence=True).count() if type_structure == 'Clôture Pédiatrie' else \
+                        #             (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True).count()))) 
+                        # ) for type_structure in OTHER_STRUCUTURES
+                        # ]
+                                      ), 
+                        'total': {
+                            'subprojects': all_subprojects.filter(subproject_type_designation="Subproject", subproject_sector=sector).count(),
+                            'infrastructures': all_subprojects.filter(subproject_sector=sector).count(),
+                            'infrastructures_with_latrines_and_fences': (
+                                all_subprojects.filter(subproject_sector=sector).count()
+                                # + \
+                                #     all_subprojects.filter(subproject_sector=sector, has_latrine_blocs=True).count() + \
+                                #         all_subprojects.filter(subproject_sector=sector, has_fence=True).count()
+                            )
+                        }
+                    }) for sector in sectors
+                ] + [('total', ctx['total_infrastrutures'])]),
+                _('Completed'): dict([
+                    (sector,{
+                        'types': dict([
+                            (t[0], all_subprojects.filter(subproject_sector=sector, type_of_subproject=t[0], current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()) for t in sorted(list(set(list(all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).values_list('type_of_subproject')))))
+                        ]
+                        #               + [
+                        #     (type_structure,
+                        #     (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count() if type_structure == 'Latrine Scolaire' else \
+                        #         (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Pédiatrie', has_fence=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count() if type_structure == 'Clôture Pédiatrie' else \
+                        #             (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()))) 
+                        # ) for type_structure in OTHER_STRUCUTURES
+                        # ]
+                                      ), 
+                        'total': {
+                            'subprojects': len(all_subprojects.raw(
+                                f"""
+                                SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
+                                FROM subprojects_subproject AS sub_subp 
+                                LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
+                                WHERE (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)}
+                                    AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)})) 
+                                    AND sub_subp.id IN (
+                                        SELECT sub.id FROM ({_sql}) AS sub 
+                                    ) AND sub_subp.subproject_sector=%s
+                                """, _params + (sector,)
+                            )),
+                            'infrastructures': all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count(),
+                            'infrastructures_with_latrines_and_fences': (
+                                all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()
+                                # + \
+                                #     all_subprojects.filter(subproject_sector=sector, has_latrine_blocs=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count() + \
+                                #         all_subprojects.filter(subproject_sector=sector, has_fence=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()
+                            )
+                        }
+                    }) for sector in sectors
+                ] + [('total', ctx['total_infrastrutures_completed'])]),
+                _('In progress'): dict([
+                    (sector,{
+                        'types': dict([
+                            (t[0], all_subprojects.filter(subproject_sector=sector, type_of_subproject=t[0], current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()) for t in sorted(list(set(list(all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).values_list('type_of_subproject')))))
+                        ] 
+                        #               + [
+                        #     (type_structure,
+                        #     (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count() if type_structure == 'Latrine Scolaire' else \
+                        #         (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Pédiatrie', has_fence=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count() if type_structure == 'Clôture Pédiatrie' else \
+                        #             (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()))) 
+                        # ) for type_structure in OTHER_STRUCUTURES
+                        # ]
+                                      ), 
+                        'total': {
+                            'subprojects': len(all_subprojects.raw(
+                                f"""
+                                SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
+                                FROM subprojects_subproject AS sub_subp 
+                                LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
+                                WHERE (((sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS*2)} 
+                                    AND sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}) 
+                                    OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
+                                    AND (sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}))
+                                    OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS*2)})) 
+                                    AND sub_subp.id IN (
+                                        SELECT sub.id FROM ({_sql}) AS sub 
+                                    ) AND sub_subp.subproject_sector=%s)
+                                """, _params + (sector,)
+                            )),
+                            'infrastructures': all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count(),
+                            'infrastructures_with_latrines_and_fences': (
+                                all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()
+                                # + \
+                                #     all_subprojects.filter(subproject_sector=sector, has_latrine_blocs=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count() + \
+                                #         all_subprojects.filter(subproject_sector=sector, has_fence=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()
+                            )
+                        }
+                    }) for sector in sectors
+                ] + [('total', ctx['total_infrastrutures_in_progress'])]),
+                _('Not start'): dict([
+                    (sector,{
+                        'types': dict([
+                            (t[0], all_subprojects.filter(subproject_sector=sector, type_of_subproject=t[0], current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count()) for t in sorted(list(set(list(all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).values_list('type_of_subproject')))))
+                        ] 
+                        #               + [
+                        #     (type_structure,
+                        #     (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Bâtiment Scolaire', has_latrine_blocs=True, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count() if type_structure == 'Latrine Scolaire' else \
+                        #         (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Pédiatrie', has_fence=True, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count() if type_structure == 'Clôture Pédiatrie' else \
+                        #             (all_subprojects.filter(subproject_sector=sector, type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count()))) 
+                        # ) for type_structure in OTHER_STRUCUTURES
+                        # ]
+                                      ), 
+                        'total': {
+                            'subprojects': len(all_subprojects.raw(
+                                f"""
+                                SELECT sub_subp.id 
+                                FROM subprojects_subproject AS sub_subp 
+                                LEFT JOIN subprojects_subproject AS sub_infras ON sub_infras.link_to_subproject_id=sub_subp.id AND sub_infras.subproject_type_designation='Infrastructure' 
+                                WHERE (sub_subp.current_status_of_the_site NOT IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
+                                    AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site NOT IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)})) 
+                                    AND sub_subp.id IN (
+                                        SELECT sub.id FROM ({_sql}) AS sub 
+                                    ) AND sub_subp.subproject_sector=%s
+                                """, _params + (sector,)
+                            )),
+                            'infrastructures': all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count(),
+                            'infrastructures_with_latrines_and_fences': (
+                                all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count()
+                                # + \
+                                #     all_subprojects.filter(subproject_sector=sector, has_latrine_blocs=True, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count() + \
+                                #         all_subprojects.filter(subproject_sector=sector, has_fence=True, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count()
+                            )
+                        }
+                    }) for sector in sectors
+                ] + [('total', ctx['total_infrastrutures_not_started'])])
             }
-        ]
+            
         
-        
+            ctx['pie_graphes'] = [
+                {
+                    'type': _("Level"),
+                    'title': _("Number of infrastructures by status"),
+                    'labels': [_("Completed"), _("In progress"), _("Not start")],
+                    'data': [ctx['total_infrastrutures_completed'], ctx['total_infrastrutures_in_progress'], ctx['total_infrastrutures_not_started']],
+                    'sorted': 0
+                },
+                {
+                    'type': _("Sector"),
+                    'title': _("Number of subprojects selected by sector"),
+                    'labels': sectors,
+                    'data': ctx['number_subproject_infrastrutures']['bars'][2]['data'],
+                    'sorted': 1,
+                    'columnSorted': 1
+                }
+            ]
+            
+            
         
         ctx['administrative_level_id'] = self.request.GET.getlist('administrative_level_id[]', [])
         administrative_level_type = self.request.GET.get('administrative_level_type', 'All').title()
@@ -830,64 +848,65 @@ class SubprojectsDetailsModalView(DashboardSubprojectsMixin, AJAXRequestMixin,
         
         if 'subprojects-' in list_type_search:
             all_subprojects = all_subprojects.filter(subproject_type_designation="Subproject")
-            _sql, _params = all_subprojects.query.get_compiler('default').as_sql()
-            
-            
-            if list_type_search == 'subprojects-number':
-                #all_subprojects = all_subprojects.filter(subproject_type_designation="Subproject")
-                pass
-            elif list_type_search == 'subprojects-completed':
-                list_name_search = _("Subprojects completed")
-                final_queryset = all_subprojects.raw(
-                    f"""
-                    SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
-                    FROM subprojects_subproject AS sub_subp 
-                    LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
-                    WHERE (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)}
-                        AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)})) 
-                        AND sub_subp.id IN (
-                            SELECT sub.id FROM ({_sql}) AS sub 
-                        )
-                    """, _params
-                )
-                # all_subprojects = all_subprojects.filter(subproject_type_designation="Subproject", current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS)
-                all_subprojects = final_queryset #Subproject.objects.filter(id__in=[p.id for p in final_queryset])
-            elif list_type_search == 'subprojects-in-progress':
-                list_name_search = _("Subprojects in progress")
-                final_queryset = all_subprojects.raw(
-                    f"""
-                    SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
-                    FROM subprojects_subproject AS sub_subp 
-                    LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
-                    WHERE (((sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS*2)} 
-                        AND sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}) 
-                        OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
-                        AND (sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}))
-                        OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS*2)})) 
-                        AND sub_subp.id IN (
-                            SELECT sub.id FROM ({_sql}) AS sub 
-                        ))
-                    """, _params
-                )
-                # all_subprojects = all_subprojects.filter(subproject_type_designation="Subproject", current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS)
-                all_subprojects = final_queryset #Subproject.objects.filter(id__in=[p.id for p in final_queryset])
-            elif list_type_search == 'subprojects-not-started':
-                list_name_search = _("Subprojects not start")
-                final_queryset = all_subprojects.raw(
-                    f"""
-                    SELECT sub_subp.id 
-                    FROM subprojects_subproject AS sub_subp 
-                    LEFT JOIN subprojects_subproject AS sub_infras ON sub_infras.link_to_subproject_id=sub_subp.id AND sub_infras.subproject_type_designation='Infrastructure' 
-                    WHERE (sub_subp.current_status_of_the_site NOT IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
-                        AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site NOT IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)})) 
-                        AND sub_subp.id IN (
-                            SELECT sub.id FROM ({_sql}) AS sub 
-                        )
-                    """, _params
-                )
-                # all_subprojects = all_subprojects.filter(subproject_type_designation="Subproject").exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS))
-                all_subprojects = final_queryset #Subproject.objects.filter(id__in=[p.id for p in final_queryset])
+            if all_subprojects.exists():
+                _sql, _params = all_subprojects.query.get_compiler('default').as_sql()
                 
+                
+                if list_type_search == 'subprojects-number':
+                    #all_subprojects = all_subprojects.filter(subproject_type_designation="Subproject")
+                    pass
+                elif list_type_search == 'subprojects-completed':
+                    list_name_search = _("Subprojects completed")
+                    final_queryset = all_subprojects.raw(
+                        f"""
+                        SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
+                        FROM subprojects_subproject AS sub_subp 
+                        LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
+                        WHERE (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)}
+                            AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)})) 
+                            AND sub_subp.id IN (
+                                SELECT sub.id FROM ({_sql}) AS sub 
+                            )
+                        """, _params
+                    )
+                    # all_subprojects = all_subprojects.filter(subproject_type_designation="Subproject", current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS)
+                    all_subprojects = final_queryset #Subproject.objects.filter(id__in=[p.id for p in final_queryset])
+                elif list_type_search == 'subprojects-in-progress':
+                    list_name_search = _("Subprojects in progress")
+                    final_queryset = all_subprojects.raw(
+                        f"""
+                        SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
+                        FROM subprojects_subproject AS sub_subp 
+                        LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
+                        WHERE (((sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS*2)} 
+                            AND sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}) 
+                            OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
+                            AND (sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}))
+                            OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS*2)})) 
+                            AND sub_subp.id IN (
+                                SELECT sub.id FROM ({_sql}) AS sub 
+                            ))
+                        """, _params
+                    )
+                    # all_subprojects = all_subprojects.filter(subproject_type_designation="Subproject", current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS)
+                    all_subprojects = final_queryset #Subproject.objects.filter(id__in=[p.id for p in final_queryset])
+                elif list_type_search == 'subprojects-not-started':
+                    list_name_search = _("Subprojects not start")
+                    final_queryset = all_subprojects.raw(
+                        f"""
+                        SELECT sub_subp.id 
+                        FROM subprojects_subproject AS sub_subp 
+                        LEFT JOIN subprojects_subproject AS sub_infras ON sub_infras.link_to_subproject_id=sub_subp.id AND sub_infras.subproject_type_designation='Infrastructure' 
+                        WHERE (sub_subp.current_status_of_the_site NOT IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
+                            AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site NOT IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)})) 
+                            AND sub_subp.id IN (
+                                SELECT sub.id FROM ({_sql}) AS sub 
+                            )
+                        """, _params
+                    )
+                    # all_subprojects = all_subprojects.filter(subproject_type_designation="Subproject").exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS))
+                    all_subprojects = final_queryset #Subproject.objects.filter(id__in=[p.id for p in final_queryset])
+                    
         elif list_type_search == 'infrastrutures':
             list_name_search = _("Structures/infrastructures without latrines and fences")
         elif list_type_search == 'infrastruture-completed':
@@ -914,14 +933,16 @@ class SubprojectsDetailsModalView(DashboardSubprojectsMixin, AJAXRequestMixin,
                 all_subprojects = all_subprojects.exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS))
             
             context['total'] = all_subprojects.count()
-            context['total_latrine_blocks'] = all_subprojects.filter(has_latrine_blocs=True).count()
-            context['total_fences'] = all_subprojects.filter(has_fence=True).count()
-            context['total_infrastrutures'] = context['total'] + context['total_latrine_blocks'] + context['total_fences']
-            list_name_search += f"\
-                ({context['total_latrine_blocks']}/{context['total_fences']})"
+            # context['total_latrine_blocks'] = all_subprojects.filter(has_latrine_blocs=True).count()
+            # context['total_fences'] = all_subprojects.filter(has_fence=True).count()
+            context['total_infrastrutures'] = context['total'] #+ context['total_latrine_blocks'] + context['total_fences']
+            # list_name_search += f"\
+            #     ({context['total_latrine_blocks']}/{context['total_fences']})"
         
         elif 'latrines-and-fences' in list_type_search:
-            all_subprojects = all_subprojects.filter(Q(has_latrine_blocs=True) | Q(has_fence=True))
+            all_subprojects = all_subprojects.filter(
+                # Q(has_latrine_blocs=True) | Q(has_fence=True)
+                )
             
             if list_type_search == 'latrines-and-fences':
                 list_name_search = _("Latrines and fences")
@@ -937,11 +958,11 @@ class SubprojectsDetailsModalView(DashboardSubprojectsMixin, AJAXRequestMixin,
             
             
             context['total'] = all_subprojects.count()
-            context['total_latrine_blocks'] = all_subprojects.filter(has_latrine_blocs=True).count()
-            context['total_fences'] = all_subprojects.filter(has_fence=True).count()
-            context['total_infrastrutures'] = context['total'] + context['total_latrine_blocks'] + context['total_fences']
-            list_name_search += f"\
-                ({context['total_latrine_blocks']}/{context['total_fences']})"
+            # context['total_latrine_blocks'] = all_subprojects.filter(has_latrine_blocs=True).count()
+            # context['total_fences'] = all_subprojects.filter(has_fence=True).count()
+            context['total_infrastrutures'] = context['total'] #+ context['total_latrine_blocks'] + context['total_fences']
+            # list_name_search += f"\
+            #     ({context['total_latrine_blocks']}/{context['total_fences']})"
                 
                 
         else:

@@ -147,6 +147,14 @@ class RestSaveSubproject(APIView):
         s = CheckUserSerializer(data).data
         request.data['pk'] = request.data.get('id', None)
         subproject = Subproject.objects.get(id=request.data['pk'])
+        
+        if 'has_latrine_blocs' in request.data:
+            del request.data['has_latrine_blocs']
+        if 'number_of_latrine_blocks' in request.data:
+            del request.data['number_of_latrine_blocks']
+        if 'has_fence' in request.data:
+            del request.data['has_fence']
+        
         s = SubprojectStandardSerializer(instance=subproject,data=request.data)
         s.is_valid(raise_exception=True)
         sub = Subproject.objects.get(id=request.data['pk'])

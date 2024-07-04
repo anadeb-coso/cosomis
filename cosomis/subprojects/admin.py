@@ -12,5 +12,7 @@ admin.site.register([
     VillageGoal,
     Financier,
     Project,
-    Step
+    Step,
+    SubprojectSector,
+    SubprojectType
 ])

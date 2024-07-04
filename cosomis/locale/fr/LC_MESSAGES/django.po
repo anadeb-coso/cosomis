@@ -2890,3 +2890,51 @@ msgstr "Blocs latrine"
 #: .\subprojects
 msgid "Fenced infrastructure"
 msgstr "Infrastructure clôturée"
+
+#: .\subprojects
+msgid "School libraries"
+msgstr "Bibliothèques scolaires"
+
+#: .\subprojects
+msgid "Latrine blocks in schools"
+msgstr "Blocs de latrines dans les établissements scolaires"
+
+#: .\subprojects
+msgid "Hospital canteen"
+msgstr "Cantine d'Hôpital"
+
+#: .\subprojects
+msgid "Fence (Health center)"
+msgstr "Clôture (Centre de santé)"
+
+#: .\subprojects
+msgid "Fence (School)"
+msgstr "Clôture (Ecole)"
+
+#: .\subprojects
+msgid "School access dalot"
+msgstr "Dalot d'accès à l'école"
+
+#: .\subprojects
+msgid "Off-grid electrification with solar street lamps"
+msgstr "Electrification hors réseau avec lampadaires solaires"
+
+#: .\subprojects
+msgid "Medical incinerators"
+msgstr "Incinérateurs médicaux"
+
+#: .\subprojects
+msgid "Teaching hut"
+msgstr "Paillote enseignants"
+
+#: .\subprojects
+msgid "Health center hut"
+msgstr "Paillote pour centre de santé"
+
+#: .\subprojects
+msgid "PMH rehabilitation"
+msgstr "Réhabilitation PMH"
+
+#: .\subprojects
+msgid "Rehabilitation of PMH into a photovoltaic borehole (School)"
+msgstr "Réhabilitation PMH en Forage Photovoltaïque (Ecole)"

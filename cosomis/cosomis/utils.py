@@ -148,25 +148,42 @@ def link_infrastures_to_subproject():
     #             _subproject.link_to_subproject = subproject
     #             _subproject.subproject_type_designation = "Infrastructure"
     #             _subproject.save()
-    subprojects = Subproject.objects.all().get_actifs().order_by('number', 'joint_subproject_number')
     
+    subprojects = Subproject.objects.all().order_by('number', 'joint_subproject_number')
+    for subproject in subprojects:
+        subproject.subproject_type_designation = "Subproject"
+        subproject.save()
+        
     for subproject in subprojects:
         _subprojects = Subproject.objects.filter(
             joint_subproject_number=subproject.joint_subproject_number
-        ).get_actifs().order_by('number', 'joint_subproject_number')
+        ).order_by('number', 'joint_subproject_number')
         if _subprojects.count() >= 2:
             _subproject = _subprojects.first()
-            
-            subproject.link_to_subproject = _subproject
-            subproject.subproject_type_designation = "Infrastructure"
-            subproject.save()
+            if _subproject.id != subproject.id:
+                subproject.link_to_subproject = _subproject
+                subproject.subproject_type_designation = "Infrastructure"
+                subproject.save()
+                
+    # subprojects = Subproject.objects.all().get_actifs().order_by('number', 'joint_subproject_number')
+    
+    # for subproject in subprojects:
+    #     _subprojects = Subproject.objects.filter(
+    #         joint_subproject_number=subproject.joint_subproject_number
+    #     ).get_actifs().order_by('number', 'joint_subproject_number')
+    #     if _subprojects.count() >= 2:
+    #         _subproject = _subprojects.first()
+    #         if _subproject.id != subproject.id:
+    #             subproject.link_to_subproject = _subproject
+    #             subproject.subproject_type_designation = "Infrastructure"
+    #             subproject.save()
     print()
     print("Done !")
 
 
 def copy_cvd_to_list_of_beneficiary_villages():
     print("Start copy_cvd_to_list_of_beneficiary_villages!")
-    subprojects = Subproject.objects.all().get_actifs()
+    subprojects = Subproject.objects.all()#.get_actifs()
     for subproject in subprojects:
         # print(subproject.full_title_of_approved_subproject)
         if subproject.cvd:

@@ -76,9 +76,10 @@ class DashboardSubprojectsMixin:
         if not ald_filter_ids:
             pass
         else:
+            adls = ald_filter_ids + administrative_levels_ids
             subprojects = subprojects.filter(
-                Q(location_subproject_realized__id__in=administrative_levels_ids) | 
-                Q(canton__id__in=administrative_levels_ids)
+                Q(location_subproject_realized__id__in=adls) | 
+                Q(canton__id__in=adls)
             )
         administrative_level = administrative_levels.first()
 
@@ -139,11 +140,11 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                         _subp.subproject_type_designation in (["Infrastructure", "Subproject"] if (i+1)%2 == 0 else ["Subproject"]):
                         number += 1
                         
-                        if (i+1)%2 == 0:
-                            if _subp.has_latrine_blocs:
-                                number += 1
-                            if _subp.has_fence:
-                                number += 1
+                        # if (i+1)%2 == 0:
+                        #     if _subp.has_latrine_blocs:
+                        #         number += 1
+                        #     if _subp.has_fence:
+                        #         number += 1
                 
                 datas[column[1]][count] = number
                 number_toal += number

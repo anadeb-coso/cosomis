@@ -1,4 +1,5 @@
 from django.utils.translation import gettext_lazy as _
+# from subprojects.models import SubprojectSector, SubprojectType
 
 
 OBSTACLES_FOCUS_GROUP = [
@@ -51,53 +52,97 @@ SUB_PROJECT_STATUS_COLOR_TRANSLATE = {
     _("Final reception"): "#32cd32", #LimeGreen
 }
 
+# TYPES_OF_SUB_PROJECT_COLOR = dict([('', '')],[
+#     (o.name_fr, o.color) for o in SubprojectType.objects.all()
+# ])
 TYPES_OF_SUB_PROJECT_COLOR = {
-
-    # 'Batiment Scolaire au Pré-scolaire': "#808080", #Gray f-Gris
-    # 'Batiment Scolaire au Primaire': "#808080", #Gray f-Gris
-    # 'Batiment Scolaire au CEG': "#808080", #Gray f-Gris
-    # 'Batiment Scolaire au Lycée': "#808080", #Gray f-
-    
-    'Bâtiment Scolaire au Pré-scolaire': "#808080", #Gray f-Gris
-    'Bâtiment Scolaire au Primaire': "#808080", #Gray f-Gris
-    'Bâtiment Scolaire au CEG': "#808080", #Gray f-Gris
-    'Bâtiment Scolaire au Lycée': "#808080", #Gray f-Gris
-    
-    'Forage Photovoltaïque (Boisson)': "#0000ff", #Blue f-blue
-    'Forage Photovoltaïque (Centre communautaire)': "#0000ff", #Blue f-blue
-    'Forage Photovoltaïque (Ecole)': "#0000ff", #Blue f-blue
-    'Forage Photovoltaïque (Latrines)': "#0000ff", #Blue f-blue
-    'Forage Photovoltaïque (Maison des jeunes)': "#0000ff", #Blue f-blue
-    'Forage Photovoltaïque (Maraichage)': "#0000ff", #Blue f-blue
-    'Forage Photovoltaïque (Salle de réunion)': "#0000ff", #Blue f-blue
-    "Pompe à motricité humaine (PMH)": "#1e90ff", #DodgerBlue f-Bleu cagnard
-    "Retenue d'eau": "#601ee0", #Blueviolet f-Blue violet
-
-    'CMS': "#008200", #Green f-vert
-    'CHP': "#32cd32", #LimeGreen f-Vert de chaux
-    'USP': "#3b7024", #DarkOliveGreen f-Vert olive foncé
-    'Pharmacie': "#006400", #Darkgreen f-vert sombre
-    'Pédiatrie': "#92d492", #DarkSeaGreen f-Vert de mer foncé
-    'Laboratoire': "#00ff00", #Lime f-citron vert
-
-    
-    'Extension réseau électrique': "#939301", #Olive f-Olive
-    'Lampadaires solaire': "#9c9c14", #DarkYellow f-jaune sombre
-
+    'Bibliothèques scolaires': '#808080', #Gray f-Gris
+    'Blocs de latrines dans les établissements scolaires': '#808080', #Gray f-Gris
+    'Bâtiment Scolaire au CEG': '#808080', #Gray f-Gris
+    'Bâtiment Scolaire au Lycée': '#808080', #Gray f-Gris
+    'Bâtiment Scolaire au Primaire': '#808080', #Gray f-Gris
+    'Bâtiment Scolaire au Pré-scolaire': '#808080', #Gray f-Gris
+    'CMS': '#008200', #Green f-vert
+    "Cantine d'Hôpital": "#008200", #Green f-vert
     'Centre Communautaire': "#ffa500", #Orange f-orange
-    'Salle de réunion': "#a75e06", #DarkOrange f-Orange sombre
-
-    'Maison des jeunes': "#ff0000", #Red f-rouge
-    'Terrain de Foot': "#7a1212", #DarkRed f-rouge sombre
-
-    'Magasin De Stockage': "#800080", #Purple f-Violet
-    
-    'Reboisement': "#deb887", #Burlywood f-Bois massif
-
-    'Piste/OF': "#000000", #Black f-noire
-
+    'Clôture (Centre de santé)': "#ffa500", #Orange f-orange
+    'Clôture (Ecole)': '#808080', #Gray f-Gris
+    "Dalot d'accès à l'école": '#808080', #Gray f-Gris
+    'Electrification hors réseau avec lampadaires solaires': "#9c9c14", #DarkYellow f-jaune sombre
+    'Extension réseau électrique': "#939301", #Olive f-Olive
+    'Forage Photovoltaïque (Boisson)': '#0000ff', #Blue f-blue
+    'Forage Photovoltaïque (Centre communautaire)': '#0000ff',  #Blue f-blue
+    'Forage Photovoltaïque (Ecole)': '#0000ff',  #Blue f-blue
+    'Forage Photovoltaïque (Maison des jeunes)': '#0000ff',  #Blue f-blue
+    'Forage Photovoltaïque (Maraichage)': '#0000ff',  #Blue f-blue
+    'Forage Photovoltaïque (Salle de réunion)': '#0000ff',  #Blue f-blue
+    'Incinérateurs médicaux': "#008200", #Green f-vert
+    'Laboratoire': "#00ff00", #Lime f-citron vert
     'Latrine Communautaire': "#191970", #MidNightBlue f-Blue sombre
+    'Magasin de Stockage': "#800080", #Purple f-Violet
+    'Maison des jeunes': "#ff0000", #Red f-rouge
+    'Paillote enseignants': '#808080', #Gray f-Gris
+    'Paillote pour centre de santé': "#008200", #Green f-vert
+    'Pharmacie': "#006400", #Darkgreen f-vert sombre
+    'Pistes': "#000000", #Black f-noire
+    'Pédiatrie': "#92d492", #DarkSeaGreen f-Vert de mer foncé
+    'Reboisement': "#deb887", #Burlywood f-Bois massif
+    "Retenue d'eau": '#601ee0', #Blueviolet f-Blue violet
+    'Réhabilitation PMH': '#1e90ff', #DodgerBlue f-Bleu cagnard
+    'Réhabilitation PMH en Forage Photovoltaïque (Ecole)': '#1e90ff', #DodgerBlue f-Bleu cagnard
+    'Salle de réunion': "#a75e06", #DarkOrange f-Orange sombre
+    'Terrain de Foot': "#7a1212", #DarkRed f-rouge sombre
+    'USP': "#3b7024", #DarkOliveGreen f-Vert olive foncé
 }
+
+# {
+
+#     # 'Batiment Scolaire au Pré-scolaire': "#808080", #Gray f-Gris
+#     # 'Batiment Scolaire au Primaire': "#808080", #Gray f-Gris
+#     # 'Batiment Scolaire au CEG': "#808080", #Gray f-Gris
+#     # 'Batiment Scolaire au Lycée': "#808080", #Gray f-
+    
+#     'Bâtiment Scolaire au Pré-scolaire': "#808080", #Gray f-Gris
+#     'Bâtiment Scolaire au Primaire': "#808080", #Gray f-Gris
+#     'Bâtiment Scolaire au CEG': "#808080", #Gray f-Gris
+#     'Bâtiment Scolaire au Lycée': "#808080", #Gray f-Gris
+    
+#     'Forage Photovoltaïque (Boisson)': "#0000ff", #Blue f-blue
+#     'Forage Photovoltaïque (Centre communautaire)': "#0000ff", #Blue f-blue
+#     'Forage Photovoltaïque (Ecole)': "#0000ff", #Blue f-blue
+#     'Forage Photovoltaïque (Latrines)': "#0000ff", #Blue f-blue
+#     'Forage Photovoltaïque (Maison des jeunes)': "#0000ff", #Blue f-blue
+#     'Forage Photovoltaïque (Maraichage)': "#0000ff", #Blue f-blue
+#     'Forage Photovoltaïque (Salle de réunion)': "#0000ff", #Blue f-blue
+#     "Pompe à motricité humaine (PMH)": "#1e90ff", #DodgerBlue f-Bleu cagnard
+#     "Retenue d'eau": "#601ee0", #Blueviolet f-Blue violet
+
+#     'CMS': "#008200", #Green f-vert
+#     'CHP': "#32cd32", #LimeGreen f-Vert de chaux
+#     'USP': "#3b7024", #DarkOliveGreen f-Vert olive foncé
+#     'Pharmacie': "#006400", #Darkgreen f-vert sombre
+#     'Pédiatrie': "#92d492", #DarkSeaGreen f-Vert de mer foncé
+#     'Laboratoire': "#00ff00", #Lime f-citron vert
+
+    
+#     'Extension réseau électrique': "#939301", #Olive f-Olive
+#     'Lampadaires solaire': "#9c9c14", #DarkYellow f-jaune sombre
+
+#     'Centre Communautaire': "#ffa500", #Orange f-orange
+#     'Salle de réunion': "#a75e06", #DarkOrange f-Orange sombre
+
+#     'Maison des jeunes': "#ff0000", #Red f-rouge
+#     'Terrain de Foot': "#7a1212", #DarkRed f-rouge sombre
+
+#     'Magasin De Stockage': "#800080", #Purple f-Violet
+    
+#     'Reboisement': "#deb887", #Burlywood f-Bois massif
+
+#     'Piste/OF': "#000000", #Black f-noire
+
+#     'Latrine Communautaire': "#191970", #MidNightBlue f-Blue sombre
+# }
+
 
 
 TYPES_OF_STRUCTURE_COLOR = {
@@ -106,7 +151,9 @@ TYPES_OF_STRUCTURE_COLOR = {
     'Forage Photovoltaïque': "#0000ff", #Blue f-blue
     "Pompe à motricité humaine (PMH)": "#1e90ff", #DodgerBlue f-Bleu cagnard
     "Retenue d'eau": "#601ee0", #Blueviolet f-Blue violet
-    
+
+    'santé': "#008200", #Green f-vert
+    'Hôpital': "#008200", #Green f-vert
     'CMS': "#008200", #Green f-vert
     'CHP': "#32cd32", #LimeGreen f-Vert de chaux
     'USP': "#3b7024", #DarkOliveGreen f-Vert olive foncé
@@ -125,7 +172,7 @@ TYPES_OF_STRUCTURE_COLOR = {
     'Magasin De Stockage': "#800080", #Purple f-Violet
     'Reboisement': "#deb887", #Burlywood f-Bois massif
 
-    'Piste/OF': "#000000", #Black f-noire
+    'Piste': "#000000", #Black f-noire
     
     'Latrine Communautaire': "#191970", #MidNightBlue f-Blue sombre
     'Latrine Scolaire': "#2f4f4f", #darkSlategray f-Gris sombre
@@ -139,6 +186,9 @@ OTHER_STRUCUTURES = [
     'Latrine Scolaire', 'Clôture Pédiatrie', 'Clôture Scolaire'
 ]
 
+# SUB_PROJECT_SECTORS_COLOR = dict([('', '')],[
+#     (o.name_fr, o.color) for o in SubprojectSector.objects.all()
+# ])
 SUB_PROJECT_SECTORS_COLOR = {
     'Developpement–a–la–Base': "#ffa500", #Orange f-orange
     'Eau–Hydraulique': '#0000ff', #Blue f-blue
