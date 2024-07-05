@@ -612,7 +612,7 @@
 
             <div id="representation_by_type_of_structure" class="tab-pane">
 
-                <div class="row">
+                {% comment %} <div class="row">
                     <div class="col-12">
                         <div class="card mb-0">
 
@@ -727,7 +727,9 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> {% endcomment %}
+
+                {% include 'components/summary_table.html' with data_id="summary_recap" datas_title=summary_recap|get:'title' datas=summary_recap|get:'datas' datas_length_loop=summary_recap|get:'length_loop' datas_values=summary_recap|get:'values' headers=summary_recap|get:'headers' %}
                 
 
                 <br />

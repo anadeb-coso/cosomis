@@ -17,7 +17,8 @@ from . import forms
 from cosomis.constants import (
     TYPES_OF_STRUCTURE_COLOR, STRUCTURE_COMPLETED_STATUS, STRUCTURE_IN_PROGRESS_STATUS,
     STRUCTURE_NOT_START_STATUS, SUB_PROJECT_SECTORS_COLOR, OTHER_STRUCUTURES,
-    SUB_PROJECT_STATUS_COLOR_TRANSLATE, FINANCING_COLOR
+    SUB_PROJECT_STATUS_COLOR_TRANSLATE, FINANCING_COLOR, STRUCTURE_PROVISIONAL_ACCEPTANCE_STATUS,
+    STRUCTURE_FINAL_ACCEPTANCE_STATUS
 )
 
 
@@ -127,7 +128,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
             # Use the SQL representation in the raw query for the second filter
             final_queryset = _s.raw(
                 f"""
-                SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
+                SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
                 FROM subprojects_subproject AS sub_subp 
                 LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
                 WHERE (((sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS*2)} 
@@ -140,11 +141,11 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                     ))
                 """, _params
             )
-                                    
+            
             ctx['total_subproject_in_progress'] = len(final_queryset)
             final_queryset = _s.raw(
                 f"""
-                SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
+                SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
                 FROM subprojects_subproject AS sub_subp 
                 LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
                 WHERE (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)}
@@ -260,12 +261,12 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                             #         (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True).count()))) \
                             #     if type_structure in OTHER_STRUCUTURES \
                             #     else 
-                                all_subprojects.filter(type_of_subproject__istartswith=type_structure).count()
+                                all_subprojects.filter(type_of_subproject=type_structure).count()
                         ) for type_structure in type_structures
                     ],
                     'classrooms': [(elt if elt else 0) for elt in [
                         (
-                            all_subprojects.filter(type_of_subproject__istartswith=type_structure, number_of_classrooms__isnull=False).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
+                            all_subprojects.filter(type_of_subproject=type_structure, number_of_classrooms__isnull=False).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
                         ) for type_structure in type_structures
                     ]]
                 },
@@ -279,12 +280,12 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                             #         (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True).exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)).count()))) \
                             #     if type_structure in OTHER_STRUCUTURES \
                             #     else 
-                                all_subprojects.filter(type_of_subproject__istartswith=type_structure).exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)).count()
+                                all_subprojects.filter(type_of_subproject=type_structure).exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)).count()
                         ) for type_structure in type_structures
                     ],
                     'classrooms': [(elt if elt else 0) for elt in [
                         (
-                            all_subprojects.filter(type_of_subproject__istartswith=type_structure, number_of_classrooms__isnull=False).exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
+                            all_subprojects.filter(type_of_subproject=type_structure, number_of_classrooms__isnull=False).exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
                         ) for type_structure in type_structures
                     ]]
                 },
@@ -298,12 +299,12 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                             #         (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()))) \
                             #     if type_structure in OTHER_STRUCUTURES \
                             #     else 
-                                all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()
+                                all_subprojects.filter(type_of_subproject=type_structure, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()
                         ) for type_structure in type_structures
                     ],
                     'classrooms': [(elt if elt else 0) for elt in [
                         (
-                            all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS, number_of_classrooms__isnull=False).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
+                            all_subprojects.filter(type_of_subproject=type_structure, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS, number_of_classrooms__isnull=False).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
                         ) for type_structure in type_structures
                     ]]
                 },
@@ -317,12 +318,12 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                             #         (all_subprojects.filter(type_of_subproject__istartswith='Bâtiment Scolaire', has_fence=True, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()))) \
                             #     if type_structure in OTHER_STRUCUTURES \
                             #     else 
-                                all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()
+                                all_subprojects.filter(type_of_subproject=type_structure, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()
                         ) for type_structure in type_structures
                     ],
                     'classrooms': [(elt if elt else 0) for elt in [
                         (
-                            all_subprojects.filter(type_of_subproject__istartswith=type_structure, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS, number_of_classrooms__isnull=False).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
+                            all_subprojects.filter(type_of_subproject=type_structure, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS, number_of_classrooms__isnull=False).aggregate(Sum('number_of_classrooms'))['number_of_classrooms__sum']
                         ) for type_structure in type_structures
                     ]]
                 }
@@ -334,6 +335,97 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                 'labels': type_structures,
                 'bars': [bars_type_structures[0], bars_type_structures[3]]
             }
+            
+            
+            #Summary Recap
+            datas = {
+                _("Types of work"): {},
+                _("Total number of sub-projects selected"): {},
+                _("Total number of sub-projects completed"): {},
+                _("Total number of structures to be built"): {},
+                _("Total number of projects launched"): {},
+                _("Total number of works completed"): {},
+                _("Total number of provisionally approved structures"): {},
+                _("Total number of works finally accepted"): {},
+                _("Comments"): {}
+            }
+            
+            count = 0
+            # str().capitalize()
+            count_sectors = 0
+            lines_to_skip_for_sum = []
+            for _sector in [s.upper() for s in sectors]:
+                all_subprojects_sector = all_subprojects.filter(subproject_sector=_sector)
+                _types = sorted(list(set(list([o[0].capitalize() for o in all_subprojects_sector.values_list('type_of_subproject')]))))
+                
+                for k, v in datas.items():
+                    datas[k][count] = _(f"{_sector}")
+                count += 1
+                
+                count_types = 0
+                count_start = count
+                for _type in _types:
+                    all_subprojects_sector_type = all_subprojects_sector.filter(type_of_subproject=_type)
+                    datas[_("Types of work")][count] = _type
+                    datas[_("Total number of sub-projects selected")][count] = all_subprojects_sector_type.filter(subproject_type_designation="Subproject").count()
+                    datas[_("Total number of structures to be built")][count] = all_subprojects_sector_type.count()
+                    datas[_("Total number of projects launched")][count] = all_subprojects_sector_type.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()
+                    datas[_("Total number of works completed")][count] = all_subprojects_sector_type.filter(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()
+                    datas[_("Total number of provisionally approved structures")][count] = all_subprojects_sector_type.filter(current_status_of_the_site__in=STRUCTURE_PROVISIONAL_ACCEPTANCE_STATUS).count()
+                    datas[_("Total number of works finally accepted")][count] = all_subprojects_sector_type.filter(current_status_of_the_site__in=STRUCTURE_FINAL_ACCEPTANCE_STATUS).count()
+                    
+                    _s = all_subprojects_sector_type.filter(subproject_type_designation="Subproject")
+                    if _s.exists():
+                        _sql, _params = _s.query.get_compiler('default').as_sql()
+                        final_queryset = _s.raw(
+                            f"""
+                            SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
+                            FROM subprojects_subproject AS sub_subp 
+                            LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
+                            WHERE (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)}
+                                AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)})) 
+                                AND sub_subp.id IN (
+                                    SELECT sub.id FROM ({_sql}) AS sub 
+                                )
+                            """, _params
+                        )
+                        datas[_("Total number of sub-projects completed")][count] = len(final_queryset)
+                    else:
+                        datas[_("Total number of sub-projects completed")][count] = 0
+                    
+                    count += 1
+                    count_types += 1
+                
+                datas[_("Types of work")][count] = _(f"Total {_sector}")
+                for k, v in datas.items():
+                    if k not in [_("Types of work"), _("Comments")]:
+                        datas[k][count] = sum(list(v.values())[count_start:count])
+                        lines_to_skip_for_sum.append(count)
+                count += 1
+                
+                
+                count_sectors += 1
+            
+            
+            datas[_("Types of work")][count] = _(f"Total")
+            for k, v in datas.items():
+                if k not in [_("Types of work"), _("Comments")]:
+                    datas[k][count] = sum([elt for k_elt, elt in list(v.items()) if str(elt).isdigit() and k_elt not in lines_to_skip_for_sum])
+            count += 1
+                
+                
+            summary_recap = {
+                'title': _("Summary of results"),
+                'datas': datas,
+                'length_loop': range(0, count),
+                'values': list(datas.values())
+            }
+            ctx["summary_recap"] = {}
+            for k, v in summary_recap.items():
+                ctx["summary_recap"][k] = v
+            
+            ctx["table_class_style"] = 'table table-striped table-secondary table-bordered'
+            #End Summary Recap
             
             
             
@@ -379,7 +471,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                         'total': {
                             'subprojects': len(all_subprojects.raw(
                                 f"""
-                                SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
+                                SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
                                 FROM subprojects_subproject AS sub_subp 
                                 LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
                                 WHERE (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)}
@@ -415,7 +507,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                         'total': {
                             'subprojects': len(all_subprojects.raw(
                                 f"""
-                                SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
+                                SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
                                 FROM subprojects_subproject AS sub_subp 
                                 LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
                                 WHERE (((sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS*2)} 
@@ -454,7 +546,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                         'total': {
                             'subprojects': len(all_subprojects.raw(
                                 f"""
-                                SELECT sub_subp.id 
+                                SELECT DISTINCT sub_subp.id 
                                 FROM subprojects_subproject AS sub_subp 
                                 LEFT JOIN subprojects_subproject AS sub_infras ON sub_infras.link_to_subproject_id=sub_subp.id AND sub_infras.subproject_type_designation='Infrastructure' 
                                 WHERE (sub_subp.current_status_of_the_site NOT IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
@@ -859,7 +951,7 @@ class SubprojectsDetailsModalView(DashboardSubprojectsMixin, AJAXRequestMixin,
                     list_name_search = _("Subprojects completed")
                     final_queryset = all_subprojects.raw(
                         f"""
-                        SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
+                        SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
                         FROM subprojects_subproject AS sub_subp 
                         LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
                         WHERE (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)}
@@ -875,7 +967,7 @@ class SubprojectsDetailsModalView(DashboardSubprojectsMixin, AJAXRequestMixin,
                     list_name_search = _("Subprojects in progress")
                     final_queryset = all_subprojects.raw(
                         f"""
-                        SELECT sub_subp.id, sub_subp.full_title_of_approved_subproject 
+                        SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
                         FROM subprojects_subproject AS sub_subp 
                         LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
                         WHERE (((sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS*2)} 
@@ -894,7 +986,7 @@ class SubprojectsDetailsModalView(DashboardSubprojectsMixin, AJAXRequestMixin,
                     list_name_search = _("Subprojects not start")
                     final_queryset = all_subprojects.raw(
                         f"""
-                        SELECT sub_subp.id 
+                        SELECT DISTINCT sub_subp.id 
                         FROM subprojects_subproject AS sub_subp 
                         LEFT JOIN subprojects_subproject AS sub_infras ON sub_infras.link_to_subproject_id=sub_subp.id AND sub_infras.subproject_type_designation='Infrastructure' 
                         WHERE (sub_subp.current_status_of_the_site NOT IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 

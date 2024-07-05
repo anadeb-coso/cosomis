@@ -2938,3 +2938,39 @@ msgstr "Réhabilitation PMH"
 #: .\subprojects
 msgid "Rehabilitation of PMH into a photovoltaic borehole (School)"
 msgstr "Réhabilitation PMH en Forage Photovoltaïque (Ecole)"
+
+#: .\subprojects
+msgid "Summary of results"
+msgstr "Résumé des résultats"
+
+#: .\subprojects
+msgid "Types of work"
+msgstr "Types d'ouvrage"
+
+#: .\subprojects
+msgid "Total number of sub-projects selected"
+msgstr "Nbre total de sous-projets retenus"
+
+#: .\subprojects
+msgid "Total number of sub-projects completed"
+msgstr "Nbre total de sous-projets achevés"
+
+#: .\subprojects
+msgid "Total number of structures to be built"
+msgstr "Nbre total d’ouvrages à réaliser"
+
+#: .\subprojects
+msgid "Total number of projects launched"
+msgstr "Nbre total d’ouvrages lancés"
+
+#: .\subprojects
+msgid "Total number of works completed"
+msgstr "Nbre total d’ouvrages achevés"
+
+#: .\subprojects
+msgid "Total number of provisionally approved structures"
+msgstr "Nbre total d’ouvrages réceptionnés provisoirement"
+
+#: .\subprojects
+msgid "Total number of works finally accepted"
+msgstr "Nbre total d’ouvrages réceptionnés définitivement"

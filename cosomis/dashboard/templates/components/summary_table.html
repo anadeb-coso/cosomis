@@ -166,6 +166,7 @@ jQuery.extend(jQuery.fn.dataTableExt.oSort, {
 
     var columns_number_filter_filter = [];
     var columns_number_width = [];
+    var columns_number_filter = [];
     if("{{ data_id }}" == "summary_administrative_level_waves"){
         columns_number_filter = [0, 2, 3, 4, 5, 6];
     }
@@ -192,6 +193,11 @@ jQuery.extend(jQuery.fn.dataTableExt.oSort, {
     }
     else if("{{ data_id }}" == "summary_subprojects_by_steps_already_track"){
         columns_number_filter = [1];
+    }
+    else if("{{ data_id }}" == "summary_recap"){
+        columns_number_filter = [1, 2, 3, 4, 5, 6, 7];
+    }else{
+
     }
 
     $(document).ready(function () {
