@@ -24,6 +24,15 @@ class FileSerializer(serializers.Serializer):
         super().__init__(**kwargs)
         self.default_error_messages['file_size'] = _(
             'Select a file size less than or equal to %(max_size)s. The selected file size is %(size)s.')
+        
+
+class FileUrlSerializer(serializers.Serializer):
+    file = serializers.CharField()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(**kwargs)
+        self.default_error_messages['file_size'] = _(
+            'Select a file size less than or equal to %(max_size)s. The selected file size is %(size)s.')
 
 
 class SubprojectStepFileSerializer(CheckUserSerializer, FileSerializer):

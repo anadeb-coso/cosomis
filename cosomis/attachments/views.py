@@ -140,6 +140,9 @@ class UploadSubprojectStepAttachmentAPIView(generics.GenericAPIView):
             # print(2)
             file_url = media_storage.url(file_path_within_bucket)
             
+            # file_url = file
+
+
             principal = False
             if len(images) == 0:
                 principal = True
@@ -190,6 +193,9 @@ class UploadSubprojectStepAttachmentAPIView(generics.GenericAPIView):
                 bucket_name=media_storage.bucket_name
             ),
         }, status=400)
+        # return Response({
+        #     'error': 'Error: file',
+        # }, status=400)
 
 
 

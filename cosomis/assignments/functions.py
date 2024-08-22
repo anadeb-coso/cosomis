@@ -62,12 +62,17 @@ def get_stabilized_administrativelevels_of_facilitators_by_project_id(facilitato
         _administrativelevels = AdministrativeLevel.objects.filter(
             id__in=[int(elt) for elt in all_administrative_ids if str(elt).isdigit()]
         )
-        
+        if type_adl == "Village" and _administrativelevels and _administrativelevels[0].type == 'Canton':
+            administrativelevels_v = []
+            for a in _administrativelevels:
+                administrativelevels_v += list(a.children)
+            _administrativelevels = administrativelevels_v
+    
         administrativelevels = [adl for adl in _administrativelevels if (not parent_id or (parent_id and adl.parent and adl.parent_id==parent_id))]
         
         if type_adl in ("Village", "Canton"):
             if type_adl == "Canton":
-                administrativelevels = list(set([adl.parent for adl in administrativelevels if adl.parent and (not parent_id or (parent_id and adl.parent.parent and adl.parent.parent_id==parent_id))]))
+                administrativelevels = list(set([adl for adl in administrativelevels if adl.parent and (not parent_id or (parent_id and adl.parent.parent and adl.parent.parent_id==parent_id))]))
         else:
             administrativelevels = []
 
