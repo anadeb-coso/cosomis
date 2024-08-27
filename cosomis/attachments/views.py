@@ -9,7 +9,7 @@ from datetime import datetime
 from rest_framework import status
 from rest_framework.views import APIView
 
-from attachments.serializers import SubprojectStepFileSerializer
+from attachments.serializers import SubprojectStepFileSerializer, SubprojectStepUrlFileSerializer
 from rest_framework import serializers
 from subprojects.models import SubprojectFile, SubprojectStep, Level
 from subprojects.serializers import SubprojectFileSerializer
@@ -197,6 +197,98 @@ class UploadSubprojectStepAttachmentAPIView(generics.GenericAPIView):
         #     'error': 'Error: file',
         # }, status=400)
 
+
+
+class UploadSubprojectStepUrlAttachmentAPIView(generics.GenericAPIView):
+    serializer_class = SubprojectStepUrlFileSerializer
+    parser_classes = (parsers.FormParser, parsers.MultiPartParser)
+
+    @extend_schema(
+        responses={201: inline_serializer(
+            'AttachmentUpdateStatusSerializer',
+            fields={
+                'message': serializers.CharField(),
+                'fileUrl': serializers.CharField(),
+            }
+        )},
+        description=f"Allowed file size less than or equal to {settings.MAX_UPLOAD_SIZE / (1024 * 1024) } MB"
+    )
+    
+    def convert_objects(self, data):
+        for k, v in data.items():
+            if v:
+                if str(v).replace('.','',1).replace(',','',1).isdigit():
+                    data[k] = int(float(v))
+                elif k == 'file_type' and v == 'undefined':
+                    data[k] = 'application/pdf' if '.pdf' in data['url'] else 'image/*'
+                elif v and v in ('null', 'undefined'):
+                    data[k] = None
+                else:
+                    data[k] = v
+            else:
+                data[k] = v
+        return data
+            
+        
+    def post(self, request, *args, **kwargs):
+        data = self.convert_objects(request.data)
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.validated_data
+        
+        file = data['file']
+        
+        if file and (('subproject_step' in data and data['subproject_step']) or ('subproject_level' in data and data['subproject_level'])):     
+            
+            if 'subproject_step' in data and data['subproject_step']:
+                step_object = SubprojectStep.objects.get(id=data['subproject_step'])
+                images = step_object.subproject.get_all_images()
+                subproject = step_object.subproject
+            else:
+                step_object = Level.objects.get(id=data['subproject_level'])
+                images = step_object.subproject_step.subproject.get_all_images()
+                subproject = step_object.subproject_step.subproject
+                
+            subproject_file = None
+            if 'id' in data and data['id']:
+                subproject_file = SubprojectFile.objects.filter(
+                            id=data['id']
+                        ).first()
+            
+            file_url = file
+
+            principal = False
+            if len(images) == 0:
+                principal = True
+
+            
+            
+            if not subproject_file:
+                subproject_file = SubprojectFile()
+                subproject_file.order = data['order']
+                subproject_file.subproject = subproject
+                subproject_file.principal = principal
+                if 'subproject_step' in data and data['subproject_step']:
+                    subproject_file.subproject_step = step_object
+                else:
+                    subproject_file.subproject_level = step_object
+                
+                subproject_file.file_type = data['content_type'] if 'content_type' in data else subproject_file.file_type
+
+            subproject_file.url = file_url
+            subproject_file.date_taken = datetime.strptime(data['date_taken'], '%Y-%m-%d').date()
+            subproject_file.name = step_object.wording
+            subproject_file = subproject_file.save_and_return_object()
+            
+            return Response(
+                SubprojectFileSerializer(subproject_file).data, 
+                status=status.HTTP_200_OK
+            )
+                
+
+        return Response({
+            'error': 'Error: file',
+        }, status=400)
 
 
 

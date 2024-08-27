@@ -37,3 +37,7 @@ class FileUrlSerializer(serializers.Serializer):
 
 class SubprojectStepFileSerializer(CheckUserSerializer, FileSerializer):
     pass
+
+
+class SubprojectStepUrlFileSerializer(CheckUserSerializer, FileUrlSerializer):
+    pass
