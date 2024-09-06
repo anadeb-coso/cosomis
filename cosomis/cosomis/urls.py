@@ -35,6 +35,10 @@ urlpatterns = [
     path('api/', include('cosomis.urls_api'))
 ]
 
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root = settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root = settings.MEDIA_ROOT)
+
 urlpatterns += i18n_patterns(
     path('admin/', admin.site.urls),
     path('', include('usermanager.urls')),
@@ -50,8 +54,3 @@ urlpatterns += i18n_patterns(
 
     path('delete-object/<int:object_id>/<str:type>/', views.DeleteObjectFormView.as_view(), name='object_deletion_form'),
 )
-
-
-if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root = settings.STATIC_ROOT)
-    urlpatterns += static(settings.MEDIA_URL, document_root = settings.MEDIA_ROOT)

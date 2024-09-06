@@ -204,6 +204,11 @@ jQuery.extend(jQuery.fn.dataTableExt.oSort, {
         {% get_current_language as lang %}
         var columns_datatable = []        
 
+        if ($.fn.DataTable.isDataTable('#table-{{ data_id }}')) {
+            $('#table-{{ data_id }}').DataTable().destroy();
+            $('#table-{{ data_id }}').empty(); 
+        }
+
         let table_subprojects_number = $('#table-{{ data_id }}').DataTable({
             {% if not_allow_datatable_auto_width %}bAutoWidth: false,{% endif %}
             language: {

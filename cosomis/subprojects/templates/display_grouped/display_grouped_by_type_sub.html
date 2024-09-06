@@ -7,7 +7,7 @@
 
 <div class="card">
     <div class="card-header">
-        <h5 class="font-weight-bold">{% translate "Sub-projects grouped by sector" %}: <span style="font-size:11px;">(T: {{ subprojects_number }})</span></h5>
+        <h5 class="font-weight-bold">{% translate "Infrastructures grouped by type" %}: <span style="font-size:11px;">(T: {{ subprojects_number }})</span></h5>
     </div>
 
 <div id="accordion" class="panel-heading">
@@ -143,6 +143,11 @@
         var columns_datatable = []    
         
         function ttt(t_id){
+            if ($.fn.DataTable.isDataTable('#table-'+t_id)) {
+                $('#table-'+t_id).DataTable().destroy();
+                $('#table-'+t_id).empty(); 
+            }
+
             let table_subprojects_number = $('#table-'+t_id).DataTable({
             {% if not_allow_datatable_auto_width %}bAutoWidth: false,{% endif %}
             language: {

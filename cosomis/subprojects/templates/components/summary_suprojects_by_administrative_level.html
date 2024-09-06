@@ -115,6 +115,11 @@ $('.summary_subprojects').click(function(event){
 $(document).ready(function () {
     {% get_current_language as lang %}
 
+    if ($.fn.DataTable.isDataTable('#table_summary_suprojects')) {
+        $('#table_summary_suprojects').DataTable().destroy();
+        $('#table_summary_suprojects').empty(); 
+    }
+
     let table_summary_suprojects = $('#table_summary_suprojects').DataTable({
         language: {
             url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}')

@@ -36,14 +36,14 @@
                                 <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
                                     <ol class="carousel-indicators">
                                         {% for img in subproject.get_all_images %}
-                                        <li data-target="#carouselExampleIndicators" data-slide-to="{{ forloop.counter }}" {% if img.principal %}class="active"{% endif %} ></li>
+                                        <li data-target="#carouselExampleIndicators" data-slide-to="{{ forloop.counter }}" {% if img.principal and forloop.first %}class="active"{% endif %} ></li>
                                         {% endfor %}
                                     </ol>
                                     <div class="carousel-inner">
                                         
                                         {% for img in subproject.get_all_images %}
 
-                                            <div class="carousel-item {% if img.principal %}active{% endif %}">
+                                            <div class="carousel-item {% if img.principal and forloop.first %}active{% endif %}">
                                                             
                                                 
                                                 <a target="_blank" href="{{ img.url|imgAWSS3Filter }}">

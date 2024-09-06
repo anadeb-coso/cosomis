@@ -569,8 +569,9 @@
                                                         {% if total|get:"infrastructures_with_latrines_and_fences" %}
                                                             <span style="font-weight: bold;">{{ forloop.counter }}-/ {{ sector }} (
                                                                 {{ total|get:"subprojects" }} | 
-                                                                {{ total|get:"infrastructures" }} | 
-                                                                {{ total|get:"infrastructures_with_latrines_and_fences" }}
+                                                                {{ total|get:"infrastructures" }}
+                                                                 {% comment %} | 
+                                                                {{ total|get:"infrastructures_with_latrines_and_fences" }} {% endcomment %}
                                                             ) : </span> 
                                                             {% with typess|get:"types" as types %}
                                                                 {% for type_infra, nbr in types.items %}

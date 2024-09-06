@@ -104,3 +104,30 @@ class RestGetACVDByUser(APIView):
         serializer = CVDWithAdministrativeLevelSerializer(paginated_data, many=True, initial= {'user': user})
         
         return paginator.get_paginated_response(serializer.data)
+    
+
+class SaveAdministrativeLevelGeoLocation(APIView):
+    throttle_classes = ()
+    permission_classes = ()
+    serializer_class = CheckUserSerializer
+    
+    def post(self, request, pk, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data
+
+        try:
+            adl = AdministrativeLevel.objects.get(id=pk)
+            adl.latitude = request.data['latitude']
+            adl.longitude = request.data['longitude']
+            adl = adl.save_and_return_object()
+            
+            return Response(
+                {'success': 'ok'}, 
+                status=status.HTTP_200_OK
+            )
+        except Exception as exc:
+            return Response(
+                {'error': exc.__str__()}, 
+                status=status.HTTP_404_NOT_FOUND
+            )

@@ -256,8 +256,8 @@ class Subproject(BaseModel):
     
     def get_all_images(self, order=False):
         if order:
-            return sorted(self.subprojectfile_set.get_queryset().filter(file_type__icontains="image"), key=lambda o: o.order)
-        return self.subprojectfile_set.get_queryset().filter(file_type__icontains="image")
+            return sorted(self.subprojectfile_set.get_queryset().filter(file_type__icontains="image"), key=lambda o: o.order).order_by("-principal")
+        return self.subprojectfile_set.get_queryset().filter(file_type__icontains="image").order_by("-principal")
 
     def get_all_exclude_images(self, order=False):
         if order:

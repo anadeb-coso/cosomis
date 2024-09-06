@@ -2488,6 +2488,14 @@ msgid "Sub-projects grouped by sector"
 msgstr "Sous-projets regroupés par secteur"
 
 #: .\subprojects
+msgid "Infrastructures grouped by sector"
+msgstr "Infrastructures regroupées par secteur"
+
+#: .\subprojects
+msgid "Infrastructures grouped by type"
+msgstr "Infrastructures regroupées par type"
+
+#: .\subprojects
 msgid "Grouped by type"
 msgstr "Groupé par type"
 

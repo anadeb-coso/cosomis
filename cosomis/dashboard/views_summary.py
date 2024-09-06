@@ -376,7 +376,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                     
                     _s = all_subprojects_sector_type.filter(subproject_type_designation="Subproject")
                     if _s.exists():
-                        _sql, _params = _s.query.get_compiler('default').as_sql()
+                        _sql_type, _params_type = _s.query.get_compiler('default').as_sql()
                         final_queryset = _s.raw(
                             f"""
                             SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
@@ -385,9 +385,9 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                             WHERE (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)}
                                 AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)})) 
                                 AND sub_subp.id IN (
-                                    SELECT sub.id FROM ({_sql}) AS sub 
+                                    SELECT sub.id FROM ({_sql_type}) AS sub 
                                 )
-                            """, _params
+                            """, _params_type
                         )
                         datas[_("Total number of sub-projects completed")][count] = len(final_queryset)
                     else:
@@ -433,7 +433,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                 _('Identified'): dict([
                     (sector,{
                         'types': dict([
-                            (t[0], all_subprojects.filter(subproject_sector=sector, type_of_subproject=t[0]).count()) for t in sorted(list(set(list(all_subprojects.filter(subproject_sector=sector).values_list('type_of_subproject')))))
+                            (t, all_subprojects.filter(subproject_sector=sector, type_of_subproject=t).count()) for t in sorted(list(set([x[0].capitalize() for x in list(all_subprojects.filter(subproject_sector=sector).values_list('type_of_subproject'))])))
                         ] 
                         #               + [
                         #     (type_structure,
@@ -458,7 +458,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                 _('Completed'): dict([
                     (sector,{
                         'types': dict([
-                            (t[0], all_subprojects.filter(subproject_sector=sector, type_of_subproject=t[0], current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()) for t in sorted(list(set(list(all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).values_list('type_of_subproject')))))
+                            (t, all_subprojects.filter(subproject_sector=sector, type_of_subproject=t, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()) for t in sorted(list(set([x[0].capitalize() for x in list(all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).values_list('type_of_subproject'))])))
                         ]
                         #               + [
                         #     (type_structure,
@@ -494,7 +494,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                 _('In progress'): dict([
                     (sector,{
                         'types': dict([
-                            (t[0], all_subprojects.filter(subproject_sector=sector, type_of_subproject=t[0], current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()) for t in sorted(list(set(list(all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).values_list('type_of_subproject')))))
+                            (t, all_subprojects.filter(subproject_sector=sector, type_of_subproject=t, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()) for t in sorted(list(set([x[0].capitalize() for x in list(all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).values_list('type_of_subproject'))])))
                         ] 
                         #               + [
                         #     (type_structure,
@@ -533,7 +533,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                 _('Not start'): dict([
                     (sector,{
                         'types': dict([
-                            (t[0], all_subprojects.filter(subproject_sector=sector, type_of_subproject=t[0], current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count()) for t in sorted(list(set(list(all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).values_list('type_of_subproject')))))
+                            (t, all_subprojects.filter(subproject_sector=sector, type_of_subproject=t, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).count()) for t in sorted(list(set([x[0].capitalize() for x in list(all_subprojects.filter(subproject_sector=sector, current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS).values_list('type_of_subproject'))])))
                         ] 
                         #               + [
                         #     (type_structure,
