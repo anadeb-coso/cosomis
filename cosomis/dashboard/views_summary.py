@@ -1000,15 +1000,15 @@ class SubprojectsDetailsModalView(DashboardSubprojectsMixin, AJAXRequestMixin,
                     all_subprojects = final_queryset #Subproject.objects.filter(id__in=[p.id for p in final_queryset])
                     
         elif list_type_search == 'infrastrutures':
-            list_name_search = _("Structures/infrastructures without latrines and fences")
+            list_name_search = _("Structures/infrastructures") #_("Structures/infrastructures without latrines and fences")
         elif list_type_search == 'infrastruture-completed':
-            list_name_search = _("Structures/infrastructures completed (excluding latrines and fences)")
+            list_name_search = _("Structures/infrastructures completed") #_("Structures/infrastructures completed (excluding latrines and fences)")
             all_subprojects = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS)
         elif list_type_search == 'infrastruture-in-progress':
-            list_name_search = _("Structures/infrastructures in progress (excluding latrines and fences)")
+            list_name_search = _("Structures/infrastructures in progress") #_("Structures/infrastructures in progress (excluding latrines and fences)")
             all_subprojects = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS)
         elif list_type_search == 'infrastruture-not-started':
-            list_name_search = _("Structures/infrastructures not start (excluding latrines and fences)")
+            list_name_search = _("Structures/infrastructures not start") #_("Structures/infrastructures not start (excluding latrines and fences)")
             all_subprojects = all_subprojects.exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS))
         
         elif 'infrastrutures-with-latrines-fences' in list_type_search:

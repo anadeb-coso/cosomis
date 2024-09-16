@@ -156,3 +156,62 @@ def get_cascade_villages_ids_by_administrative_level_id(_ids):
 
         return list(set(villages))
     return []
+
+
+def get_cascade_adls_by_administrative_level_id(_ids, __type="Village", parent_id=None):
+    
+    if type(_ids) is not list:
+        _ids = [_ids]
+    if _ids:
+        
+        ad_objects = AdministrativeLevel.objects.filter(id__in=[int(_id) for _id in _ids if _id])
+        
+        villages = []
+        for ad_obj in ad_objects:
+            if ad_obj:
+                ads = []
+                _type = ad_obj.type
+                if _type == "Village":
+                    ads.append(ad_obj)
+                else:
+                    ads = ad_obj.administrativelevel_set.get_queryset()
+                    
+                datas = {
+                    "prefectures": ads if _type == "Region" else [], 
+                    "communes": ads if _type == "Prefecture" else [], 
+                    "cantons": ads if _type == "Commune" else [], 
+                    "villages": ads if _type in ("Canton", "Village") else []
+                }
+                for p in datas["prefectures"]:
+                    [datas["communes"].append(o) for o in p.administrativelevel_set.get_queryset()]
+
+                for c in datas["communes"]:
+                    [datas["cantons"].append(o) for o in c.administrativelevel_set.get_queryset()]
+                
+                for c in datas["cantons"]:
+                    [datas["villages"].append(o) for o in c.administrativelevel_set.get_queryset()]
+                
+                if _type == "village":
+                    datas["villages"].append(ad_obj)
+                villages += datas["villages"]
+
+        villages = list(set(villages))
+        if __type == "Region":
+            return [
+                v.parent.parent.parent.parent for v in villages
+            ]
+        elif __type == "Prefecture":
+            return [
+                v.parent.parent.parent for v in villages if (not parent_id or (parent_id and v.parent.parent.parent.parent and v.parent.parent.parent.parent_id==parent_id))
+            ]
+        elif __type == "Commune":
+            return [
+                v.parent.parent for v in villages if (not parent_id or (parent_id and v.parent.parent.parent and v.parent.parent.parent_id==parent_id))
+            ]
+        elif __type == "Canton":
+            return [
+                v.parent for v in villages if (not parent_id or (parent_id and v.parent.parent and v.parent.parent_id==parent_id))
+            ]
+
+        return [v for v in villages if (not parent_id or (parent_id and v.parent and v.parent_id==parent_id))]
+    return []

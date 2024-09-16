@@ -2982,3 +2982,19 @@ msgstr "Nbre total d’ouvrages réceptionnés provisoirement"
 #: .\subprojects
 msgid "Total number of works finally accepted"
 msgstr "Nbre total d’ouvrages réceptionnés définitivement"
+
+#: .\subprojects
+msgid "Structures/infrastructures"
+msgstr "Infrastructures"
+
+#: .\subprojects
+msgid "Structures/infrastructures not start"
+msgstr "Infrastructures non démarrées"
+
+#: .\subprojects
+msgid "Structures/infrastructures in progress"
+msgstr "Infrastructures en cours"
+
+#: .\subprojects
+msgid "Structures/infrastructures completed"
+msgstr "Infrastructures achevées"

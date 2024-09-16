@@ -234,9 +234,9 @@ def set_step(subproject, liste):
     
 
 
-def save_subproject_tracking():
+def save_subproject_tracking(subprojects = Subproject.objects.all().get_actifs()):
     print("Start save_subproject_tracking !")
-    subprojects = Subproject.objects.all().get_actifs()
+    # subprojects = Subproject.objects.all().get_actifs()
     sectors = []
     types = []
     step_identifie = Step.objects.get(ranking=1)
