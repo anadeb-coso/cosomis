@@ -16,13 +16,15 @@ from assignments.functions import (
 from subprojects.api.custom import CustomPagination
 from cosomis.types import _QS
 
+from cosomis.subprojects.models import Project
+
 
 class RestGetAdministrativeLevelByUser(APIView):
     throttle_classes = ()
     permission_classes = ()
     serializer_class = CheckUserSerializer
     
-    def post(self, request, type_adl: str, project_id: int, *args, **kwargs):
+    def post(self, request, type_adl: str, project_name: str, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
@@ -51,9 +53,11 @@ class RestGetAdministrativeLevelByUser(APIView):
                 #         list(administrative_levels_stabilized) + list(administrative_levels_assigned_for_cdd_process)
                 #     )
                 # )
+
+                project = Project.objects.filter(name=project_name)
                 
                 administrative_levels = combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id(
-                    user, project_id, type_adl=type_adl.title(), parent_id=parent_id
+                    user, project.id, type_adl=type_adl.title(), parent_id=parent_id
                 )
                 
         paginator = CustomPagination()
