@@ -201,18 +201,20 @@ class UploadSubprojectStepAttachmentAPIView(generics.GenericAPIView):
 
 class UploadSubprojectStepUrlAttachmentAPIView(generics.GenericAPIView):
     serializer_class = SubprojectStepUrlFileSerializer
-    parser_classes = (parsers.FormParser, parsers.MultiPartParser)
+    parser_classes = (
+        parsers.FormParser, parsers.MultiPartParser
+        )
 
-    @extend_schema(
-        responses={201: inline_serializer(
-            'AttachmentUpdateStatusSerializer',
-            fields={
-                'message': serializers.CharField(),
-                'fileUrl': serializers.CharField(),
-            }
-        )},
-        description=f"Allowed file size less than or equal to {settings.MAX_UPLOAD_SIZE / (1024 * 1024) } MB"
-    )
+    # @extend_schema(
+    #     responses={201: inline_serializer(
+    #         'AttachmentUpdateStatusSerializer',
+    #         fields={
+    #             'message': serializers.CharField(),
+    #             'fileUrl': serializers.CharField(),
+    #         }
+    #     )},
+    #     description=f"Allowed file size less than or equal to {settings.MAX_UPLOAD_SIZE / (1024 * 1024) } MB"
+    # )
     
     def convert_objects(self, data):
         for k, v in data.items():
@@ -231,7 +233,7 @@ class UploadSubprojectStepUrlAttachmentAPIView(generics.GenericAPIView):
             
         
     def post(self, request, *args, **kwargs):
-        data = self.convert_objects(request.data)
+        data = request.data #self.convert_objects(request.data)
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.validated_data
