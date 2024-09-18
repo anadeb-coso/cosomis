@@ -16,7 +16,7 @@ from assignments.functions import (
 from subprojects.api.custom import CustomPagination
 from cosomis.types import _QS
 
-from cosomis.subprojects.models import Project
+from subprojects.models import Project
 
 
 class RestGetAdministrativeLevelByUser(APIView):
@@ -28,6 +28,7 @@ class RestGetAdministrativeLevelByUser(APIView):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
+        project  = Project.objects.filter(name=project_name).first()
 
         parent_id = request.GET.get("parent_id", None)
         if parent_id:
@@ -54,15 +55,18 @@ class RestGetAdministrativeLevelByUser(APIView):
                 #     )
                 # )
 
-                project = Project.objects.filter(name=project_name)
-                
-                administrative_levels = combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id(
-                    user, project.id, type_adl=type_adl.title(), parent_id=parent_id
-                )
+                if project:
+                    administrative_levels = combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id(
+                        user, project.id, type_adl=type_adl.title(), parent_id=parent_id
+                    )
+                else:
+                    administrative_levels = combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id(
+                        user, 1, type_adl=type_adl.title(), parent_id=parent_id
+                    )
                 
         paginator = CustomPagination()
         paginated_data = paginator.paginate_queryset(administrative_levels, request)
-        serializer = AdministrativeLevelSerializer(paginated_data, many=True, initial= {'user': user})
+        serializer = AdministrativeLevelSerializer(paginated_data, many=True, initial= {'user': user, 'project_id': project.id if project else 1})
         
         return paginator.get_paginated_response(serializer.data)
     
@@ -73,10 +77,11 @@ class RestGetACVDByUser(APIView):
     permission_classes = ()
     serializer_class = CheckUserSerializer
     
-    def post(self, request, project_id: int, *args, **kwargs):
+    def post(self, request, project_name: str, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
+        project  = Project.objects.filter(name=project_name).first()
 
         parent_id = request.GET.get("parent_id", None)
         if parent_id:
@@ -93,9 +98,15 @@ class RestGetACVDByUser(APIView):
             #     administrative_levels = get_administrativelevels_by_facilitator_id_and_project_id(user.id, project_id, type_adl="Village", parent_id=parent_id)
             # else:
             #     administrative_levels = get_administrativelevels_by_facilitator_id_and_project_id(user.id, project_id, "Village")
-            administrative_levels = combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id(
-                user, project_id, type_adl="Village", parent_id=parent_id
-            )
+            
+            if project:
+                administrative_levels = combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id(
+                    user, project.id, type_adl="Village", parent_id=parent_id
+                )
+            else:
+                administrative_levels = combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id(
+                    user, 1, type_adl="Village", parent_id=parent_id
+                )
         cvds = CVD.objects.filter(
             pk__in=[
                 adl.cvd.id for adl in administrative_levels if adl.cvd
@@ -105,7 +116,7 @@ class RestGetACVDByUser(APIView):
 
         paginator = CustomPagination()
         paginated_data = paginator.paginate_queryset(cvds, request)
-        serializer = CVDWithAdministrativeLevelSerializer(paginated_data, many=True, initial= {'user': user})
+        serializer = CVDWithAdministrativeLevelSerializer(paginated_data, many=True, initial= {'user': user, 'project_id': project.id if project else 1})
         
         return paginator.get_paginated_response(serializer.data)
     

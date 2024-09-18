@@ -29,12 +29,14 @@ class AdministrativeLevelSerializer(serializers.ModelSerializer):
 	cvd = CVDSerializer(many=False)
 
 	user = None
+	project_id = None
 
 	def __init__(self, *args, **kwargs):
 		super(AdministrativeLevelSerializer, self).__init__(*args, **kwargs)
 		initial = kwargs.get('initial')
 		if initial:
 			self.user = initial.get('user')
+			self.project_id = initial.get('project_id')
 
 	class Meta:
 		"""docstring for Meta"""
@@ -49,9 +51,9 @@ class AdministrativeLevelSerializer(serializers.ModelSerializer):
 		if self.user:
 
 			if not hasattr(self.user, 'no_sql_user'):
-				subprojects = Subproject.objects.filter().get_actifs()
+				subprojects = Subproject.objects.filter(projects__in=[self.project_id]).get_actifs()
 			else:
-				subprojects = get_subprojects_by_facilitator_id_and_project_id(self.user.id, 1)
+				subprojects = get_subprojects_by_facilitator_id_and_project_id(self.user.id, self.project_id)
 				
 			data['number_subprojects'] = subprojects.filter(
                 Q(link_to_subproject=None, location_subproject_realized__id=instance.id) | 
@@ -72,12 +74,14 @@ class CVDWithAdministrativeLevelSerializer(serializers.ModelSerializer):
 	administrativelevels = AdministrativeLevelSerializer(source='administrativelevel_set', many=True) 
 	
 	user = None
+	project_id = None
 
 	def __init__(self, *args, **kwargs):
 		super(CVDWithAdministrativeLevelSerializer, self).__init__(*args, **kwargs)
 		initial = kwargs.get('initial')
 		if initial:
 			self.user = initial.get('user')
+			self.project_id = initial.get('project_id')
 
 	class Meta:
 		"""docstring for Meta"""
@@ -91,9 +95,9 @@ class CVDWithAdministrativeLevelSerializer(serializers.ModelSerializer):
 		if self.user:
 
 			if not hasattr(self.user, 'no_sql_user'):
-				subprojects = Subproject.objects.filter().get_actifs()
+				subprojects = Subproject.objects.filter(projects__in=[self.project_id]).get_actifs()
 			else:
-				subprojects = get_subprojects_by_facilitator_id_and_project_id(self.user.id, 1)
+				subprojects = get_subprojects_by_facilitator_id_and_project_id(self.user.id, self.project_id)
 				
 			data['number_subprojects'] = subprojects.filter(
                 Q(link_to_subproject=None, cvd__id=instance.id)

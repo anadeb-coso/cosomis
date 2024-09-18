@@ -7,7 +7,7 @@ from usermanager.api.auth.login import CheckUserSerializer
 from subprojects.serializers import (
     SubprojectWithChildrenLinkedSerializer, SaveSubprojectSerializer,
     SubprojectStandardSerializer)
-from subprojects.models import Subproject
+from subprojects.models import Subproject, Project
 from assignments.functions import get_subprojects_by_facilitator_id_and_project_id
 from .custom import CustomPagination
 
@@ -26,18 +26,21 @@ class RestGetSubprojectsByUser(APIView):
 
         administrativelevel_id = request.GET.get("administrativelevel_id", None)
         cvd_id = request.GET.get("cvd_id", None)
-        project_id = request.GET.get("project_id", None)
+        subproject_id = request.GET.get("subproject_id", None)
+        project_name = request.GET.get("project_name", None)
+        project  = Project.objects.filter(name=project_name).first()
 
         search = request.GET.get("search", None)
         page_number = request.GET.get("page", None)
         subprojects = []
 
         if not hasattr(user, 'no_sql_user'):
+            subprojects = Subproject.objects.filter(projects__in=[project if project else 1]).get_actifs()
             if search:
                 if search == "All":
-                    subprojects = Subproject.objects.filter().get_actifs()
+                    subprojects = subprojects
                 search = search.upper()
-                subprojects =    Subproject.objects.filter(
+                subprojects =    subprojects.filter(
                         Q(full_title_of_approved_subproject__icontains=search) | 
                         Q(location_subproject_realized__name__icontains=search) | 
                         Q(lsubproject_sector__icontains=search) | 
@@ -47,9 +50,9 @@ class RestGetSubprojectsByUser(APIView):
                         Q(facilitator_name__icontains=search)
                     ).get_actifs()
             else:
-                subprojects =    Subproject.objects.filter().get_actifs()
+                subprojects =    subprojects
         else:
-            subprojects = get_subprojects_by_facilitator_id_and_project_id(user.id, 1)
+            subprojects = get_subprojects_by_facilitator_id_and_project_id(user.id, project.id if project else 1)
 
         if administrativelevel_id:
             administrativelevel_id = int(administrativelevel_id)
@@ -66,10 +69,10 @@ class RestGetSubprojectsByUser(APIView):
                 Q(link_to_subproject=None, cvd__id=cvd_id)
             )
         
-        elif project_id:
-            project_id = int(project_id)
+        elif subproject_id:
+            subproject_id = int(subproject_id)
             subprojects = subprojects.filter(
-                Q(link_to_subproject__id=project_id)
+                Q(link_to_subproject__id=subproject_id)
             )
         else:
             subprojects = subprojects.filter(
