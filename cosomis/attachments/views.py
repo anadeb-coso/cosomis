@@ -97,7 +97,7 @@ class UploadSubprojectStepAttachmentAPIView(generics.GenericAPIView):
         # print(data)
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        serializer.validated_data
+        user = serializer.validated_data
         
         file = data['file']
         
@@ -164,7 +164,7 @@ class UploadSubprojectStepAttachmentAPIView(generics.GenericAPIView):
             subproject_file.url = file_url
             subproject_file.date_taken = datetime.strptime(data['date_taken'], '%Y-%m-%d').date()
             subproject_file.name = step_object.wording
-            subproject_file = subproject_file.save_and_return_object()
+            subproject_file = subproject_file.save_and_return_object(user=user)
             
             return Response(
                 SubprojectFileSerializer(subproject_file).data, 
@@ -236,7 +236,7 @@ class UploadSubprojectStepUrlAttachmentAPIView(generics.GenericAPIView):
         data = request.data #self.convert_objects(request.data)
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        serializer.validated_data
+        user = serializer.validated_data
         
         file = data['file']
         
@@ -280,7 +280,7 @@ class UploadSubprojectStepUrlAttachmentAPIView(generics.GenericAPIView):
             subproject_file.url = file_url
             subproject_file.date_taken = datetime.strptime(data['date_taken'], '%Y-%m-%d').date()
             subproject_file.name = step_object.wording
-            subproject_file = subproject_file.save_and_return_object()
+            subproject_file = subproject_file.save_and_return_object(user=user)
             
             return Response(
                 SubprojectFileSerializer(subproject_file).data, 

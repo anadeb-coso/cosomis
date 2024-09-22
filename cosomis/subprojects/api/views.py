@@ -124,7 +124,7 @@ class SaveSubprojectsGeoLocation(APIView):
             subproject = Subproject.objects.get(id=pk)
             subproject.latitude = request.data['latitude']
             subproject.longitude = request.data['longitude']
-            subproject = subproject.save_and_return_object()
+            subproject = subproject.save_and_return_object(user=user)
             
             return Response(
                 SubprojectWithChildrenLinkedSerializer(subproject).data, 
@@ -163,7 +163,8 @@ class RestSaveSubproject(APIView):
         sub = Subproject.objects.get(id=request.data['pk'])
         
         try:
-            s.save()
+            o = s.save()
+            o.save(user=data)
             return Response(
                 SubprojectWithChildrenLinkedSerializer(Subproject.objects.get(id=request.data['pk'])).data, 
                 status=status.HTTP_200_OK

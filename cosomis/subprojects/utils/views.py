@@ -51,7 +51,7 @@ class UploadSuprojectImageView(LoginRequiredMixin, generic.View):
                     for img in images:
                         if img.principal:
                             img.principal = False
-                            img.save()
+                            img.save(user=self.request.user)
                 else:
                     if len(images) == 0:
                         principal = True
@@ -65,7 +65,7 @@ class UploadSuprojectImageView(LoginRequiredMixin, generic.View):
                 image.name = name
                 image.file_type = file.content_type
 
-                image.save()
+                image.save(user=self.request.user)
 
                 return HttpResponse(json.dumps({"message": _("Registered").__str__(), "ok": True}), content_type="application/json")
             else:
@@ -107,7 +107,7 @@ class UpdateSuprojectImageView(LoginRequiredMixin, generic.View):
                 for img in images:
                     if img.principal:
                         img.principal = False
-                        img.save()
+                        img.save(user=self.request.user)
             else:
                 if len(images) == 1:
                     principal = True
@@ -119,7 +119,7 @@ class UpdateSuprojectImageView(LoginRequiredMixin, generic.View):
             if date_taken:
                 image.date_taken = date_taken
             image.name = name
-            image.save()
+            image.save(user=self.request.user)
 
             return HttpResponse(json.dumps({"message": _("Registered").__str__(), "ok": True}), content_type="application/json")
            

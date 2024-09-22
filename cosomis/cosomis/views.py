@@ -104,7 +104,7 @@ class DeleteObjectFormView(AJAXRequestMixin, ModalFormMixin, AdminPermissionRequ
                     subproject.approval_date_cora = current_subproject_step.begin
 
                 subproject.current_level_of_physical_realization_of_the_work = str(current_subproject_step.step.percent if current_subproject_step.step.percent else current_subproject_step.step.wording)
-                subproject.save()
+                subproject.save(user=self.request.user)
             
         
         msg = _("The Step was successfully removed.")

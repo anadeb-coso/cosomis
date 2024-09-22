@@ -97,7 +97,7 @@ def save_csv_datas_cantons_allocations_in_db(datas_file: dict, project_id=1) -> 
                             allocation.component_id = k_id
                             allocation.amount = v_money['cfa']
                             allocation.amount_in_dollars = v_money['dollars']
-                            allocation.save()
+                            allocation.save(user={'is_superuser': True})
 
 
             except Exception as exc:

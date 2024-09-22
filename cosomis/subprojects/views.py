@@ -339,7 +339,7 @@ class SubprojectCreateView(PageMixin, LoginRequiredMixin, EvaluatorPermissionReq
             subproject = form.save()
             if subproject.location_subproject_realized and subproject.location_subproject_realized.cvd:
                 subproject.cvd = subproject.location_subproject_realized.cvd
-            subproject.save()
+            subproject.save(user=self.request.user)
             if subproject.id:
                 return redirect('subprojects:detail', pk=subproject.id)
             return redirect('subprojects:list')
@@ -385,7 +385,7 @@ class SubprojectUpdateView(PageMixin, LoginRequiredMixin, InfraPermissionRequire
             subproject = form.save()
             if subproject.location_subproject_realized and subproject.location_subproject_realized.cvd:
                 subproject.cvd = subproject.location_subproject_realized.cvd
-            subproject.save()
+            subproject.save(user=self.request.user)
             return redirect('subprojects:detail', pk=subproject.id)
         self.form_mixin = form
         return super(SubprojectCreateView, self).get(request, *args, **kwargs)
@@ -443,7 +443,7 @@ class SubSubprojectCreateView(PageMixin, LoginRequiredMixin, EvaluatorPermission
             subproject = form.save()
             if subproject.location_subproject_realized and subproject.location_subproject_realized.cvd:
                 subproject.cvd = subproject.location_subproject_realized.cvd
-            subproject.save()
+            subproject.save(user=self.request.user)
             return redirect('subprojects:detail', pk=subproject.link_to_subproject.id)
         self.form_mixin = form
         return super(SubSubprojectCreateView, self).get(request, *args, **kwargs)
@@ -471,7 +471,7 @@ class VulnerableGroupCreateView(PageMixin, LoginRequiredMixin, generic.CreateVie
         form = VulnerableGroupForm(request.POST)
         if form.is_valid():
             vulnerable_group = form.save()
-            vulnerable_group.save()
+            vulnerable_group.save(user=self.request.user)
             messages.info(request, _("Successfully created"))
             return redirect('subprojects:vulnerable_group_create')
         return super(VulnerableGroupCreateView, self).get(request, *args, **kwargs)
@@ -487,7 +487,7 @@ def subprojectfile_delete(request, file_id):
             for image in subproject.get_all_images():
                 if image.id != file_id:
                     image.principal = True
-                    image.save()
+                    image.save(user=request.user)
                     break
 
         file.delete()

@@ -14,16 +14,16 @@ class BaseModel(models.Model):
     
     def save_and_return_object(self, user=None):
         super().save()
-        # if user:
-        self.users_history(user)
+        if user:
+            self.users_history(user)
             
 
         return self
     
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None, user=None):
         super().save(force_insert, force_update, using, update_fields)
-        # if user:
-        self.users_history(user)
+        if user:
+            self.users_history(user)
 
 
     

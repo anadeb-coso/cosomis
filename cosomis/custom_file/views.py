@@ -59,7 +59,7 @@ class UploadFileFormView(AJAXRequestMixin, ModalFormMixin, AdminPermissionRequir
                 file_object.order = order
                 file_object.date_taken = date_taken
                 file_object.name = name
-                file_object.save()
+                file_object.save(user=self.request.user)
 
                 return HttpResponse(json.dumps({"message": _("Registered").__str__(), "ok": True}), content_type="application/json")
             else:

@@ -185,7 +185,7 @@ class SubprojectStepAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequiredM
         subproject_step.wording = subproject_step.step.wording
         subproject_step.percent = subproject_step.step.percent
         subproject_step.ranking = subproject_step.step.ranking
-        subproject_step = subproject_step.save_and_return_object()
+        subproject_step = subproject_step.save_and_return_object(user=self.request.user)
 
         # if not self._obj:
         _subproject_step = self.subproject.get_current_subproject_step
@@ -212,7 +212,7 @@ class SubprojectStepAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequiredM
             
             
             self.subproject.current_level_of_physical_realization_of_the_work = str(_subproject_step.step.percent if _subproject_step.step.percent else _subproject_step.step.wording)
-            self.subproject.save()
+            self.subproject.save(user=self.request.user)
 
         images = subproject_step.subproject.get_all_images()
         for file in [self.request.FILES.get('level_image'), self.request.FILES.get('level_other_file')]:
@@ -245,7 +245,7 @@ class SubprojectStepAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequiredM
                     image.principal = principal
                     image.date_taken = subproject_step.begin
                     image.name = subproject_step.wording
-                    image.save()
+                    image.save(user=self.request.user)
 
 
         
@@ -295,7 +295,7 @@ class SubprojectLevelAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequired
         
         subproject_level = form.save(commit=False)
         subproject_level.subproject_step = subproject_step
-        subproject_level = subproject_level.save_and_return_object()
+        subproject_level = subproject_level.save_and_return_object(user=self.request.user)
 
         # if not self._obj:
         _step = self.subproject.get_current_subproject_step
@@ -307,7 +307,7 @@ class SubprojectLevelAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequired
             if old_percent < new_percent:
                 self.subproject.current_status_of_the_site = "En cours"
                 self.subproject.current_level_of_physical_realization_of_the_work = str(subproject_level.percent if subproject_level.percent else "0")
-                self.subproject.save()
+                self.subproject.save(user=self.request.user)
 
         images = subproject_level.subproject_step.subproject.get_all_images()
         for file in [self.request.FILES.get('level_image'), self.request.FILES.get('level_other_file')]:
@@ -339,7 +339,7 @@ class SubprojectLevelAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequired
                     image.principal = principal
                     image.date_taken = subproject_level.begin
                     image.name = subproject_level.wording
-                    image.save()
+                    image.save(user=self.request.user)
 
 
         

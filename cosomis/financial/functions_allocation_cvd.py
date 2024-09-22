@@ -115,7 +115,7 @@ def save_cvd_instead_of_csv_file_datas_in_db(datas_file: dict, project_id=1) -> 
                         cvd.secretary_name_of_the_cvd = secretary_name_of_the_cvd
                     if secretary_phone_of_the_cvd != None:
                         cvd.secretary_phone_of_the_cvd = secretary_phone_of_the_cvd
-                    cvd = cvd.save_and_return_object()
+                    cvd = cvd.save_and_return_object(user={'is_superuser': True})
 
 
                     if amount != None:
@@ -134,7 +134,7 @@ def save_cvd_instead_of_csv_file_datas_in_db(datas_file: dict, project_id=1) -> 
                         if amount_in_dollars_after_signature_of_contracts:
                             allocation.amount_in_dollars_after_signature_of_contracts = amount_in_dollars_after_signature_of_contracts
                         
-                        allocation.save()
+                        allocation.save(user={'is_superuser': True})
                     
                     if amount_transferred:
                         bank_transfer = BankTransfer()
@@ -142,7 +142,7 @@ def save_cvd_instead_of_csv_file_datas_in_db(datas_file: dict, project_id=1) -> 
                         bank_transfer.project_id = project_id
                         bank_transfer.amount_transferred = amount_transferred
                         bank_transfer.amount_transferred_in_dollars = amount_transferred_in_dollars
-                        bank_transfer.save()
+                        bank_transfer.save(user={'is_superuser': True})
                         
                         at_least_one_save = True
 

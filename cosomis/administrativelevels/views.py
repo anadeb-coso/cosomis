@@ -396,7 +396,7 @@ class ObstaclesListView(PageMixin, LoginRequiredMixin, TemplateView):
             obstacle.description = description
             obstacle.administrative_level = ObstaclesListView.administrativelevel_village
             obstacle.meeting_id = 1
-            obstacle.save()
+            obstacle.save(user=self.request.user)
             messages.info(request, _("Add successfully!"))
         else:
             '''Edit'''
@@ -411,7 +411,7 @@ class ObstaclesListView(PageMixin, LoginRequiredMixin, TemplateView):
                             obstacle = VillageObstacle.objects.get(id=id)
                             obstacle.focus_group = group
                             obstacle.description = description
-                            obstacle.save()
+                            obstacle.save(user=self.request.user)
                             messages.info(request, _("Update successfully!"))
                             break
                     except Exception as exc:
@@ -485,7 +485,7 @@ class GoalsListView(PageMixin, LoginRequiredMixin, TemplateView):
             goal.description = description
             goal.administrative_level = GoalsListView.administrativelevel_village
             goal.meeting_id = 1
-            goal.save()
+            goal.save(user=self.request.user)
             messages.info(request, _("Add successfully!"))
         else:
             '''Edit'''
@@ -500,7 +500,7 @@ class GoalsListView(PageMixin, LoginRequiredMixin, TemplateView):
                             goal = VillageGoal.objects.get(id=id)
                             goal.focus_group = group
                             goal.description = description
-                            goal.save()
+                            goal.save(user=self.request.user)
                             messages.info(request, _("Update successfully!"))
                             break
                     except Exception as exc:
@@ -582,7 +582,7 @@ class PrioritiesListView(PageMixin, LoginRequiredMixin, TemplateView):
             priority.climate_changing_contribution = climate_changing_contribution
             priority.administrative_level = PrioritiesListView.administrativelevel_village
             priority.meeting_id = 1
-            priority.save()
+            priority.save(user=self.request.user)
             messages.info(request, _("Add successfully!"))
         else:
             '''Edit'''
@@ -603,7 +603,7 @@ class PrioritiesListView(PageMixin, LoginRequiredMixin, TemplateView):
                             priority.proposed_women = int(proposed_women) if proposed_women else 0
                             priority.estimated_cost = float(estimated_cost) if estimated_cost else 0.0
                             priority.climate_changing_contribution = climate_changing_contribution
-                            priority.save()
+                            priority.save(user=self.request.user)
                             messages.info(request, _("Update successfully!"))
                             break
                     except Exception as exc:
@@ -700,13 +700,13 @@ class GeographicalUnitCreateView(PageMixin, LoginRequiredMixin, AdminPermissionR
             # import zlib
             # unit.unique_code = str(zlib.adler32(str(('0'*(9-len(length_str)))+length_str).encode('utf-8')))[:6]
             unit.unique_code = ('0'*(9-len(length_str))) + length_str
-            unit = unit.save_and_return_object()
+            unit = unit.save_and_return_object(user=self.request.user)
 
             for village_id in villages:
                 try:
                     village = AdministrativeLevel.objects.get(id=int(village_id))
                     village.geographical_unit = unit
-                    village.save()
+                    village.save(user=self.request.user)
                 except Exception as exc:
                     print(exc)
             
@@ -718,15 +718,15 @@ class GeographicalUnitCreateView(PageMixin, LoginRequiredMixin, AdminPermissionR
                     cvd.name = "Record automatically"
                     cvd.geographical_unit = unit
                     cvd.unique_code = ('0'*(9-len(length_str_cvd))) + length_str_cvd
-                    cvd = cvd.save_and_return_object()
+                    cvd = cvd.save_and_return_object(user=self.request.user)
                         
                     village = AdministrativeLevel.objects.get(id=int(villages[0]))
                     village.cvd = cvd
-                    village.save()
+                    village.save(user=self.request.user)
 
                     cvd.name = village.name
                     cvd.headquarters_village = village
-                    cvd.save()
+                    cvd.save(user=self.request.user)
                         
 
                 except Exception as exc:
@@ -772,13 +772,13 @@ class GeographicalUnitUpdateView(PageMixin, LoginRequiredMixin, AdminPermissionR
             unit = form.save(commit=False)
             unit = unit.save_and_return_object()
             unit.administrativelevel_set.clear()
-            unit = unit.save_and_return_object()
+            unit = unit.save_and_return_object(user=self.request.user)
 
             for village_id in villages:
                 try:
                     village = AdministrativeLevel.objects.get(id=int(village_id))
                     village.geographical_unit = unit
-                    village.save()
+                    village.save(user=self.request.user)
                 except Exception as exc:
                     print(exc)
 
@@ -881,13 +881,13 @@ class CVDCreateView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin,
             except Exception as exc:
                 length_str = "1"
             cvd.unique_code = ('0'*(9-len(length_str))) + length_str
-            cvd = cvd.save_and_return_object()
+            cvd = cvd.save_and_return_object(user=self.request.user)
 
             for village_id in villages:
                 try:
                     village = AdministrativeLevel.objects.get(id=int(village_id))
                     village.cvd = cvd
-                    village.save()
+                    village.save(user=self.request.user)
                 except Exception as exc:
                     print(exc)
 
@@ -929,13 +929,13 @@ class CVDUpdateView(PageMixin, LoginRequiredMixin, AccountantPermissionRequiredM
             cvd = form.save(commit=False)
             cvd = cvd.save_and_return_object()
             cvd.administrativelevel_set.clear()
-            cvd = cvd.save_and_return_object()
+            cvd = cvd.save_and_return_object(user=self.request.user)
 
             for village_id in villages:
                 try:
                     village = AdministrativeLevel.objects.get(id=int(village_id))
                     village.cvd = cvd
-                    village.save()
+                    village.save(user=self.request.user)
                 except Exception as exc:
                     print(exc)
 

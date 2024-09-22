@@ -135,7 +135,7 @@ class SaveAdministrativeLevelGeoLocation(APIView):
             adl = AdministrativeLevel.objects.get(id=pk)
             adl.latitude = request.data['latitude']
             adl.longitude = request.data['longitude']
-            adl = adl.save_and_return_object()
+            adl = adl.save_and_return_object(user=user)
             
             return Response(
                 {'success': 'ok'}, 

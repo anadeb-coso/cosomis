@@ -567,7 +567,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                         subproject.cvd  = administrative_level.cvd
                     
 
-                    subproject.save()
+                    subproject.save(user={'is_superuser': True})
 
 
             except Exception as exc:

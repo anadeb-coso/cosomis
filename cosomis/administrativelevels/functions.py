@@ -88,7 +88,7 @@ def save_csv_file_datas_in_db(datas_file: dict) -> str:
                             administrative_level.parent = parent
                             # administrative_level.frontalier = frontalier
                             # administrative_level.rural = rural
-                            # administrative_level.save()
+                            # administrative_level.save(user={'is_superuser': True})
                             at_least_one_save = True
                         else: #If the administrative level is already save
                             administrative_level = administratives_levels.first()
@@ -98,7 +98,7 @@ def save_csv_file_datas_in_db(datas_file: dict) -> str:
                         administrative_level.rural = rural
                         administrative_level.latitude = latitude
                         administrative_level.longitude = longitude
-                        administrative_level.save()
+                        administrative_level.save(user={'is_superuser': True})
                     
                 except Exception as exc:
                     at_least_one_error = True
@@ -351,7 +351,7 @@ def save_csv_datas_priorities_in_db(datas_file: dict, administrative_level_id=0,
                                 priority.proposed_women = 0
                                 priority.meeting_id = 1
                                 priority.climate_changing_contribution = ""
-                                priority.save()
+                                priority.save(user={'is_superuser': True})
                                 at_least_one_save = True
                             elif type_object == "priority":
                                 list_objects_exist.append(name_priority)
@@ -376,7 +376,7 @@ def save_csv_datas_priorities_in_db(datas_file: dict, administrative_level_id=0,
 
                                         subproject = subproject.save_and_return_object()
                                         subproject.priorities.add(villages[0])
-                                        subproject.save()
+                                        subproject.save(user={'is_superuser': True})
 
                                         at_least_one_save = True
                                     elif len(villages) > 1:
