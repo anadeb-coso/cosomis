@@ -130,7 +130,7 @@ def get_administratives_levels_under_file_excel_or_csv(file_type, administrative
     datas = {
         "Région" : {}, "Id Région" : {}, "Préfecture" : {}, "Id Préfecture" : {}, 
         "Commune" : {}, "Id Commune" : {}, "Canton" : {}, "Id Canton" : {}, 
-        "Village/localité" : {}, "Id Village/localité" : {},
+        "CVD" : {}, "ID CVD" : {}, "Village/localité" : {}, "Id Village/localité" : {},
         "Village frontalier (1=oui, 0= non)" : {}, "Localité (Rural=1, urbain=0)" : {}, "Latitude" : {}, "Longitude" : {}
     }
 
@@ -195,6 +195,10 @@ def get_administratives_levels_under_file_excel_or_csv(file_type, administrative
             datas["Canton"][count] = None
             datas["Id Canton"][count] = None
         
+        
+        datas["ID CVD"][count] = elt.cvd.pk if elt.cvd else None
+        datas["CVD"][count] = elt.cvd.name if elt.cvd else ""
+
         datas["Village/localité"][count] = elt.name
         datas["Id Village/localité"][count] = elt.pk
         datas["Village frontalier (1=oui, 0= non)"][count] = int(elt.frontalier)

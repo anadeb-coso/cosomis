@@ -700,6 +700,8 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         "PREFECTURE": {},
         "COMMUNE": {},
         "CANTON": {},
+        "ID CVD": {},
+        "ID LOCALITE": {},
         "VILLAGE/CDV": {},
         "UNITE D'INTERVENTION": {},
         "POPULATION": {},
@@ -888,8 +890,13 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
             datas["CANTON"][count] = None
         
         try:
-            datas["VILLAGE/CDV"][count] = elt.get_village().name
+            village = elt.get_village()
+            datas["ID CVD"][count] = village.cvd.pk if village.cvd else None
+            datas["ID LOCALITE"][count] = village.pk
+            datas["VILLAGE/CDV"][count] = village.name
         except Exception as exc:
+            datas["ID CVD"][count] = None
+            datas["ID LOCALITE"][count] = None
             datas["VILLAGE/CDV"][count] = None
         
 
