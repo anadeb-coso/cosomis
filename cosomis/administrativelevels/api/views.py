@@ -6,7 +6,7 @@ from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 
 from usermanager.api.auth.login import CheckUserSerializer
-from administrativelevels.serializers import AdministrativeLevelSerializer, CVDWithAdministrativeLevelSerializer
+from administrativelevels.serializers import AdministrativeLevelSerializer, CVDWithAdministrativeLevelSerializer, SimpleAdministrativeLevelSerializer
 from administrativelevels.models import AdministrativeLevel, CVD
 from assignments.functions import (
     # get_administrativelevels_by_facilitator_id_and_project_id,
@@ -71,7 +71,33 @@ class RestGetAdministrativeLevelByUser(APIView):
         return paginator.get_paginated_response(serializer.data)
     
 
+class RestGetAdministrativeLevel(APIView):
+    throttle_classes = ()
+    permission_classes = ()
+    
+    def post(self, request, *args, **kwargs):
+        
+        adl_types = [t.title() for t in self.request.data.get('types', [])]
+        parents_id = self.request.data.get('parents_id', [])
+        
+        if adl_types:
+            if parents_id:
+                administrative_levels = AdministrativeLevel.objects.filter(type__in=adl_types, parent_id__in=parents_id)
+            else:
+                administrative_levels = AdministrativeLevel.objects.filter(type__in=adl_types)
+        else:
+            if parents_id:
+                administrative_levels = AdministrativeLevel.objects.filter(parent_id__in=parents_id)
+            else:
+                administrative_levels = AdministrativeLevel.objects.all()
+                
+        paginator = CustomPagination()
+        paginated_data = paginator.paginate_queryset(administrative_levels, request)
+        serializer = SimpleAdministrativeLevelSerializer(paginated_data, many=True)
+        
+        return paginator.get_paginated_response(serializer.data)
 
+        
 class RestGetACVDByUser(APIView):
     throttle_classes = ()
     permission_classes = ()

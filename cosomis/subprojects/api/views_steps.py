@@ -70,7 +70,7 @@ class RestSaveSubprojectStep(APIView):
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
         o = serializer.save()
-        o.save(user=self.request.user)
+        o.save(user=request.data.get('user'))
         step = validated_data.get('step')
         subproject = validated_data.get('subproject')
         
@@ -98,7 +98,7 @@ class RestSaveSubprojectStep(APIView):
             
                 
             subproject.current_level_of_physical_realization_of_the_work = str(_step.percent if _step.percent else _step.wording)
-            subproject.save(user=self.request.user)
+            subproject.save(user=request.data.get('user'))
 
         try:
             return Response(
@@ -153,7 +153,7 @@ class RestSaveSubprojectLevel(APIView):
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
         o = serializer.save()
-        o.save(user=self.request.user)
+        o.save(user=request.data.get('user'))
         subproject_step = validated_data.get('subproject_step')
         subproject = subproject_step.subproject
         percent = validated_data.get('percent')
@@ -167,7 +167,7 @@ class RestSaveSubprojectLevel(APIView):
             if old_percent < new_percent:
                 subproject.current_status_of_the_site = "En cours"
                 subproject.current_level_of_physical_realization_of_the_work = str(percent if percent else "0")
-                subproject.save(user=self.request.user)
+                subproject.save(user=request.data.get('user'))
 
         try:
             return Response(

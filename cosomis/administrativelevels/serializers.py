@@ -22,6 +22,12 @@ class CVDSerializer(serializers.ModelSerializer):
 		model = CVD
 		fields = '__all__'
 
+class SimpleAdministrativeLevelSerializer(serializers.ModelSerializer):
+
+	class Meta:
+		"""docstring for Meta"""
+		model = AdministrativeLevel
+		fields = '__all__'
 
 
 class AdministrativeLevelSerializer(serializers.ModelSerializer):
