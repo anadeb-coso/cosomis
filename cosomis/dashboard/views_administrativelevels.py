@@ -64,14 +64,14 @@ class DashboardAdministrativeLevelMixin:
         administrative_levels_ids = list(set(administrative_levels_ids))
         administrative_levels = [] #AdministrativeLevel.objects.filter(id__in=administrative_levels_ids)
         if administrative_level_type == "All":
-            administrative_levels = AdministrativeLevel.objects.filter(type="Region")
+            administrative_levels = AdministrativeLevel.objects.filter(type="Region").prefetch_related()
         elif ald_filter_ids and administrative_level_type != "All":
-            administrative_levels = AdministrativeLevel.objects.filter(parent__id__in=ald_filter_ids)
+            administrative_levels = AdministrativeLevel.objects.filter(parent__id__in=ald_filter_ids).prefetch_related()
         elif administrative_level_type:
-            administrative_levels = AdministrativeLevel.objects.filter(parent__type=administrative_level_type)
+            administrative_levels = AdministrativeLevel.objects.filter(parent__type=administrative_level_type).prefetch_related()
         
         if not administrative_levels:
-            administrative_levels = AdministrativeLevel.objects.filter(id__in=ald_filter_ids)
+            administrative_levels = AdministrativeLevel.objects.filter(id__in=ald_filter_ids).prefetch_related()
 
         administrative_level = administrative_levels.first()
         
@@ -322,7 +322,7 @@ class DashboardSummaryAdministrativeLevelNumberListView(DashboardAdministrativeL
 
         assigns_activated_a_project = AssignAdministrativeLevelToFacilitator.objects.filter(
                 activated=True, project_id=project_id
-        )
+        ).prefetch_related()
         
         count = 0
         for line in lines:

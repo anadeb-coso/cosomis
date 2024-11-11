@@ -69,7 +69,7 @@ class DashboardSubprojectsMixin:
         if not administrative_levels:
             administrative_levels = AdministrativeLevel.objects.filter(id__in=ald_filter_ids)
 
-        subprojects = Subproject.objects.filter().get_actifs()
+        subprojects = Subproject.objects.filter().prefetch_related().get_actifs()
 
         sectors = sorted(list(set(list(subprojects.values_list('subproject_sector')))))
         
@@ -254,10 +254,16 @@ class DashboardSubprojectsBySectorAmountListView(DashboardSubprojectsMixin, AJAX
                 # estimated_cost = estimated_cost if estimated_cost else 0
 
                 estimated_cost = 0
-                for _subp_structure in subprojects_filter_infras:
-                    if (_subp_structure.location_subproject_realized_id in column[2] or \
-                        _subp_structure.canton_id in column[2]):
-                        estimated_cost += _subp_structure.estimated_cost
+                estimated_cost = sum([
+                    _subp_structure.estimated_cost for _subp_structure in subprojects_filter_infras if ((
+                            _subp_structure.location_subproject_realized_id in column[2] or \
+                            _subp_structure.canton_id in column[2]) and _subp_structure.estimated_cost
+                        )
+                ])
+                # for _subp_structure in subprojects_filter_infras:
+                #     if (_subp_structure.location_subproject_realized_id in column[2] or \
+                #         _subp_structure.canton_id in column[2]) and _subp_structure.estimated_cost:
+                #         estimated_cost += _subp_structure.estimated_cost
 
                 
                 datas[column[1]][count] = estimated_cost #str(estimated_cost).rjust(characters_length,'0')

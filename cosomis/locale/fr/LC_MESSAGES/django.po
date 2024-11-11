@@ -2998,3 +2998,15 @@ msgstr "Infrastructures en cours"
 #: .\subprojects
 msgid "Structures/infrastructures completed"
 msgstr "Infrastructures achevées"
+
+#: .\dashboard
+msgid "Financial "
+msgstr "Financier"
+
+#: .\dashboard
+msgid "Procurement Specialist"
+msgstr "Passation de marché"
+
+#: .\dashboard
+msgid "Knowledge manager"
+msgstr "Gestionnaire de connaissanes"
