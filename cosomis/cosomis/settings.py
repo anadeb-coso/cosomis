@@ -17,6 +17,7 @@ import django.conf.locale
 import environ
 from django.conf import global_settings
 from django.utils.translation import gettext_lazy as _
+from corsheaders.defaults import default_headers
 
 # https://django-environ.readthedocs.io/en/latest/
 env = environ.Env()
@@ -71,6 +72,7 @@ THIRD_PARTY_APPS = [
     'django_celery_results',
     'drf_spectacular',
     'rest_framework',
+    'corsheaders',
 ]
 
 INSTALLED_APPS += CREATED_APPS + THIRD_PARTY_APPS
@@ -79,6 +81,9 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware', #tries to determine user's language using URL language prefix
+    'cosomis.config_functions.CORSMiddleware',
+    'cosomis.config_functions.CustomCORSMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -222,3 +227,24 @@ MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB, adjust as needed
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB, adjust as needed
+
+CDD_URL_BASE = env('CDD_URL_BASE')
+MIS_URL_BASE = env('MIS_URL_BASE')
+GRM_URL_BASE = env('GRM_URL_BASE')
+
+CSRF_TRUSTED_ORIGINS = [
+    CDD_URL_BASE, MIS_URL_BASE, GRM_URL_BASE,
+    # "http://localhost",
+    # "http://localhost:8002",
+    # "http://localhost:8001",
+    # "http://localhost:8000",
+    # "http://127.0.0.1"
+]
+CORS_ALLOWED_ORIGINS = CSRF_TRUSTED_ORIGINS
+
+CORS_ALLOW_ALL_ORIGINS = False  # Assure que seules les origines spécifiées sont autorisées
+CORS_ALLOW_CREDENTIALS = True  # Autorise les cookies/session
+CORS_ALLOW_METHODS = ["GET", "POST", "OPTIONS", "PATCH"]
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'Access-Control-Allow-Origin',
+]
