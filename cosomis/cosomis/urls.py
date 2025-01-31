@@ -29,9 +29,8 @@ from . import views
 #     path('unicorn/', include('django_unicorn.urls')),
 # ]
 urlpatterns = [
-    path('set-language/', 
-         views.set_language, 
-         name='set_language'),
+    path('set-language/', views.set_language, name='set_language'),
+    path('profile/', views.profile, name='profile'),
     path('api/', include('cosomis.urls_api'))
 ]
 

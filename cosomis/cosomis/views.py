@@ -1,6 +1,7 @@
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.conf import settings
 from django.utils.translation import get_language
+from django.contrib.auth.decorators import login_required
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -9,11 +10,13 @@ from django.utils.translation import gettext_lazy as _
 from django.views import generic
 from django.http import Http404
 from django.apps import apps
+import requests
 
 from cosomis.mixins import AJAXRequestMixin, JSONResponseMixin, ModalFormMixin
 from cosomis.forms import DeleteConfirmForm
 from usermanager.permissions import AdminPermissionRequiredMixin
 from subprojects.models import SubprojectStep
+from cosomis.functions import get_validation_code
 
 
 def set_language(request):
@@ -113,3 +116,55 @@ class DeleteObjectFormView(AJAXRequestMixin, ModalFormMixin, AdminPermissionRequ
         context = {'msg': render(self.request, 'common/messages.html').content.decode("utf-8")}
         return self.render_to_json_response(context, safe=False)
 #And Delete
+
+
+@login_required
+def profile(request):
+    if request.method == 'POST':
+        try:
+            scheme = request.scheme
+            domain = request.get_host()
+            full_url = f"{scheme}://{domain}"
+            language = get_language()
+
+            previous_url = request.headers.get('Referer', full_url)
+
+            #Recuperation de Token
+            session = requests.Session()
+            response = session.get(f"{settings.CDD_URL_BASE}/authentication/get-csrf-token/")
+
+            if response.status_code == 200:
+                data = response.json()
+                token = data.get("csrfToken")
+            else:
+                raise Http404
+            
+            cookies = session.cookies.get_dict()
+            headers = {
+                "X-CSRFToken": token
+            }
+            post_data = {
+                'email': request.user.email,
+                'code': get_validation_code(request.user.email),
+                'redirection_url': full_url,
+                'csrfmiddlewaretoken': token,
+                'language': language,
+                'previous_url': previous_url
+            }
+            
+            response_post = session.post(f"{settings.CDD_URL_BASE}/{language}/user-manager/", headers=headers, cookies=cookies, data=post_data)
+
+            content = response_post.text\
+                .replace('/static/', f'{settings.CDD_URL_BASE}/static/')\
+                .replace(f'url: "/{language}/', f'url: "{settings.CDD_URL_BASE}/{language}/')\
+                .replace('action="/i18n/', f'action="{settings.CDD_URL_BASE}/i18n/')
+
+
+            return HttpResponse(content)
+
+
+        except Exception as e:
+            print("Erreur :", e)
+            raise Http404
+        
+    raise Http404
