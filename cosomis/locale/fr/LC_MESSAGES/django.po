@@ -3010,3 +3010,15 @@ msgstr "Passation de marché"
 #: .\dashboard
 msgid "Knowledge manager"
 msgstr "Gestionnaire de connaissanes"
+
+#: .\dashboard
+msgid "Reset"
+msgstr "Réinitialiser"
+
+#: .\dashboard
+msgid "Password forgotten"
+msgstr "Mot de passe oublié"
+
+#: .\dashboard
+msgid "Password forgotten?"
+msgstr "Mot de passe oublié ?"
