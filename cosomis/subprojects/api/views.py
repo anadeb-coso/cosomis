@@ -2,14 +2,19 @@ from rest_framework.views import APIView
 from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
+from django.db.models import Prefetch
+from django.conf import settings
 
 from usermanager.api.auth.login import CheckUserSerializer
 from subprojects.serializers import (
     SubprojectWithChildrenLinkedSerializer, SaveSubprojectSerializer,
-    SubprojectStandardSerializer)
-from subprojects.models import Subproject, Project
+    SubprojectStandardSerializer, SubprojectWithChildrenLinkedSerializerSimple,
+    SubprojectWithChildrenLinkedSerializerSimpleWithPriorities
+)
+from subprojects.models import Subproject, Project, SubprojectFile
 from assignments.functions import get_subprojects_by_facilitator_id_and_project_id
 from .custom import CustomPagination
+from cosomis.constants import STRUCTURE_NOT_START_STATUS, STRUCTURE_IN_PROGRESS_STATUS, STRUCTURE_COMPLETED_STATUS, STRUCTURE_COMPLETED_ALL_STATUS
 
 
 class RestGetSubprojectsByUser(APIView):
@@ -35,22 +40,23 @@ class RestGetSubprojectsByUser(APIView):
         subprojects = []
 
         if not hasattr(user, 'no_sql_user'):
-            subprojects = Subproject.objects.filter(projects__in=[project if project else 1]).get_actifs()
+            # subprojects = Subproject.objects.filter(projects__in=[project.id if project else 1]).get_actifs()
             if search:
-                if search == "All":
-                    subprojects = subprojects
+                # if search == "All":
+                #     subprojects = Subproject.objects.filter(projects__in=[project.id if project else 1]).get_actifs()
                 search = search.upper()
-                subprojects =    subprojects.filter(
+                subprojects = Subproject.objects.filter(
                         Q(full_title_of_approved_subproject__icontains=search) | 
                         Q(location_subproject_realized__name__icontains=search) | 
                         Q(lsubproject_sector__icontains=search) | 
                         Q(type_of_subproject__icontains=search) | 
                         Q(works_type__icontains=search) | 
                         Q(cvd__name__icontains=search) | 
-                        Q(facilitator_name__icontains=search)
+                        Q(facilitator_name__icontains=search),
+                        projects__in=[project.id if project else 1]
                     ).get_actifs()
             else:
-                subprojects =    subprojects
+                subprojects = Subproject.objects.filter(projects__in=[project.id if project else 1]).get_actifs()
         else:
             subprojects = get_subprojects_by_facilitator_id_and_project_id(user.id, project.id if project else 1)
 
@@ -61,7 +67,7 @@ class RestGetSubprojectsByUser(APIView):
                 Q(link_to_subproject=None, location_subproject_realized__parent__id=administrativelevel_id) | 
                 Q(link_to_subproject=None, canton__id=administrativelevel_id)
             )
-            # print(subprojects)
+            
         
         elif cvd_id:
             cvd_id = int(cvd_id)
@@ -80,7 +86,7 @@ class RestGetSubprojectsByUser(APIView):
             )
         
         paginator = CustomPagination()
-        paginated_data = paginator.paginate_queryset(subprojects, request)
+        paginated_data = paginator.paginate_queryset(subprojects.distinct(), request)
         serializer = SubprojectWithChildrenLinkedSerializer(paginated_data, many=True)
         
         return paginator.get_paginated_response(serializer.data)
@@ -140,7 +146,7 @@ class SaveSubprojectsGeoLocation(APIView):
 class RestSaveSubproject(APIView):
     throttle_classes = ()
     permission_classes = ()
-    serializer_class = SaveSubprojectSerializer
+    serializer_class = CheckUserSerializer
     
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context={'request': request})
@@ -160,17 +166,118 @@ class RestSaveSubproject(APIView):
         
         s = SubprojectStandardSerializer(instance=subproject,data=request.data)
         s.is_valid(raise_exception=True)
-        sub = Subproject.objects.get(id=request.data['pk'])
+        # sub = Subproject.objects.get(id=request.data['pk'])
         
-        try:
-            o = s.save()
-            o.save(user=data)
-            return Response(
-                SubprojectWithChildrenLinkedSerializer(Subproject.objects.get(id=request.data['pk'])).data, 
-                status=status.HTTP_200_OK
+        # try:
+        o = s.save()
+        o.save(user=data)
+        return Response(
+            SubprojectWithChildrenLinkedSerializer(Subproject.objects.get(id=request.data['pk'])).data, 
+            status=status.HTTP_200_OK
+        )
+        # except Exception as exc:
+        #     return Response(
+        #         {'error': exc.__str__()}, 
+        #         status=status.HTTP_404_NOT_FOUND
+        #     )
+
+
+
+class RestGetSubprojectsByUserSimple(APIView):
+    throttle_classes = ()
+    permission_classes = ()
+    # parser_classes = (parsers.FormParser, parsers.MultiPartParser, parsers.JSONParser,)
+    # renderer_classes = (renderers.JSONRenderer,)
+    serializer_class = CheckUserSerializer
+    
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data
+
+        infrastructures_status = request.data.get("infrastructures_status", STRUCTURE_COMPLETED_STATUS) # "Identifié", "En cours", "Achevé", "Réception technique", "Réception provisoire", "Réception définitive"
+        include_inactif = request.data.get("include_inactif", None)
+        administrativelevel_id = request.data.get("administrativelevel_id", None)
+        cvd_id = request.data.get("cvd_id", None)
+        subproject_id = request.data.get("subproject_id", None)
+        project_name = request.data.get("project_name", None)
+        project  = Project.objects.filter(name=project_name).first()
+        include_none_infrastructure = request.data.get("include_none_infrastructure", False)
+        
+
+        search = request.GET.get("search", None)
+        page_number = request.GET.get("page", None)
+        subprojects = []
+        
+        query = Q()
+
+        if not include_none_infrastructure:
+            query &= Q(~(Q(number_of_infrastructures=0) | Q(number_of_infrastructures=None)))
+
+        if project:
+            query &= Q(projects__in=[project.id])
+
+        if administrativelevel_id:
+            administrativelevel_id = int(administrativelevel_id)
+            query &= Q(
+                Q(location_subproject_realized__id=administrativelevel_id) | 
+                Q(location_subproject_realized__parent__id=administrativelevel_id) | 
+                Q(canton__id=administrativelevel_id)
             )
-        except Exception as exc:
-            return Response(
-                {'error': exc.__str__()}, 
-                status=status.HTTP_404_NOT_FOUND
+        
+        if cvd_id:
+            cvd_id = int(cvd_id)
+            query &= Q(cvd__id=cvd_id)
+        
+        if subproject_id:
+            subproject_id = int(subproject_id)
+            query &= Q(id=subproject_id)
+
+        if infrastructures_status != "__all__":
+            query &= Q(
+                current_status_of_the_site__in=infrastructures_status
             )
+        
+        file_query = Q()
+        for elt in STRUCTURE_COMPLETED_ALL_STATUS:
+            file_query |= Q(subproject_step__wording__icontains=elt)
+            file_query |= Q(name__icontains=elt)
+            file_query |= Q(description__icontains=elt)
+        
+        if include_inactif:
+            subprojects = Subproject.objects.filter(
+                query
+            )
+        else:
+            subprojects = Subproject.objects.filter(
+                query
+            ).get_actifs()
+
+        subprojects.order_by("id").prefetch_related(
+            Prefetch('subprojectfile_set', queryset=SubprojectFile.objects.filter(
+                Q(
+                    Q(
+                        subproject_step__wording__in=STRUCTURE_COMPLETED_STATUS,
+                    ) | 
+                    Q(
+                        name__in=STRUCTURE_COMPLETED_STATUS,
+                    ) | 
+                    Q(
+                        description__in=STRUCTURE_COMPLETED_STATUS,
+                    ) | 
+                    file_query
+                )
+            ).exclude(
+                Q(url__icontains=".pdf") | Q(url__icontains=".doc")
+            ), to_attr='photos')
+        ).distinct()
+        
+        paginator = CustomPagination()
+        paginated_data = paginator.paginate_queryset(subprojects, request)
+
+        if user and hasattr(user, 'email') and user.email == settings.PURS_USER_DEV_EMAIL:
+            serializer = SubprojectWithChildrenLinkedSerializerSimpleWithPriorities(paginated_data, many=True)
+        else:
+            serializer = SubprojectWithChildrenLinkedSerializerSimple(paginated_data, many=True)
+        
+        return paginator.get_paginated_response(serializer.data)

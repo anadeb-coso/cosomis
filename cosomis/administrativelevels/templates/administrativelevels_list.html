@@ -1,37 +1,131 @@
 {% extends 'layouts/base.html' %}
-{% load static i18n custom_tags %}
+{% load static i18n custom_tags bootstrap4 %}
+
 
 {% block content %}
+
+    {% make_list "Village" as begin_village %}
+    {% make_list "Village" "Canton" as begin_canton %}
+    {% make_list "Village" "Canton" "Commune" as begin_commune %}
+    {% make_list "Village" "Canton" "Commune" "Prefecture" as begin_prefecture %}
+    {% make_list "Village" "Canton" "Commune" "Prefecture" "Region" as begin_region %}
+
+    {% if type in begin_canton %}
+        {% var 2 as number_col %}
+    {% elif type == "Commune" %}
+        {% var 3 as number_col %}
+    {% elif type == "Prefecture" %}
+        {% var 4 as number_col %}
+    {% elif type == "Region" %}
+        {% var 6 as number_col %}
+    {% endif %}
+
     <div class="row">
         <div class="col-12">
             <div >
-                <div class="row">
-                    <div class="col-5" class="input-group mb-3 search-bar">
-                        <div method="get" class="d-flex">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+
+                
+                <form method="get" >
+                    <div class="clearfix"></div>
+                    <div class="row administrative-level-filter">
+                        {% if type in begin_region %}
+                        <div class="col-{{ number_col }}">
+                            {% bootstrap_field form_adl.region show_label=False %}
+                        </div>
+                        {% endif %}
+                        {% if type in begin_prefecture %}
+                        <div class="col-{{ number_col }}">
+                            {% bootstrap_field form_adl.prefecture show_label=False %}
+                        </div>
+                        {% endif %}
+                        {% if type in begin_commune %}
+                        <div class="col-{{ number_col }}">
+                            {% bootstrap_field form_adl.commune show_label=False %}
+                        </div>
+                        {% endif %}
+                        {% if type in  begin_canton %}
+                        <div class="col-{{ number_col }}">
+                            {% bootstrap_field form_adl.canton show_label=False %}
+                        </div>
+                        {% endif %}
+                        {% if type in  begin_village %}
+                            <div class="col-{{ number_col }}">
+                                {% bootstrap_field form_adl.village show_label=False %}
                             </div>
-                            <input class="form-control" id="search" placeholder="{% translate 'Search in table' %}...">
+                        {% endif %}
+
+                        <div class="col-{{ number_col }}">
+                            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
+                            <a class="btn fs12 text-bold-family text-primary p-0" style="margin-top: 8px;"
+                            onclick="location.reload();">
+                                {% translate "Refresh" %}
+                            </a>
+                            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
+                            <a class="btn fs12 text-bold-family text-primary p-0" style="margin-top: 8px;"
+                                id="clear_all_filters">
+                                {% translate "Clear" %}
+                            </a>
                         </div>
                     </div>
-                    <div class="col-6" class="input-group mb-3 search-bar">
-                        <form method="get" class="d-flex">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+
+
+                    <div class="row">
+                        {% comment %} <div class="col-3" class="input-group mb-3 search-bar">
+                            <div method="get" class="d-flex">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                </div>
+                                <input class="form-control" id="search" placeholder="{% translate 'Search in table' %}...">
                             </div>
-                            <input type="hidden" name="type" value="{{ type }}">
-                            <input class="form-control" name="search" value="{% if search %}{{ search }}{% endif %}" placeholder="{% translate 'Search in database' %}...">
-                            <input class="btn btn-primary" type="submit" value="{% translate 'Search' %}">
-                        </form>
+                        </div> {% endcomment %}
+
+                        <div class="col-10" >
+                            <div class="row">
+                                <div class="col-4" class="input-group mb-3 search-bar">
+                                    <div class="d-flex">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                        </div>
+                                    
+                                        <input type="hidden" name="type" value="{{ type }}">
+                                        <input class="form-control" name="search" value="{% if search %}{{ search }}{% endif %}" placeholder="{% translate 'Search in database' %}..." id="id_search_in_db">
+                                    </div>
+                                </div>
+                                <div class="col-6" class="input-group mb-3">
+                                    <div class="d-flex">
+                                        {% if PROJECTS_NAMES and PROJECTS_NAMES|length >= 2 %}
+                                        <div class="form-check" style="margin-top: 7px !important;">
+                                            <input class="form-check-input" type="checkbox" id="id_include_all_projects" name="include_all_projects" value="1" {% if include_all_projects_checked == '1' %}checked{% endif %}>
+                                            <label class="form-check-label" for="id_include_all_projects">
+                                                {% translate "Show for all projects" %} ({% for project in PROJECTS_NAMES %}{{ project }}{% if not forloop.last %}, {% else %}{% endif %}{% endfor %})
+                                            </label>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-2" class="input-group mb-3 search-bar">
+                                    <div class="d-flex">
+                                        <input class="btn btn-primary" type="submit" value="{% translate 'Search' %}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="col-2" class="input-group mb-3 search-bar">
+                            <a class="btn btn-primary" href="?type={{ type }}&search=All" >{% translate 'All' %} ({{ PROJECT_NAME }})</a>
+                            {% comment %} <form method="get" class="d-flex">
+                                <input type="hidden" name="search" value="All">
+                                <input type="hidden" name="type" value="{{ type }}">
+                                <input class="btn btn-primary" type="submit" value="{% translate 'All' %} ({{ PROJECT_NAME }})">
+                            </form> {% endcomment %}
+                        </div>
                     </div>
-                    <div class="col-1" class="input-group mb-3 search-bar">
-                        <form method="get" class="d-flex">
-                            <input type="hidden" name="search" value="All">
-                            <input type="hidden" name="type" value="{{ type }}">
-                            <input class="btn btn-primary" type="submit" value="{% translate 'All' %}">
-                        </form>
-                    </div>
-                </div>
+
+                </form>
+
+
+
             </div>
             <div class="card">
                 <div class="card-header">
@@ -105,30 +199,25 @@
                     </div>
                 </div>
                 <div class="card-body table-responsive">
-                    {% make_list "Village" as begin_village %}
-                    {% make_list "Village" "Canton" as begin_canton %}
-                    {% make_list "Village" "Canton" "Commune" as begin_commune %}
-                    {% make_list "Village" "Canton" "Commune" "Prefecture" as begin_prefecture %}
-                    {% make_list "Village" "Canton" "Commune" "Prefecture" "Region" as begin_region %}
                     <table id="table" class="table">
                         <thead>
                         <tr>
-                            {% if type in begin_village %}<th>{% translate 'Village' %}</th>{% endif %}
-                            {% if type in begin_canton %}<th>{% translate 'Canton' %}</th>{% endif %}
-                            {% if type in begin_commune %}<th>{% translate 'Commune' %}</th>{% endif %}
-                            {% if type in begin_prefecture %}<th>{% translate 'Prefecture' %}</th>{% endif %}
                             <th>{% translate 'Region' %}</th>
+                            {% if type in begin_prefecture %}<th>{% translate 'Prefecture' %}</th>{% endif %}
+                            {% if type in begin_commune %}<th>{% translate 'Commune' %}</th>{% endif %}
+                            {% if type in begin_canton %}<th>{% translate 'Canton' %}</th>{% endif %}
+                            {% if type in begin_village %}<th>{% translate 'Village' %}</th>{% endif %}
                             <th>{% translate 'Action' %}</th>
                         </tr>
                         </thead>
                         <tbody>
                         {% for administrativelevel in administrativelevels %}
                             <tr>
-                                <td>{{ administrativelevel.name }}</td>
-                                {% if type in begin_prefecture %}<td>{{ administrativelevel.parent.name }}</td>{% endif %}
-                                {% if type in begin_commune %}<td>{{ administrativelevel.parent.parent.name }}</td>{% endif %}
-                                {% if type in begin_canton %}<td>{{ administrativelevel.parent.parent.parent.name }}</td>{% endif %}
                                 {% if type in begin_village %}<td>{{ administrativelevel.parent.parent.parent.parent.name }}</td>{% endif %}
+                                {% if type in begin_canton %}<td>{{ administrativelevel.parent.parent.parent.name }}</td>{% endif %}
+                                {% if type in begin_commune %}<td>{{ administrativelevel.parent.parent.name }}</td>{% endif %}
+                                {% if type in begin_prefecture %}<td>{{ administrativelevel.parent.name }}</td>{% endif %}
+                                <td>{{ administrativelevel.name }}</td>
                                 <td>
                                      {% comment %} <a href="{% url 'administrativelevels:village_detail' administrativelevel.pk %}"
                                        class="btn btn-primary btn-xs">
@@ -195,6 +284,12 @@
 
 {% block javascript %}
     {{ block.super }}
+    
+    <script src="{% static 'AdminLTE/plugins/chart.js/Chart.js' %}"></script>
+    <script src="{% static 'js/csrfSafeMethodAjax.js' %}"></script>
+    <script src="{% static 'js/formAjaxSubmit.js' %}"></script>
+    <script src="{% static 'js/cascade_requests.js' %}"></script>
+    <script src="{% static 'js/utils.js' %}"></script>
 
     <!-- DataTables export files -->
     <script src="{% static 'AdminLTE/plugins/datatables-buttons/js/dataTables.buttons.min.js' %}"></script>
@@ -214,7 +309,7 @@
                 language: {
                     url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}')
                 },
-                dom: 'Blrtip',
+                dom: 'Bfrtipl',
                 buttons: ['copy', 'excel', 'pdf', 'colvis'],
                 initComplete: function () {
                     this.api()
@@ -252,9 +347,118 @@
                 pageLength: 10,
                 order: [[0, 'desc']]
             });
-            $('#search').on('keyup', function () {
+            {% comment %} $('#search').on('keyup', function () {
                 table.search($(this).val()).draw();
+            }); {% endcomment %}
+
+
+
+
+            let cascaded = false;
+            let administrative_level_id;
+            let administrative_level_type;
+            let id_region = $('#id_region');
+            let id_prefecture = $('#id_prefecture');
+            let id_commune = $('#id_commune');
+            let id_canton = $('#id_canton');
+            let id_village = $('#id_village');
+            $('.administrative-level-filter select').on('change', function () {
+                if (!cascaded){
+                    cascaded = true;
+
+                    
+                    administrative_level_id = null;
+                    administrative_level_type = null;
+                    if($(this).attr('id')){
+                        administrative_level_id = $(this).val();
+                        administrative_level_id = administrative_level_id && administrative_level_id.length != 0 ? administrative_level_id : null;
+                        administrative_level_type = administrative_level_id ? $(this).attr('id').split('_')[1] : null;
+                    }
+                
+                    $(".administrative-level-filter select").attr('disabled', true);
+                    $.ajax({
+                        type: 'GET',
+                        url: "{% url 'administrativelevels:utils:get_choices_for_next_administrative_level_all' %}",
+                        data: {
+                            parent_id: $("#id_"+administrative_level_type).val()
+                        },
+                        success: function (data) {
+                            if(!administrative_level_type || administrative_level_type == "region" || $("#id_"+administrative_level_type).val().length == 0){
+                                set_datas_administrative_level(id_prefecture, data.prefectures);
+                                set_datas_administrative_level(id_commune, data.communes);
+                                set_datas_administrative_level(id_canton, data.cantons);
+                                set_datas_administrative_level(id_village, data.villages);
+                            }else if(administrative_level_type == "prefecture"){
+                                set_datas_administrative_level(id_commune, data.communes);
+                                set_datas_administrative_level(id_canton, data.cantons);
+                                set_datas_administrative_level(id_village, data.villages);
+                            }else if(administrative_level_type == "commune"){
+                                set_datas_administrative_level(id_canton, data.cantons);
+                                set_datas_administrative_level(id_village, data.villages);
+                            }else if(administrative_level_type == "canton"){
+                                set_datas_administrative_level(id_village, data.villages);
+                            }
+                            cascaded = false;
+                        },
+                        error: function (data) {
+                            alert(error_server_message + "Error " + data.status);
+                            $(".administrative-level-filter select").attr('disabled', false);
+                            cascaded = false;
+                        }
+                    }).done(function () {
+                            $(".administrative-level-filter select").attr('disabled', false);
+                            cascaded = false;
+                        }
+                    );
+                }
+
+
             });
+
+            
+            
+
+            $("#clear_all_filters").on("click", function () {
+                $('.administrative-level-filter input').val('');
+                $('.administrative-level-filter select').val(null).trigger('change.select2');
+                
+                $('#id_search_in_db').val('');  
+
+            });
+
+
         });
     </script>
 {% endblock %}
+
+
+{% block select2 %}
+    <script type="text/javascript">
+        $("#id_region").select2({
+            placeholder: "{% translate 'Region' %}",
+            allowClear: true,
+        });
+        $("#id_prefecture").select2({
+            placeholder: "{% translate 'Prefecture' %}",
+            allowClear: true,
+        });
+        $("#id_commune").select2({
+            placeholder: "{% translate 'Commune' %}",
+            allowClear: true,
+        });
+         $("#id_canton").select2({
+            placeholder: "{% translate 'Canton' %}",
+            allowClear: true,
+        });
+         $("#id_village").select2({
+            placeholder: "{% translate 'Village' %}",
+            allowClear: true,
+        });
+        
+
+        $('b[role="presentation"]').hide();
+        $('.select2-selection__arrow').append(
+            '<i class="fas fa-chevron-circle-down text-primary" style="margin-top:12px;"></i>');
+
+    </script>
+{% endblock select2 %}

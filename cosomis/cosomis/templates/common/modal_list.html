@@ -115,7 +115,7 @@
                                         <i class="fa fa-eye"></i>
                                     </a>
                                     {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Infra" %}
-                                    <a href="{% url 'subprojects:update' subproject.pk %}" style="font-size: 9px !important;"
+                                    <a href="{% url 'subprojects:update_without_link_heavy_object' subproject.pk %}" style="font-size: 9px !important;"
                                        class="btn btn-primary btn-xs" title="{% translate 'Edit' %}" target="_blank">
                                         <i class="fa fa-edit"></i>
                                     </a>
@@ -251,8 +251,18 @@
                 var elt = $(this).attr('href').replace('#', '');
                 loadPage(
                     $(this).attr('data-href'), $(`#${elt}-data`), $(`#${elt}-spin`),
+                    
                     administrative_level_id={{ administrative_level_id|safe }},
                     administrative_level_type="{{ administrative_level_type }}",
+                    id_subproject_sectors={{ subproject_sectors|safe }},
+                    id_subproject_types={{ subproject_types|safe }},
+                    id_works_type_of_subproject={{ works_type_of_subprojects|safe }},
+                    id_subproject_step={{ subproject_steps|safe }},
+                    id_components={{ components_names|safe }},
+                    start_date="{{ start_date_raw }}",
+                    end_date="{{ end_date_raw }}",
+                    all_projects={{ all_projects|safe }},
+
                     list_type_search="{{ list_type_search }}"
                 );
             });

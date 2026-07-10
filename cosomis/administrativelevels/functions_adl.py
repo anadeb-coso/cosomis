@@ -1,4 +1,5 @@
 from administrativelevels.models import AdministrativeLevel
+from django.db import connection
 
 
 def get_administrative_level_under_json(administrative_level):
@@ -164,7 +165,7 @@ def get_cascade_adls_by_administrative_level_id(_ids, __type="Village", parent_i
         _ids = [_ids]
     if _ids:
         
-        ad_objects = AdministrativeLevel.objects.filter(id__in=[int(_id) for _id in _ids if _id])
+        ad_objects = AdministrativeLevel.objects.filter(id__in=[int(_id) for _id in _ids if _id]).distinct()
         
         villages = []
         for ad_obj in ad_objects:
@@ -215,3 +216,48 @@ def get_cascade_adls_by_administrative_level_id(_ids, __type="Village", parent_i
 
         return [v for v in villages if (not parent_id or (parent_id and v.parent and v.parent_id==parent_id))]
     return []
+
+
+def get_multiple_administrative_hierarchies_ids(level_ids, search_descendants_for=["Canton", ]):
+    """Récupère tous les ascendants et descendants des niveaux donnés."""
+    
+    # Convertir les IDs en chaîne pour l'utiliser dans la requête SQL
+    level_ids_str = ",".join(map(str, level_ids))
+
+    # Requête SQL récursive pour récupérer tous les descendants
+    sql_descendants = f"""
+        WITH RECURSIVE descendants AS (
+            SELECT * FROM administrativelevels_administrativelevel WHERE id IN ({level_ids_str})
+            UNION ALL
+            SELECT al.* FROM administrativelevels_administrativelevel al
+            INNER JOIN descendants d ON al.parent_id = d.id AND d.type IN {tuple(search_descendants_for+search_descendants_for)}
+        )
+        SELECT id FROM descendants;
+    """
+
+    # Requête SQL récursive pour récupérer tous les ascendants
+    sql_ancestors = f"""
+        WITH RECURSIVE ancestors AS (
+            SELECT * FROM administrativelevels_administrativelevel WHERE id IN ({level_ids_str})
+            UNION ALL
+            SELECT al.* FROM administrativelevels_administrativelevel al
+            INNER JOIN ancestors a ON a.parent_id = al.id
+        )
+        SELECT id FROM ancestors;
+    """
+
+    with connection.cursor() as cursor:
+        # Récupérer les IDs des descendants
+        cursor.execute(sql_descendants)
+        descendant_ids = [row[0] for row in cursor.fetchall()]
+
+        # Récupérer les IDs des ascendants
+        cursor.execute(sql_ancestors)
+        ancestor_ids = [row[0] for row in cursor.fetchall()]
+
+    return descendant_ids, ancestor_ids, level_ids
+
+
+def get_multiple_administrative_hierarchies(level_ids):
+    descendant_ids, ancestor_ids, level_ids = get_multiple_administrative_hierarchies_ids(level_ids)
+    return AdministrativeLevel.objects.filter(id__in=(descendant_ids + ancestor_ids + level_ids))

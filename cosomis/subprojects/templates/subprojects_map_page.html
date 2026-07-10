@@ -4,7 +4,8 @@
     <link href="{% static 'plugins/mapbox-gl-js/v2.6.1/mapbox-gl.css' %}" rel="stylesheet">
     <style>
         #map {
-            height: 1553px;
+            height: {% if map_canvas_heigth %}{{ map_canvas_heigth }}px{% else %}1699px{% endif %};
+            width: {% if map_canvas_width %}{{ map_canvas_width }}px{% else %}100%{% endif %};
         }
         .carte-legend p {
             font-weight: bold;
@@ -50,9 +51,15 @@
                     {% bootstrap_field form.village show_label=False %}
                 </div>
                 <div class="col-2">
-                    <a class="btn fs12 text-bold-family text-primary pull-right p-0" style="margin-top: 8px;"
-                       id="clear_all_filters">
-                        {% translate "Clear all filters" %}
+                     &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
+                    <a class="btn fs12 text-bold-family text-primary p-0" style="margin-top: 8px;"
+                       onclick="location.reload();">
+                        {% translate "Refresh" %}
+                    </a>
+                     &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
+                    <a class="btn fs12 text-bold-family text-primary p-0" style="margin-top: 8px;"
+                        id="clear_all_filters">
+                        {% translate "Clear" %} 
                     </a>
                 </div>
             </div>
@@ -71,16 +78,16 @@
                 </div>
                 {% if user.is_authenticated %}
                 <div class="col-2">
-                    <a class="btn fs12 text-bold-family text-primary pull-right p-0" style="margin-top: 8px;"
-                       onclick="location.reload();">
-                        {% translate "Refresh page" %}
+                    <a href="#" id="btn-search"
+                        class="btn btn-primary btn-xs" title="{% translate 'Search' %}">
+                        <i class="fa fa-search"></i> &nbsp; {% translate 'Search' %}
                     </a>
                 </div>
                 {% else %}
                 <div class="col-2">
-                    <a class="btn fs12 text-bold-family text-primary pull-right p-0" style="margin-top: 8px;"
-                       onclick="location.reload();">
-                        {% translate "Refresh page" %}
+                    <a href="#" id="btn-search"
+                        class="btn btn-primary btn-xs" title="{% translate 'Search' %}">
+                        <i class="fa fa-search"></i> &nbsp; {% translate 'Search' %}
                     </a>
                 </div>
                 <div class="col-1">
@@ -88,6 +95,24 @@
                         data-toggle="modal" data-target="#map-legen">{% translate 'Legend' %}</a>
                 </div>
                 {% endif %}
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="row">
+                        <div class="col-6 p-0 d-flex justify-content-start">
+                            <form method="get">
+                                <input type="text" placeholder="{% translate 'Heigth' %}" name="map-heigth" id="map-heigth" value="{% if map_canvas_heigth %}{{ map_canvas_heigth }}{% endif %}" /><span>Pixels</span>
+                                <input type="text" placeholder="{% translate 'Width' %}" name="map-width" id="map-width" value="{% if map_canvas_width %}{{ map_canvas_width }}{% endif %}" /><span>Pixels</span>
+                                <input class="btn btn-primary" type="submit" value="{% translate 'Search' %}">
+                            </form>
+                        </div>
+
+                        <div class="col-6 p-0 d-flex justify-content-end">
+                            <button onclick="captureMap()">Capture Map (IMG)</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="card">
@@ -136,11 +161,11 @@
                         <div class="col-4">
                             <p>{{ step }}</p>
                         </div>
-                        <div class="col-6">
+                        {% comment %} <div class="col-6">
                             <span>Savenes: - </span><br />
                             <span>Kara: - </span><br />
                             <span>Centrale: - </span>
-                        </div>
+                        </div> {% endcomment %}
                     </div>
                 </div>
             </div>
@@ -162,6 +187,8 @@
 
     <script src="{% static 'plugins/mapbox-gl-js/v2.6.1/mapbox-gl.js' %}"></script>
     <script src="{% static 'js/cascade_requests.js' %}"></script>
+    <script src="{% static 'plugins/jspdf/2.5.1/jspdf.umd.min.js' %}"></script>
+    <script src="{% static 'plugins/html2canvas.hertzen/html2canvas.min.js' %}"></script>
     <script type="text/javascript">
         let ids = ["id_region", "id_prefecture", "id_commune", "id_canton", "id_village"]
         var type_field = "";
@@ -176,6 +203,32 @@
         let id_village = $('#id_village');
         
         
+        
+        function captureMap() {
+            /*const canvas = map.getCanvas();
+
+            const link = document.createElement("a");
+            link.href = canvas.toDataURL("image/png");
+            link.download = "map.png";
+            link.click();*/
+            html2canvas(document.getElementById("map")).then(canvas => {
+                const link = document.createElement("a");
+                link.href = canvas.toDataURL();
+                link.download = "map.png";
+                link.click();
+            });
+        }
+
+        async function exportPDF() {
+            const { jsPDF } = window.jspdf;
+
+            const canvas = map.getCanvas();
+            const imgData = canvas.toDataURL("image/png");
+
+            const pdf = new jsPDF();
+            pdf.addImage(imgData, 'PNG', 10, 10, 180, 100);
+            pdf.save("map.pdf");
+        }
         
         //Map
         
@@ -194,7 +247,8 @@
                 parseFloat('{{ lng }}'.replace(',', '.')), 
                 parseFloat('{{ lat }}'.replace(',', '.'))
             ],
-            zoom: parseFloat('{{ zoom }}'.replace(',', '.'))
+            zoom: parseFloat('{{ zoom }}'.replace(',', '.')),
+            preserveDrawingBuffer: true
         });
 
         const bounds = [
@@ -203,6 +257,7 @@
         ];
         // Set the map's max bounds.
         map.setMaxBounds(bounds);
+        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
         map.on('load', function () {
             map.addLayer(
@@ -211,8 +266,6 @@
                     'source': {
                         'type': 'vector',
                         'url': 'mapbox://mapbox.country-boundaries-v1',
-                        //'url': 'mapbox://styles/leokooshi/cln3btl1k037p01pf57c7a1hh',
-                        //'url': 'https://api.mapbox.com/styles/v1/leokooshi/cln3btl1k037p01pf57c7a1hh.html?title=copy&access_token=pk.eyJ1IjoibGVva29vc2hpIiwiYSI6ImNsa3RkdGtsaTBiMzYzZm80MXFkcXg1YWYifQ.K2XbCj9JYmYi0Go2mLsjiQ&zoomwheel=true&fresh=true#6.7/8.719/1.152',
                     },
                     'source-layer': 'country_boundaries',
                     'type': 'fill',
@@ -334,14 +387,14 @@
             if($(this).attr('id') && ids.includes($(this).attr('id')) && $(this).val().length != 0){
                 type_field = $(this).attr('id').split('_')[1];
                 //suproject_attrs_filter = true;
-                loadSubprojectsMapView(type_field, true);
+                //loadSubprojectsMapView(type_field, true);
             }else if(ids.includes($(this).attr('id'))){
                 $(this).val([]).trigger('change.select2');
             }
             
-            if(!ids.includes($(this).attr('id'))){
-                loadSubprojectsMapView(type_field, true);
-            }
+            //if(!ids.includes($(this).attr('id'))){
+            //    loadSubprojectsMapView(type_field, true);
+            //}
             
         });
 
@@ -349,6 +402,11 @@
             $('.subprojects-map-view-filter input').val('');
             $('.subprojects-map-view-filter select').val(null).trigger('change.select2');
             loadSubprojectsMapView("all");
+        });
+
+        
+        $('#btn-search').on('click', function () {
+            loadSubprojectsMapView(type_field, true);
         });
 
     </script>

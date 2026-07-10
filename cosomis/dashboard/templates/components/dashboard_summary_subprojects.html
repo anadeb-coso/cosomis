@@ -788,11 +788,21 @@
                     e.preventDefault();	
 
                     var elt = $(this).attr('href').replace('#', '');
-
+                    
                     loadPage(
                         $(this).attr('data-href'), details_modal_objects, $(`#${elt}-spin`),
+
                         administrative_level_id={{ administrative_level_id|safe }},
                         administrative_level_type="{{ administrative_level_type }}",
+                        id_subproject_sectors={{ subproject_sectors|safe }},
+                        id_subproject_types={{ subproject_types|safe }},
+                        id_works_type_of_subproject={{ works_type_of_subprojects|safe }},
+                        id_subproject_step={{ subproject_steps|safe }},
+                        id_components={{ components_names|safe }},
+                        start_date="{{ start_date_raw }}",
+                        end_date="{{ end_date_raw }}",
+                        all_projects={{ all_projects|safe }},
+
                         list_type_search=elt
                     );
                     //details_modal_objects.find('.modal-dialog').addClass('');

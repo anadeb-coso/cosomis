@@ -81,7 +81,13 @@
 
 <script>
 
-      function loadPage(url_path, elt_data_place, elt_spin, administrative_level_id=null, administrative_level_type=null, list_type_search=null) {
+      function loadPage(
+            url_path, elt_data_place, elt_spin, 
+            administrative_level_id=null, administrative_level_type=null, 
+            id_subproject_sectors=null, id_subproject_types=null, id_works_type_of_subproject=null, 
+            id_subproject_step=null, id_components=null, start_date=null, end_date=null, all_projects=null, 
+            list_type_search=null
+      ) {
             elt_spin.show();
             $.ajax({
                   type: "GET",
@@ -89,13 +95,21 @@
                   data: {
                         administrative_level_id: administrative_level_id,
                         administrative_level_type: administrative_level_type,
+                        id_subproject_sectors: id_subproject_sectors,
+                        id_subproject_types: id_subproject_types,
+                        id_works_type_of_subproject: id_works_type_of_subproject,
+                        id_subproject_step: id_subproject_step,
+                        id_components: id_components,
+                        start_date: start_date,
+                        end_date: end_date,
+                        all_projects: all_projects,
                         list_type_search: list_type_search
                   },
                   success: function (response) {
                         elt_spin.hide();
                         elt_data_place.html(response);
                         try{
-                              if(elt_data_place.find('.modal-dialog')){
+                              if(!url_path.includes('financial/') && elt_data_place.find('.modal-dialog')){
                                     elt_data_place.find('.modal-dialog').addClass('modal-xl');
                                     elt_data_place.modal('show');
                               }

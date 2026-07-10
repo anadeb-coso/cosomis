@@ -21,6 +21,16 @@ from usermanager.permissions import (
     InfraPermissionRequiredMixin, 
 )
 from subprojects.api.functions import convert_str_percent_to_float
+from cosomis.constants import (
+    STRUCTURE_IN_PROGRESS_STATUS, STRUCTURE_NOT_START_STATUS,
+    INTERRUPTED_RANKING, ABANDONED_RANKING, ANOTHER_SITE_HANDED_OVER_FOR_CONSTRUCTION_RANKING,
+    SELECTED_COMPANY_RANKING, FIRST_CONTRACT_RANKING, OTHERS_CONTRACT_RANKING, CONTRACT_TERMINATED_RANKING,
+    DAO_RELAUNCHED_RANKING, SITE_DISCOUNT_RANKING, STRUCTURE_IN_PROGRESS_RANKING_LIST,
+    IN_PROGRESS_RANKING, APPROVED_BY_CORA_RANKING, NOT_APPROVED_BY_CORA_RANKING, COMPLETED_RANKING,
+    RECEPTION_TECHNICAL_RANKING, PROVISIONAL_RECEPTION_RANKING, HANDOVER_TO_COMMUNITY_RANKING, 
+    FINAL_RECEPTION_RANKING
+)
+
 
 class SubprojectFormMixin(SubprojectMixin, generic.FormView):
 
@@ -32,7 +42,7 @@ class SubprojectFormMixin(SubprojectMixin, generic.FormView):
         context = super().get_context_data(**kwargs)
         if self.kwargs.get('subproject_step_update_id'):
             obj = SubprojectStep.objects.get(id=self.kwargs['subproject_step_update_id'])
-            context['form'] = SubprojectAddStepForm(instance=obj)
+            context['form'] = SubprojectAddStepForm(instance=obj, initial= {'subproject': self.subproject})
         elif self.kwargs.get('subproject_level_update_id'):
             obj = Level.objects.get(id=self.kwargs['subproject_level_update_id'])
             context['form'] = SubprojectAddLevelForm(instance=obj)
@@ -53,14 +63,43 @@ class SubprojectStepGraphTemplateView(SubprojectMixin, AJAXRequestMixin, LoginRe
                 dates_wording_with_percents.append({
                     'date': step.end.__str__(),
                     'wording' : step.wording,
-                    'percent' : step.percent if step.percent else 0
+                    'percent' : step.percent if step.percent else 0,
+                    'created_date': step.created_date.__str__() if step.created_date else '',
+                    'ranking': step.ranking if hasattr(step, 'ranking') else ''
                 })
             elif step.begin:
                 dates_wording_with_percents.append({
                     'date': step.begin.__str__(),
                     'wording' : step.wording,
-                    'percent' : step.percent if step.percent else 0
+                    'percent' : step.percent if step.percent else 0,
+                    'created_date': step.created_date.__str__() if step.created_date else '',
+                    'ranking': step.ranking if hasattr(step, 'ranking') else ''
                 })
+
+            # Mange if step is "Interrompu, Abandon or Autre site remis pour la construction"
+            if (
+                (
+                    (
+                    (step.begin and step.end) or step.end
+                    ) or (
+                        step.begin
+                    )
+                ) and (
+                    step.ranking in (
+                        SELECTED_COMPANY_RANKING, FIRST_CONTRACT_RANKING, OTHERS_CONTRACT_RANKING, CONTRACT_TERMINATED_RANKING,
+                        DAO_RELAUNCHED_RANKING, SITE_DISCOUNT_RANKING, ANOTHER_SITE_HANDED_OVER_FOR_CONSTRUCTION_RANKING, 
+                        INTERRUPTED_RANKING, ABANDONED_RANKING
+                    )
+                )
+            ):
+                # we are looking for the nearest step/level with a percentage
+                if hasattr(step, 'subproject'):
+                    nearest_step_or_level = step.subproject.get_nearest_step_or_level_with_percent_from_step(step)
+                else:
+                    nearest_step_or_level = step.subproject_step.subproject.get_nearest_step_or_level_with_percent_from_step(step)
+
+                if nearest_step_or_level and nearest_step_or_level.percent:
+                    dates_wording_with_percents[-1]['percent'] = nearest_step_or_level.percent
             
             if step.begin and ((not oldest) or (oldest and list(oldest.keys())[0] > step.begin)):
                 oldest = {step.begin: step.wording}
@@ -100,7 +139,7 @@ class SubprojectStepGraphTemplateView(SubprojectMixin, AJAXRequestMixin, LoginRe
         
         dates_wording_with_percents += dates_wording_with_percents_step
         dates_wording_with_percents += dates_wording_with_percents_level
-        dates_wording_with_percents = sorted(dates_wording_with_percents, key=lambda obj: f"{obj.get('date')} {obj.get('percent')}")
+        dates_wording_with_percents = sorted(dates_wording_with_percents, key=lambda obj: f"{obj.get('date')} {obj.get('created_date')} {obj.get('percent')}")
         
         for elt in dates_wording_with_percents:
             dates_with_wording.append(f"{elt.get('date')} {elt.get('wording')}")
@@ -135,41 +174,49 @@ class SubprojectStepAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequiredM
     def check_permissions(self):
         super().check_permissions()
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if not self.kwargs.get('subproject_step_update_id'):
+            context['form'] = SubprojectAddStepForm(initial={'subproject': self.subproject})
+
+        return context
+
     def post(self, request, *args, **kwargs):
         form = None
         obj = None
         msg = ''
         if self.kwargs.get('subproject_step_update_id'):
             obj = SubprojectStep.objects.get(id=self.kwargs['subproject_step_update_id'])
-            form = SubprojectAddStepForm(request.POST, instance=obj)
+            form = SubprojectAddStepForm(request.POST, instance=obj, initial= {'subproject': self.subproject})
         else:
-            form = SubprojectAddStepForm(request.POST)
+            form = SubprojectAddStepForm(request.POST, initial= {'subproject': self.subproject})
         self._obj = obj
         if form and form.is_valid():
             data = form.cleaned_data
-            ranking = None
-            if obj:
-                ranking = obj.ranking
-            else:
-                current_subproject_step = self.subproject.get_current_subproject_step
-                if current_subproject_step and current_subproject_step.ranking:
-                    ranking = current_subproject_step.ranking
-                    if ranking:
-                        if current_subproject_step.wording == "Identifié" and data['step'].ranking == 3:
-                            ranking = 2
-                        elif current_subproject_step.wording == "En cours" and data['step'].ranking == 10:
-                            ranking = 9
-                        elif current_subproject_step.wording == "En cours" and data['step'].ranking == 11:
-                            ranking = 10
-                        elif current_subproject_step.wording == "Interrompu":
-                            ranking = 8
+            # ranking = None
+            # if obj:
+            #     ranking = obj.ranking
+            # else:
+            #     current_subproject_step = self.subproject.get_current_subproject_step
+            #     if current_subproject_step and current_subproject_step.ranking:
+            #         ranking = current_subproject_step.ranking
+            #         if ranking:
+            #             if current_subproject_step.wording in STRUCTURE_NOT_START_STATUS and data['step'].ranking == APPROVED_BY_CORA_RANKING:
+            #                 ranking = NOT_APPROVED_BY_CORA_RANKING
+            #             elif (current_subproject_step.wording in STRUCTURE_IN_PROGRESS_STATUS or (current_subproject_step.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST)) and data['step'].ranking == INTERRUPTED_RANKING:
+            #                 ranking = ABANDONED_RANKING
+            #             elif (current_subproject_step.wording in STRUCTURE_IN_PROGRESS_STATUS or (current_subproject_step.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST)) and data['step'].ranking == COMPLETED_RANKING:
+            #                 ranking = INTERRUPTED_RANKING
+            #             # elif current_subproject_step.wording == "Interrompu":
+            #             #     ranking = IN_PROGRESS_RANKING
                                 
-                    ranking = ranking + 1
-            # print(data['step'].ranking, ranking)
-            if (data.get('step') and ranking and data['step'].ranking != ranking) or (not ranking and data['step'].ranking != 1):
-                msg = _("You must follow each step...")
-            else:
-                return self.form_valid(form)
+            #         ranking = ranking + 1
+                    
+            # if (data.get('step') and ranking and data['step'].ranking != ranking) or (not ranking and data['step'].ranking != IDENTIFIED_RANKING):
+            #     msg = _("You must follow each step...")
+            # else:
+
+            return self.form_valid(form)
         else:
             msg = _("An error has occurred...")
         messages.add_message(self.request, messages.ERROR, msg, extra_tags='error')
@@ -190,28 +237,42 @@ class SubprojectStepAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequiredM
         # if not self._obj:
         _subproject_step = self.subproject.get_current_subproject_step
         if _subproject_step:
-            if _subproject_step.step.ranking < 8 and _subproject_step.step.ranking != 2:
+            if _subproject_step.step.ranking < IN_PROGRESS_RANKING and _subproject_step.step.ranking != NOT_APPROVED_BY_CORA_RANKING:
                 self.subproject.current_status_of_the_site = "Identifié"
-            elif _subproject_step.step.ranking == 9:
+            elif _subproject_step.step.ranking == ABANDONED_RANKING:
                 self.subproject.current_status_of_the_site = "Abandon"
-            elif _subproject_step.step.ranking == 10:
+            elif _subproject_step.step.ranking == INTERRUPTED_RANKING:
                 self.subproject.current_status_of_the_site = "Arrêt"
-            elif _subproject_step.step.ranking == 14:
+            elif _subproject_step.step.ranking == HANDOVER_TO_COMMUNITY_RANKING:
                 self.subproject.current_status_of_the_site = "Réception provisoire"
             else:
                 self.subproject.current_status_of_the_site = _subproject_step.step.wording
 
-            if subproject_step.step.ranking == 3:
+            if subproject_step.step.ranking == APPROVED_BY_CORA_RANKING:
                 self.subproject.approval_date_cora = subproject_step.begin
-            if subproject_step.step.ranking == 12:
+            elif subproject_step.step.ranking in (FIRST_CONTRACT_RANKING, OTHERS_CONTRACT_RANKING): # contract_signed
+                self.subproject.date_signature_contract_work_companies = subproject_step.begin
+            # elif subproject_step.step.ranking == IN_PROGRESS_RANKING: # progress
+            #     self.subproject.launch_date_of_the_construction_site_in_the_village = subproject_step.begin
+            elif subproject_step.step.ranking == COMPLETED_RANKING: # completed
+                self.subproject.work_completion_date = subproject_step.begin
+            elif subproject_step.step.ranking == RECEPTION_TECHNICAL_RANKING: # technical_acceptance
                 self.subproject.date_of_technical_acceptance_of_work_contracts = subproject_step.begin
-            if subproject_step.step.ranking == 13:
+            elif subproject_step.step.ranking == PROVISIONAL_RECEPTION_RANKING: # provisional_acceptance
                 self.subproject.date_of_provisional_acceptance_of_work_contracts = subproject_step.begin
-            if subproject_step.step.ranking == 14:
+            elif subproject_step.step.ranking == HANDOVER_TO_COMMUNITY_RANKING: # handover_to_the_community
                 self.subproject.official_handover_date_of_the_microproject_to_the_community = subproject_step.begin
+            elif subproject_step.step.ranking == FINAL_RECEPTION_RANKING: # final_acceptance
+                self.subproject.date_of_final_acceptance_of_the_work = subproject_step.begin
             
-            
-            self.subproject.current_level_of_physical_realization_of_the_work = str(_subproject_step.step.percent if _subproject_step.step.percent else _subproject_step.step.wording)
+            if _subproject_step.step.percent:
+                self.subproject.current_level_of_physical_realization_of_the_work = str(_subproject_step.step.percent)
+                self.subproject.current_level_of_physical_realization_of_the_work_percent = _subproject_step.step.percent
+            else:
+                self.subproject.current_level_of_physical_realization_of_the_work = _subproject_step.step.wording
+                self.subproject.current_level_of_physical_realization_of_the_work_percent = 0.0
+            self.subproject.current_level_of_physical_realization_of_the_work_wording = self.subproject.get_current_subproject_step_and_level_without_percent
+
             self.subproject.save(user=self.request.user)
 
         images = subproject_step.subproject.get_all_images()
@@ -223,29 +284,29 @@ class SubprojectStepAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequiredM
                     f'{str(time.time())}-{file.name}'
                 )
                 media_storage = S3Boto3Storage()
-                if not media_storage.exists(file_path_within_bucket):  # avoid overwriting existing file
-                    media_storage.save(file_path_within_bucket,file)
-                    file_url = media_storage.url(file_path_within_bucket)
+                # if not media_storage.exists(file_path_within_bucket):  # avoid overwriting existing file
+                media_storage.save(file_path_within_bucket,file)
+                file_url = media_storage.url(file_path_within_bucket)
 
-                    principal = False
-                    if len(images) == 0:
-                        principal = True
+                principal = False
+                if len(images) == 0:
+                    principal = True
 
-                    image = SubprojectFile.objects.filter(
-                        subproject_step_id=subproject_step.id, file_type=file.content_type
-                    ).first()
-                    if not image:
-                        image = SubprojectFile()
-                        image.order = len(images) + 1
-                        image.subproject = subproject_step.subproject
-                        image.subproject_step = subproject_step
-                        image.file_type = file.content_type
+                image = SubprojectFile.objects.filter(
+                    subproject_step_id=subproject_step.id, file_type=file.content_type
+                ).first()
+                if not image:
+                    image = SubprojectFile()
+                    image.order = len(images) + 1
+                    image.subproject = subproject_step.subproject
+                    image.subproject_step = subproject_step
+                    image.file_type = file.content_type
 
-                    image.url = file_url
-                    image.principal = principal
-                    image.date_taken = subproject_step.begin
-                    image.name = subproject_step.wording
-                    image.save(user=self.request.user)
+                image.url = file_url
+                image.principal = principal
+                image.date_taken = subproject_step.begin
+                image.name = subproject_step.wording
+                image.save(user=self.request.user)
 
 
         
@@ -267,6 +328,13 @@ class SubprojectLevelAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequired
 
     def check_permissions(self):
         super().check_permissions()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if not self.kwargs.get('subproject_level_update_id'):
+            context['form'] = SubprojectAddLevelForm(initial={'subproject': self.subproject})
+
+        return context
 
     def post(self, request, *args, **kwargs):
         form = None
@@ -299,14 +367,22 @@ class SubprojectLevelAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequired
 
         # if not self._obj:
         _step = self.subproject.get_current_subproject_step
-        if _step and _step.wording == "En cours":
+        if _step and (_step.wording in STRUCTURE_IN_PROGRESS_STATUS or (_step.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST)):
             
             old_percent = convert_str_percent_to_float(self.subproject.current_level_of_physical_realization_of_the_work)
             new_percent = convert_str_percent_to_float(subproject_level.percent)
             
             if old_percent < new_percent:
                 self.subproject.current_status_of_the_site = "En cours"
-                self.subproject.current_level_of_physical_realization_of_the_work = str(subproject_level.percent if subproject_level.percent else "0")
+                
+                if subproject_level.percent:
+                    self.subproject.current_level_of_physical_realization_of_the_work = str(subproject_level.percent)
+                    self.subproject.current_level_of_physical_realization_of_the_work_percent = subproject_level.percent
+                else:
+                    self.subproject.current_level_of_physical_realization_of_the_work = "0"
+                    self.subproject.current_level_of_physical_realization_of_the_work_percent = 0.0
+                self.subproject.current_level_of_physical_realization_of_the_work_wording = self.subproject.get_current_subproject_step_and_level_without_percent
+
                 self.subproject.save(user=self.request.user)
 
         images = subproject_level.subproject_step.subproject.get_all_images()
@@ -318,28 +394,28 @@ class SubprojectLevelAddFormView(AJAXRequestMixin, ModalFormMixin, LoginRequired
                     f'{str(time.time())}-{file.name}'
                 )
                 media_storage = S3Boto3Storage()
-                if not media_storage.exists(file_path_within_bucket):  # avoid overwriting existing file
-                    media_storage.save(file_path_within_bucket,file)
-                    file_url = media_storage.url(file_path_within_bucket)
-                    
-                    principal = False
-                    if len(images) == 0:
-                        principal = True
+                # if not media_storage.exists(file_path_within_bucket):  # avoid overwriting existing file
+                media_storage.save(file_path_within_bucket,file)
+                file_url = media_storage.url(file_path_within_bucket)
+                
+                principal = False
+                if len(images) == 0:
+                    principal = True
 
-                    image = SubprojectFile.objects.filter(
-                        subproject_level_id=subproject_level.id, file_type=file.content_type
-                    ).first()
-                    if not image:
-                        image = SubprojectFile()
-                        image.order = len(images) + 1
-                        image.subproject = subproject_level.subproject_step.subproject
-                        image.subproject_level = subproject_level
-                        image.file_type = file.content_type
-                    image.url = file_url
-                    image.principal = principal
-                    image.date_taken = subproject_level.begin
-                    image.name = subproject_level.wording
-                    image.save(user=self.request.user)
+                image = SubprojectFile.objects.filter(
+                    subproject_level_id=subproject_level.id, file_type=file.content_type
+                ).first()
+                if not image:
+                    image = SubprojectFile()
+                    image.order = len(images) + 1
+                    image.subproject = subproject_level.subproject_step.subproject
+                    image.subproject_level = subproject_level
+                    image.file_type = file.content_type
+                image.url = file_url
+                image.principal = principal
+                image.date_taken = subproject_level.begin
+                image.name = subproject_level.wording
+                image.save(user=self.request.user)
 
 
         

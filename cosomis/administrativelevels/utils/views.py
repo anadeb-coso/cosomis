@@ -10,7 +10,7 @@ class GetAdministrativeLevelForCVDByADLView(AJAXRequestMixin, LoginRequiredMixin
     def get(self, request, *args, **kwargs):
         adl_id = request.GET.get('administrative_level_id')
 
-        objects = AdministrativeLevel.objects.filter(id=int(adl_id))
+        objects = AdministrativeLevel.objects.get_objects_by_general_filtre(self.request, None).filter(id=int(adl_id))
         d = []
         if objects:
             obj = objects.first()
@@ -24,7 +24,7 @@ class GetChoicesForNextAdministrativeLevelNoConditionView(AJAXRequestMixin, Logi
     def get(self, request, *args, **kwargs):
         parent_id = request.GET.get('parent_id')
 
-        data = AdministrativeLevel.objects.filter(parent_id=int(parent_id))
+        data = AdministrativeLevel.objects.get_objects_by_general_filtre(self.request, None).filter(parent_id=int(parent_id))
 
         d = [{'id': elt.id, 'name': elt.name} for elt in data]
 
@@ -36,7 +36,7 @@ class GetChoicesForNextAdministrativeLevelView(AJAXRequestMixin, LoginRequiredMi
         parent_id = request.GET.get('parent_id')
         geographical_unit_id = request.GET.get('geographical_unit_id', None)
 
-        data = AdministrativeLevel.objects.filter(parent_id=int(parent_id))
+        data = AdministrativeLevel.objects.get_objects_by_general_filtre(self.request, None).filter(parent_id=int(parent_id))
 
         d = [{'id': elt.id, 'name': elt.name} for elt in data if((not elt.geographical_unit) or (elt.geographical_unit and geographical_unit_id and elt.geographical_unit.id == int(geographical_unit_id)))]
 
@@ -47,7 +47,7 @@ class GetChoicesAdministrativeLevelByGeographicalUnitView(AJAXRequestMixin, Logi
         geographical_unit_id = request.GET.get('geographical_unit_id')
         cvd_id = request.GET.get('cvd_id', None)
 
-        data = AdministrativeLevel.objects.filter(geographical_unit=int(geographical_unit_id))
+        data = AdministrativeLevel.objects.get_objects_by_general_filtre(self.request, None).filter(geographical_unit=int(geographical_unit_id))
 
         d = [{'id': elt.id, 'name': elt.name} for elt in data if((not elt.cvd) or (elt.cvd and cvd_id and elt.cvd.id == int(cvd_id)))]
         
@@ -73,7 +73,7 @@ class GetChoicesForNextAdministrativeLevelAllView(AJAXRequestMixin, JSONResponse
         datas = dict()
         if not parent_ids or "All" in parent_ids:
             parent_ids = [None]
-        print(parent_ids)
+        
         datas = {
             "prefectures": [],
             "communes": [],

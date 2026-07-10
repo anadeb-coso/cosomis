@@ -13,7 +13,7 @@
         removeAllMarkers();
         
         {% for subproject in subprojects %}
-            {% if subproject.latitude and subproject.longitude %}
+            {% if subproject.get_latitude and subproject.get_longitude %}
                 {% if subproject.location_subproject_realized %}
 
                     marker = new mapboxgl.Marker({
@@ -22,14 +22,14 @@
                         })
                         .setLngLat(
                             [
-                                parseFloat('{{ subproject.longitude }}'.replace(',', '.')), 
-                                parseFloat('{{ subproject.latitude }}'.replace(',', '.'))
+                                parseFloat('{{ subproject.get_longitude }}'.replace(',', '.')), 
+                                parseFloat('{{ subproject.get_latitude }}'.replace(',', '.'))
                             ]
                         )
                         .setPopup(
                             new mapboxgl.Popup().setHTML(
                                 `<br />
-                                <a target="_blank" href="{% url 'administrativelevels:detail' subproject.location_subproject_realized.pk %}?type=Village"><b>{{ subproject.location_subproject_realized.name }}</b></a><br />
+                                <a target="_blank" href="{% url 'administrativelevels:detail' subproject.location_subproject_realized.pk %}?type=Village"><b>{{ subproject.location_subproject_realized.name }}</a>(<a href="https://www.google.com/maps?q={{ subproject.get_latitude|replace:',r|.' }},{{ subproject.get_longitude|replace:',r|.' }}&z=12" target="_blank">{{ subproject.get_latitude|replace:',r|.' }},{{ subproject.get_longitude|replace:',r|.' }}</a>)</b><br />
                                 <a target="_blank" href="{% url 'subprojects:detail' subproject.pk %}"><b>{{ subproject.full_title_of_approved_subproject }}</b></a>
                                 
                                 
@@ -84,8 +84,8 @@
                         })
                         .setLngLat(
                             [
-                                parseFloat('{{ subproject.longitude }}'.replace(',', '.')), 
-                                parseFloat('{{ subproject.latitude }}'.replace(',', '.'))
+                                parseFloat('{{ subproject.get_longitude }}'.replace(',', '.')), 
+                                parseFloat('{{ subproject.get_latitude }}'.replace(',', '.'))
                             ]
                         )
                         .setPopup(

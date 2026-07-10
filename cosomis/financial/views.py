@@ -50,11 +50,11 @@ class AdministrativeLevelAllocationCreateView(PageMixin, LoginRequiredMixin, Acc
         if self.form_mixin:
             context['form'] = self.form_mixin
         else:
-            context['form'] = AdministrativeLevelAllocationForm()
+            context['form'] = AdministrativeLevelAllocationForm(self.request.GET.get("type"))
         return context
     
     def post(self, request, *args, **kwargs):
-        form = AdministrativeLevelAllocationForm(request.POST)
+        form = AdministrativeLevelAllocationForm(self.request.GET.get("type"), request.POST)
         if form.is_valid():
             form.save()
             return redirect('financial:financials')
@@ -81,12 +81,12 @@ class AdministrativeLevelAllocationUpdateView(PageMixin, LoginRequiredMixin, Acc
         if self.form_mixin:
             context['form'] = self.form_mixin
         else:
-            context['form'] = AdministrativeLevelAllocationForm(instance=self.get_object())
+            context['form'] = AdministrativeLevelAllocationForm(self.request.GET.get("type"), instance=self.get_object())
         return context
     
     
     def post(self, request, *args, **kwargs):
-        form = AdministrativeLevelAllocationForm(request.POST, instance=self.get_object())
+        form = AdministrativeLevelAllocationForm(self.request.GET.get("type"), request.POST, instance=self.get_object())
         if form.is_valid():
             form.save()
             return redirect('financial:financials')

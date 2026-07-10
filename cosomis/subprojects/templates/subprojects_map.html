@@ -212,7 +212,7 @@
         });
         
         {% for subproject in subprojects %}
-            {% if subproject.latitude and subproject.longitude %}
+            {% if subproject.get_latitude and subproject.get_longitude %}
                 {% if subproject.location_subproject_realized %}
 
                     marker = new mapboxgl.Marker({
@@ -221,8 +221,8 @@
                         })
                         .setLngLat(
                             [
-                                parseFloat('{{ subproject.longitude }}'.replace(',', '.')), 
-                                parseFloat('{{ subproject.latitude }}'.replace(',', '.'))
+                                parseFloat('{{ subproject.get_longitude }}'.replace(',', '.')), 
+                                parseFloat('{{ subproject.get_latitude }}'.replace(',', '.'))
                             ]
                         )
                         .setPopup(
@@ -283,8 +283,8 @@
                         })
                         .setLngLat(
                             [
-                                parseFloat('{{ subproject.longitude }}'.replace(',', '.')), 
-                                parseFloat('{{ subproject.latitude }}'.replace(',', '.'))
+                                parseFloat('{{ subproject.get_longitude }}'.replace(',', '.')), 
+                                parseFloat('{{ subproject.get_latitude }}'.replace(',', '.'))
                             ]
                         )
                         .setPopup(

@@ -1,4 +1,8 @@
 from django.http import Http404, JsonResponse
+from django.http import Http404
+from django.shortcuts import redirect
+from django.urls import reverse
+from urllib.parse import urlencode
 
 
 class PageMixin(object):
@@ -16,6 +20,20 @@ class PageMixin(object):
         ctx.setdefault('breadcrumb', self.breadcrumb)
         ctx.setdefault('form_mixin', self.form_mixin)
         return ctx
+    
+    def dispatch(self, request, *args, **kwargs):
+        next_url = self.request.get_full_path()
+        if "/process-manager/select-project/" not in next_url and self.request.user.is_authenticated and (
+            not self.request.session.get('project_id') or not self.request.session.get('tree_structure_projects_ids')
+        ): # If the user is authenticated and no project selected
+           
+            url = reverse('process_manager:list')
+            query_params = {}
+            if next_url:
+                query_params['next'] = next_url
+            url_with_params = f"{url}?{urlencode(query_params)}"
+            return redirect(url_with_params)
+        return super().dispatch(request, *args, **kwargs)
 
 
 class ModalFormMixin(object):

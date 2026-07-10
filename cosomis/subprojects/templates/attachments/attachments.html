@@ -1,0 +1,907 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n humanize bootstrap4 custom_tags %}
+
+{% block extracss %}
+    {{ block.super }}
+    <style>
+        .attachment-container {
+            display: inline-flex;
+            gap: 0 40px;
+            flex-wrap: wrap;
+            @media (max-width: 700px) {
+                gap: 10px;
+            }
+        }
+
+        .attachment-link-container {
+            width: 120px;
+            text-align: center;
+
+            &:nth-child(even) .attachment-link {
+                width: 120px;
+
+                .attachment-placeholder:not(.attachment-placeholder--document) {
+                    width: 120px;
+                }
+            }
+        }
+
+        .attachment-link {
+            width: 80px;
+            height: 80px;
+            background: #f6f9fb;
+            border-radius: 10px;
+            margin-top: 10px;
+            position: relative;
+        }
+
+        .attachment-placeholder {
+            height: 80px;
+            width: auto;
+            border-radius: 10px;
+        }
+
+        .attachment-placeholder--document {
+            height: 40px;
+            width: 30px;
+        }
+
+        #attachmentModal, #attachmentFilterModal {
+            .modal-header {
+                border: 0;
+            }
+
+            .btn-closeModal {
+                margin-bottom: 30px;
+                background-color: #599cf7;
+                color: white;
+                padding: 5px !important;
+                font-size: 10px;
+                height: 25px;
+                width: 25px;
+                opacity: 1;
+                border-radius: 50%;
+                margin: 5px;
+                margin-left: auto;
+                outline: transparent;
+            }
+        }
+
+        .checkbox {
+            position: absolute;
+            left: 5px;
+            top: 5px;
+        }
+
+        .form-attachment {
+            gap: 0 20px;
+            flex-wrap: wrap;
+        }
+
+        .pagination {
+            font-size: 13px;
+        }
+
+        #attachmentModal {
+            .attachment-modal-link {
+                width: calc(100% - 120px);
+                height: 50vh;
+                margin: auto;
+                display: flex;
+            }
+
+            .attachment-placeholder {
+                height: 50vh;
+                width: 100%;
+                margin: auto;
+            }
+
+            .carousel-control-next, .carousel-control-prev {
+                bottom: -50px;
+            }
+
+            .carousel-control-next-icon, .carousel-control-prev-icon {
+                border-radius: 50%;
+                background-color: #599cf7;
+                padding: 5px !important;
+                background-size: 10px;
+                height: 25px;
+                width: 25px;
+                bottom: -40px;
+            }
+
+            .carousel-indicators {
+                bottom: -40px;
+            }
+
+            .carousel-indicators li {
+                background-color: #599cf7;
+            }
+
+            .download {
+                display: inline-flex;
+                width: calc(100% - 25px);
+                justify-content: flex-end;
+            }
+        }
+
+        .attachment-filter {
+            background-color: transparent;
+            border-radius: 50%;
+            border: 1px solid black;
+            height: 25px;
+            width: 25px;
+            padding: 2px 0 0 1px;
+        }
+
+        #attachmentFilterModal {
+            .form-checkbox-row {
+                display: inline-flex;
+                gap: 10px;
+                justify-content: center;
+            }
+
+            .select2-container--default .select2-selection--single .select2-selection__rendered {
+                color: black;
+            }
+
+            .form-checkbox label {
+                margin: 0 !important;
+            }
+
+            .btn-primary {
+                border-radius: 8px !important;
+                font-size: 12px;
+                float: right;
+            }
+        }
+
+        .download-all {
+            background-color: #599cf7;
+            outline: transparent;
+            border-radius: 4px;
+            padding: 5px 10px 3px 10px;
+            border: 0;
+        }
+
+        .download-all, .download-all:focus, .download-all:hover {
+            color: white;
+            text-transform: capitalize;
+        }
+
+        .download-all:focus, .download-all:hover {
+            opacity: 0.8;
+        }
+{% comment %} 
+        .card-img-elt {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+        } {% endcomment %}
+        
+
+    </style>
+    <link rel="stylesheet" href="{% static 'plugins/babylon-grid/babylongrid-default.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <div class="row">
+                <div class="col-8 p-0 d-flex justify-content-start">
+                    <div class="m-0 main-title" style="font-size: 16px !important;">
+                        <a href='{% url "subprojects:infrastructures_list" %}' style="text-decoration: underline; color: gray !important;">{% translate "Infrastructures" %}</a> 
+                        /
+                        <a href='{% url "subprojects:detail" subproject.pk %}' style="text-decoration: underline; color: gray !important;">{{ subproject.type_of_subproject }}</a> 
+                        / 
+                        <span style="color: black !important;">{% translate "Gallery" %}</span>
+                    </div>
+                </div>
+
+                <div class="col-4 p-0 d-flex justify-content-end">
+                    <a 
+                        style="margin-right: 25px; margin-top: 5px;" 
+                        class="font-weight-bold" 
+                        href="#"
+                        onclick="window.location.reload();"
+                        ><i class="fa fa-refresh"></i>
+                    </a>
+                    {% if file_ids %}
+                    <a 
+                        style="margin-right: 25px; margin-top: 5px;"
+                        target="_blank" class="font-weight-bold" 
+                        href="{% url 'subprojects:files:files_download_zip' %}?ids={{ file_ids }}"
+                        ><i class="fas fa-download"></i> {% translate 'Download all' %}
+                    </a>
+                    {% endif %}
+                    <button class="attachment-filter" data-toggle="modal" data-target="#attachmentFilterModal">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                            class="bi bi-filter" viewBox="0 0 16 16">
+                            <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="clearfix" style="margin-top: 31px !important;"></div>
+
+        
+    </div>
+
+    <div class="col-12">
+
+        {% include 'attachments/_grid.html' with attachments=attachments %}
+
+    </div>
+
+
+{% endblock %}
+
+{% block modals %}
+    <div class="modal fade" id="attachmentFilterModal" tabindex="-1" role="dialog"
+         aria-labelledby="attachmentFilterModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>{% translate 'Choose attachments to view' %}</h5>
+                    <button type="button" class="close btn-closeModal" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <form action="" method="get">
+                        <div class="form-checkbox-row">
+                            
+                            <div class="form-label">
+                                <label for="">{% translate 'Type' %}: </label>
+                            </div>
+
+                            <div class="form-checkbox">
+                                <label for="id_type_0"><input type="radio" name="type" value="Photo" id="id_type_0" required="" {% if 'type' in query_strings_raw and query_strings_raw.type == 'Photo' %}checked=""{% endif %}> {% translate "Photo" %}</label>
+                            </div>
+
+                            <div class="form-checkbox">
+                                <label for="id_type_1"><input type="radio" name="type" value="Document" id="id_type_1" required="" {% if 'type' in query_strings_raw and query_strings_raw.type == 'Document' %}checked=""{% endif %}> {% translate "Document" %}</label>
+                            </div>
+
+                            <div class="form-checkbox">
+                                <label for="id_type_2"><input type="radio" name="type" value="" id="id_type_2" required="" {% if not 'type' in query_strings_raw or query_strings_raw.type not in 'Photo,Document' or not query_strings_raw.type %}checked=""{% endif %}> {% translate "Both" %}</label>
+                            </div>
+                        </div>
+                        <br><br>
+                        <div class="form-checkbox-row">
+                            
+                            <div class="form-label">
+                                <label for="">{% translate 'Validated' %}: </label>
+                            </div>
+
+                            <div class="form-checkbox">
+                                <label for="id_validated_status_0"><input type="radio" name="validated_status" value="Validated" id="id_validated_status_0" required="" {% if 'validated_status' in query_strings_raw and query_strings_raw.validated_status == 'Validated' %}checked=""{% endif %}> {% translate "Validated" %}</label>
+                            </div>
+
+                            <div class="form-checkbox">
+                                <label for="id_validated_status_1"><input type="radio" name="validated_status" value="Invalidated" id="id_validated_status_1" required="" {% if 'validated_status' in query_strings_raw and query_strings_raw.validated_status == 'Invalidated' %}checked=""{% endif %}> {% translate "Invalidated" %}</label>
+                            </div>
+
+                            <div class="form-checkbox">
+                                <label for="id_validated_status_2"><input type="radio" name="validated_status" value="not_seen" id="id_validated_status_2" required="" {% if 'validated_status' in query_strings_raw and query_strings_raw.validated_status == 'Not_seen' %}checked=""{% endif %}> {% translate "Not seen" %}</label>
+                            </div>
+
+                            <div class="form-checkbox">
+                                <label for="id_validated_status_3"><input type="radio" name="validated_status" value="" id="id_validated_status_3" required="" {% if not 'validated_status' in query_strings_raw or query_strings_raw.validated_status not in 'Validated,Invalidated' or not query_strings_raw.validated_status %}checked=""{% endif %}> {% translate "All" %}</label>
+                            </div>
+                        </div>
+
+                        <input type="submit" class="btn btn-primary" value="{% translate 'Apply' %}">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="fileCommentModal" tabindex="-1" role="dialog"
+         aria-labelledby="fileCommentModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>{% translate 'Invalidation' %} ({% translate 'Add Comment' %})</h5>
+                    <button type="button" class="close btn-closeModal" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <form action="" method="post" id='validation_form'>
+                        
+                        <div class="form-group">
+                            <textarea name="id_invalidation_comment" cols="40" rows="3" maxlength="65000" class="form-control"
+                                title="" required="" id="id_invalidation_comment" spellcheck="true"
+                                placeholder="{% translate 'Add Comment' %}"></textarea>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input 
+                                class="form-check-input" type="checkbox" name="flexCheckbox-modal" 
+                                id="flexCheckbox-modal" style="font-weight: bold !important; color: black;"
+                                {% if attachment.validated %} checked=""{% endif %}>
+                            <label class="form-check-label" for="flexCheckbox-modal" >
+                                {% translate "Invalidate without comment" %}
+                            </label>
+                        </div>
+                        <span id="file-infos" style="display: none"></span>
+                        <br />
+
+                        <input type="submit" class="btn btn-primary" id="submit-validation-form-btn" value="{% translate 'Submit' %}">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="modal fade" id="fileWideModal" tabindex="-1" role="dialog"
+         aria-labelledby="fileWideModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+            <div class="modal-content" id="fileWideModalContainer">
+                
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="modal fade" id="fileCommentsModal" tabindex="-1" role="dialog"
+         aria-labelledby="fileCommentsModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content" id="fileCommentsModalContainer">
+                
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+
+{% block javascript %}
+    {{ block.super }}
+    <script type="text/javascript" src="{% static 'plugins/babylon-grid/jquery.babylongrid.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/htmx.min.js' %}" defer></script>
+    <script src="{% static 'js/notifications.js' %}"></script>
+    <script src="{% static 'js/utils.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/imagesloaded@5.0.0_imagesloaded.pkgd.min.js' %}" ></script>
+    <script type="text/javascript" data-attachments="{{ attachments }}">
+        $(document).ready(function () {
+            
+            let current_page = "{{ request.path }}";
+            //let query_string = {{ filter_hierarchy_query_strings|safe }};
+            const filter_inputs = [$('#id_region')]
+            const invalidation_comment = $('#id_invalidation_comment');
+            const file_infos = $('#file-infos'); //format: type-id
+            const validation_form = $('#validation_form');
+            const flexCheckbox_modal = $('#flexCheckbox-modal');
+            const submit_validation_form_btn = $('#submit-validation-form-btn');
+            
+
+            // File Comments Modal
+            $('.attachment-item-display-comments').click(function(event){
+                let file_id_c = this.id.split('-')[3];
+                event.preventDefault();
+                $.ajax({
+                    type : "POST",
+                    url: '{% url "subprojects:files:file_comments_view" %}?file_id='+file_id_c,
+                    data: {
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function(response){
+                        if(response.error){
+                            pushNotify(response.error, "error");
+                        }else{
+                            let elts_comments;
+                            if(response.length == 0){
+                                elts_comments = `
+                                <div class="row">
+                                    <div class="col-12 text-center">
+                                        <span class="text-center" style="color:black;">{% translate 'No comments found' %}</span>
+                                    </div>
+                                </div>
+                                `
+                            }else{
+                                let elt_comment;
+                                for(var c_i=0; c_i < response.length; c_i++){
+                                    let elt_comment = response[c_i];
+                                    elts_comments = `
+                                    <div class="row task_comments_div">
+                                        <div class="col-9">
+                                            <div class="circle-icon float-left mr-2 navbar-mediumpurple">
+                                                <div class="center-32 pt-1 text-white text-bold-family">
+                                                    <span class="text-white text-bold-family">${getInitials(elt_comment.user.last_name)}${getInitials(elt_comment.user.first_name)}</span>
+                                                </div>
+                                            </div>
+                                            <div class="text-bold-family">
+                                                <span>${ elt_comment.user.last_name ? elt_comment.user.last_name : ''} ${ elt_comment.user.first_name ? elt_comment.user.first_name : ''}</span>
+                                    `
+                                                if(elt_comment.type.includes('comment')){
+                                                    elts_comments += `(<span style="color: ${ elt_comment.type == "comment_validated" ? 'green' : 'red'};">
+                                                    ${ elt_comment.type == 'comment_validated' ? '{% translate "Validation action" %}' : (elt_comment.type == 'comment_invalidated' ? "{% translate 'Invalidation action' %}" : '{% translate "Another action" %}') }
+                                                    </span>)`
+                                                }
+                                    elts_comments += `
+                                            </div>
+
+                                            <div class="text-regular-family">
+                                                <span class="text-regular-family">${ stringToDateUTC(elt_comment.created_date).day }-${ stringToDateUTC(elt_comment.created_date).month }-${ stringToDateUTC(elt_comment.created_date).year }</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-3 text-right lh15 mt-3 text-regular-family">
+                                            <span class="text-regular-family">${ stringToDateUTC(elt_comment.created_date).hours }:${ stringToDateUTC(elt_comment.created_date).minutes }</span>
+                                        </div>
+                                    </div>
+                                    <div class="row border-bottom mt-2 mb-3">
+                                        <div class="col-10 mb-2 text-regular-family mb-3">
+                                            <p id="issue_comment_comment">
+                                                ${ elt_comment.comment }
+                                            </p>
+                                        </div>
+                                    </div>
+                                    `
+                                }
+                            }
+
+                            $('#fileCommentsModalContainer').html(`
+                                <div class="card" style="margin-right: 20px !important; margin-top: 15px !important;elevation: 15;">
+                                    <h5 class="card-title overlay-wrapper" style="width: 90%; margin: auto !important; text-align: center;color: black;">
+                                        {% translate "Comments and actions history" %}
+                                    </h5>
+
+                                    <div class="card-body overflow-y-auto">
+                                        <div class="overlay-wrapper" style="width: 80%; margin: auto !important;">
+                                            <div class="task_comments" id="task_comments_${ file_id_c }">
+                                                ${elts_comments}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `);
+
+                            $('#fileCommentsModal').modal('show');
+
+                        }
+                    }
+                });
+
+            });
+            // End File Comments Modal
+
+            {% if user|has_in_a_group %}
+            
+            $('.grid-content input[type=checkbox]').click(validation_call);
+            $('.grid-content input[type=radio]').click(validation_call);
+            validation_form.submit(validation_call);
+
+            flexCheckbox_modal.click(function (event){
+                if($(this).prop('checked')){
+                    invalidation_comment.prop('disabled', true).val(null);
+                }else{
+                    invalidation_comment.prop('disabled', false).val(null);
+                }
+            });
+
+            // File Wide Modal
+            $('.attachment-item-display').click(function(event){
+                event.preventDefault();
+                $('#fileWideModalContainer').html(`
+                    <a 
+                        style="margin-bottom: -36px !important; z-index: 99; margin-right: 11px; margin-top: 11px;" class="d-flex justify-content-end"
+                        href="/subprojects/files/detail/files/${this.id}/download/">
+                        <i class="fas fa-2x fa-download bg-success"></i>
+                    </a>
+                    <img src="${this.id}" class="card-img-cover-elt" alt="${this.id}">
+                `);
+                $('#fileWideModal').modal('show');
+            });
+            $('#fileWideModal').on('shown.bs.modal', function () {
+                $('#fileWideModal').css({
+                    'background-color': 'rgba(0,0,0,0.85)'
+                });
+            });
+            // End File Wide Modal
+
+            $('.checks-inputs-container-principal').click(function(event){
+                $.ajax({
+                    type : "POST",
+                    url: '{% url "subprojects:files:toggle_principal_file_view" %}?file_id='+this.id.split('-')[2],
+                    data: {
+                        csrfmiddlewaretoken: '{{ csrf_token }}',
+                        principal: $(this).prop('checked') ? true : false
+                    },
+                    success: function(response){
+                        if(response.error){
+                            pushNotify(response.error, "error");
+                        }else{
+                            pushNotify(response.principal ? "{% translate 'This file has become the main file.' %}" : "{% translate 'This file is no longer considered the primary file. Note that no other file currently holds this status.' %}" , "success");
+                        }
+                    }
+                });
+            });
+
+            $('.checks-inputs-container-special').click(function(event){
+                $.ajax({
+                    type : "POST",
+                    url: '{% url "subprojects:files:toggle_special_file_view" %}?file_id='+this.id.split('-')[2],
+                    data: {
+                        csrfmiddlewaretoken: '{{ csrf_token }}',
+                        special: $(this).prop('checked') ? true : false
+                    },
+                    success: function(response){
+                        if(response.error){
+                            pushNotify(response.error, "error");
+                        }else{
+                            pushNotify(response.special ? "{% translate 'This file is known to be used in important documents.' %}" : "{% translate 'This file is no longer a special file.' %}" , "success");
+                        }
+                    }
+                });
+            });
+
+            function validation_call (event){
+                let elt_id = this.id;
+
+                if(['flexCheckbox-principal-', 'flexCheckbox-special-'].some(function (_ref) {
+                    return elt_id.includes(_ref);
+                })){
+                    return;
+                }
+                
+                if(this.id == "validation_form"){
+                    event.preventDefault();
+                }
+
+                /*if(this.type == 'checkbox'){
+                    if (event.stopPropagation) {
+                        event.stopPropagation();
+                    } else {
+                        event.cancelBubble = true;
+                    }
+                }*/
+                
+                let classList = Array.from(this.classList ? this.classList : []);
+
+                if(![undefined, null, "", "flexCheckbox-modal", "validation_form", "submit-validation-form-btn"].includes(this.id)){
+                    let id_split = this.id.split('-');
+                    let type_action = id_split[1];
+                    let file_id = id_split[2];
+                    file_infos.text(`${type_action}-${file_id}`);
+                }
+                
+                if(
+                    ![undefined, null, "", "flexCheckbox-modal"].includes(this.id) && 
+                    ((classList && classList.includes('checks-inputs-container') && classList.includes('form-check-input')) || file_infos.text())
+                ){
+                    let file_infos_id_split = file_infos.text().split('-');
+                    let file_infos_type_action = file_infos_id_split[0];
+                    let file_infos_file_id = file_infos_id_split[1];
+                    if(
+                        file_infos_type_action == 'validated' || (
+                            file_infos_type_action == 'invalidated' && (
+                                (![undefined, null].includes(invalidation_comment.val()) && ![""].includes(invalidation_comment.val().trim())) || flexCheckbox_modal.prop('checked')
+                            )
+                        )
+                    ){
+                        
+                        if(this.type == 'checkbox' || this.type == 'radio'){
+                            $(this).prop('checked', true).val(true);
+                            $(this).prop('disabled', false).val(false);
+                        }
+
+                        $.ajax({
+                            type : "POST",
+                            url: '{% url "subprojects:files:toggle_validation_file_view" %}?file_id='+file_infos_file_id+'&action='+file_infos_type_action,
+                            data: {
+                                csrfmiddlewaretoken: '{{ csrf_token }}',
+                                invalidation_comment: invalidation_comment.val(),
+                                no_comment: flexCheckbox_modal.prop('checked') ? true : false
+                            },
+                            /*xhrFields: {
+                                withCredentials: true //Autre domaine à un autre domaine
+                            },*/
+                            success: function(response){
+                                if(response.error){
+                                    pushNotify(response.error, "error");
+                                }else{
+                                    
+                                    submit_validation_form_btn.prop('disabled', false);
+                                    invalidation_comment.prop('disabled', false).val(null);
+                                    $('#fileCommentModal').modal('hide');
+
+                                    let btn_actions;
+                                    if(response.validated == true || response.validated == false){
+                                        
+                                        btn_actions = `<input 
+                                            ${response.validated ? 'data-toggle="modal" data-target="#fileCommentModal"' : ''}
+                                            class="form-check-input checks-inputs-container" type="checkbox" name="flexCheckbox-${response.validated ? 'invalidated' : 'validated'}-${response.id}" 
+                                            id="flexCheckbox-${response.validated ? 'invalidated' : 'validated'}-${response.id}" style="font-weight: bold !important; color: black;"
+                                            ${response.validated ? 'checked=""' : ''}>
+                                        <label class="form-check-label" for="flexCheckbox-${response.validated ? 'invalidated' : 'validated'}-${response.id}" style="font-weight: bold !important; color: black; background-color: white;">
+                                            ${response.validated ? '{% translate "validated" %}' : '{% translate "File invalidated (click to validate)" %}'} 
+                                        </label>`;
+                                    }else{
+                                        btn_actions = `<div class="form-check form-check-inline" style="margin-top: -10px !important;">
+                                            <input 
+                                                class="form-check-input checks-inputs-container" type="radio" name="flexRadio-${response.id}" 
+                                                id="flexRadio-validated-${response.id}" style="font-weight: bold !important; color: black;">
+                                            <label class="form-check-label" for="flexRadio-validated-${response.id}" style="font-weight: bold !important; color: black; background-color: white;">
+                                                {% translate "Validate" %}
+                                            </label>
+                                        </div>
+                                        <div class="form-check form-check-inline" style="margin-top: -10px !important;">
+                                            <input 
+                                                data-toggle="modal" data-target="#fileCommentModal"
+                                                class="form-check-input checks-inputs-container" type="radio" name="flexRadio-${response.id}" 
+                                                id="flexRadio-invalidated-${response.id}" style="font-weight: bold !important; color: black;">
+                                            <label class="form-check-label" for="flexRadio-invalidated-${response.id}" style="font-weight: bold !important; color: black; background-color: white;">
+                                                {% translate "Invalidate" %}
+                                            </label>
+                                        </div>`;
+                                    }
+                                    $(`#file-validation-btn-container-${file_infos_file_id}`).html("");
+                                    $(`#file-validation-btn-container-${file_infos_file_id}`).html(btn_actions);
+
+                                    if(response.validated == true){
+                                        $(`#span-file-validation-btn-container-${file_infos_file_id}`).css("background-color", "green");
+                                    }else{
+                                        $(`#span-file-validation-btn-container-${file_infos_file_id}`).css("background-color", "red");
+                                    }
+                                    
+                                    pushNotify(response.validated ? "{% translate 'File validated' %}" : "{% translate 'File invalidated' %}" , "success");
+                                }
+                            }
+                        });
+
+                    }else{
+                        if(this.type == 'checkbox' && file_infos_type_action == 'invalidated'){
+                            $(this).prop('checked', true).val(true);
+                        }else if(this.type == 'checkbox' && file_infos_type_action == 'invalidated'){
+                            $(this).prop('checked', false).val(false);
+                        }else if(this.type == 'checkbox' || this.type == 'radio'){
+                            $(this).prop('checked', false).val(false);
+                        }
+                    }
+                }
+            }
+            {% endif %}
+            
+            //init_change_filters_selects(0);
+            
+            /*filter_inputs.forEach((input) => {
+                input.on('change', function(){
+                    change_filters_selects(input, filter_inputs);
+                });
+            });*/
+
+            $('.babylongrid').babylongrid({
+                scheme: [
+                    {
+                        minWidth: 1250,
+                        columns: 3
+                    },
+                    {
+                        minWidth: 960,
+                        columns: 3
+                    },
+                    {
+                        minWidth: 500,
+                        columns: 2
+                    },
+                    {
+                        minWidth: 0,
+                        columns: 1
+                    }
+                ]
+            });
+
+            $('.download-all').click(function (event) {
+                var formArray = $('.form-attachment').serializeArray();
+                let ids = '';
+                formArray.forEach((input, index) => {
+                    if (index != 0) {
+                        ids = ids + ','
+                    }
+                    ids = ids + input.value;
+                });
+                if (ids.length != 0) {
+                    window.location = current_page + 'download-zip/?ids=' + ids;
+                }
+            });
+
+            <!-- Script for carrousel -->
+            $('.attachment-link, .second-target').click(function () {
+                $("#attachmentModal .modal-body").html(`
+                <div class="clearfix" id="attachments">
+                        <div id="carouselIndicators" class="carousel slide" data-ride="carousel" data-interval="false">
+                            <ol class="carousel-indicators">
+                                {% for attachment in attachments %}
+                                    <li data-target="#carouselIndicators" #selectorId{{ forloop.counter0 }}
+                                        data-slide-to="{{ forloop.counter0 }}"
+                                        {% if attachment.url == selectedAttachmentUrl %}class="active"{% endif %}></li>
+                                {% endfor %}
+                            </ol>
+                            <div class="carousel-inner">
+                                {% for attachment in attachments %}
+                                    <div class="carousel-item text-center" #slideid{{ forloop.counter0 }}>
+                                        {% if attachment.type == 'Photo' %}
+                                            <a class="attachment-modal-link" target="_blank"
+                                               href="{{ attachment.url|imgAWSS3Filter }}">
+                                                <img class="img-fluid mx-auto d-block"
+                                                     src="{{ attachment.url|imgAWSS3Filter }}"
+                                                     alt="{{ attachment.task }}" style="max-width: 100%; height: auto;">
+                                            </a>
+                                        {% else %}
+                                            <a class="align-items-center justify-content-center attachment-modal-link"
+                                               target="_blank" href="{{ attachment.url|imgAWSS3Filter }}">
+                                                <embed src="{{ attachment.url|imgAWSS3Filter }}" type="application/pdf" height="100%">
+                                            </a>
+                                        {% endif %}
+
+                    {#<a target="_blank" class="download" href="{% url 'administrativelevels:attachment_download' adm_id=adm_id url=attachment.url %}">#}
+
+                    {#    <img width="30px" height="auto" src="{% static 'images/download_icon.svg' %}" alt="download">#}
+                                       {#</a>#}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <a class="carousel-control-prev" href="#carouselIndicators" role="button"
+                               data-slide="prev">
+                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                <span class="sr-only">Previous</span>
+                            </a>
+                            <a class="carousel-control-next" href="#carouselIndicators" role="button"
+                               data-slide="next">
+                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                <span class="sr-only">Next</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="overlay" id="spin-attachments">
+                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
+                    </div>
+                  `);
+                let spin_attachments = $("#spin-attachments");
+                spin_attachments.show();
+                const count = $(this).data('count');
+                $('.carousel-item').eq(count).addClass('active');
+                $('.carousel-indicators li').eq(count).addClass('active');
+                spin_attachments.hide();
+            });
+
+            /*function change_filters_selects(select_input, context_inputs){
+                let empty_option = new Option("---", "", false, false);
+                let base_index = context_inputs.indexOf(select_input);
+                let select_to_fill = context_inputs[base_index + 1]
+                let other_selects = context_inputs.slice(base_index + 2)
+                
+                let selected_value = select_input.find(":selected").val();
+
+                if (selected_value !== '') {
+                    let base_url = "#";
+                    $.ajax({
+                        type : "POST",
+                        url: base_url,
+                        data: {
+                          type: select_input.attr('name'),
+                          value: selected_value,
+                          csrfmiddlewaretoken: '{{ csrf_token }}',
+                        },
+                        success: function(response){
+                            select_to_fill.empty();
+                            select_to_fill.append(empty_option);
+                            response.values.forEach((element) => {
+                                if (['task', 'activity', 'phase'].includes(select_input.attr('name'))){
+                                    select_to_fill.append(new Option(element.name, element.name, false, false));
+                                }else{
+                                    select_to_fill.append(new Option(element.name, element.id, false, false));
+                                }
+                            })
+                        }
+                    });
+                    select_to_fill.prop('disabled', false);
+                }
+                else {
+                    select_to_fill.prop('disabled', 'disabled');
+                    select_to_fill.empty()
+                    select_to_fill.append(empty_option);
+                }
+                other_selects.forEach((select) => {
+                    select.prop('disabled', 'disabled');
+                    select.empty()
+                    select.append(empty_option);
+                });
+            }*/
+            
+            /*function init_change_filters_selects(base_index){
+                let empty_option = new Option("---", "", false, false);
+                let base_url = "#";
+                let current_select = filter_inputs[base_index]
+                let select_to_fill = filter_inputs[base_index + 1]
+                
+                if ( query_string.hasOwnProperty(current_select.attr('name')) && query_string[current_select.attr('name')] !== "" ){
+                    let selected_value = query_string[current_select.attr('name')];
+                    current_select.val(selected_value);
+                    if ( base_index === 0 ) {  // I don't know why us only needed on index 0
+                        current_select.trigger('change');
+                    }
+                    
+                    $.ajax({
+                        type : "POST",
+                        url: base_url,
+                        data: {
+                          type: current_select.attr('name'),
+                          value: selected_value,
+                          csrfmiddlewaretoken: '{{ csrf_token }}',
+                        },
+                        success: function(response){
+                            select_to_fill.empty();
+                            select_to_fill.append(empty_option);
+                            response.values.forEach((element) => {
+                                select_to_fill.append(new Option(element.name, element.id, false, false));
+                            });
+                            select_to_fill.prop('disabled', false);
+                            return init_change_filters_selects(base_index + 1);
+                        }
+                    });
+                }
+            }*/
+
+            document.addEventListener('htmx:afterRequest', function(evt) {
+                $('.babylongrid').babylongrid({
+                    scheme: [
+                        {
+                            minWidth: 1250,
+                            columns: 3
+                        },
+                        {
+                            minWidth: 960,
+                            columns: 3
+                        },
+                        {
+                            minWidth: 500,
+                            columns: 2
+                        },
+                        {
+                            minWidth: 0,
+                            columns: 1
+                        }
+                    ]
+                });
+                $('.babylongrid').trigger('babylongrid:resize');
+            });
+
+            imagesLoaded('.babylongrid', function () {
+                $('.babylongrid').babylongrid({
+                    scheme: [
+                        {
+                            minWidth: 1250,
+                            columns: 3
+                        },
+                        {
+                            minWidth: 960,
+                            columns: 3
+                        },
+                        {
+                            minWidth: 500,
+                            columns: 2
+                        },
+                        {
+                            minWidth: 0,
+                            columns: 1
+                        }
+                    ]
+                });
+                $('.babylongrid').trigger('babylongrid:resize');
+            });
+
+
+        });
+    </script>
+{% endblock %}

@@ -17,6 +17,10 @@ from cosomis.forms import DeleteConfirmForm
 from usermanager.permissions import AdminPermissionRequiredMixin
 from subprojects.models import SubprojectStep
 from cosomis.functions import get_validation_code
+from cosomis.constants import (
+    IN_PROGRESS_RANKING, APPROVED_BY_CORA_RANKING, NOT_APPROVED_BY_CORA_RANKING, ABANDONED_RANKING, INTERRUPTED_RANKING,
+    HANDOVER_TO_COMMUNITY_RANKING
+)
 
 
 def set_language(request):
@@ -92,21 +96,28 @@ class DeleteObjectFormView(AJAXRequestMixin, ModalFormMixin, AdminPermissionRequ
             subproject: SubprojectStep = obj.subproject
             current_subproject_step = subproject.get_current_subproject_step
             if current_subproject_step:
-                if current_subproject_step.step.ranking < 8 and current_subproject_step.step.ranking != 2:
+                if current_subproject_step.step.ranking < IN_PROGRESS_RANKING and current_subproject_step.step.ranking != NOT_APPROVED_BY_CORA_RANKING:
                     subproject.current_status_of_the_site = "Identifié"
-                elif current_subproject_step.step.ranking == 9:
+                elif current_subproject_step.step.ranking == ABANDONED_RANKING:
                     subproject.current_status_of_the_site = "Abandon"
-                elif current_subproject_step.step.ranking == 10:
+                elif current_subproject_step.step.ranking == INTERRUPTED_RANKING:
                     subproject.current_status_of_the_site = "Arrêt"
-                elif current_subproject_step.step.ranking == 14:
+                elif current_subproject_step.step.ranking == HANDOVER_TO_COMMUNITY_RANKING:
                     subproject.current_status_of_the_site = "Réception provisoire"
                 else:
                     subproject.current_status_of_the_site = current_subproject_step.step.wording
 
-                if current_subproject_step.step.ranking == 3:
+                if current_subproject_step.step.ranking == APPROVED_BY_CORA_RANKING:
                     subproject.approval_date_cora = current_subproject_step.begin
 
-                subproject.current_level_of_physical_realization_of_the_work = str(current_subproject_step.step.percent if current_subproject_step.step.percent else current_subproject_step.step.wording)
+                if current_subproject_step.step.percent:
+                    subproject.current_level_of_physical_realization_of_the_work = str(current_subproject_step.step.percent)
+                    subproject.current_level_of_physical_realization_of_the_work_percent = current_subproject_step.step.percent
+                else:
+                    subproject.current_level_of_physical_realization_of_the_work = current_subproject_step.step.wording
+                    subproject.current_level_of_physical_realization_of_the_work_percent = 0.0
+                subproject.current_level_of_physical_realization_of_the_work_wording = subproject.get_current_subproject_step_and_level_without_percent
+                
                 subproject.save(user=self.request.user)
             
         
@@ -141,7 +152,9 @@ def profile(request):
             
             cookies = session.cookies.get_dict()
             headers = {
-                "X-CSRFToken": token
+                "X-CSRFToken": token,
+                "Referer": f"{settings.CDD_URL_BASE}/",
+                "Origin": settings.CDD_URL_BASE
             }
             post_data = {
                 'email': request.user.email,
@@ -164,7 +177,6 @@ def profile(request):
 
 
         except Exception as e:
-            print("Erreur :", e)
             raise Http404
         
     raise Http404

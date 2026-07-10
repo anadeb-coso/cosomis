@@ -14,6 +14,7 @@ from administrativelevels.functions import get_administrative_level_ids_descenda
 from dashboard import forms
 from dashboard import functions
 from subprojects.forms import SubprojectFilterForm
+from cosomis.constants import STRUCTURE_COMPLETED_STATUS, STRUCTURE_IN_PROGRESS_STATUS, STRUCTURE_NOT_START_STATUS
 
 
 
@@ -65,22 +66,22 @@ class DashboardSubprojectsMixin:
         for ald_id in administrative_level_ids_get:
             ald_id = 0 if ald_id in ("", "null", "undefined", "All") else ald_id
             administrative_levels_ids += get_administrative_level_ids_descendants(
-                ald_id, administrative_level_type, []
+                ald_id, administrative_level_type, [], self.request.session.get('project_id')
             )
             if ald_id:
                 ald_filter_ids.append(ald_id)
 
         administrative_levels_ids = list(set(administrative_levels_ids))
-        administrative_levels = AdministrativeLevel.objects.filter(id__in=administrative_levels_ids)
+        administrative_levels = AdministrativeLevel.objects.get_objects_by_general_filtre(self.request, None).filter(id__in=administrative_levels_ids)
         if administrative_level_type == "All":
-            administrative_levels = AdministrativeLevel.objects.filter(type="Region")
+            administrative_levels = AdministrativeLevel.objects.get_objects_by_general_filtre(self.request, None).filter(type="Region")
         elif ald_filter_ids and administrative_level_type != "All":
-            administrative_levels = AdministrativeLevel.objects.filter(parent__id__in=ald_filter_ids)
+            administrative_levels = AdministrativeLevel.objects.get_objects_by_general_filtre(self.request, None).filter(parent__id__in=ald_filter_ids)
         elif administrative_level_type:
-            administrative_levels = AdministrativeLevel.objects.filter(parent__type=administrative_level_type)
+            administrative_levels = AdministrativeLevel.objects.get_objects_by_general_filtre(self.request, None).filter(parent__type=administrative_level_type)
         
         if not administrative_levels:
-            administrative_levels = AdministrativeLevel.objects.filter(id__in=ald_filter_ids)
+            administrative_levels = AdministrativeLevel.objects.get_objects_by_general_filtre(self.request, None).filter(id__in=ald_filter_ids)
 
         # subprojects = Subproject.objects.filter().get_actifs()
 
@@ -94,7 +95,7 @@ class DashboardSubprojectsMixin:
 
         adls = ald_filter_ids + administrative_levels_ids
 
-        subprojects = Subproject.objects.filter(
+        subprojects = Subproject.objects.get_objects_by_general_filtre(self.request, None).filter(
             Q(location_subproject_realized__id__in=adls) | 
             Q(canton__id__in=adls)
         ).get_actifs()
@@ -118,18 +119,18 @@ class DashboardSubprojectsMixin:
             for subproject in subprojects:
                 subproject_step = subproject.current_status_of_the_site
                 if subproject_step:
-                    if 'not_started' in subproject_steps and subproject_step == "Identifié":
+                    if 'not_started' in subproject_steps and subproject_step in STRUCTURE_NOT_START_STATUS:
                         _subprojects.append(subproject)
-                    if 'in_progress' in subproject_steps and subproject_step == "En cours":
+                    if 'in_progress' in subproject_steps and subproject_step in STRUCTURE_IN_PROGRESS_STATUS:
                         _subprojects.append(subproject)
-                    if 'completed' in subproject_steps and subproject_step in ("Achevé", \
-                            "Réception technique", "Réception provisoire", "Réception définitive"):
+                    if 'completed' in subproject_steps and subproject_step in STRUCTURE_COMPLETED_STATUS:
                         _subprojects.append(subproject)
 
-            subprojects = Subproject.objects.filter(id__in=[o.id for o in _subprojects]).get_actifs()
+            subprojects = Subproject.objects.get_objects_by_general_filtre(self.request, None).filter(id__in=[o.id for o in _subprojects]).get_actifs()
 
         return {
-            'subprojects': subprojects,
+            'subprojects': subprojects.filter(subproject_type_designation="Subproject"),
+            'infrastructures': subprojects.filter(number_of_infrastructures=1),
             'sectors': [s[0] for s in sectors],
             'administrative_level_type': administrative_level.type if administrative_level else "",
             'columns_tuples': list(administrative_levels.filter(Q(type=administrative_level.type)if administrative_level else Q()).order_by('name').values_list('id', 'name')),
@@ -292,7 +293,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListView(DashboardSubprojectsMi
         #         Q(canton__id__in=adls)
         #     ).get_actifs()
         
-        all_subprojects = ctx['queryset_results']['subprojects']
+        all_subprojects = ctx['queryset_results']['subprojects'].filter(number_of_infrastructures=1)
         
        
         characters_length = 3
@@ -457,7 +458,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListSubView(DashboardSubproject
         #         Q(canton__id__in=adls)
         #     ).get_actifs()
         
-        all_subprojects = ctx['queryset_results']['subprojects']
+        all_subprojects = ctx['queryset_results']['subprojects'].filter(number_of_infrastructures=1)
         
        
         characters_length = 3
@@ -615,7 +616,7 @@ class DashboardSubprojectsDisplayGroupedByTypeListSubView(DashboardSubprojectsMi
     def get_context_data(self, **kwargs):
         ctx = super(DashboardSubprojectsDisplayGroupedByTypeListSubView, self).get_context_data(**kwargs)
         
-        all_subprojects = ctx['queryset_results']['subprojects']
+        all_subprojects = ctx['queryset_results']['subprojects'].filter(number_of_infrastructures=1)
         
        
         characters_length = 3

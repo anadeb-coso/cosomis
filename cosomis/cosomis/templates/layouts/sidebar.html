@@ -1,6 +1,7 @@
 {% load static i18n custom_tags %}
 
 {% make_list "dashboard_subprojects" "dashboard_administrativelevels" "dashboard_indicators" "dashboard_summary" as active_dashboard %}
+{% make_list "subprojects_subprojects" "subprojects_infrastructures" "subprojects" "infrastructures" as active_subprojects_dashboard %}
 {% if user.is_authenticated %}
 <!-- Main Sidebar Container -->
 <aside class="main-sidebar sidebar-light-primary soft-shadow sidebar-no-expand">
@@ -59,13 +60,39 @@
                     </ul>
                 </li>
 
-                <li class="nav-item">
+
+                
+                <li class="nav-item has-submenu">
+                    <a href="javascript:"
+                       class="nav-link {% if active_level1 in active_subprojects_dashboard %}active{% endif %}">
+                        <i class="nav-icon fa fa-project-diagram"></i>
+                        <p>{% translate "Subprojects" %}</p>
+                    </a>
+                    <ul class="submenu collapse {% if active_level1 in active_subprojects_dashboard %}show{% endif %}">
+                        <li class="nav-item">
+                            <a href="{% url 'subprojects:list' %}"
+                            class="nav-link {% if active_level1 == 'subprojects' %}active text-dark{% endif %}">
+                                <i class="nav-icon fa fa-project-diagram"></i>
+                                <p>{% translate "Subprojects" %}</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'subprojects:infrastructures_list' %}"
+                            class="nav-link {% if active_level1 == 'infrastructures' %}active text-dark{% endif %}">
+                                <i class="nav-icon fa fa-project-diagram"></i>
+                                <p>{% translate "Infrastructures" %}</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                {% comment %} <li class="nav-item">
                     <a href="{% url 'subprojects:list' %}"
                        class="nav-link {% if active_level1 == 'subprojects' %}active{% endif %}">
                         <i class="nav-icon fa fa-project-diagram"></i>
                         <p>{% translate "Subprojects" %}</p>
                     </a>
-                </li>
+                </li> {% endcomment %}
                 <li class="nav-item">
                     <a href="{% url 'administrativelevels:list' %}"
                        class="nav-link {% if active_level1 == 'administrative_levels' %}active{% endif %}">

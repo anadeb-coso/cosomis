@@ -12,7 +12,7 @@
 
 # async def upload_image(file):
 #     try:
-#         url = "https://cddanadeb.e3grm.org/attachments/upload-to-issue/"
+#         url = "https://dcc.coso-togo.com/attachments/upload-to-issue/"
 #         headers = {"Authorization": "Bearer your_token_here"}
 
 #         async with aiohttp.ClientSession() as session:

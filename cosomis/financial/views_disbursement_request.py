@@ -11,7 +11,7 @@ from financial.models.financial import DisbursementRequest
 from usermanager.permissions import (
     AccountantPermissionRequiredMixin,
     )
-from financial.forms import DisbursementRequestForm
+from financial.forms import DisbursementRequestForm, DisbursementRequestFormCreate
 # Create your views here.
 
 
@@ -29,17 +29,17 @@ class DisbursementRequestCreateView(PageMixin, LoginRequiredMixin, AccountantPer
         },
     ]
 
-    form_class = DisbursementRequestForm # specify the class form to be displayed
+    form_class = DisbursementRequestFormCreate # specify the class form to be displayed
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.form_mixin:
             context['form'] = self.form_mixin
         else:
-            context['form'] = DisbursementRequestForm()
+            context['form'] = DisbursementRequestFormCreate()
         return context
     
     def post(self, request, *args, **kwargs):
-        form = DisbursementRequestForm(request.POST)
+        form = DisbursementRequestFormCreate(request.POST)
         if form.is_valid():
             form.save()
             return redirect('financial:financials')

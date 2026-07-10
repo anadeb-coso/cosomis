@@ -1,0 +1,139 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n custom_tags %}
+
+{% block extracss %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'plugins/datepicker/date-picker.css' %}" />
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="clearfix">
+            <div class="">
+                <h6 class="text-danger">{% translate 'Your Access Token' %}</h6><br />
+                <p>{% translate "This token allows you to access the API. Keep it secure and do not share it with others." %}</p>
+                <p>{% translate "You can regenerate a new token by clicking on this link: " %} <a href="{% url 'usermanager:generate_token' %}">{% translate "Generate a new token" %}</a></p>
+            </div>
+            <div class="mt-3">
+
+                <textarea id="contenuACopier" class="col-12" readonly>{{ user.api_token.token }}</textarea>
+
+                <button id="copierButton">{% translate 'Copy Your Access Token' %}</button>
+
+                <p id="messageConfirmation" style="color: green; margin-top: 10px;"></p>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+
+<script type="text/javascript">
+$(document).ready(function () {
+    // Ajouter un écouteur d'événement au bouton
+    document.getElementById('copierButton').addEventListener('click', copierContenu);
+
+
+    function copierContenu() {
+        const element = document.getElementById('contenuACopier');
+        const contenu = element.value || element.textContent;
+        const confirmation = document.getElementById('messageConfirmation');
+
+        // VÉRIFICATION DE L'API MODERNE (navigator.clipboard) ---
+        if (navigator.clipboard && window.isSecureContext) {
+            
+            navigator.clipboard.writeText(contenu)
+                .then(() => {
+                    confirmation.textContent = "{% translate 'Content copied to clipboard!' %}";
+                    setTimeout(() => confirmation.textContent = '', 3000);
+                })
+                .catch(err => {
+                    // Si la copie moderne échoue malgré la vérification (permissions, etc.)
+                    console.error('Erreur de copie avec l\'API Clipboard :', err);
+                    // Tenter le fallback ou afficher l'erreur
+                    
+                    // Si vous voulez un fallback ici pour les erreurs spécifiques, appelez fallbackCopy(element);
+                    fallbackCopy(element, confirmation);
+                });
+        } else {
+            // FALLBACK (Ancienne méthode) ---
+            // Exécuté si navigator.clipboard est undefined (HTTP ou ancien navigateur)
+            fallbackCopy(element, confirmation);
+        }
+    }
+
+
+    function fallbackCopy(element, confirmation) {
+        // La méthode execCommand('copy') exige que l'élément soit sélectionné et visible
+        try {
+            if (!element.select) {
+                // Créer un élément temporaire si l'élément d'origine n'est pas sélectionnable
+                const tempInput = document.createElement('textarea');
+                tempInput.value = element.value || element.textContent;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                tempInput.setSelectionRange(0, 99999);
+                
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+            } else {
+                // Si l'élément est sélectionnable (textarea, input)
+                element.select();
+                element.setSelectionRange(0, 99999); 
+                document.execCommand('copy');
+            }
+
+            confirmation.textContent = "{% translate 'Content copied via fallback!' %}";
+            setTimeout(() => confirmation.textContent = '', 3000);
+
+        } catch (err) {
+            // Échec total
+            console.error('Erreur de copie avec execCommand :', err);
+            confirmation.textContent = "{% translate 'Copy failed. Please copy manually.' %}";
+        }
+    }
+
+
+    {% comment %} function copierContenu() {
+        // 1. Récupérer l'élément contenant le texte
+        const element = document.getElementById('contenuACopier');
+        const contenu = element.value || element.textContent; // Récupère le contenu
+
+        // 2. Utiliser l'API Clipboard moderne
+        navigator.clipboard.writeText(contenu)
+            .then(() => {
+                // Succès
+                const confirmation = document.getElementById('messageConfirmation');
+                confirmation.textContent = "{% translate 'Content copied to clipboard!' %}";
+
+                // Effacer le message après 3 secondes
+                setTimeout(() => {
+                    confirmation.textContent = '';
+                }, 3000);
+
+                // OPTIONNEL : Si c'est un <textarea> ou <input>, on peut le sélectionner visuellement
+                if (element.select) {
+                    element.select();
+                    element.setSelectionRange(0, 99999); // Pour les mobiles
+                }
+            })
+            .catch(err => {
+                // Échec (par exemple, si la page n'est pas sécurisée (https) ou si le navigateur est ancien)
+                console.error('Erreur lors de la copie: ', err);
+                document.getElementById('messageConfirmation').textContent = "{% translate 'Copy failed. Please copy manually.' %}";
+                
+                // Si la méthode moderne échoue, vous pouvez utiliser l'ancienne méthode (document.execCommand('copy')) comme fallback ici.
+            });
+    } {% endcomment %}
+});
+
+</script>
+
+{% endblock %}

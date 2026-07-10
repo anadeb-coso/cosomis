@@ -1,0 +1,210 @@
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+{% get_language_info for LANGUAGE_CODE as lang %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Subprojects Sheet Editor</title>
+    <script src="{% static 'plugins/handsontable/@13.1.0/handsontable.full.min.js' %}"></script>
+    <script src="{% static 'js/handsontable_reviews/render.js' %}"></script>
+    <script src="{% static 'js/handsontable_reviews/vars.js' %}"></script>
+    {% with 'plugins/handsontable/@13.1.0/languages/'|add:lang.code|add:'.js' as lang_file %}
+    <script src="{% static lang_file %}"></script>
+    {% endwith %}
+    <script src="{% static 'js/utils.js' %}"></script>
+
+    <link rel="stylesheet" href="{% static 'plugins/handsontable/@13.1.0/handsontable.full.min.css' %}" />
+    <style>
+        #handsontainer {
+            width: 100%;
+            height: 600px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <!-- Show subproject last_numbers_info -->
+    <div id="last-numbers-info"></div>
+
+    {% comment %} <h1>Sheet Editor for Subprojects</h1> {% endcomment %}
+    <div id="handsontainer"></div>
+
+    {% comment %} {{ column_data_names_json|json_script:"column-data-names-json" }} {% endcomment %}
+    {{ column_headers_json|json_script:"column-headers-json-json" }}
+    {{ column_definitions_json|json_script:"column-definitions-json" }}
+
+    
+    <div id="push-notification-container" 
+        style="position: fixed; bottom: 20px; right: 20px; z-index: 99999;">
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('handsontainer');
+            const lastNumbersInfoDiv = document.getElementById('last-numbers-info');
+            
+            let subprojectsData = [];
+            
+            const columnHeadersElement = document.getElementById('column-headers-json-json');
+
+            const columnDataNames = JSON.parse('{{ column_data_names_json|safe }}');
+
+            const columnDefinitionsElement = document.getElementById('column-definitions-json');
+            const columnDefinitions = JSON.parse(columnDefinitionsElement.textContent);
+            
+            const columnHeaders = JSON.parse(columnHeadersElement.textContent);
+
+            // Fonction to load data from the API
+            function loadData() {
+
+                fetch("{% url 'subprojects:sheet:subproject_list' %}")
+                    .then(response => response.json())
+                    .then(data => {
+                        if(data.last_numbers_info){
+                            lastNumbersInfoDiv.innerText = data.last_numbers_info;
+                        }
+
+                        subprojectsData = data.subprojects;
+                        hot.loadData(subprojectsData);
+                        /*if (hot) {
+                            // Mettre à jour la grille existante avec les nouvelles données et/ou colonnes
+                            hot.updateSettings({
+                                data: subprojectsData,
+                            });
+                            hot.render(); // Redessiner le tableau
+                        }*/
+                    })
+                    .catch(error => console.error('Error fetching data:', error));
+            }
+            
+
+            // Fonction to save changes to the API
+            function saveChanges(changes) {
+                if (!changes) {
+                    return;
+                }
+
+                changes.forEach(([rowIndex, prop, oldValue, newValue]) => {
+                    if (oldValue !== newValue) {
+                        
+                        // Récupérer l'ID affiché à la colonne 'id' (par son index, ex: 0)
+                        // La méthode getDataAtRow retourne la valeur de la grille affichée, même après le tri.
+                        //const idAffiche = hot.getDataAtRow(rowIndex)[0]; // Assumant que l'ID est la colonne 0
+                        //const idProperty = hot.getSettings().columns.findIndex(col => col.data === 'id');
+                        const idAfficheProp = hot.getDataAtRowProp(rowIndex, 'id');
+                        
+                        const subproject = hot.getSourceData().find((item => item.id === idAfficheProp)); //hot.getSourceDataAtRow(rowIndex);
+                        
+                        const recordId = subproject.id;
+                        const updateData = {};
+                        updateData[prop] = newValue;
+
+                        // Si c'est un nouvel enregistrement
+                        if ((recordId === undefined || recordId === null) || (newValue !== null && newValue !== "" && updateData != {})) {
+                            // Gérer l'ajout : POST vers l'API sans ID
+                            fetch("{% url 'subprojects:sheet:subproject_create_or_update' %}", {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': getCookie('csrftoken')
+                                },
+                                body: JSON.stringify({subproject: subproject, update_data: updateData}) //(recordId === undefined || recordId === null ? subproject : {...updateData, id: recordId}) // Envoyer toutes les données de la ligne
+                            })
+                            .then(response => response.json())
+                            .then(newRecord => {
+                                if(newRecord.last_numbers_info){
+                                    lastNumbersInfoDiv.innerText = newRecord.last_numbers_info;
+                                }
+
+                                if(newRecord.error){
+                                    //alert(newRecord.error);
+                                    pushNotify(newRecord.error, "error");
+                                }else{
+                                    if(newRecord.message){
+                                        pushNotify(newRecord.message, "success", 4000);
+                                    }
+                                    //console.log('New record created:', newRecord);
+                                    // Mettre à jour la ligne avec l'ID du serveur
+                                    hot.setDataAtRowProp(rowIndex, 'id', newRecord.id, 'ignore_me');
+                                    // Rechargez ou mettez à jour l'état si nécessaire
+                                }
+                                
+                            })
+                            .catch(error => {
+                                console.error('Error creating record:', error);
+                                if(error){
+                                    alert(error);
+                                }
+                            });
+
+                        } /*else {
+                            // Gérer la modification : PATCH vers l'API avec l'ID
+                            fetch(`${apiUrl}${recordId}/`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    // Ajoutez le token CSRF
+                                },
+                                body: JSON.stringify(updateData)
+                            })
+                            .then(response => {
+                                if (!response.ok) {
+                                    console.error('Failed to update record:', response.statusText);
+                                }
+                            })
+                            .catch(error => console.error('Error updating data:', error));
+                        }*/
+                    }
+                });
+            }
+
+
+            // SAVE RENDERERS AND EDITORS
+            Handsontable.renderers.registerRenderer('select_renderer', select_renderer);
+            Handsontable.renderers.registerRenderer('generic_multi_select_renderer', generic_multi_select_renderer);
+            Handsontable.editors.registerEditor('multi_select_checkbox_editor', MultiSelectCheckboxEditor);
+
+
+            // Handsontable instance
+            const hot = new Handsontable(container, {
+                className: 'ht_light_theme', // 'ht_light_theme' 'ht_base_theme'
+                language: '{{ lang.code }}',
+                data: subprojectsData,
+                columns: columnDefinitions,
+                colHeaders: columnHeaders,
+                height: 600,
+                rowHeights: 23,
+                //height: 'auto',
+                //colWidths: [],
+                colWidths: 150, // Largeur de toutes les colonnes de données
+                licenseKey: 'non-commercial-and-evaluation', // Clé de licence
+                manualColumnMove: true,
+                manualColumnResize: true,
+                rowHeaders: true,
+                //rowHeaderWidth: 40, // Largeur de la colonne des numéros de ligne
+                minSpareRows: 1, // Permet d'ajouter une nouvelle ligne vide pour la création
+                columnSorting: true,
+
+                //dropdownMenu: true,
+                //contextMenu: true,
+                filters: true,
+                
+                dropdownMenu: DROPDOWN_MENU_OPTIONS,
+                contextMenu: CONTEXT_MENU_OPTIONS,
+
+                
+                afterChange: function(changes, source) {
+                    
+                    if (['loadData', 'programmatic', 'ignore_me'].includes(source)) {
+                        return; // Ne pas sauvegarder lors du chargement initial
+                    }
+                    saveChanges(changes);
+                }
+            });
+            
+            loadData(); // Charge les données au démarrage
+        });
+    </script>
+</body>
+</html>

@@ -46,24 +46,24 @@ class UploadFileFormView(AJAXRequestMixin, ModalFormMixin, AdminPermissionRequir
 
             media_storage = S3Boto3Storage()
 
-            if not media_storage.exists(file_path_within_bucket):  # avoid overwriting existing file
-                media_storage.save(file_path_within_bucket,file)
-                file_url = media_storage.url(file_path_within_bucket)
-                
+            # if not media_storage.exists(file_path_within_bucket):  # avoid overwriting existing file
+            media_storage.save(file_path_within_bucket,file)
+            file_url = media_storage.url(file_path_within_bucket)
+            
 
-                file_object = CustomerFile()
-                file_object.url = file_url
-                file_object.class_name = class_name
-                file_object.object_id = object_id
-                file_object.principal = principal
-                file_object.order = order
-                file_object.date_taken = date_taken
-                file_object.name = name
-                file_object.save(user=self.request.user)
+            file_object = CustomerFile()
+            file_object.url = file_url
+            file_object.class_name = class_name
+            file_object.object_id = object_id
+            file_object.principal = principal
+            file_object.order = order
+            file_object.date_taken = date_taken
+            file_object.name = name
+            file_object.save(user=self.request.user)
 
-                return HttpResponse(json.dumps({"message": _("Registered").__str__(), "ok": True}), content_type="application/json")
-            else:
-                return HttpResponse(json.dumps({"message": _("We can't save the image").__str__()}), content_type="application/json")
+            return HttpResponse(json.dumps({"message": _("Registered").__str__(), "ok": True}), content_type="application/json")
+            # else:
+            #     return HttpResponse(json.dumps({"message": _("We can't save the image").__str__()}), content_type="application/json")
             
         else:
             return HttpResponse(json.dumps({"message": _("Please fill in all fields").__str__()}), content_type="application/json")

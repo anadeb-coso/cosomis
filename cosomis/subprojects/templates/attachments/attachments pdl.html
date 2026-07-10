@@ -1,0 +1,754 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n humanize bootstrap4 custom_tags %}
+
+{% block extracss %}
+    {{ block.super }}
+        <style>
+        .gallery-toolbar {
+            gap: 12px;
+            row-gap: 8px;
+        }
+
+        .gallery-toolbar .btn-group .btn {
+            border-radius: 999px !important;
+            padding: 4px 14px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .gallery-toolbar .btn-group .btn + .btn {
+            margin-left: 6px;
+        }
+
+        .gallery-toolbar .btn-group .btn.active {
+            background-color: #599cf7;
+            border-color: #599cf7;
+            color: #fff;
+        }
+
+        .gallery-toolbar .active-chips {
+            row-gap: 6px;
+        }
+
+        .gallery-toolbar .active-chips .badge {
+            font-size: 12px;
+            font-weight: 500;
+            background-color: #eef4fb;
+            color: #234;
+            border: 1px solid #d6e4f5;
+        }
+
+        .gallery-toolbar .active-chips .badge a {
+            text-decoration: none;
+            color: inherit;
+            font-weight: 600;
+        }
+
+        .gallery-toolbar .active-chips .badge a:hover {
+            color: #d9534f;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .gallery-card {
+            position: relative;
+            aspect-ratio: 4 / 3;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #f6f9fb;
+            cursor: pointer;
+            transition: transform .15s ease, box-shadow .15s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+        }
+
+        .gallery-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, .12);
+        }
+
+        .gallery-card__media,
+        .gallery-card__media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .gallery-card__doc {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 8px;
+            padding: 16px;
+            text-align: center;
+            background: linear-gradient(180deg, #ffffff 0%, #f1f5fa 100%);
+        }
+
+        .gallery-card__missing {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 6px;
+            padding: 16px;
+            text-align: center;
+            background: repeating-linear-gradient(
+                45deg,
+                #fafbfc,
+                #fafbfc 8px,
+                #f1f3f6 8px,
+                #f1f3f6 16px
+            );
+            color: #8a96a6;
+        }
+
+        .gallery-card__missing i {
+            font-size: 32px;
+            color: #c5cdd8;
+        }
+
+        .gallery-card__missing .label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        .gallery-card__missing .hint {
+            font-size: 11px;
+            color: #adb5bd;
+            max-width: 100%;
+            word-break: break-word;
+            line-height: 1.3;
+        }
+
+        .gallery-card__doc .name {
+            max-width: 100%;
+            word-break: break-all;
+        }
+
+        .gallery-card__doc .ext {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #6c757d;
+            letter-spacing: .05em;
+            font-weight: 600;
+        }
+
+        .gallery-card__overlay {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 10px 12px;
+            background: linear-gradient(to top, rgba(0, 0, 0, .75) 0%, rgba(0, 0, 0, 0) 100%);
+            color: #fff;
+            opacity: 0;
+            transition: opacity .15s ease;
+            font-size: 12px;
+            line-height: 1.3;
+        }
+
+        .gallery-card:hover .gallery-card__overlay {
+            opacity: 1;
+        }
+
+        .gallery-card__checkbox {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            opacity: 0;
+            transition: opacity .15s ease;
+            z-index: 2;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        #gallery-root.select-mode .gallery-card__checkbox,
+        .gallery-card:hover .gallery-card__checkbox,
+        .gallery-card.is-selected .gallery-card__checkbox {
+            opacity: 1;
+        }
+
+        .gallery-card.is-selected {
+            outline: 3px solid #599cf7;
+            outline-offset: -3px;
+        }
+
+        .gallery-card__badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, .55);
+            color: #fff;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            padding: 2px 8px;
+            border-radius: 999px;
+        }
+
+        .gallery-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .gallery-empty i {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: .5;
+            display: block;
+        }
+
+        #attachmentModal .modal-header,
+        #attachmentFilterModal .modal-header {
+            border: 0;
+        }
+
+        #attachmentModal .modal-dialog {
+            max-width: 1100px;
+        }
+
+        #attachmentModal .modal-content {
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        #attachmentModal .modal-body {
+            padding: 16px 20px 20px;
+        }
+
+        #attachmentModal .carousel-item img {
+            max-height: 62vh;
+            max-width: 100%;
+            width: auto;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+
+        #attachmentModal .carousel-control-prev,
+        #attachmentModal .carousel-control-next {
+            width: 48px;
+            opacity: 0.85;
+        }
+
+        #attachmentModal .carousel-control-next-icon,
+        #attachmentModal .carousel-control-prev-icon {
+            border-radius: 50%;
+            background-color: #599cf7;
+            padding: 5px !important;
+            background-size: 10px;
+            height: 30px;
+            width: 30px;
+        }
+
+        #attachmentModal .carousel-indicators {
+            display: none;
+        }
+
+        #attachmentModal .lightbox-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px 16px;
+            padding: 8px 16px;
+            margin-bottom: 12px;
+            background: #f6f9fb;
+            border-radius: 8px;
+        }
+
+        #attachmentModal .lightbox-header__location {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #1a5fb4;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+        }
+
+        #attachmentModal .lightbox-header__location:hover {
+            color: #0d4a99;
+            text-decoration: underline;
+        }
+
+        #attachmentModal .lightbox-header__location--static {
+            color: #455a73;
+            cursor: default;
+        }
+
+        #attachmentModal .lightbox-header__task {
+            font-size: 13px;
+            text-align: right;
+        }
+
+        #attachmentModal .lightbox-footer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid #eef1f4;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        #attachmentModal .lightbox-photo {
+            min-height: 40vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0e1217;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 0 36px;
+        }
+
+        #attachmentModal .lightbox-doc {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            min-height: 40vh;
+            text-align: center;
+            color: #455a73;
+        }
+
+        #attachmentModal .lightbox-missing__panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 40vh;
+            color: #8a96a6;
+            background: repeating-linear-gradient(
+                45deg,
+                #fafbfc,
+                #fafbfc 8px,
+                #f1f3f6 8px,
+                #f1f3f6 16px
+            );
+            border-radius: 8px;
+            padding: 30px;
+        }
+
+        #attachmentFilterModal .form-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #455a73;
+        }
+
+        #attachmentFilterModal .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: black;
+        }
+
+        #attachmentFilterModal .btn-primary {
+            border-radius: 8px !important;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <div class="row">
+                <div class="col-8 p-0 d-flex justify-content-start">
+                    <div class="m-0 main-title" style="font-size: 16px !important;">
+                        <a href='{% url "subprojects:infrastructures_list" %}' style="text-decoration: underline; color: gray !important;">{% translate "Infrastructures" %}</a> 
+                        /
+                        <a href='{% url "subprojects:detail" subproject.pk %}' style="text-decoration: underline; color: gray !important;">{{ subproject.type_of_subproject }}</a> 
+                        / 
+                        <span style="color: black !important;">{% translate "Gallery" %}</span>
+                    </div>
+                </div>
+
+                <div class="col-4 p-0 d-flex justify-content-end">
+                    <a 
+                        style="margin-right: 25px; margin-top: 5px;" 
+                        class="font-weight-bold" 
+                        href="#"
+                        onclick="window.location.reload();"
+                        ><i class="fa fa-refresh"></i>
+                    </a>
+                    {% if file_ids %}
+                    <a 
+                        style="margin-right: 25px; margin-top: 5px;"
+                        target="_blank" class="font-weight-bold" 
+                        href="{% url 'subprojects:files:files_download_zip' %}?ids={{ file_ids }}"
+                        ><i class="fas fa-download"></i> {% translate 'Download all' %}
+                    </a>
+                    {% endif %}
+                    <button class="attachment-filter" data-toggle="modal" data-target="#attachmentFilterModal">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                            class="bi bi-filter" viewBox="0 0 16 16">
+                            <path d="M6 10.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm-2-3a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="clearfix" style="margin-top: 31px !important;"></div>
+
+
+    </div>
+    <div id="gallery-root">
+        {% include 'attachments/_grid.html' with attachments=attachments %}
+    </div>
+{% endblock %}
+
+{% block modals %}
+    <div class="modal fade" id="attachmentFilterModal" tabindex="-1" role="dialog"
+         aria-labelledby="attachmentFilterModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>{% translate 'Choose attachments to view' %}</h5>
+                    <button type="button" class="close btn-closeModal" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <form action="" method="get">
+                        <div class="form-checkbox-row">
+                            
+                            <div class="form-label">
+                                <label for="">{% translate 'Type' %}: </label>
+                            </div>
+
+                            <div class="form-checkbox">
+                                <label for="id_type_0"><input type="radio" name="type" value="Photo" id="id_type_0" required="" {% if 'type' in query_strings_raw and query_strings_raw.type == 'Photo' %}checked=""{% endif %}> {% translate "Photo" %}</label>
+                            </div>
+
+                            <div class="form-checkbox">
+                                <label for="id_type_1"><input type="radio" name="type" value="Document" id="id_type_1" required="" {% if 'type' in query_strings_raw and query_strings_raw.type == 'Document' %}checked=""{% endif %}> {% translate "Document" %}</label>
+                            </div>
+
+                            <div class="form-checkbox">
+                                <label for="id_type_2"><input type="radio" name="type" value="" id="id_type_2" required="" {% if not 'type' in query_strings_raw or query_strings_raw.type not in 'Photo,Document' or not query_strings_raw.type %}checked=""{% endif %}> {% translate "Both" %}</label>
+                            </div>
+                        </div>
+                        <br><br>
+                        <div class="form-checkbox-row">
+                            
+                            <div class="form-label">
+                                <label for="">{% translate 'Validated' %}: </label>
+                            </div>
+
+                            <div class="form-checkbox">
+                                <label for="id_validated_status_0"><input type="radio" name="validated_status" value="Validated" id="id_validated_status_0" required="" {% if 'validated_status' in query_strings_raw and query_strings_raw.validated_status == 'Validated' %}checked=""{% endif %}> {% translate "Validated" %}</label>
+                            </div>
+
+                            <div class="form-checkbox">
+                                <label for="id_validated_status_1"><input type="radio" name="validated_status" value="Invalidated" id="id_validated_status_1" required="" {% if 'validated_status' in query_strings_raw and query_strings_raw.validated_status == 'Invalidated' %}checked=""{% endif %}> {% translate "Invalidated" %}</label>
+                            </div>
+
+                            <div class="form-checkbox">
+                                <label for="id_validated_status_2"><input type="radio" name="validated_status" value="not_seen" id="id_validated_status_2" required="" {% if 'validated_status' in query_strings_raw and query_strings_raw.validated_status == 'Not_seen' %}checked=""{% endif %}> {% translate "Not seen" %}</label>
+                            </div>
+
+                            <div class="form-checkbox">
+                                <label for="id_validated_status_3"><input type="radio" name="validated_status" value="" id="id_validated_status_3" required="" {% if not 'validated_status' in query_strings_raw or query_strings_raw.validated_status not in 'Validated,Invalidated' or not query_strings_raw.validated_status %}checked=""{% endif %}> {% translate "All" %}</label>
+                            </div>
+                        </div>
+
+                        <input type="submit" class="btn btn-primary" value="{% translate 'Apply' %}">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="fileCommentModal" tabindex="-1" role="dialog"
+         aria-labelledby="fileCommentModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>{% translate 'Invalidation' %} ({% translate 'Add Comment' %})</h5>
+                    <button type="button" class="close btn-closeModal" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <form action="" method="post" id='validation_form'>
+                        
+                        <div class="form-group">
+                            <textarea name="id_invalidation_comment" cols="40" rows="3" maxlength="65000" class="form-control"
+                                title="" required="" id="id_invalidation_comment" spellcheck="true"
+                                placeholder="{% translate 'Add Comment' %}"></textarea>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input 
+                                class="form-check-input" type="checkbox" name="flexCheckbox-modal" 
+                                id="flexCheckbox-modal" style="font-weight: bold !important; color: black;"
+                                {% if attachment.validated %} checked=""{% endif %}>
+                            <label class="form-check-label" for="flexCheckbox-modal" >
+                                {% translate "Invalidate without comment" %}
+                            </label>
+                        </div>
+                        <span id="file-infos" style="display: none"></span>
+                        <br />
+
+                        <input type="submit" class="btn btn-primary" id="submit-validation-form-btn" value="{% translate 'Submit' %}">
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="modal fade" id="fileWideModal" tabindex="-1" role="dialog"
+         aria-labelledby="fileWideModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+            <div class="modal-content" id="fileWideModalContainer">
+                
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="modal fade" id="fileCommentsModal" tabindex="-1" role="dialog"
+         aria-labelledby="fileCommentsModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content" id="fileCommentsModalContainer">
+                
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+
+
+{% block javascript %}
+    {{ block.super }}
+    <script type="text/javascript" src="{% static 'js/htmx.min.js' %}" defer></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+
+            let current_page = "{{ request.path }}";
+            const filter_inputs = [$('#id_region'), $('#id_prefecture'), $('#id_commune'), $('#id_canton'),
+                $('#id_village')];
+
+            const development_inputs = [$('#id_phase'), $('#id_activity'), $('#id_task')];
+
+
+            filter_inputs.forEach((input) => {
+                input.on('change', function () {
+                    change_filters_selects(input, filter_inputs);
+                });
+            });
+
+            development_inputs.forEach((input) => {
+                input.on('change', function () {
+                    change_filters_selects(input, development_inputs);
+                });
+            });
+
+            const root = document.getElementById('gallery-root');
+            const selected = new Set();
+            const downloadBtn = document.querySelector('.download-all');
+            
+            const missingFileLabel = "{% translate 'Missing file' %}";
+            const missingFileHint = "{% translate 'The image could not be loaded.' %}";
+
+            function escapeHtml(value) {
+                return String(value == null ? '' : value).replace(/[&<>"']/g, (c) => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+                }[c]));
+            }
+
+            function markImageMissing(img) {
+                const media = img.closest('.gallery-card__media');
+                if (!media || media.dataset.missing === '1') return;
+                media.dataset.missing = '1';
+                const card = media.closest('.gallery-card');
+                const titleEl = card ? card.querySelector('.gallery-card__overlay .font-weight-bold') : null;
+                const titleText = titleEl ? titleEl.textContent.trim() : '';
+                const detail = titleText || img.alt || '';
+                media.classList.add('gallery-card__missing');
+                media.classList.remove('gallery-card__media');
+                media.innerHTML =
+                    '<i class="fas fa-image"></i>' +
+                    '<div class="label">' + escapeHtml(missingFileLabel) + '</div>' +
+                    (detail ? '<div class="hint">' + escapeHtml(detail) + '</div>' : '');
+            }
+
+            root.addEventListener('error', (e) => {
+                if (e.target && e.target.tagName === 'IMG' && e.target.closest('.gallery-card__media')) {
+                    markImageMissing(e.target);
+                }
+            }, true);
+
+            // Catch images that already failed before the listener was attached.
+            root.querySelectorAll('.gallery-card__media img').forEach((img) => {
+                if (img.complete && img.naturalWidth === 0) {
+                    markImageMissing(img);
+                }
+            });
+
+
+            root.addEventListener('click', (e) => {
+                const card = e.target.closest('.gallery-card');
+                if (!card) return;
+
+                if (root.classList.contains('select-mode')) {
+                    e.preventDefault();
+                    const id = card.dataset.attachmentId;
+                    const checkbox = card.querySelector('.gallery-card__checkbox');
+                    if (selected.has(id)) {
+                        selected.delete(id);
+                        card.classList.remove('is-selected');
+                        if (checkbox) checkbox.checked = false;
+                    } else {
+                        selected.add(id);
+                        card.classList.add('is-selected');
+                        if (checkbox) checkbox.checked = true;
+                    }
+                    downloadBtn.disabled = selected.size === 0;
+                } else {
+                    openLightbox(card);
+                }
+            });
+
+
+            const lightboxStrings = {
+                openInNewTab: "{% translate 'Open in new tab' %}",
+                download: "{% translate 'Download' %}",
+                previous: "{% translate 'Previous' %}",
+                next: "{% translate 'Next' %}",
+                openDocument: "{% translate 'Open document' %}",
+                documentHint: "{% translate 'This file opens in a new tab.' %}",
+                viewLocation: "{% translate 'View location' %}"
+            };
+
+            function buildSlideHeader(card) {
+                const admUrl = card.dataset.admUrl;
+                const admLabel = card.dataset.admLabel;
+                const taskLabel = card.dataset.taskLabel;
+                if (!admUrl && !admLabel && !taskLabel) return '';
+                let html = '<div class="lightbox-header">';
+                if (admUrl && admLabel) {
+                    html += '<a href="' + escapeHtml(admUrl) + '" class="lightbox-header__location">' +
+                        '<i class="fas fa-map-marker-alt"></i> ' + escapeHtml(admLabel) +
+                        ' <i class="fas fa-arrow-right ml-1 small"></i>' +
+                        '</a>';
+                } else if (admLabel) {
+                    html += '<span class="lightbox-header__location lightbox-header__location--static">' +
+                        '<i class="fas fa-map-marker-alt"></i> ' + escapeHtml(admLabel) +
+                        '</span>';
+                }
+                if (taskLabel) {
+                    html += '<span class="lightbox-header__task text-muted">' + escapeHtml(taskLabel) + '</span>';
+                }
+                html += '</div>';
+                return html;
+            }
+
+            function buildSlideBody(card) {
+                const url = card.dataset.url || '';
+                const safeUrl = escapeHtml(url);
+                const admLabel = card.dataset.admLabel || '';
+                const filenameEl = card.querySelector('.gallery-card__doc .name');
+                const filename = filenameEl ? filenameEl.textContent.trim() : '';
+                const altText = admLabel || filename || '';
+
+                const onError = "this.onerror=null;this.parentNode.classList.add('lightbox-missing');" +
+                    "this.outerHTML='<div class=\\'lightbox-missing__panel\\'>" +
+                    "<i class=\\'fas fa-image fa-3x\\'></i>" +
+                    "<div class=\\'mt-2 font-weight-bold\\'>" + escapeHtml(missingFileLabel) + "</div>" +
+                    "<div class=\\'small text-muted\\'>" + escapeHtml(missingFileHint) + "</div>" +
+                    "</div>';";
+
+                if (card.dataset.type === 'Photo') {
+                    return '<div class="lightbox-photo">' +
+                        '<img src="' + safeUrl + '" class="img-fluid mx-auto d-block" alt="' + escapeHtml(altText) + '" onerror="' + onError + '">' +
+                        '</div>';
+                }
+                return '<div class="lightbox-doc">' +
+                    '<i class="fas fa-file-pdf fa-5x text-danger"></i>' +
+                    (filename ? '<div class="mt-3 font-weight-bold">' + escapeHtml(filename) + '</div>' : '') +
+                    '<a href="' + safeUrl + '" target="_blank" rel="noopener" class="btn btn-primary mt-3">' +
+                    '<i class="fas fa-external-link-alt"></i> ' + escapeHtml(lightboxStrings.openDocument) +
+                    '</a>' +
+                    '<div class="small text-muted mt-2">' + escapeHtml(lightboxStrings.documentHint) + '</div>' +
+                    '</div>';
+            }
+
+            function buildSlideFooter(card) {
+                const url = escapeHtml(card.dataset.url || '');
+                const downloadUrl = escapeHtml(card.dataset.downloadUrl || '');
+                const admUrl = card.dataset.admUrl;
+                const admLabel = card.dataset.admLabel || '';
+                let html = '<div class="lightbox-footer">';
+                if (downloadUrl) {
+                    html += '<a href="' + downloadUrl + '" class="btn btn-sm btn-primary">' +
+                        '<i class="fas fa-download"></i> ' + escapeHtml(lightboxStrings.download) +
+                        '</a>';
+                }
+                html += '<a href="' + url + '" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary ml-2">' +
+                    '<i class="fas fa-external-link-alt"></i> ' + escapeHtml(lightboxStrings.openInNewTab) +
+                    '</a>';
+                if (admUrl) {
+                    const label = admLabel || lightboxStrings.viewLocation;
+                    html += '<a href="' + escapeHtml(admUrl) + '" class="btn btn-sm btn-outline-secondary ml-2">' +
+                        '<i class="fas fa-map-marker-alt"></i> ' + escapeHtml(label) +
+                        '</a>';
+                }
+                html += '</div>';
+                return html;
+            }
+
+            function openLightbox(card) {
+                const cards = [].slice.call(document.querySelectorAll('.gallery-card'));
+                const idx = cards.indexOf(card);
+                const slidesHtml = cards.map((c, i) => {
+                    const active = i === idx ? ' active' : '';
+                    return '<div class="carousel-item' + active + '">' +
+                        buildSlideHeader(c) +
+                        buildSlideBody(c) +
+                        buildSlideFooter(c) +
+                        '</div>';
+                }).join('');
+                const indicators = cards.map((_, i) =>
+                    '<li data-target="#carouselIndicators" data-slide-to="' + i + '" class="' + (i === idx ? 'active' : '') + '"></li>'
+                ).join('');
+
+                $('#attachmentModal .modal-body').html(
+                    '<div id="carouselIndicators" class="carousel slide" data-ride="carousel" data-interval="false">' +
+                    '<ol class="carousel-indicators">' + indicators + '</ol>' +
+                    '<div class="carousel-inner">' + slidesHtml + '</div>' +
+                    '<a class="carousel-control-prev" href="#carouselIndicators" role="button" data-slide="prev">' +
+                    '<span class="carousel-control-prev-icon" aria-hidden="true"></span>' +
+                    '<span class="sr-only">' + escapeHtml(lightboxStrings.previous) + '</span>' +
+                    '</a>' +
+                    '<a class="carousel-control-next" href="#carouselIndicators" role="button" data-slide="next">' +
+                    '<span class="carousel-control-next-icon" aria-hidden="true"></span>' +
+                    '<span class="sr-only">' + escapeHtml(lightboxStrings.next) + '</span>' +
+                    '</a>' +
+                    '</div>'
+                );
+                $('#attachmentModal').modal('show');
+            }
+
+
+
+        });
+    </script>
+{% endblock %}

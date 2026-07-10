@@ -119,7 +119,7 @@ class IssueListView(AJAXRequestMixin, LoginRequiredMixin, generic.ListView):
             selector["reporter.id"] = int(reported_by)
         if publish in ('True', 'False'):
             selector["publish"] = True if publish == 'True' else False
-        print("region : ", region)
+        
         if region:
             filter_regions = get_administrative_level_descendants_using_mis(adl_db, region, [], self.request.user) + [region]
             

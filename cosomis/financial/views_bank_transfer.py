@@ -39,11 +39,11 @@ class BankTransferCreateView(PageMixin, LoginRequiredMixin, AccountantPermission
         if self.form_mixin:
             context['form'] = self.form_mixin
         else:
-            context['form'] = BankTransferForm()
+            context['form'] = BankTransferForm(self.request.GET.get("type"))
         return context
     
     def post(self, request, *args, **kwargs):
-        form = BankTransferForm(request.POST)
+        form = BankTransferForm(self.request.GET.get("type"), request.POST)
         if form.is_valid():
             form.save()
             return redirect('financial:financials')
@@ -70,12 +70,12 @@ class BankTransferUpdateView(PageMixin, LoginRequiredMixin, AccountantPermission
         if self.form_mixin:
             context['form'] = self.form_mixin
         else:
-            context['form'] = BankTransferForm(instance=self.get_object())
+            context['form'] = BankTransferForm(self.request.GET.get("type"), instance=self.get_object())
         return context
     
     
     def post(self, request, *args, **kwargs):
-        form = BankTransferForm(request.POST, instance=self.get_object())
+        form = BankTransferForm(self.request.GET.get("type"), request.POST, instance=self.get_object())
         if form.is_valid():
             form.save()
             return redirect('financial:financials')

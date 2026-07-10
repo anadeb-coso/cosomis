@@ -18,8 +18,15 @@ from django.contrib import admin
 from django.conf.urls.i18n import i18n_patterns
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import HttpResponse
 
 from . import views
+
+
+
+def health(request):
+    return HttpResponse("ok")
+
 
 # urlpatterns = [
 #     path('admin/', admin.site.urls),
@@ -29,9 +36,12 @@ from . import views
 #     path('unicorn/', include('django_unicorn.urls')),
 # ]
 urlpatterns = [
+    path("health/", health),
     path('set-language/', views.set_language, name='set_language'),
     path('profile/', views.profile, name='profile'),
-    path('api/', include('cosomis.urls_api'))
+    path('api/', include('cosomis.urls_api')),
+    path('reports/', include('reports.urls')),
+    # path('api/administrative-levels/', include('administrativelevels.api.urls'))
 ]
 
 if settings.DEBUG:
@@ -48,8 +58,11 @@ urlpatterns += i18n_patterns(
     path('dashboard/', include('dashboard.urls')),
     path('financial/', include('financial.urls')),
     path('custom-file/', include('custom_file.urls')),
+    path('attachments/', include('attachments.urls')),
 
     path('services/', include('administrativelevels.libraries.services.urls')),
 
     path('delete-object/<int:object_id>/<str:type>/', views.DeleteObjectFormView.as_view(), name='object_deletion_form'),
+
+    path('process-manager/', include('process_manager.urls')),
 )

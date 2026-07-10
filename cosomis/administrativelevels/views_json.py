@@ -13,4 +13,4 @@ class GetAdministrativeLevelByTypeView(APIView):
     def get(self, request, *args, **kwargs):
         _type = request.GET.get('type', None)
 
-        return Response(AdministrativeLevelSerializer(AdministrativeLevel.objects.filter(type=_type), many=True).data, status.HTTP_200_OK)
+        return Response(AdministrativeLevelSerializer(AdministrativeLevel.objects.get_objects_by_general_filtre(self.request, None).filter(type=_type), many=True).data, status.HTTP_200_OK)

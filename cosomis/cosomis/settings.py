@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 from pathlib import Path
 import os
+from datetime import timedelta
 import django.conf.locale
 import environ
 from django.conf import global_settings
@@ -64,6 +65,7 @@ CREATED_APPS = [
     'process_manager',
     'custom_file',
     'attachments',
+    'reports',
 ]
 
 THIRD_PARTY_APPS = [
@@ -73,6 +75,11 @@ THIRD_PARTY_APPS = [
     'drf_spectacular',
     'rest_framework',
     'corsheaders',
+    'rest_framework_simplejwt',
+    'rest_framework.authtoken',
+    
+    # https://django-htmx.readthedocs.io/en/latest/installation.html
+    'django_htmx',
 ]
 
 INSTALLED_APPS += CREATED_APPS + THIRD_PARTY_APPS
@@ -89,6 +96,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_htmx.middleware.HtmxMiddleware',
 ]
 
 ROOT_URLCONF = 'cosomis.urls'
@@ -160,8 +168,12 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 LOGIN_URL = '/'
-LOGIN_REDIRECT_URL = 'dashboard:dashboard'
+LOGIN_REDIRECT_URL = 'process_manager:list'
+# LOGIN_REDIRECT_URL = 'dashboard:dashboard'
 LOGOUT_REDIRECT_URL = '/'
+
+# MAX data to upload
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 
 
 # Mapbox
@@ -210,12 +222,32 @@ AWS_SECRET_ACCESS_KEY = env('S3_SECRET')
 
 AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME')
 
-#REST API
+#REST API & TOKEN
+# REST_FRAMEWORK = {
+#     # https://github.com/tfranzel/drf-spectacular
+#     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+# }
 REST_FRAMEWORK = {
-    # https://github.com/tfranzel/drf-spectacular
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    ),
+}
+REST_AUTH_REGISTER_SERIALIZERS = {
+    'REGISTER_SERIALIZER': 'accounts.serializers.CustomRegisterSerializer',
+}
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=3650),  # 10 ans (365 jours × 10)
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=3650),  # 10 ans aussi si besoin
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
+    'UPDATE_LAST_LOGIN': False,
 }
 
+TOKEN_ALLOWED_TO_ACCESS_API = [token.strip() for token in str(env('TOKEN_ALLOWED_TO_ACCESS_API', default='')).split(',') if token.strip()]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
@@ -248,3 +280,5 @@ CORS_ALLOW_METHODS = ["GET", "POST", "OPTIONS", "PATCH"]
 CORS_ALLOW_HEADERS = list(default_headers) + [
     'Access-Control-Allow-Origin',
 ]
+
+PURS_USER_DEV_EMAIL = env('PURS_USER_DEV_EMAIL', default="purs.dev@gmail.com")

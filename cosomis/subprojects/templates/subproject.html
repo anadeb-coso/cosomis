@@ -42,16 +42,16 @@
                             </div>
                             <div class="float-right">
                                 {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Infra" %}
-                                <a href="{% url 'subprojects:update' object.pk %}"
-                                    class="float-right font-weight-bold">{% translate 'Update' %}</a>
-                                {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" %}
-                                {% if not object.has_subprojects_linked and not object.link_to_subproject %}
-                                <br />
-                                <a href="{% url 'subprojects:create_infra_or_link_subproject' object.pk %}"
-                                    class="font-weight-bold"
-                                    style="font-size: 10px !important;">{% translate 'Add an infrastructure or a subproject linking to this sub-project' %}</a>
-                                {% endif %}
-                                {% endif %}
+                                    <a href="{% url 'subprojects:update_without_link_heavy_object' object.pk %}"
+                                        class="float-right font-weight-bold">{% translate 'Update' %}</a>
+                                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" %}
+                                        {% if not object.has_subprojects_linked and not object.link_to_subproject %}
+                                        <br />
+                                        <a href="{% url 'subprojects:create_infra_or_link_subproject' object.pk %}"
+                                            class="font-weight-bold"
+                                            style="font-size: 10px !important;">{% translate 'Add an infrastructure or a subproject linking to this sub-project' %}</a>
+                                        {% endif %}
+                                    {% endif %}
                                 {% endif %}
                                 {% if object.link_to_subproject %}
                                 <br />
@@ -158,13 +158,13 @@
                                     {% translate 'Infrastructure' %} :
                                     {% endif %}
                                     {% for sub_sub in object.get_infrastructures_linked %}
-                                    <a href="{% url 'subprojects:update' sub_sub.pk %}" class="font-weight-bold"
+                                    <a href="{% url 'subprojects:detail' sub_sub.pk %}" class="font-weight-bold"
                                         style="font-size: 9px !important;">{{ forloop.counter }}-/
                                         N{{ sub_sub.number }}.{{ sub_sub.joint_subproject_number }}
                                         {{ sub_sub.type_of_subproject }}</a>
                                     &nbsp;
                                     {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Infra" %}
-                                    <a href="{% url 'subprojects:update' sub_sub.pk %}"
+                                    <a href="{% url 'subprojects:update_without_link_heavy_object' sub_sub.pk %}"
                                         style="font-size: 9px !important;" title="{% translate 'Edit' %}">
                                         <i class="fa fa-edit"></i>
                                     </a> &nbsp;
@@ -196,13 +196,13 @@
                                     {% translate 'Subproject' %} :
                                     {% endif %}
                                     {% for sub_sub in object.get_subprojects_linked %}
-                                    <a href="{% url 'subprojects:update' sub_sub.pk %}" class="font-weight-bold"
+                                    <a href="{% url 'subprojects:detail' sub_sub.pk %}" class="font-weight-bold"
                                         style="font-size: 9px !important;">{{ forloop.counter }}-/
                                         N{{ sub_sub.number }}.{{ sub_sub.joint_subproject_number }}
                                         {{ sub_sub.type_of_subproject }}</a>
                                     &nbsp;
                                     {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Infra" %}
-                                    <a href="{% url 'subprojects:update' sub_sub.pk %}"
+                                    <a href="{% url 'subprojects:update_without_link_heavy_object' sub_sub.pk %}"
                                         style="font-size: 9px !important;" title="{% translate 'Edit' %}">
                                         <i class="fa fa-edit"></i>
                                     </a> &nbsp;
@@ -286,43 +286,23 @@
 
             <div class="col-4">
                 <div class="card">
-                    {% comment %} <div class="card-header">
-                        <div class="clearfix">
-                            <div class="float-left">
-                                <h5 class="font-weight-bold">{% translate 'Facilitator' %}</h5>
-                            </div>
-                            <div class="float-right">
-
-                            </div>
-                        </div>
-                    </div> {% endcomment %}
                     <div class="card-body">
                         <div class="clearfix">
                             <div class="float-left">
-                                <h5 class="font-weight-bold text-sm">{% translate 'Facilitator' %}</h5>
+                                <h5 class="font-weight-bold text-sm">{% translate 'Technical facilitator' %}</h5>
                             </div>
                         </div>
                         <div class="clearfix">
                             <a href="#" class="font-weight-bold">
-                                {% if object.get_facilitator_name %}
-                                {{ object.get_facilitator_name }}
-                                {% else %}
-                                {% translate 'Name not defined' %}
-                                {% endif %}
+                                {% with object.get_technical_facilitator_name as technical_facilitator_name %}
+                                    {% if technical_facilitator_name %}
+                                        {{ technical_facilitator_name }}
+                                    {% else %}
+                                        {% translate 'Name not defined' %}
+                                    {% endif %}
+                                {% endwith %}
                             </a>
                         </div>
-
-                        {% if object.wave %}
-                        <div class="clearfix pb-1">
-                            <span class="font-weight-bold">{% translate 'Wave' %}: </span><span>{{ object.wave }}</span>
-                        </div>
-                        {% endif %}
-
-                        {% if object.lot %}
-                        <div class="clearfix pb-1">
-                            <span class="font-weight-bold">{% translate 'Lot' %}: </span><span>{{ object.lot }}</span>
-                        </div>
-                        {% endif %}
 
                     </div>
 
@@ -426,6 +406,56 @@
                     </div>
                 </div>
             </div>
+
+            
+            <div class="col-4">
+                <div class="card">
+                    {% comment %} <div class="card-header">
+                        <div class="clearfix">
+                            <div class="float-left">
+                                <h5 class="font-weight-bold">{% translate 'Facilitator' %}</h5>
+                            </div>
+                            <div class="float-right">
+
+                            </div>
+                        </div>
+                    </div> {% endcomment %}
+                    <div class="card-body">
+                        <div class="clearfix">
+                            <div class="float-left">
+                                <h5 class="font-weight-bold text-sm">{% translate 'Community facilitator' %}</h5>
+                            </div>
+                        </div>
+                        <div class="clearfix">
+                            <a href="#" class="font-weight-bold">
+                                {% with object.get_facilitator_name as facilitator_name %}
+                                    {% if facilitator_name %}
+                                        {{ facilitator_name }}
+                                    {% else %}
+                                        {% translate 'Name not defined' %}
+                                    {% endif %}
+                                {% endwith %}
+                            </a>
+                        </div>
+
+                        {% if object.wave %}
+                        <div class="clearfix pb-1">
+                            <span class="font-weight-bold">{% translate 'Wave' %}: </span><span>{{ object.wave }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if object.lot %}
+                        <div class="clearfix pb-1">
+                            <span class="font-weight-bold">{% translate 'Lot' %}: </span><span>{{ object.lot }}</span>
+                        </div>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+            </div>
+
+
         </div>
 
         {% if object.comments %}
@@ -544,13 +574,15 @@
                     <span class="font-weight-bold">{% translate 'Financed by' %}: </span>
                     <span>
                         {% if object.get_all_projects %}
-                        {% for project in object.get_all_projects %}
-                        {% if project.financier %}{{ project.financier }}{% endif %}
-                        {% endfor %}
+                            {% for project in object.get_all_projects %}
+                                {% for financier in project.get_all_financiers %}
+                                    {{ financier.name }}, 
+                                {% endfor %}
+                            {% endfor %}
                         {% else %}
-                        {% for financier in object.get_all_financiers %}
-                        {{ financier.name }}
-                        {% endfor %}
+                            {% for financier in object.get_all_financiers %}
+                                {{ financier.name }}, 
+                            {% endfor %}
                         {% endif %}
                     </span>
                 </div>
@@ -562,7 +594,9 @@
                     <span>
                         {% for project in object.get_all_projects %}
                         {{ project.name }}
-                        {% if project.financier %}({{ project.financier }}){% endif %}
+                        ({% for financier in project.get_all_financiers %}
+                            {{ financier.name }}, 
+                        {% endfor %})
                         {% endfor %}
                     </span>
                 </div>
@@ -713,11 +747,31 @@
                         {% for img in object.get_all_images %}
 
                         <div class="carousel-item {% if img.principal and forloop.first %}active{% endif %}">
+                            
+                            {% if ".pdf" in img.url %}
+                                <a href="{{ img.url|imgAWSS3Filter }}" target="_blank" >
+                                    <iframe style="width: 500px !important; margin: auto !important;" 
+                                        class="d-block w-100" src="{{ img.url|imgAWSS3Filter }}" 
+                                        width="500" height="550"></iframe>
+                                </a>
+                            {% elif ".docx" in img.url or ".doc" in img.url %}
+                                <a href="{% url 'download_from_url' %}?url={{ img.url|imgAWSS3Filter }}" target="_blank" >
+                                    <iframe class="d-block w-100" style="width: 500px !important; margin: auto !important;"
+                                        src='https://view.officeapps.live.com/op/embed.aspx?src={{ img.url|imgAWSS3Filter }}' 
+                                        width="500" height="550" frameborder='0'>
+                                            This is an embedded 
+                                            <a target='_blank' href='http://office.com'>Microsoft Office</a> 
+                                            document, powered by 
+                                            <a target='_blank' href='http://office.com/webapps'>Office Online</a>.
+                                    </iframe>
+                                </a>
+                            {% else %}
+                                <a target="_blank" href="{{ img.url|imgAWSS3Filter }}">
+                                    <img class="d-block w-100" src="{{ img.url|imgAWSS3Filter }}" alt="{{ img.name }}"
+                                        style="width: 500px !important; margin: auto !important;">
+                                </a>
+                            {% endif %}
 
-                            <a target="_blank" href="{{ img.url|imgAWSS3Filter }}">
-                                <img class="d-block w-100" src="{{ img.url|imgAWSS3Filter }}" alt="{{ img.name }}"
-                                    style="width: 500px !important; margin: auto !important;">
-                            </a>
                             <div class="carousel-caption d-none d-md-block">
                                 <div style="margin-top: -370px !important;">
                                     <h5>{{ img.name }}</h5>

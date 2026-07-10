@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Subprojects Sheet Editor</title>
+    <script src="https://cdn.jsdelivr.net/npm/handsontable@13.1/dist/handsontable.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@13.1/dist/handsontable.full.min.css" />
+    <style>
+        #handsontainer {
+            width: 100%;
+            height: 600px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Sheet Editor for Subprojects</h1>
+    <div id="handsontainer"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('handsontainer');
+            const apiUrl = '/api/subprojects/'; // Votre endpoint DRF
+            let subprojectsData = [];
+            const columnHeaders = [
+                "ID", "Number", "Full Title of Approved Sub-project", "Estimated Cost", 
+                "Men Direct Beneficiaries", "Women Direct Beneficiaries", "Work Status"
+            ];
+
+            // Définition des colonnes et de leur type (très important pour Handsontable)
+            const columnDefinitions = [
+                { data: 'id', readOnly: true }, // L'ID doit être en lecture seule
+                { data: 'number', type: 'numeric' },
+                { data: 'full_title_of_approved_subproject', type: 'text' },
+                { data: 'estimated_cost', type: 'numeric', numericFormat: { pattern: '0,0.00 $' } },
+                { data: 'direct_beneficiaries_men', type: 'numeric' },
+                { data: 'direct_beneficiaries_women', type: 'numeric' },
+                { data: 'current_status_of_the_site', type: 'dropdown', source: ['Work in progress', 'Provisional acceptance', 'Work abandoned', 'Technical acceptance', 'etc.'] },
+                // Ajoutez ici toutes les colonnes désirées
+            ];
+
+            // 1. Fonction pour charger les données
+            function loadData() {
+                fetch(apiUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        subprojectsData = data;
+                        hot.loadData(subprojectsData);
+                    })
+                    .catch(error => console.error('Error fetching data:', error));
+            }
+
+            // 2. Fonction pour sauvegarder les modifications
+            function saveChanges(changes) {
+                if (!changes) {
+                    return;
+                }
+
+                changes.forEach(([row, prop, oldValue, newValue]) => {
+                    if (oldValue !== newValue) {
+                        const subproject = hot.getSourceDataAtRow(row);
+                        const recordId = subproject.id;
+                        const updateData = {};
+                        updateData[prop] = newValue;
+
+                        // Si c'est un nouvel enregistrement
+                        if (recordId === undefined || recordId === null) {
+                            // Gérer l'ajout : POST vers l'API sans ID
+                            fetch(apiUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    // Ajoutez le token CSRF si l'API est protégée
+                                },
+                                body: JSON.stringify(subproject) // Envoyer toutes les données de la ligne
+                            })
+                            .then(response => response.json())
+                            .then(newRecord => {
+                                console.log('New record created:', newRecord);
+                                // Mettre à jour la ligne avec l'ID du serveur
+                                hot.setDataAtRowProp(row, 'id', newRecord.id);
+                                // Rechargez ou mettez à jour l'état si nécessaire
+                            })
+                            .catch(error => console.error('Error creating record:', error));
+
+                        } else {
+                            // Gérer la modification : PATCH vers l'API avec l'ID
+                            fetch(`${apiUrl}${recordId}/`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    // Ajoutez le token CSRF
+                                },
+                                body: JSON.stringify(updateData)
+                            })
+                            .then(response => {
+                                if (!response.ok) {
+                                    console.error('Failed to update record:', response.statusText);
+                                }
+                            })
+                            .catch(error => console.error('Error updating data:', error));
+                        }
+                    }
+                });
+            }
+
+            const hot = new Handsontable(container, {
+                data: subprojectsData,
+                columns: columnDefinitions,
+                colHeaders: columnHeaders,
+                height: 'auto',
+                licenseKey: 'non-commercial-and-evaluation', // Clé de licence
+                manualColumnMove: true,
+                manualColumnResize: true,
+                rowHeaders: true,
+                minSpareRows: 1, // Permet d'ajouter une nouvelle ligne vide pour la création
+                afterChange: function(changes, source) {
+                    if (source === 'loadData') {
+                        return; // Ne pas sauvegarder lors du chargement initial
+                    }
+                    saveChanges(changes);
+                }
+            });
+
+            loadData(); // Charge les données au démarrage
+        });
+    </script>
+</body>
+</html>

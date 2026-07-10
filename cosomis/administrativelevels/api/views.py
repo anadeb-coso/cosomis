@@ -38,9 +38,9 @@ class RestGetAdministrativeLevelByUser(APIView):
         if not hasattr(user, 'no_sql_user'):
             if type_adl.title() in ("Village", "Canton"):
                 if parent_id:
-                    administrative_levels = AdministrativeLevel.objects.filter(type=type_adl.title(), parent_id=parent_id)
+                    administrative_levels = project.administrative_levels.filter(type=type_adl.title(), parent_id=parent_id).order_by('name')
                 else:
-                    administrative_levels = AdministrativeLevel.objects.filter(type=type_adl.title())
+                    administrative_levels = project.administrative_levels.filter(type=type_adl.title()).order_by('name')
         else:
             if type_adl.title() in ("Village", "Canton"):
                 # if parent_id:
@@ -79,17 +79,28 @@ class RestGetAdministrativeLevel(APIView):
         
         adl_types = [t.title() for t in self.request.data.get('types', [])]
         parents_id = self.request.data.get('parents_id', [])
+
+        project_name = request.GET.get("project_name", None)
+        project = None
+        projects_names = []
+        if project_name:
+            project  = Project.objects.filter(name=project_name).first()
+            projects_names = [p.name for p in project.build_the_tree_structure()]
         
         if adl_types:
             if parents_id:
-                administrative_levels = AdministrativeLevel.objects.filter(type__in=adl_types, parent_id__in=parents_id)
+                # administrative_levels = project.administrative_levels.filter(type__in=adl_types, parent_id__in=parents_id).order_by('name') if project else AdministrativeLevel.objects.filter(type__in=adl_types, parent_id__in=parents_id).order_by('name')
+                administrative_levels = AdministrativeLevel.objects.filter(type__in=adl_types, parent_id__in=parents_id, administrative_levels_projects__name__in=projects_names).distinct().order_by('name') if project else AdministrativeLevel.objects.filter(type__in=adl_types, parent_id__in=parents_id).distinct().order_by('name')
             else:
-                administrative_levels = AdministrativeLevel.objects.filter(type__in=adl_types)
+                # administrative_levels = project.administrative_levels.filter(type__in=adl_types).order_by('name') if project else AdministrativeLevel.objects.filter(type__in=adl_types).order_by('name')
+                administrative_levels = AdministrativeLevel.objects.filter(type__in=adl_types, administrative_levels_projects__name__in=projects_names).distinct().order_by('name') if project else AdministrativeLevel.objects.filter(type__in=adl_types).distinct().order_by('name')
         else:
             if parents_id:
-                administrative_levels = AdministrativeLevel.objects.filter(parent_id__in=parents_id)
+                # administrative_levels = project.administrative_levels.filter(parent_id__in=parents_id).order_by('name') if project else AdministrativeLevel.objects.filter(parent_id__in=parents_id).order_by('name')
+                administrative_levels = AdministrativeLevel.objects.filter(parent_id__in=parents_id, administrative_levels_projects__name__in=projects_names).distinct().order_by('name') if project else AdministrativeLevel.objects.filter(parent_id__in=parents_id).distinct().order_by('name')
             else:
-                administrative_levels = AdministrativeLevel.objects.all()
+                # administrative_levels = project.administrative_levels.all().order_by('name') if project else AdministrativeLevel.objects.all().order_by('name')
+                administrative_levels = AdministrativeLevel.objects.filter(administrative_levels_projects__name__in=projects_names).distinct().order_by('name') if project else AdministrativeLevel.objects.all().order_by('name')
                 
         paginator = CustomPagination()
         paginated_data = paginator.paginate_queryset(administrative_levels, request)
@@ -116,9 +127,9 @@ class RestGetACVDByUser(APIView):
         administrative_levels: _QS = []
         if not hasattr(user, 'no_sql_user'):
             if parent_id:
-                administrative_levels = AdministrativeLevel.objects.filter(type="Village", parent_id=parent_id)
+                administrative_levels = project.administrative_levels.filter(type="Village", parent_id=parent_id).order_by('name')
             else:
-                administrative_levels = AdministrativeLevel.objects.filter(type="Village")
+                administrative_levels = project.administrative_levels.filter(type="Village").order_by('name')
         else:
             # if parent_id:
             #     administrative_levels = get_administrativelevels_by_facilitator_id_and_project_id(user.id, project_id, type_adl="Village", parent_id=parent_id)
@@ -137,7 +148,7 @@ class RestGetACVDByUser(APIView):
             pk__in=[
                 adl.cvd.id for adl in administrative_levels if adl.cvd
             ]
-        )
+        ).order_by('name')
 
 
         paginator = CustomPagination()

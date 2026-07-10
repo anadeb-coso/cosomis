@@ -26,11 +26,63 @@
                     {% bootstrap_field form_adl.village show_label=False %}
                 </div>
                 <div class="col-2">
-                    <a class="btn fs12 text-bold-family text-primary pull-right p-0" style="margin-top: 8px;"
+                     &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
+                    <a class="btn fs12 text-bold-family text-primary p-0" style="margin-top: 8px;"
+                       onclick="location.reload();">
+                        {% comment %} {% translate "Refresh page" %} {% endcomment %}
+                        {% translate "Refresh" %}
+                    </a>
+                     &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
+                    <a class="btn fs12 text-bold-family text-primary p-0" style="margin-top: 8px;"
                         id="clear_all_filters">
-                        {% translate "Clear all filters" %}
+                        {% translate "Clear" %}
                     </a>
                 </div>
+            </div>
+            
+            <div class="row subprojects-filter">
+                <div class="col-2">
+                    {% bootstrap_field form_suproject.components show_label=False %}
+                </div>
+                <div class="col-2">
+                    {% bootstrap_field form_suproject.subproject_step show_label=False %}
+                </div>
+                <div class="col-2">
+                    {% bootstrap_field form_suproject.subproject_sectors show_label=False %}
+                </div>
+                <div class="col-2">
+                    {% bootstrap_field form_suproject.subproject_types show_label=False %}
+                </div>
+                <div class="col-2">
+                    {% bootstrap_field form_suproject.works_type_of_subproject show_label=False %}
+                </div>
+                <div class="col-2">
+                    <a href="#" id="btn-search"
+                        class="btn btn-primary btn-xs" title="{% translate 'Search' %}">
+                        <i class="fa fa-search"></i> &nbsp; {% translate 'Search' %}
+                    </a>
+                </div>
+            </div>
+            
+            <div class="row subprojects-filter">
+                <div class="col-2">
+                    {% bootstrap_field form_searcht.start_date show_label=False %}
+                </div>
+                <div class="col-2">
+                    {% bootstrap_field form_searcht.end_date show_label=False %}
+                </div>
+
+                {% if PROJECTS_NAMES and PROJECTS_NAMES|length >= 2 %}
+                <div class="col-3">
+                    <div class="form-check" style="margin-top: 7px !important;">
+                        <input class="form-check-input" type="checkbox" id="id_include_all_projects">
+                        <label class="form-check-label" for="id_include_all_projects">
+                            {% translate "Show for all projects" %} ({% for project in PROJECTS_NAMES %}{{ project }}{% if not forloop.last %}, {% else %}{% endif %}{% endfor %})
+                        </label>
+                      </div>
+                </div>
+                {% endif %}
+
             </div>
 
 
@@ -200,7 +252,15 @@
                     url: "{% url 'dashboard:dashboard_summary_subprojects' %}",
                     data: {
                         administrative_level_id: administrative_level_id,
-                        administrative_level_type: administrative_level_type
+                        administrative_level_type: administrative_level_type,
+                        id_subproject_sectors: $('#id_subproject_sectors').val(),
+                        id_subproject_types: $('#id_subproject_types').val(),
+                        id_works_type_of_subproject: $('#id_works_type_of_subproject').val(),
+                        id_subproject_step: $('#id_subproject_step').val(),
+                        id_components: $('#id_components').val(),
+                        start_date: $('#id_start_date').val(),
+                        end_date: $('#id_end_date').val(),
+                        all_projects: $('#id_include_all_projects').prop('checked') ? {{ PROJECTS_IDS }} : null
                     },
                     success: function (response) {
                         summary_subprojects_spin.hide();
@@ -224,7 +284,15 @@
                     url: "{% url 'dashboard:dashboard_summary_financing' %}",
                     data: {
                         administrative_level_id: administrative_level_id,
-                        administrative_level_type: administrative_level_type
+                        administrative_level_type: administrative_level_type,
+                        id_subproject_sectors: $('#id_subproject_sectors').val(),
+                        id_subproject_types: $('#id_subproject_types').val(),
+                        id_works_type_of_subproject: $('#id_works_type_of_subproject').val(),
+                        id_subproject_step: $('#id_subproject_step').val(),
+                        id_components: $('#id_components').val(),
+                        start_date: $('#id_start_date').val(),
+                        end_date: $('#id_end_date').val(),
+                        all_projects: $('#id_include_all_projects').prop('checked') ? {{ PROJECTS_IDS }} : null
                     },
                     success: function (response) {
                         summary_financing_spin.hide();
@@ -247,7 +315,15 @@
                     url: "{% url 'dashboard:dashboard_summary_financing_canton' %}",
                     data: {
                         administrative_level_id: administrative_level_id,
-                        administrative_level_type: administrative_level_type
+                        administrative_level_type: administrative_level_type,
+                        id_subproject_sectors: $('#id_subproject_sectors').val(),
+                        id_subproject_types: $('#id_subproject_types').val(),
+                        id_works_type_of_subproject: $('#id_works_type_of_subproject').val(),
+                        id_subproject_step: $('#id_subproject_step').val(),
+                        id_components: $('#id_components').val(),
+                        start_date: $('#id_start_date').val(),
+                        end_date: $('#id_end_date').val(),
+                        all_projects: $('#id_include_all_projects').prop('checked') ? {{ PROJECTS_IDS }} : null
                     },
                     success: function (response) {
                         summary_financing_canton_spin.hide();
@@ -295,7 +371,7 @@
                         administrative_level_id = administrative_level_id && administrative_level_id.length != 0 ? administrative_level_id : null;
                         administrative_level_type = administrative_level_id ? $(this).attr('id').split('_')[1] : null;
                         current_nav_links = [];
-                        callNavLinkPage();
+                        //callNavLinkPage();
                     }
 
 
@@ -340,6 +416,26 @@
 
             });
 
+            $('.subprojects-filter select').on('change', function () {
+                current_nav_links = [];
+                //callNavLinkPage();
+            });
+            $('.subprojects-filter input[type="checkbox"]').on('change', function () {
+                current_nav_links = [];
+                //callNavLinkPage();
+            });
+            $('.subprojects-filter change.datetimepicker').on('change', function () {
+                current_nav_links = [];
+                //callNavLinkPage();
+            });
+            $('.subprojects-filter #id_start_date').on('change', function () {
+                current_nav_links = [];
+                //callNavLinkPage();
+            });
+            $('.subprojects-filter #id_end_date').on('change', function () {
+                current_nav_links = [];
+                //callNavLinkPage();
+            });
 
 
             $("#clear_all_filters").on("click", function () {
@@ -347,6 +443,10 @@
                 $('.administrative-level-filter select').val(null).trigger('change.select2');
                 administrative_level_id = null;
                 administrative_level_type = null;
+                
+                $('.subprojects-filter input').val('');
+                $('.subprojects-filter select').val(null).trigger('change.select2');
+
                 current_nav_links = [];
                 callNavLinkPage();
             });
@@ -355,6 +455,43 @@
                 current_nav_link = this.href;
                 callNavLinkPage();
             });
+
+            $('#btn-search').on('click', function () {
+                callNavLinkPage();
+            });
+
+
+            
+            let dp1 = '<div class="input-group-prepend" data-target="#{id}" data-toggle="datetimepicker">' +
+                '<div class="input-group-text"><i class="fa fa-calendar text-primary"></i></div></div>';
+            let dp2 = '<div class="input-group date" id="{id}" data-target-input="nearest"></div>';
+            $('#id_start_date').before(dp1.replace('{id}', 'start_date')).parent().wrapInner(
+                dp2.replace('{id}', 'start_date'));
+            $('#id_end_date').before(dp1.replace('{id}', 'end_date')).parent().wrapInner(
+                dp2.replace('{id}', 'end_date'));
+
+            //Datemask dd/mm/yyyy
+            $('.datetimepicker-input').inputmask({alias: "datetime", inputFormat: "dd/mm/yyyy"});
+
+            let options = {
+                maxDate: Date.now(),
+                useCurrent: false,
+                format: "DD/MM/YYYY",
+                widgetPositioning: {
+                    vertical: 'bottom',
+                }
+            };
+
+            function dateChanged(e) {
+                if (e.oldDate !== e.date) {
+                    current_nav_links = [];
+                }
+            }
+
+            $('#start_date').datetimepicker(options);
+            $('#start_date').on("change.datetimepicker", dateChanged);
+            $('#end_date').datetimepicker(options);
+            $('#end_date').on("change.datetimepicker", dateChanged);
 
 
         });
@@ -388,6 +525,27 @@
         });
          $("#id_village").select2({
             placeholder: "{% translate 'Village' %}",
+            allowClear: true,
+        });
+        
+        $("#id_subproject_sectors").select2({
+            placeholder: "{% translate 'Subproject sector' %}",
+            allowClear: true,
+        });
+         $("#id_subproject_types").select2({
+            placeholder: "{% translate 'Type of structure' %}",
+            allowClear: true,
+        });
+         $("#id_works_type_of_subproject").select2({
+            placeholder: "{% translate 'Works type' %}",
+            allowClear: true,
+        });
+         $("#id_subproject_step").select2({
+            placeholder: "{% translate 'Status' %}",
+            allowClear: true,
+        });
+         $("#id_components").select2({
+            placeholder: "{% translate 'Component' %}",
             allowClear: true,
         });
 

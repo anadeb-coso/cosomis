@@ -17,6 +17,45 @@ def img_aws_s3_filter(uri):
 def has_group(user, group_name):
     return user.groups.filter(name=group_name).exists() 
 
+@register.filter(name='has_in_a_group') 
+def has_in_a_group(user):
+    return user.groups.all().exists()
+
+@register.filter(name="not_local")
+def not_local(uri):
+    return uri.split(":")[0] != 'file'
+
+@register.filter(name="is_pdf")
+def is_pdf(uri):
+    uri = uri.split("?")[0]
+    return uri.split(".")[-1] in ['pdf', 'docx', 'doc']
+
+@register.simple_tag
+def get_initials(string):
+    if not string or string in ('', ):
+        return 'N'
+    return ''.join((w[0] for w in string.split(' ') if w)).upper()
+
+@register.filter(expects_localtime=True)
+def string_to_date(date_time, date_format="%Y-%m-%dT%H:%M:%S.%fZ"):
+    if date_time:
+        return datetime.strptime(date_time, date_format)
+    
+@register.filter(name="replace")
+def replace(v: str, s: str):
+    v = str(v)
+    if "r|" in s:
+        if len(s.split('r|')) != 2:
+            return v
+        else:
+            what, to = s.split('r|')
+            return v.replace(what, to)
+    else:
+        _ = s.split(";")
+        for elt in _:
+            v = v.replace(elt, "")
+    return v
+
 @register.filter(name='get_group_high') 
 def get_group_high(user):
     """
@@ -67,6 +106,18 @@ def get_group_high(user):
         return gettext_lazy("Accountant").__str__()
     if user.groups.filter(name="Infra").exists():
         return gettext_lazy("Infra").__str__()
+    
+    if user.groups.filter(name="YouthProgramSpecialist").exists():
+        return gettext_lazy("Youth Program Specialist").__str__()
+    if user.groups.filter(name="LocalEconomicDevelopmentSpecialist").exists():
+        return gettext_lazy("Local Economic Development Specialist").__str__()
+    if user.groups.filter(name="CommunicationSpecialist").exists():
+        return gettext_lazy("Communicating").__str__()
+    if user.groups.filter(name="CommunityFacilitator").exists():
+        return gettext_lazy("Community Facilitator").__str__()
+    if user.groups.filter(name="TechnicalFacilitator").exists():
+        return gettext_lazy("Technical Facilitator").__str__()
+        
     if user.groups.filter(name="Supervisor").exists():
         return gettext_lazy("Supervisor").__str__()
     
@@ -99,13 +150,38 @@ def make_list(parser, token):
         return MakeListNode(items, varname)
     else:
         raise template.TemplateSyntaxError("%r expected format is 'item [item ...] as varname'" % bits[0])
+
+class MakeVarNode(template.Node):
+    def __init__(self, value, varname):
+        self.value = value
+        self.varname = varname
+
+    def render(self, context):
+        context[self.varname] = None
+        if self.value.isdigit():
+            context[self.varname] = int(self.value)
+        else:
+            context[self.varname] = str(self.value).replace('"', '')
+        return ""
     
+@register.tag
+def var(parser, token):
+    bits = list(token.split_contents())
+    if len(bits) == 4 and bits[-2] == "as":
+        varname = bits[-1]
+        value = bits[1]
+        return MakeVarNode(value, varname)
+    else:
+        raise template.TemplateSyntaxError("%r expected format is 'item as varname'" % bits[0])
+
 @register.filter(name='get_to_percent_str') 
 def get_to_percent_str(number):
     return str(number if number >= 10 else "0"+str(number)) + " %"
 
 @register.filter
 def get(dictionary, key):
+    if type(dictionary) is not dict:
+        return None
     return dictionary.get(key, None)
 
 @register.filter
@@ -117,7 +193,7 @@ def get_on_list(data, index):
 
 @register.filter
 def sum(data):
-    print(data)
+    
     return sum(data)
 
 @register.filter
@@ -242,3 +318,8 @@ def get_days_until_today(date_time):
     date = datetime.strptime(date_time, '%Y-%m-%dT%H:%M:%S.%fZ')
     delta = datetime.now() - date
     return delta.days
+
+
+@register.filter
+def get_facilitator_with_ids(village, project_ids):
+    return village.get_facilitator(project_ids)

@@ -15,7 +15,7 @@ class BankTransfer(BaseModel):
     amount_transferred = CustomerFloatRangeField(verbose_name=_("Amount transferred"), min_value=0)
     amount_transferred_in_dollars = CustomerFloatRangeField(verbose_name=_("Amount transferred in dollars"), min_value=0, null=True, blank=True)
     transfer_date = models.DateField(verbose_name=_("Transfer date"), null=True)
-    motif = models.DateField(max_length=255, verbose_name=_("Motif"), null=True, blank=True)
+    motif = models.CharField(max_length=255, verbose_name=_("Motif"), null=True, blank=True)
     description = models.TextField(verbose_name=_("Description"), null=True, blank=True)
     linked_to_allocation = models.ForeignKey(AdministrativeLevelAllocation, on_delete=models.CASCADE, verbose_name=_("Linked to allocation"), null=True, blank=True)
 
@@ -30,7 +30,7 @@ class DisbursementRequest(BaseModel):
     amount_requested = CustomerFloatRangeField(verbose_name=_("Amount requested"), min_value=0)
     amount_requested_in_dollars = CustomerFloatRangeField(verbose_name=_("Amount requested in dollars"), min_value=0)
     requested_date = models.DateField(verbose_name=_("Request date"))
-    motif = models.DateField(max_length=255, verbose_name=_("Motif"), null=True, blank=True)
+    motif = models.CharField(max_length=255, verbose_name=_("Motif"), null=True, blank=True)
     description = models.TextField(verbose_name=_("Description"), null=True, blank=True)
     reply_date = models.DateField(verbose_name=_("Reply date"), null=True, blank=True)
     comment_linked_to_reply = models.TextField(verbose_name=_("Comment related to the request response"), null=True, blank=True)

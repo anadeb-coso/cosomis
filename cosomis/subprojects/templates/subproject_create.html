@@ -22,6 +22,8 @@
                                 {% translate 'View details' %}
                             </a>
                             &nbsp; &nbsp;
+                            <a class="btn btn-primary" href="{% url 'subprojects:update' object.pk %}">{% translate 'Update all informations' %}</a>
+                            &nbsp; &nbsp;
                             {% endif %}
                             <a class="btn btn-primary" href="{% url 'subprojects:map' %}">{% translate 'Map View' %}</a>
                         </div>

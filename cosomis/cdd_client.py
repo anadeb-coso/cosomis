@@ -70,9 +70,21 @@ class CddClient:
         return True
 
     def update_administrative_level(self, obj) -> bool:
+        # try:
         administrative_level = self.adm_db[
-             obj.no_sql_db_id
+            obj.no_sql_db_id
         ]
+        # except:
+        #     query_result = self.adm_db.get_query_result(
+        #         {
+        #             "type": 'administrative_level',
+        #             "administrative_id": str(obj.id),
+        #             "administrative_level": obj.type,
+        #             "parent_id": str(obj.parent.id if obj.parent else None)
+        #         }
+        #     )[:]
+        #     administrative_level = self.adm_db[query_result[0]['_id']]
+
         print(administrative_level)
         parent = ""
         if obj.parent:

@@ -20,7 +20,7 @@
                         <div class="col-6">
                             <div class="card rounded-3" style="background-color: wheat; opacity: 75% !important;">
                                 <div class="card-body">
-                                    <h5 class="card-title"><a href="{% if user.is_superuser or user|has_group:'Admin' %}{% url 'administrativelevels:cvd_update' object.pk %}{% else %}#!{% endif %}" style="color: black;">{{ object.attributed_number_in_canton}} - {{ object.get_name }}</a></h5>
+                                    <h5 class="card-title"><a href="{% if user.is_superuser or user|has_group:'Admin' %}{% url 'administrativelevels:cvd_update' object.pk %}{% else %}#!{% endif %}" style="color: black;">{% if object.attributed_number_in_canton %}{{ object.attributed_number_in_canton}} - {% endif %}{{ object.get_name }}</a></h5>
                                     <p class="card-text">{{ object.get_canton.parent.parent.parent.name|title }}</p>
                                 </div>
                             </div>
@@ -48,13 +48,32 @@
                         </div>
                         <div class="card bg-light" style="height: 30px;">
                             <div class="card-body">
-                                <h5 class="font-weight-bold">DJOLOUGUE Kanfiaguin</h5>
+                                <h5 class="font-weight-bold">{% with object.headquarters_village|get_facilitator_with_ids:PROJECTS_IDS as facilitator %}{{facilitator.name}}{% endwith %}</h5>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="card">
+                    <div class="card-body">
+                        <div class="clearfix">
+                            <div>
+                                <h5 class="font-weight-bold">{% translate 'Projects benefited' %}</h5>
+                            </div>
+                        </div>
+                        <div class="card bg-light" style="height: 30px;">
+                            <div class="card-body">
+                                <h5 class="font-weight-bold">
+                                    {% for p in object.headquarters_village.administrative_levels_projects.all %}
+                                        {{ p.name }}{% if not forloop.last %},{% else %}.{% endif %}
+                                    {% endfor  %}
+                                </h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% comment %} <div class="card">
                     <div class="card-body">
                         <div class="clearfix">
                             <div>
@@ -67,7 +86,7 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> {% endcomment %}
 
             </div>
         </div>
@@ -87,20 +106,103 @@
                                 class="fas fa-plus"></i></a>
                     </div>
                 </div>
-                <div class="card bg-light" style="height: 30px;">
-                    <div class="card-body">
-                        <div class="font-weight-bold">
-                             <div class="clearfix">
-                                <div class="float-left">
-                                    <h5 class="font-weight-bold">{% translate 'Remaining' %} </h5>
+
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-5">
+                            <span class="font-weight-bold">{% translate "Allocation" %}</span>
+                        </div>
+                        <div class="col-7"><a href="#" class="font-weight-bold text-primary">
+                            {{ total_allocations_cantons|separate_with_space:"CFA" }}
+                        </a></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-5">
+                            <span class="font-weight-bold">{% translate "Estimated" %}</span>
+                        </div>
+                        <div class="col-7"><a href="#" class="font-weight-bold text-primary">
+                            {{ total_amount_subprojects_estimated_cost|separate_with_space:"CFA" }}
+                        </a></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-5">
+                            <span class="font-weight-bold">{% translate "Spent" %}</span>
+                        </div>
+                        <div class="col-7"><a href="#" class="font-weight-bold text-primary">
+                            {{ total_amount_subprojects_contract_amount_work_companies|separate_with_space:"CFA" }}
+                        </a></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-5">
+                            <span class="font-weight-bold">{% translate "Residual" %}</span>
+                        </div>
+                        <div class="col-7"><a href="#" class="font-weight-bold text-primary">
+                            {{ total_amount_residual|separate_with_space:"CFA" }}
+                        </a></div>
+                    </div>
+                </div>
+
+                {% for compo, compo_vals in financing_components.items %}
+                    <div class="card" >
+                        <div class="card-body">
+                            <p class="font-weight-bold">{{ compo }} </p>
+                            <div class="row">
+                                <div class="col-1">
+                                    <span class=""></span>
                                 </div>
-                                <div class="float-right"><a href="#" class="font-weight-bold text-primary">6000 USD</a></div>
+                                <div class="col-4">
+                                    <span class="">{% translate "Allocation" %}</span>
+                                </div>
+                                <div class="col-7"><a href="#" class="font-weight-bold text-primary">
+                                    {% with compo_vals|get:"total_allocations_cantons" as v %}
+                                        {{ v|separate_with_space:"CFA" }}
+                                    {% endwith %}
+                                </a></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-1">
+                                    <span class=""></span>
+                                </div>
+                                <div class="col-4">
+                                    <span class="">{% translate "Estimated" %}</span>
+                                </div>
+                                <div class="col-7"><a href="#" class="font-weight-bold text-primary">
+                                    {% with compo_vals|get:"total_amount_subprojects_estimated_cost" as v %}
+                                        {{ v|separate_with_space:"CFA" }}
+                                    {% endwith %}
+                                </a></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-1">
+                                    <span class=""></span>
+                                </div>
+                                <div class="col-4">
+                                    <span class="">{% translate "Spent" %}</span>
+                                </div>
+                                <div class="col-7"><a href="#" class="font-weight-bold text-primary">
+                                    {% with compo_vals|get:"total_amount_subprojects_contract_amount_work_companies" as v %}
+                                        {{ v|separate_with_space:"CFA" }}
+                                    {% endwith %}
+                                </a></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-1">
+                                    <span class=""></span>
+                                </div>
+                                <div class="col-4">
+                                    <span class="">{% translate "Residual" %}</span>
+                                </div>
+                                <div class="col-7"><a href="#" class="font-weight-bold text-primary">
+                                    {% with compo_vals|get:"total_amount_residual" as v %}
+                                        {{ v|separate_with_space:"CFA" }}
+                                    {% endwith %}
+                                </a></div>
                             </div>
                         </div>
                     </div>
-                </div>
+                {% endfor %}
             </div>
-            <div class="card-body">
+            {% comment %} <div class="card-body">
 
                  <div class="clearfix">
                     <div class="float-left">
@@ -112,7 +214,7 @@
                 </div>
                 <hr>
 
-            </div>
+            </div> {% endcomment %}
             <div class="card-footer d-flex justify-content-center">
                 <h6><a href="#" class="font-weight-bold text-primary">{% translate 'View All Movements' %}</a></h6>
             </div>
@@ -132,7 +234,7 @@
                     {% for village in object.get_villages %}
                     <div class="clearfix">
                         <div class="float-left">
-                            <h6 class="font-weight-bold text-danger">{{ village.name }} <span style="font-size: 9px;">({{ village.cvd.attributed_number_in_canton }} - {{ village.cvd.get_name }})</span></h6>
+                            <h6 class="font-weight-bold text-danger">{{ village.name }} <span style="font-size: 9px;">({% if village.cvd.attributed_number_in_canton %}{{ village.cvd.attributed_number_in_canton }} - {% endif %}{{ village.cvd.get_name }})</span></h6>
                         </div>
                         <div class="float-right">
                             <a target="_blank" href="{% url 'administrativelevels:village_detail' village.pk %}">{% translate 'Detail' %} </a>
@@ -163,11 +265,11 @@
                         {% endif %}
 
                         <h5 class="font-weight-bold">{% translate 'Subprojects' %} 
-                         &nbsp; &nbsp;  <a href="{% url 'subprojects:create' %}" class="font-weight-bold"> <i
-                            class="fas fa-plus"></i></a>
-                        {% if object.get_list_subprojects %}
+                         &nbsp; &nbsp;  {% if user.is_superuser or user|has_group:'Admin' %}<a href="{% url 'subprojects:create' %}" class="font-weight-bold"> <i
+                            class="fas fa-plus"></i></a> {% endif %}
+                        {% if list_subprojects_kit.exists %}
                              &nbsp; &nbsp;  <span>
-                                {% with object.get_list_subprojects as subprojects %}
+                                {% with list_subprojects_kit as subprojects %}
                                     {% include "components/subprojects_modal.html" %}
                                 {% endwith %}
                             </span>
@@ -176,8 +278,8 @@
                     </div>
                 </div>
 
-                {% if object.get_list_subprojects %}
-                    {% for subproject in object.get_list_subprojects %}
+                {% if list_subprojects_kit.exists %}
+                    {% for subproject in list_subprojects_kit %}
                     <div class="card" style="height: 50px;">
                         <div class="card-body">
                             <div class="clearfix">
@@ -191,7 +293,30 @@
                                     </p>
                                 </div>
                                 <div class="float-right">
-                                    <a href="#" class="font-weight-bold">{% translate 'View' %}</a>
+                                    <a href="{% url 'subprojects:detail' subproject.pk %}" class="font-weight-bold">{% translate 'View' %}</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <hr />
+                    <h5 class="font-weight-bold">{% translate 'Structures' %}</h5>
+                    <hr />
+                    {% for structure in list_subprojects %}
+                    <div class="card" style="height: 50px;">
+                        <div class="card-body">
+                            <div class="clearfix">
+                                <div class="float-left">
+                                    <p class=""><i class="fas fa-cog"></i> 
+                                        {% if structure.type_of_subproject|length > 40 %}
+                                            {{ structure.type_of_subproject|slice:":40" }}...
+                                        {% else %}
+                                            {{ structure.type_of_subproject }}
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="float-right">
+                                    <a href="{% url 'subprojects:detail' structure.pk %}" class="font-weight-bold">{% translate 'View' %}</a>
                                 </div>
                             </div>
                         </div>

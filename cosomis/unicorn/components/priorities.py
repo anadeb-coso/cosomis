@@ -26,8 +26,8 @@ class PrioritiesView(UnicornView):
         priority = priority.save_and_return_object()
         self.priorities.append(priority)
 
-        for elt in self.priorities:
-            print(elt)
+        # for elt in self.priorities:
+        #     print(elt)
 
     def remove(self, pk):
         for i in range(len(self.priorities)):

@@ -93,7 +93,7 @@ class AdministrativeLevelOverviewComponent(AdministrativeLevelMixin, LoginRequir
 
         assign_facilitators = AssignAdministrativeLevelToFacilitator.objects.filter(
                             administrative_level_id__in=[v_c.id for v_c in _villages],
-                            project_id=1,
+                            project_id=self.request.session.get('project_id'),
                             activated=True
             )
         facilitators_ids = list(set([int(f.facilitator_id) for f in assign_facilitators]))
@@ -770,12 +770,12 @@ class AdministrativeLevelPrioritiesComponent(AdministrativeLevelMixin, AJAXReque
         villages = []
         if self.administrative_level.type == "Canton":
             villages = self.administrative_level.administrativelevel_set.get_queryset()
-            subprojects = list(Subproject.objects.filter(canton_id=self.administrative_level.id).get_actifs())
+            subprojects = list(Subproject.objects.get_objects_by_general_filtre(self.request, None).filter(canton_id=self.administrative_level.id).get_actifs())
         elif self.administrative_level.type == "Village":
             villages = [self.administrative_level]
 
         for v in villages:
-            subprojects += list(Subproject.objects.filter(location_subproject_realized_id=v.id).get_actifs())
+            subprojects += list(Subproject.objects.get_objects_by_general_filtre(self.request, None).filter(location_subproject_realized_id=v.id).get_actifs())
         length_subprojects = len(subprojects)
         
         priorities_by_sector = {}
@@ -838,7 +838,7 @@ class AdministrativeLevelFinancialInformationsComponent(AdministrativeLevelMixin
         
         administrative_levels_ids = [obj.id for obj in villages]
 
-        subprojects = Subproject.objects.filter(
+        subprojects = Subproject.objects.get_objects_by_general_filtre(self.request, None).filter(
             Q(location_subproject_realized__id__in=administrative_levels_ids) | 
             Q(canton__id__in=administrative_levels_ids)
         ).get_actifs()

@@ -47,9 +47,9 @@
                     {% for project_pk in value.projects_ids %}
                         {% with project_pk|get_project_by_id as project %}
                             {{ project.name }}
-                            {% if project.financier %}
-                                ({{ project.financier.name }})
-                            {% endif %}
+                            ({% for financier in project.get_all_financiers %}
+                                {{ financier.name }}, 
+                            {% endfor %})
                         {% endwith %}
                     {% endfor %}
                 {% elif value.financiers_ids %}

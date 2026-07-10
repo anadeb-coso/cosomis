@@ -31,7 +31,9 @@
                         <tbody>
                         {% for subproject in subprojects %}
                             <tr>
-                                <td align="left">{{ subproject.full_title_of_approved_subproject }}</td>
+                                <td align="left">{{ subproject.full_title_of_approved_subproject }} ({{ subproject.type_of_subproject }}{% for structure in subproject.get_all_subprojects_linked %}
+                                        , {{ structure.type_of_subproject }}
+                                    {% endfor %})</td>
                                 <td>{{ subproject.component.name }}</td>
                                 <td>
                                     <a href="{% url 'subprojects:detail' subproject.pk %}"

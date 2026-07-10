@@ -46,11 +46,38 @@
                                 </a>
 
                                 {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
-                                &nbsp; &nbsp; 
-                                <a class="btn btn-primary" target="_blank"
+                                &nbsp; &nbsp;
+                                <div class="" style="display: inline-block;">
+                                    <button class="btn btn-primary" style="display: inline-block;" 
+                                        type="button" id="dropdownMenuButtonCreate" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        {% translate 'Register an allocation' %} <i class="fa fa-chevron-down"></i>
+                                    </button>
+                                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButtonCreate">
+                                        <a class="dropdown-item" target="_blank" href="{% url 'financial:allocation_create' %}?type=cvd">
+                                        {% translate 'CVD' %}
+                                        </a>
+                                        <a class="dropdown-item" target="_blank" href="{% url 'financial:allocation_create' %}?type=Village">
+                                        {% translate 'Village' %}
+                                        </a>
+                                        <a class="dropdown-item" target="_blank" href="{% url 'financial:allocation_create' %}?type=Canton">
+                                        {% translate 'Canton' %}
+                                        </a>
+                                        <a class="dropdown-item" target="_blank" href="{% url 'financial:allocation_create' %}?type=Commune">
+                                        {% translate 'Commune' %}
+                                        </a>
+                                        <a class="dropdown-item" target="_blank" href="{% url 'financial:allocation_create' %}?type=Prefecture">
+                                        {% translate 'Prefecture' %}
+                                        </a>
+                                        <a class="dropdown-item" target="_blank" href="{% url 'financial:allocation_create' %}?type=Region">
+                                        {% translate 'Region' %}
+                                        </a>
+                                    </div>
+                                </div>
+
+                                {% comment %} <a class="btn btn-primary" target="_blank"
                                     href="{% url 'financial:allocation_create' %}">
                                         {% translate 'Register an allocation' %}
-                                </a>
+                                </a> {% endcomment %}
                                 {% endif %}
 
                             </div>
@@ -90,7 +117,7 @@
                                         <i class="fa fa-eye"></i>
                                     </a>
                                     {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
-                                    <a href="{% url 'financial:allocation_update' allocation.pk %}" 
+                                    <a href="{% url 'financial:allocation_update' allocation.pk %}?type={% if allocation.administrative_level %}{{allocation.administrative_level.type}}{% else %}cvd{% endif %}" 
                                         style="font-size: 9px !important;" target="_blank"
                                        class="btn btn-primary btn-xs" title="{% translate 'Edit' %}">
                                         <i class="fa fa-edit"></i>

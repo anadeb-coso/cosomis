@@ -43,33 +43,33 @@ class UploadSuprojectImageView(LoginRequiredMixin, generic.View):
 
             media_storage = S3Boto3Storage()
 
-            if not media_storage.exists(file_path_within_bucket):  # avoid overwriting existing file
-                media_storage.save(file_path_within_bucket,file)
-                file_url = media_storage.url(file_path_within_bucket)
-                
-                if principal:
-                    for img in images:
-                        if img.principal:
-                            img.principal = False
-                            img.save(user=self.request.user)
-                else:
-                    if len(images) == 0:
-                        principal = True
-
-                image = SubprojectFile()
-                image.url = file_url
-                image.subproject = subproject
-                image.principal = principal
-                image.order = order
-                image.date_taken = date_taken
-                image.name = name
-                image.file_type = file.content_type
-
-                image.save(user=self.request.user)
-
-                return HttpResponse(json.dumps({"message": _("Registered").__str__(), "ok": True}), content_type="application/json")
+            # if not media_storage.exists(file_path_within_bucket):  # avoid overwriting existing file
+            media_storage.save(file_path_within_bucket,file)
+            file_url = media_storage.url(file_path_within_bucket)
+            
+            if principal:
+                for img in images:
+                    if img.principal:
+                        img.principal = False
+                        img.save(user=self.request.user)
             else:
-                return HttpResponse(json.dumps({"message": _("We can't save the image").__str__()}), content_type="application/json")
+                if len(images) == 0:
+                    principal = True
+
+            image = SubprojectFile()
+            image.url = file_url
+            image.subproject = subproject
+            image.principal = principal
+            image.order = order
+            image.date_taken = date_taken
+            image.name = name
+            image.file_type = file.content_type
+
+            image.save(user=self.request.user)
+
+            return HttpResponse(json.dumps({"message": _("Registered").__str__(), "ok": True}), content_type="application/json")
+            # else:
+            #     return HttpResponse(json.dumps({"message": _("We can't save the image").__str__()}), content_type="application/json")
             
         else:
             return HttpResponse(json.dumps({"message": _("Please fill in all fields").__str__()}), content_type="application/json")

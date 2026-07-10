@@ -18,14 +18,20 @@ class Facilitator(models.Model):
     active = models.BooleanField(default=False, verbose_name=_('active'))
     develop_mode = models.BooleanField(default=False, verbose_name=_('test mode'))
     training_mode = models.BooleanField(default=False, verbose_name=_('test mode'))
+    administrative_levels = models.JSONField(null=True, blank=True)
+    administrative_levels_ids = models.JSONField(null=True, blank=True)
     
+    facilitator_type = models.CharField(max_length=100, default='community_facilitator')
+
     name = models.CharField(max_length=200, null=True, blank=True, verbose_name=_('name'))
     email = models.CharField(max_length=100, null=True, blank=True, verbose_name=_('email'))
     phone = models.CharField(max_length=20, null=True, blank=True, verbose_name=_('phone'))
     sex = models.CharField(max_length=5, null=True, blank=True, verbose_name=_('sex'))
-    total_tasks = models.IntegerField(default=0)
-    total_tasks_completed = models.IntegerField(default=0)
-    last_activity = models.DateTimeField(blank=True, null=True)
+    
+    total_tasks = None #models.IntegerField(default=0)
+    total_tasks_completed = None #models.IntegerField(default=0)
+    last_activity = None #models.DateTimeField(blank=True, null=True)
+    
 
     @property
     def is_active(self):

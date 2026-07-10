@@ -19,7 +19,7 @@
     {% endif %}
     >
         {% if hide_content_header %}
-        {% elif not object_tile %}
+        {% elif not object_title %}
         <!-- Content Header (Page header) -->
         <div class="content-header">
             <div class="container-fluid">
@@ -90,6 +90,10 @@
     <!-- /.control-sidebar -->
 </div>
 <!-- ./wrapper -->
+
+<div id="push-notification-container" 
+    style="position: fixed; bottom: 20px; right: 20px; z-index: 99999;">
+</div>
 
 {% block javascript %}
     {% include 'layouts/foot.html' %}

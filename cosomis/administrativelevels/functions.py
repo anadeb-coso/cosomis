@@ -30,11 +30,13 @@ def save_csv_file_datas_in_db(datas_file: dict) -> str:
     at_least_one_save = False # Variable to determine if at least one is saved
     at_least_one_error = False # Variable to determine if at least one error is occurred
     columns = ["Région", "Préfecture", "Commune", "Canton", "Village/localité"]
+    list_name_errors = []
     if datas_file:
         count = 0
         long = len(list(datas_file.values())[0])
         while count < long:
             for column in columns:
+                name = None
                 try:
                     name = str(datas_file[column][count]).upper().strip()
                     frontalier, rural, latitude, longitude = False, False, None, None
@@ -102,6 +104,7 @@ def save_csv_file_datas_in_db(datas_file: dict) -> str:
                     
                 except Exception as exc:
                     at_least_one_error = True
+                    list_name_errors.append(f"{name} : {exc}")
                     print(exc)
 
             count += 1
@@ -115,6 +118,8 @@ def save_csv_file_datas_in_db(datas_file: dict) -> str:
         message = _("A problem has occurred!")
     elif at_least_one_save and at_least_one_error:
         message = _("Some element(s) have not been saved!")
+
+    message = message + "\n" + "\n".join(list_name_errors)
 
     return message
 
@@ -551,7 +556,7 @@ def get_priorities_group_combine(old_liste, new_liste, group):
     return old_liste
 
 
-def get_administrative_level_ids_descendants(parent_id, parent_type=None, ids=[]):
+def get_administrative_level_ids_descendants(parent_id, parent_type=None, ids=[], project_id=None):
     data = []
     
     if parent_id == "All":
@@ -560,13 +565,46 @@ def get_administrative_level_ids_descendants(parent_id, parent_type=None, ids=[]
         data = AdministrativeLevel.objects.filter(type="Region")
     else:
         data = AdministrativeLevel.objects.filter(parent_id=int(parent_id))
-    
+    if project_id:
+        data = data.filter(administrative_levels_projects__in=[project_id])
+
     descendants_ids = [obj.id for obj in data if obj.id not in ids]
     for descendant_id in descendants_ids:
-        get_administrative_level_ids_descendants(descendant_id, parent_type, ids)
+        get_administrative_level_ids_descendants(descendant_id, parent_type, ids, project_id)
         ids.append(descendant_id)
 
     return ids
+
+def get_administrative_level_ids_descendants_with_dict(parent_id, parent_type=None, ids=[], _id_with_descendants={}, _id_with_first_descendants={}, project_id=None):
+    data = []
+    if project_id:
+        if parent_id == "All":
+            data = list(AdministrativeLevel.objects.filter(type=parent_type, administrative_levels_projects__in=[project_id]).values_list('id', flat=True))
+        elif parent_id == 0:
+            data = list(AdministrativeLevel.objects.filter(type="Region", administrative_levels_projects__in=[project_id]).values_list('id', flat=True))
+        else:
+            data = list(AdministrativeLevel.objects.filter(parent_id=int(parent_id), administrative_levels_projects__in=[project_id]).values_list('id', flat=True))
+    else:
+        if parent_id == "All":
+            data = list(AdministrativeLevel.objects.filter(type=parent_type).values_list('id', flat=True))
+        elif parent_id == 0:
+            data = list(AdministrativeLevel.objects.filter(type="Region").values_list('id', flat=True))
+        else:
+            data = list(AdministrativeLevel.objects.filter(parent_id=int(parent_id)).values_list('id', flat=True))
+
+    descendants_ids = [_id for _id in data if _id not in ids]
+
+    for k, v in _id_with_descendants.items():
+        if parent_id in v:
+            _id_with_descendants[k] = list(set(_id_with_descendants[k] + descendants_ids))
+    _id_with_descendants[str(parent_id)] = descendants_ids
+    # _id_with_first_descendants[str(parent_id)] = descendants_ids
+    
+    for descendant_id in descendants_ids:
+        get_administrative_level_ids_descendants_with_dict(descendant_id, parent_type, ids, _id_with_descendants, _id_with_first_descendants, project_id)
+        ids.append(descendant_id)
+
+    return ids, _id_with_descendants, _id_with_first_descendants
 
 def get_administrative_level_ids_ascendants(child_id, ids=[]):
     data = []

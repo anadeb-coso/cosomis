@@ -1,0 +1,1 @@
+web: gunicorn --workers 3 --threads 2 --timeout 600 --keep-alive 60 --bind 0.0.0.0:8000 --access-logfile - --error-logfile - cosomis.wsgi:application

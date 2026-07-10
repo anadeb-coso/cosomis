@@ -1,0 +1,71 @@
+{% load static i18n humanize bootstrap4 custom_tags %}
+
+<div class="gallery-grid"
+     {% if page_obj.has_next %}
+     hx-trigger="revealed"
+     hx-get="{% url 'attachments:attachments' %}?page={{ page_obj.number|add:1 }}{{ babylong_query_params }}"
+     hx-swap="afterend"
+     {% endif %}>
+    {% for attachment in attachments %}
+        {% if attachment.url|not_local %}
+            <article class="gallery-card"
+                     data-attachment-id="{{ attachment.id }}"
+                     data-count="{{ forloop.counter0 }}"
+                     data-url="{{ attachment.url|imgAWSS3Filter }}"
+                     data-download-url="{% url 'attachments:attachment_download_by_id' attachment.id %}"
+                     data-type="{{ attachment.type }}"
+                     {% if attachment.adm %}
+                     data-adm-url="{% url 'attachments:village_detail' attachment.adm.id %}"
+                     data-adm-label="{{ attachment.adm.type }}: {{ attachment.adm.name }}"
+                     {% endif %}
+                     {% if attachment.task %}
+                     data-task-label="{{ attachment.task.name }}"
+                     {% endif %}>
+                {% comment %} <input type="checkbox" class="gallery-card__checkbox"
+                       name="attachment_{{ attachment.id }}" value="{{ attachment.id }}"
+                       aria-label="{% translate 'Select attachment' %}"> {% endcomment %}
+
+                {% if attachment.url|not_local and not attachment.url|is_pdf %}
+                    <div class="gallery-card__media">
+                        <img src="{{ attachment.url|imgAWSS3Filter }}"
+                             alt="{{ attachment.task.name|default:attachment.name }}"
+                             loading="lazy">
+                    </div>
+                    <span class="gallery-card__badge">
+                        <i class="fas fa-image"></i> {% translate 'Photo' %}
+                    </span>
+                {% else %}
+                    <div class="gallery-card__doc">
+                        <i class="fas fa-file-pdf fa-3x text-danger"></i>
+                        <div class="name small font-weight-bold text-truncate">
+                            {{ attachment.name|default:attachment.url|imgAWSS3Filter|slice:"-40:" }}
+                        </div>
+                        <div class="ext">{{ attachment.url|imgAWSS3Filter|slice:"-4:" }}</div>
+                    </div>
+                    <span class="gallery-card__badge">
+                        <i class="fas fa-file-alt"></i> {% translate 'Document' %}
+                    </span>
+                {% endif %}
+
+                <div class="gallery-card__overlay">
+                    {% if attachment.adm %}
+                        <div class="font-weight-bold text-truncate">
+                            {{ attachment.adm.type }}: {{ attachment.adm.name }}
+                        </div>
+                    {% endif %}
+                    {% if attachment.task %}
+                        <div class="text-truncate">{{ attachment.task.name }}</div>
+                    {% endif %}
+                </div>
+            </article>
+        {% endif %}
+    {% endfor %}
+
+    {% if no_results and page_obj.number == 1 %}
+        <div class="gallery-empty" style="grid-column: 1 / -1;">
+            <i class="fas fa-images"></i>
+            <h4>{% translate 'No attachments match your filters' %}</h4>
+            <p>{% translate 'Try clearing a filter or selecting a different type.' %}</p>
+        </div>
+    {% endif %}
+</div>

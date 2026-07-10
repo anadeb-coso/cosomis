@@ -5,13 +5,18 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import post_save
 from typing import TypeVar, Any
 from django.db.models import Q
+from django.contrib.auth import get_user_model
+from datetime import date, timedelta
 
 from administrativelevels.models import AdministrativeLevel, CVD
-from subprojects import SUB_PROJECT_TYPE_DESIGNATION, SUB_PROJECT_SECTORS, TYPES_OF_SUB_PROJECT
+from subprojects import SUB_PROJECT_TYPE_DESIGNATION
 from cosomis.customers_fields import *
 from cosomis.types import _QS
 from cosomis.models_base import BaseModel
+from administrativelevels.functions_adl import get_cascade_villages_ids_by_administrative_level_id
+from cosomis.constants import IMAGE_EXTENSIONS, STRUCTURE_IN_PROGRESS_STATUS, STRUCTURE_IN_PROGRESS_RANKING_LIST
 
+User = get_user_model()
 
 class CustomQuerySet(models.QuerySet):
     
@@ -33,10 +38,21 @@ class CustomQuerySet(models.QuerySet):
                 
         return Type.objects.filter(id__in=[o.id for o in l])
     
-    def get_actifs(self):
+    def get_actifs(self, projects_ids=[]):
+        if projects_ids:
+            return self.filter(projects__in=projects_ids).exclude(infrastructure_deleted=True)
         return self.exclude(infrastructure_deleted=True)
 
-
+    def get_objects_by_general_filtre(self, request, attrs, *args, **kwargs):
+        if attrs:
+            return self.filter(**attrs)
+        elif request and request.user and request.user.is_authenticated:
+            all_projects = request.GET.getlist('all_projects[]') or request.GET.getlist('all_projects') or request.POST.getlist('all_projects[]') or request.POST.getlist('all_projects')
+            return self.filter(projects__in=(
+                    all_projects if type(all_projects) is list and len(all_projects) >= 2 else [request.session.get('project_id')]
+                )
+            )
+        return self.filter()
 
 
 # Create your models here.
@@ -47,14 +63,15 @@ class Subproject(BaseModel):
     list_of_beneficiary_villages = models.ManyToManyField(AdministrativeLevel, default=[], blank=True, related_name="vilages_subprojects", verbose_name=_("Beneficiaries villages"))
     canton = models.ForeignKey(AdministrativeLevel, null=True, blank=True, on_delete=models.CASCADE, verbose_name=_("Canton")) #canton subprojects (rural track)
     list_of_villages_crossed_by_the_track_or_electrification = models.ManyToManyField(AdministrativeLevel, default=[], blank=True, related_name="cantonal_subprojects", verbose_name=_("List of villages where the runway or electrification crosses"))
-    link_to_subproject = models.ForeignKey('Subproject', null=True, blank=True, on_delete=models.CASCADE, verbose_name=_("Linked to a sub-project")) #To link the subprojects that the cantons or CVD link to make
+    link_to_subproject = models.ForeignKey('Subproject', null=True, blank=True, on_delete=models.CASCADE, verbose_name=_("Linked to a sub-project"), related_name='linked_subprojects') #To link the subprojects that the cantons or CVD link to make
     
     number = models.IntegerField(null=True, blank=True, verbose_name=_("Number unique to each sub-project or infrastructure"))
     joint_subproject_number = models.IntegerField(null=True, blank=True, verbose_name=_("Subproject kit number"))
     intervention_unit = models.IntegerField(null=True, blank=True, verbose_name=_("Intervention unit"))
     facilitator_name = models.CharField(max_length=255, null=True, blank=True, verbose_name=_("Facilitator name"))
-    wave = models.CharField(max_length=4, null=True, blank=True, verbose_name=_("Arbitrage wave"))
-    lot = models.CharField(max_length=4, null=True, blank=True, verbose_name=_("Lot"))
+    wave = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Arbitrage wave"))
+    lot = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Lot"))
+    market_name = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Market name"))
     subproject_sector = models.CharField(max_length=100, verbose_name=_("Subproject sector"))
     type_of_subproject = models.CharField(max_length=150, verbose_name=_("Type of structure"))
     subproject_type_designation = models.CharField(max_length=100, choices=SUB_PROJECT_TYPE_DESIGNATION, default='Subproject', verbose_name=_("Subproject type designation (Subproject or Infrastructure)"))
@@ -80,6 +97,8 @@ class Subproject(BaseModel):
     amount_of_the_facilitator_contract = models.FloatField(null=True, blank=True, verbose_name=_("Contract amount for facilitator"))
     launch_date_of_the_construction_site_in_the_village = models.DateField(null=True, blank=True, verbose_name=_("Date of start of work in the village (date of notification of service order)"))
     current_level_of_physical_realization_of_the_work = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Current level of physical realization of the work"))
+    current_level_of_physical_realization_of_the_work_percent = models.FloatField(null=True, blank=True, verbose_name=_("Current level of physical realization of the work (percent)"))
+    current_level_of_physical_realization_of_the_work_wording = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Current level of physical realization of the work (wording)"))
     length_of_the_track = models.FloatField(null=True, blank=True, verbose_name=_("Length of track (km)"))
     depth_of_drilling = models.FloatField(null=True, blank=True, verbose_name=_("Borehole depth (m)"))
     drilling_flow_rate = models.FloatField(null=True, blank=True, verbose_name=_("Borehole flow (m3)"))
@@ -89,18 +108,24 @@ class Subproject(BaseModel):
     total_contract_amount_paid = models.FloatField(null=True, blank=True, verbose_name=_("Total amount of the pay contract (technical inspection + safeguard inspection + construction company + furniture company + facilitator)"))
     amount_of_the_care_and_maintenance_fund_expected_to_be_mobilized = models.FloatField(null=True, blank=True, verbose_name=_("Upkeep and maintenance fund (EMI) to be mobilized"))
     care_and_maintenance_amount_on_village_account = models.FloatField(null=True, blank=True, verbose_name=_("Amount of maintenance fund (EMI) mobilized and deposited in village account"))
-    existence_of_maintenance_and_upkeep_plan_developed_by_community = models.BooleanField(default=False, verbose_name=_("Existence of a maintenance and upkeep plan (EMI plan) drawn up by the community (if yes, put 1; if no, put 0)"))
+    existence_of_maintenance_and_upkeep_plan_developed_by_community = models.BooleanField(null=True, blank=True, default=False, verbose_name=_("Existence of a maintenance and upkeep plan (EMI plan) drawn up by the community (if yes, put 1; if no, put 0)"))
+    work_completion_date = models.DateField(null=True, blank=True, verbose_name=_("Work completion date"))
+    amount_spent_on_completing_the_infrastructure = models.FloatField(null=True, blank=True, verbose_name=_("Amount spent on completing the infrastructure"))
     date_of_technical_acceptance_of_work_contracts = models.DateField(null=True, blank=True, verbose_name=_("Dates for technical acceptance of work contracts (BTP or FORAGE)"))
     technical_acceptance_date_for_efme_contracts = models.DateField(null=True, blank=True, verbose_name=_("Technical acceptance dates for furniture and equipment supply contracts"))
     date_of_provisional_acceptance_of_work_contracts = models.DateField(null=True, blank=True, verbose_name=_("Dates of provisional acceptance of work contracts (BTP or FORAGE)"))
+    amount_spent_on_infrastructure_up_to_provisional_acceptance = models.FloatField(null=True, blank=True, verbose_name=_("Amount spent on infrastructure up to provisional acceptance"))
     provisional_acceptance_date_for_efme_contracts = models.DateField(null=True, blank=True, verbose_name=_("Provisional acceptance dates for furniture and equipment supply contracts"))
     official_handover_date_of_the_microproject_to_the_community = models.DateField(null=True, blank=True, verbose_name=_("Date of official handover of the microproject to the community"))
     official_handover_date_of_the_microproject_to_the_sector = models.DateField(null=True, blank=True, verbose_name=_("Date of official handover of the microproject to the sector"))
+    date_of_final_acceptance_of_the_work = models.DateField(null=True, blank=True, verbose_name=_("Date of final acceptance of the work"))
     comments = models.TextField(null=True, blank=True, verbose_name=_("Comments"))
     
     target_female_beneficiaries = models.IntegerField(null=True, blank=True, verbose_name=_("Target female beneficiaries"))
     target_male_beneficiaries = models.IntegerField(null=True, blank=True, verbose_name=_("Target male beneficiaries"))
     target_youth_beneficiaries = models.IntegerField(null=True, blank=True, verbose_name=_("Target youth beneficiaries"))
+    
+    estimated_number_of_beneficiaries = models.IntegerField(null=True, blank=True, verbose_name=_("Estimated number of beneficiaries"))
 
     population = models.IntegerField(null=True, blank=True, verbose_name=_("Population"))
     direct_beneficiaries_men = models.IntegerField(null=True, blank=True, verbose_name=_("Direct beneficiaries men"))
@@ -123,31 +148,41 @@ class Subproject(BaseModel):
     youth_group = models.BooleanField(null=True, blank=True, verbose_name=_("Youth group"))
     breeders_farmers_group = models.BooleanField(null=True, blank=True, verbose_name=_("Breeders farmers group"))
     ethnic_minority_group = models.BooleanField(null=True, blank=True, verbose_name=_("Ethnic minority group"))
+    refugee_and_internally_displaced_persons_group = models.BooleanField(null=True, blank=True, verbose_name=_("Refugee and internally displaced persons group"))
 
     has_latrine_blocs = models.BooleanField(null=True, blank=True, verbose_name=_("Latrine blocks?"))
     number_of_latrine_blocks = models.IntegerField(null=True, blank=True, verbose_name=_("Number of latrine blocks"))
     number_of_classrooms = models.IntegerField(null=True, blank=True, verbose_name=_("Number of classrooms"))
     has_fence = models.BooleanField(null=True, blank=True, verbose_name=_("Has a fence?"))
-    storage_capacity = models.IntegerField(null=True, blank=True, verbose_name=_("Storage capacity"))
+    storage_capacity = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Storage capacity"))
     extension_length = models.IntegerField(null=True, blank=True, verbose_name=_("Extension length (km)"))
+    number_of_sections_of_track_developed = models.IntegerField(null=True, blank=True, verbose_name=_("Number of sections of track developed"))
     distance_covered_by_streetlights = models.IntegerField(null=True, blank=True, verbose_name=_("Distance covered by streetlights (km)"))
     number_of_streetlights = models.IntegerField(null=True, blank=True, verbose_name=_("Number of streetlights installed"))
+    number_of_drinking_fountains = models.IntegerField(null=True, blank=True, verbose_name=_("Number of drinking fountains"))
+
+    date_of_organization_of_the_social_audit = models.DateField(null=True, blank=True, verbose_name=_("Date of organization of the social audit"))
+    number_of_participants_m_in_the_social_audit = models.IntegerField(null=True, blank=True, verbose_name=_("Number of participants (M) in the social audit"))
+    number_of_participants_w_in_the_social_audit = models.IntegerField(null=True, blank=True, verbose_name=_("Number of participants (W) in the social audit"))
+    number_of_participants_t_in_the_social_audit = models.IntegerField(null=True, blank=True, verbose_name=_("Number of participants (T) in the social audit"))
     
     infrastructure_changed = models.BooleanField(null=True, blank=True, verbose_name=_("Infrastructure changed?"))
-    infrastructure_deleted = models.BooleanField(null=True, blank=True, verbose_name=_("Infrastructure deleted?"))
-    
+    infrastructure_deleted = models.BooleanField(null=True, blank=True, verbose_name=_("Infrastructure will no longer be built?"))
+    number_of_infrastructures = models.IntegerField(null=True, blank=True, verbose_name=_("Number of infrastructures"))
+
     objects = CustomQuerySet.as_manager()
 
 
     class Meta:
-        unique_together = [
-            # [
-            #     'full_title_of_approved_subproject', 'location_subproject_realized', 
-            #     'subproject_sector', 'type_of_subproject'
-            # ], 
-            # ['canton', 'full_title_of_approved_subproject'],
-            # ['number']
-        ]
+        unique_together = [['number', 'joint_subproject_number']]
+    #     unique_together = [
+    #         [
+    #             'full_title_of_approved_subproject', 'location_subproject_realized', 
+    #             'subproject_sector', 'type_of_subproject'
+    #         ], 
+    #         ['canton', 'full_title_of_approved_subproject'],
+    #         ['number']
+    #     ]
 
         
 
@@ -215,9 +250,24 @@ class Subproject(BaseModel):
             location = canton.parent.parent.parent.name + ", " + canton.parent.parent.name + ", " + canton.parent.name
         
         return location
+    
+    def get_location_subproject_realized(self):
+        _location_subproject_realized = None
+        if self.location_subproject_realized:
+            _location_subproject_realized = self.location_subproject_realized
+        elif self.cvd:
+            _location_subproject_realized = self.cvd.headquarters_village
+        elif self.canton:
+            _location_subproject_realized = self.canton.children.first()
+        elif self.list_of_beneficiary_villages.all().exists():
+            _location_subproject_realized = self.list_of_beneficiary_villages.all().first()
+        elif self.list_of_villages_crossed_by_the_track_or_electrification.all().exists():
+            _location_subproject_realized = self.list_of_villages_crossed_by_the_track_or_electrification.all().first()
+            
+        return _location_subproject_realized
 
     def get_all_subprojects_linked(self):
-        return self.subproject_set.get_queryset().get_actifs()
+        return self.linked_subprojects.get_queryset().get_actifs()
     
     @property
     def has_subprojects_linked(self):
@@ -251,18 +301,31 @@ class Subproject(BaseModel):
         
         return estimated_cost_str.replace("$", "")
 
-    def get_files(self):
+    def get_files(self, include_children=False):
+        if include_children:
+            subproject_ids = list(self.get_all_subprojects_linked().values_list('id', flat=True)) + [self.id]
+            return SubprojectFile.objects.filter(subproject__id__in=subproject_ids).order_by("-date_taken")
         return self.subprojectfile_set.get_queryset().filter().order_by("-date_taken")
     
     def get_all_images(self, order=False):
+        query = Q()
+
+        for ext in IMAGE_EXTENSIONS:
+            query |= Q(url__icontains=ext)
+
         if order:
-            return sorted(self.subprojectfile_set.get_queryset().filter(file_type__icontains="image"), key=lambda o: o.order).order_by("-principal")
-        return self.subprojectfile_set.get_queryset().filter(file_type__icontains="image").order_by("-principal")
+            return sorted(self.subprojectfile_set.get_queryset().filter(file_type__icontains="image").filter(query), key=lambda o: o.order).order_by("-principal")
+        return self.subprojectfile_set.get_queryset().filter(file_type__icontains="image").filter(query).order_by("-principal")
 
     def get_all_exclude_images(self, order=False):
+        query = Q()
+
+        for ext in IMAGE_EXTENSIONS:
+            query |= Q(url__icontains=ext)
+
         if order:
-            return sorted(self.subprojectfile_set.get_queryset().exclude(file_type__icontains="image"), key=lambda o: o.order)
-        return self.subprojectfile_set.get_queryset().exclude(file_type__icontains="image")
+            return sorted(self.subprojectfile_set.get_queryset().exclude(file_type__icontains="image").exclude(query), key=lambda o: o.order)
+        return self.subprojectfile_set.get_queryset().exclude(file_type__icontains="image").exclude(query)
     
     def get_principal_image(self):
         for img in self.get_all_images():
@@ -282,17 +345,45 @@ class Subproject(BaseModel):
         return [o.id for o in self.projects.all()]
     
     @property
+    def get_facilitator(self):
+        _location_subproject_realized = self.get_location_subproject_realized()
+        
+        if _location_subproject_realized:
+            return _location_subproject_realized.get_facilitator(self.get_projects_ids())
+
+        return None
+    
+    @property
+    def get_technical_facilitator(self):
+        _location_subproject_realized = self.get_location_subproject_realized()
+        
+        if _location_subproject_realized:
+            return _location_subproject_realized.get_facilitator(self.get_projects_ids(), is_technical_facilitator=True)
+
+        return None
+
+    @property
     def get_facilitator_name(self):
+        facilitator = self.get_facilitator
+        if facilitator:
+            return f"{facilitator.name} ({facilitator.email}, {facilitator.phone})"
+        
         if self.facilitator_name:
             return self.facilitator_name
-        elif self.cvd and self.cvd.headquarters_village:
-            f = self.cvd.headquarters_village.get_facilitator(self.get_projects_ids())
-            return f.name if f else None
+        
+        return None
+
+    @property
+    def get_technical_facilitator_name(self):
+        facilitator = self.get_technical_facilitator
+        if facilitator:
+            return f"{facilitator.name} ({facilitator.email}, {facilitator.phone})"
+        
         return None
     
     def get_subproject_steps(self, order=True):
         if order:
-            return self.subprojectstep_set.get_queryset().order_by("-begin", "-ranking")
+            return self.subprojectstep_set.get_queryset().order_by("-begin", "-created_date", "-ranking")
             #sorted(self.subprojectstep_set.get_queryset(), key=lambda o: o.begin, reverse=True) #self.subprojectstep_set.get_queryset().order_by("-ranking") #
         return self.subprojectstep_set.get_queryset()
     
@@ -303,7 +394,7 @@ class Subproject(BaseModel):
     @property
     def get_current_subproject_step_and_level(self):
         step = self.get_current_subproject_step
-        if step and step.wording == "En cours":
+        if step and (step.wording in STRUCTURE_IN_PROGRESS_STATUS or (step.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST)):
             level = step.get_levels().first()
             if level:
                 return level.__str__()
@@ -323,7 +414,7 @@ class Subproject(BaseModel):
     @property
     def get_current_subproject_step_and_level_without_percent(self):
         step = self.get_current_subproject_step
-        if step and step.wording == "En cours":
+        if step and (step.wording in STRUCTURE_IN_PROGRESS_STATUS or (step.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST)):
             level = step.get_levels().first()
             if level:
                 return level.wording
@@ -334,16 +425,36 @@ class Subproject(BaseModel):
                 return self.current_level_of_physical_realization_of_the_work
             _status = float(self.current_level_of_physical_realization_of_the_work)
             if _status > 0 and _status < 100:
+                return _("In progress")
+            elif _status >= 100:
+                return _("Completed")
+
+        return None
+    
+    @property
+    def get_current_subproject_step_and_level_with_percent(self):
+        step = self.get_current_subproject_step
+        if step and (step.wording in STRUCTURE_IN_PROGRESS_STATUS or (step.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST)):
+            level = step.get_levels().first()
+            if level:
+                return level.__str__()
+        if step:
+            return step.__str__()
+        if self.current_level_of_physical_realization_of_the_work:
+            if not self.current_level_of_physical_realization_of_the_work.replace('.','',1).replace(',','',1).isdigit():
+                return self.current_level_of_physical_realization_of_the_work
+            _status = float(self.current_level_of_physical_realization_of_the_work)
+            if _status > 0 and _status < 100:
                 return _("In progress") + f" {_status}%"
             elif _status >= 100:
                 return _("Completed") + f" {_status}%"
 
         return None
-
+    
     @property
     def get_current_subproject_step_and_level_object(self):
         step = self.get_current_subproject_step
-        if step and step.wording == "En cours":
+        if step and (step.wording in STRUCTURE_IN_PROGRESS_STATUS or (step.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST)):
             level = step.get_levels().first()
             if level:
                 return level
@@ -351,10 +462,109 @@ class Subproject(BaseModel):
             return step
         return None
     
+    @property
+    def get_current_level_object(self):
+        in_progress_steps = self.subprojectstep_set.get_queryset().filter(Q(wording__in=STRUCTURE_IN_PROGRESS_STATUS) | Q(ranking__in=STRUCTURE_IN_PROGRESS_RANKING_LIST)).order_by("-begin", "-created_date", "-ranking")
+        
+        for step in in_progress_steps:
+            level = step.get_levels().first()
+            
+            if level:
+                return level
+        return None
+    
     def check_step(self, step):
+        if not step:
+            return False
+        
         for s in self.subprojectstep_set.get_queryset():
             if s.wording == step.wording:
-                return True
+                return s
+        return None
+    
+    def get_nearest_step_or_level_with_percent_from_step(self, step):
+        
+        for s in self.subprojectstep_set.get_queryset().filter(begin__isnull=False).filter(Q(begin__lte=step.begin) | Q(wording__in=STRUCTURE_IN_PROGRESS_STATUS) | Q(ranking__in=STRUCTURE_IN_PROGRESS_RANKING_LIST)).order_by("-begin", "-created_date", "-ranking"):
+            
+            if s.percent and not (s.wording in STRUCTURE_IN_PROGRESS_STATUS or (s.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST)) and s.begin and step.begin and s.begin <= step.begin:
+                return s
+            elif (s.wording in STRUCTURE_IN_PROGRESS_STATUS or (s.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST)) and step.begin:
+                levels = s.get_levels().exclude(Q(percent__isnull=True) | Q(percent=0)).order_by("-begin", "-ranking", "-created_date")
+                for l in levels:
+                    if l.percent and l.begin and l.begin <= step.begin:
+                        return l
+                    
+        return None
+    
+    @property
+    def get_longitude(self):
+        if self.longitude:
+            return self.longitude
+        liste = []
+        if self.link_to_subproject:
+            if self.link_to_subproject.longitude:
+                return self.link_to_subproject.longitude
+            liste.extend(
+                list(self.link_to_subproject.get_all_subprojects_linked().values_list('longitude', flat=True))
+            )
+        else:
+            liste.extend(
+                list(self.get_all_subprojects_linked().values_list('longitude', flat=True))
+            )
+        if liste:
+            return liste[0]
+        
+        if self.location_subproject_realized and self.location_subproject_realized.longitude:
+            return self.location_subproject_realized.longitude
+        
+        return self.longitude
+    
+    @property
+    def get_latitude(self):
+        if self.latitude:
+            return self.latitude
+        liste = []
+        if self.link_to_subproject:
+            if self.link_to_subproject.latitude:
+                return self.link_to_subproject.latitude
+            liste.extend(
+                list(self.link_to_subproject.get_all_subprojects_linked().values_list('latitude', flat=True))
+            )
+        else:
+            liste.extend(
+                list(self.get_all_subprojects_linked().values_list('latitude', flat=True))
+            )
+        if liste:
+            return liste[0]
+        
+        if self.location_subproject_realized and self.location_subproject_realized.latitude:
+            return self.location_subproject_realized.latitude
+        
+        return self.latitude
+
+    @property
+    def is_delayed_update(self, weeks=2):
+        current_subproject_step_and_level_object = self.get_current_subproject_step_and_level_object
+        step_date = None
+        if current_subproject_step_and_level_object:
+            if (
+                (
+                    current_subproject_step_and_level_object.__class__.__name__.lower() == "SubprojectStep".lower() and 
+                    (
+                        current_subproject_step_and_level_object.wording in STRUCTURE_IN_PROGRESS_STATUS or 
+                        current_subproject_step_and_level_object.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST
+                    )
+                )
+                or
+                (
+                    current_subproject_step_and_level_object.__class__.__name__.lower() == "Level".lower()
+                )
+            ):
+                step_date = current_subproject_step_and_level_object.begin
+                if step_date:
+                    today = date.today()
+                    if today - step_date >= timedelta(weeks=weeks):
+                        return True
         return False
 
     def __str__(self):
@@ -364,7 +574,7 @@ class _Step(BaseModel):
     wording = models.CharField(max_length=200, verbose_name=_("Wording"))
     percent = CustomerFloatRangeField(null=True, blank=True, verbose_name=_("Percent"), min_value=0, max_value=100)
     description = models.TextField(null=True, blank=True, verbose_name=_("Description"))
-    ranking = models.IntegerField(default=0, verbose_name=_("Ranking"))
+    ranking = models.FloatField(default=0, verbose_name=_("Ranking"))
     amount_spent_at_this_step = models.FloatField(null=True, blank=True, verbose_name=_("Amount spent at this stage"))
     total_amount_spent = models.FloatField(null=True, blank=True, verbose_name=_("Total amount spent"))
 
@@ -376,6 +586,8 @@ class _Step(BaseModel):
     
 class Step(_Step):
     has_levels = models.BooleanField(default=False, verbose_name=_("Has levels"))
+    color = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Color (hexadecimal)"))
+    next_steps = models.ManyToManyField('self', blank=True, symmetrical=False, related_name='previous_steps', verbose_name=_("Next steps"))
     
     class Meta:
         unique_together = ['ranking']
@@ -389,7 +601,7 @@ class SubprojectStep(_Step):
     
     def get_levels(self, order=True):
         if order:
-            return self.level_set.get_queryset().order_by("-begin", "-ranking", "-id")
+            return self.level_set.get_queryset().order_by("-begin", "-ranking", "-created_date", "-id")
             #sorted(self.level_set.get_queryset(), key=lambda o: o.begin, reverse=True)
         return self.level_set.get_queryset()
     
@@ -400,28 +612,38 @@ class SubprojectStep(_Step):
         return False
     
     def get_files(self):
-        if self.wording == "En cours":
+        if (self.wording in STRUCTURE_IN_PROGRESS_STATUS or (self.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST)):
             return SubprojectFile.objects.filter(
                 Q(subproject_level__subproject_step__id=self.id) | Q(subproject_step__id=self.id)
             ).order_by("-date_taken")
         return self.subprojectfile_set.get_queryset().filter().order_by("-date_taken")
     
     def get_images(self):
-        if self.wording == "En cours":
+        query = Q()
+
+        for ext in IMAGE_EXTENSIONS:
+            query |= Q(url__icontains=ext)
+
+        if (self.wording in STRUCTURE_IN_PROGRESS_STATUS or (self.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST)):
             return SubprojectFile.objects.filter(
                 Q(subproject_level__subproject_step__id=self.id) | Q(subproject_step__id=self.id),
                 file_type__icontains="image"
-            ).order_by("-date_taken")
-        return self.subprojectfile_set.get_queryset().filter(file_type__icontains="image").order_by("-date_taken")
+            ).filter(query).order_by("-date_taken")
+        return self.subprojectfile_set.get_queryset().filter(file_type__icontains="image").filter(query).order_by("-date_taken")
 
     def get_exclude_images(self):
-        if self.wording == "En cours":
+        query = Q()
+
+        for ext in IMAGE_EXTENSIONS:
+            query |= Q(url__icontains=ext)
+
+        if (self.wording in STRUCTURE_IN_PROGRESS_STATUS or (self.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST)):
             return SubprojectFile.objects.filter(
                 Q(subproject_level__subproject_step__id=self.id) | Q(subproject_step__id=self.id)
             ).exclude(
                 file_type__icontains="image"
-            ).order_by("-date_taken")
-        return self.subprojectfile_set.get_queryset().exclude(file_type__icontains="image").order_by("-date_taken")
+            ).exclude(query).order_by("-date_taken")
+        return self.subprojectfile_set.get_queryset().exclude(file_type__icontains="image").exclude(query).order_by("-date_taken")
     
     def get_last_image(self):
         return self.get_images().last()
@@ -447,10 +669,20 @@ class Level(_Step):
         return self.subprojectfile_set.get_queryset().filter().order_by("-date_taken")
     
     def get_images(self):
-        return self.subprojectfile_set.get_queryset().filter(file_type__icontains="image").order_by("-date_taken")
+        query = Q()
+
+        for ext in IMAGE_EXTENSIONS:
+            query |= Q(url__icontains=ext)
+
+        return self.subprojectfile_set.get_queryset().filter(file_type__icontains="image").filter(query).order_by("-date_taken")
 
     def get_exclude_images(self):
-        return self.subprojectfile_set.get_queryset().exclude(file_type__icontains="image").order_by("-date_taken")
+        query = Q()
+
+        for ext in IMAGE_EXTENSIONS:
+            query |= Q(url__icontains=ext)
+            
+        return self.subprojectfile_set.get_queryset().exclude(file_type__icontains="image").exclude(query).order_by("-date_taken")
     
     def get_last_image(self):
         return self.get_images().last()
@@ -547,9 +779,26 @@ class SubprojectFile(BaseModel):
     url = models.CharField(max_length=255)
     order = models.IntegerField(default=0)
     principal = models.BooleanField(default=False)
+    special = models.BooleanField(default=False)
     date_taken = models.DateField()
     file_type = models.CharField(max_length=100, default="image")
+    description = models.TextField(null=True, blank=True)
+    validated = models.BooleanField(null=True, blank=True)
+    review = models.BooleanField(default=False)
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="user_files")
+    facilitator_id = models.IntegerField(null=True, blank=True)
 
+    @property
+    def comments(self):
+        return self.filecomment_set.get_queryset()
+
+
+class FileComment(BaseModel):
+    file = models.ForeignKey(SubprojectFile, on_delete=models.CASCADE)
+    comment = models.TextField(verbose_name=_("Comment"))
+    type = models.CharField(max_length=25, default="comment")
+    comment_read = models.BooleanField(default=False)
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="file_comments")
 
 
 class Financier(BaseModel):
@@ -561,9 +810,70 @@ class Financier(BaseModel):
     
 
 class Project(BaseModel):
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField()
+    parent = models.ForeignKey('Project', null=True, blank=True, on_delete=models.CASCADE)
+    financiers = models.ManyToManyField('Financier', default=[], blank=True, related_name="financiers_projects")
+
+    administrative_levels = models.ManyToManyField(AdministrativeLevel, default=[], blank=True, verbose_name=_("Administrative Levels"), related_name="administrative_levels_projects")
+
+
+    def __str__(self):
+        return self.name
+    
+    @property
+    def get_all_financiers(self):
+        return self.financiers.all()
+    
+    def build_the_tree_structure(self):
+        """
+        Construit l'arborescence complète (ascendants + descendants)
+        en partant de ce projet.
+        Retourne une liste ordonnée de projets.
+        """
+        visited = set()
+
+        # --- 1. Remonter jusqu'au parent racine ---
+        root = self
+        while root.parent:
+            root = root.parent
+
+        result = []
+
+        # --- 2. Descente récursive depuis la racine ---
+        def dfs(project):
+            if project.id in visited:
+                return
+            visited.add(project.id)
+            result.append(project)
+
+            # On explore tous les enfants (ordre alphabétique si besoin)
+            for child in project.project_set.all().order_by("name"):
+                dfs(child)
+
+        dfs(root)
+
+        # --- 3. Garder seulement les projets liés à self ---
+        # on coupe la liste à partir de self, et on garde descendants
+        if self in result:
+            start_index = result.index(self)
+            return result[:start_index+1] + [
+                p for p in result[start_index+1:]
+                if p.parent and (p.parent == self or p.parent in result[:start_index+1])
+            ]
+        return result
+
+
+class Cycle(BaseModel):
     name = models.CharField(max_length=255)
     description = models.TextField()
-    financier = models.ForeignKey('Financier', null=True, on_delete=models.CASCADE)
+    project = models.ForeignKey("Project", on_delete=models.CASCADE)
+    order = models.IntegerField(default=1)
+    
+    administrative_levels = models.ManyToManyField(AdministrativeLevel, default=[], blank=True, verbose_name=_("Administrative Levels"), related_name="administrative_levels_cycles")
+
+    class Meta:
+        unique_together = ['project', 'order']
 
     def __str__(self):
         return self.name
@@ -595,4 +905,48 @@ def update_step(sender, instance, **kwargs):
             subproject_step.ranking = instance.ranking
             subproject_step.save()
 
+def create_or_update_project(sender, instance, **kwargs):
+    if not kwargs['created'] and instance.id:
+        instance_administrative_levels = instance.administrative_levels.all()
+        cycle = Cycle.objects.filter(project_id=instance.id).first()
+
+        if not cycle and instance_administrative_levels.exists():
+            cycle = Cycle.objects.create(
+                name="Cycle 1",
+                description=f"Cycle 1 du projet ({instance.name})",
+                project_id=instance.id
+            )
+            cycle.administrative_levels.set(instance_administrative_levels)
+            cycle.save()
+
+        elif instance_administrative_levels.exists():
+            cycles =  Cycle.objects.filter(project_id=instance.id)
+            project_administrative_levels = set(instance_administrative_levels.values_list('id', flat=True))
+            for cycle in cycles:
+                cycle_administrative_levels = cycle.administrative_levels.all()
+                common_cycle_adl_ids = []
+                
+                if cycle_administrative_levels:
+                    cycle_administrative_levels = set(get_cascade_villages_ids_by_administrative_level_id([o.id for o in cycle_administrative_levels]))
+
+                    # Identifier les ID présents dans le cycle mais pas dans le projet
+                    common_cycle_adl_ids = project_administrative_levels & cycle_administrative_levels
+                else:
+                    common_cycle_adl_ids = project_administrative_levels
+                
+                cycle.administrative_levels.set(AdministrativeLevel.objects.filter(id__in=common_cycle_adl_ids))
+                cycle.save()
+
+        elif not instance_administrative_levels.exists():
+            cycles =  Cycle.objects.filter(project_id=instance.id)
+            for cycle in cycles:
+                cycle.administrative_levels.set([])
+                cycle.save()
+
+        
+
+
+
+
 post_save.connect(update_step, sender=Step)
+post_save.connect(create_or_update_project, sender=Project)

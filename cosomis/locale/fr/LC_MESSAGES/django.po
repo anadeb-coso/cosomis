@@ -893,7 +893,7 @@ msgstr "DAO lancé"
 
 #: .\subprojects\templates\subprojects_list.html:11
 msgid "Company selected"
-msgstr "Entreprise sélectionné"
+msgstr "Entreprise sélectionnée"
 
 #: .\subprojects\templates\subprojects_list.html:11
 msgid "Contract signed with contractor"
@@ -930,6 +930,14 @@ msgstr "Non approuvé"
 #: .\subprojects\templates\subprojects_list.html:11
 msgid "Approved"
 msgstr "Approuvé"
+
+#: .\subprojects\templates\subprojects_list.html:11
+msgid "Not approved by CORA"
+msgstr "Non approuvé par le CORA"
+
+#: .\subprojects\templates\subprojects_list.html:11
+msgid "Approved by CORA"
+msgstr "Approuvé par le CORA"
 
 #: .\subprojects\templates\subprojects_list.html:11
 msgid "In progress"
@@ -1580,6 +1588,14 @@ msgid "Current level of physical realization of the work"
 msgstr "Niveau actuel de realisation physique de l'ouvrage"
 
 #: .\subprojects\components\subproject_tracking_graph.html
+msgid "Current level of physical realization of the work (percent)"
+msgstr "Niveau actuel de realisation physique de l'ouvrage (pourcentage)"
+
+#: .\subprojects\components\subproject_tracking_graph.html
+msgid "Current level of physical realization of the work (wording)"
+msgstr "Niveau actuel de realisation physique de l'ouvrage (libellé)"
+
+#: .\subprojects\components\subproject_tracking_graph.html
 msgid "Length of track (km)"
 msgstr "Longueur de la piste (km)"
 
@@ -1926,6 +1942,10 @@ msgstr "Vous devez suivre chaque étape..."
 #: .\subprojects\api
 msgid "Incorrect identifiers"
 msgstr "Identifiants incorrects"
+
+#: .\subprojects\api
+msgid "Incorrect credentials. If you have recently changed your password on one of our platforms, we recommend that you log out and log back in to that application. Thanks!"
+msgstr "Identifiants incorrects. Si vous avez récemment modifié votre mot de passe sur l'une de nos plateformes, nous vous recommandons de vous déconnecter puis de vous reconnecter à cette application. Merci!"
 
 #: .\subprojects\api
 msgid "Your account is inactive"
@@ -3022,3 +3042,307 @@ msgstr "Mot de passe oublié"
 #: .\dashboard
 msgid "Password forgotten?"
 msgstr "Mot de passe oublié ?"
+
+#: .\dashboard
+msgid "Work completion date"
+msgstr "Date d'achèvement de l'ouvrage"
+
+#: .\dashboard
+msgid "Infrastructure changed?"
+msgstr "L'infrastructure a été changé ?"
+
+#: .\dashboard
+msgid "Infrastructure will no longer be built?"
+msgstr "L'infrastructure ne sera plus réalisé ?"
+
+#: .\dashboard
+msgid "Update Administrative level Allocation"
+msgstr "Mise à jour de l'allocation du niveau administratif"
+
+#: .\dashboard
+msgid "Update Transfer"
+msgstr "Mise à jour du virement"
+
+#: .\dashboard
+msgid "Create Administrative level Allocation"
+msgstr "Enregistrement d'une allocation d'un niveau administratif"
+
+#: .\dashboard
+msgid "Amount Transfer"
+msgstr "Montant transféré"
+
+#: .\dashboard
+msgid "Number of drinking fountains"
+msgstr "Nombre de bornes fontaines"
+
+#: .\dashboard
+msgid "Number of sections of track developed"
+msgstr "Nombre de tronçons de piste aménagés"
+
+#: .\dashboard
+msgid "Date of organization of the social audit"
+msgstr "Date d'organisation de l'audit social"
+
+#: .\dashboard
+msgid "Number of participants (M) in the social audit"
+msgstr "Nombre de participants (H) à l'audit social"
+
+#: .\dashboard
+msgid "Number of participants (W) in the social audit"
+msgstr "Nombre de participants (F) à l'audit social"
+
+#: .\dashboard
+msgid "Number of participants (T) in the social audit"
+msgstr "Nombre de participants (T) à l'audit social"
+
+#: .\dashboard
+msgid "Market name"
+msgstr "Nom du marché"
+
+#: .\dashboard
+msgid "Trade"
+msgstr "Commerce"
+
+#: .\dashboard
+msgid "Projects benefited"
+msgstr "Projets bénéficiés"
+
+#: .\dashboard
+msgid "Update all informations"
+msgstr "Mettre à jour toutes les informations"
+
+#: .\dashboard
+msgid "Invalid token"
+msgstr "Jeton invalide"
+
+#: .\dashboard
+msgid "Username or token is required"
+msgstr "Un nom d'utilisateur ou un jeton est requis"
+
+#: .\dashboard
+msgid "Password is required"
+msgstr "Un mot de passe est requis"
+
+#: .\dashboard
+msgid "Required fields are missing or empty:"
+msgstr "Champs obligatoires manquants ou vides :"
+
+#: .\dashboard
+msgid "Current highest subproject number is %(highest_number)s and highest joint subproject number is %(highest_kit_joint_number)s."
+msgstr "Le numéro de sous-projet le plus élevé actuel est %(highest_number)s et le numéro de sous-projet conjoint le plus élevé est %(highest_kit_joint_number)s."
+
+#: .\dashboard
+msgid "Subproject successfully modified"
+msgstr "Subproject modifié avec succès"
+
+#: .\dashboard
+msgid "Subproject successfully registered"
+msgstr "Subproject enregistré avec succès"
+
+#: .\dashboard
+msgid "Subproject not foundn"
+msgstr "Subproject non trouvé"
+
+#: .\dashboard
+msgid "Subproject successfully deleted"
+msgstr "Subproject supprimé avec succès"
+
+#: .\dashboard
+msgid "Date of final acceptance of the work"
+msgstr "Date de réception définitive de l'ouvrage"
+
+#: .\dashboard
+msgid "Invalid start date (expected format: DD/MM/YYYY)"
+msgstr "Date de début invalide (format attendu : JJ/MM/AAAA)"
+
+#: .\dashboard
+msgid "Amount spent on completing the infrastructure"
+msgstr "Montant dépensé pour achever l'infrastructure"
+
+#: .\dashboard
+msgid "Amount spent on infrastructure up to provisional acceptance"
+msgstr "Montant dépensé sur l'infrastructure jusqu'à la réception provisoire"
+
+#: .\dashboard
+msgid "Refugee and internally displaced persons group"
+msgstr "Groupe de réfugiés et de personnes déplacées internes"
+
+#: .\dashboard
+msgid "Estimated number of beneficiaries"
+msgstr "Nombre estimé de bénéficiaires"
+
+#: .\dashboard
+msgid "Validated"
+msgstr "Validé"
+
+#: .\dashboard
+msgid "Invalidated"
+msgstr "Invalidé"
+
+#: .\dashboard
+msgid "validated"
+msgstr "validée"
+
+#: .\dashboard
+msgid "invalidated"
+msgstr "invalidée"
+
+#: .\dashboard
+msgid "Validate"
+msgstr "Valider"
+
+#: .\dashboard
+msgid "Invalidate"
+msgstr "Invalider"
+
+#: .\dashboard
+msgid "All"
+msgstr "Tout"
+
+#: .\dashboard
+msgid "Both"
+msgstr "Les deux"
+
+#: .\dashboard
+msgid "Not seen"
+msgstr "Non vu"
+
+#: .\dashboard
+msgid "Gallery"
+msgstr "Galerie"
+
+#: .\dashboard
+msgid "Invalidate without comment"
+msgstr "Invalider sans commentaire"
+
+#: .\dashboard
+msgid "Heigth"
+msgstr "Hauteur"
+
+#: .\dashboard
+msgid "Width"
+msgstr "Largeur"
+
+#: .\dashboard
+msgid "Add Comment"
+msgstr "Ajouter un commentaire"
+
+#: .\dashboard
+msgid "File invalidated (click to validate)"
+msgstr "Fichier invalidé (cliquez pour valider)"
+
+#: .\dashboard
+msgid "File validated"
+msgstr "Fichier validé"
+
+#: .\dashboard
+msgid "File invalidated"
+msgstr "Fichier invalidé"
+
+#: .\dashboard
+msgid "No comment"
+msgstr "Pas de commentaire"
+
+#: .\dashboard
+msgid "Communicating"
+msgstr "communicant(e)"
+
+#: .\dashboard
+msgid "the"
+msgstr "le"
+
+#: .\dashboard
+msgid "Taken"
+msgstr "Prise"
+
+#: .\dashboard
+msgid "This file has become the main file."
+msgstr "Ce fichier est devenu le fichier principal."
+
+#: .\dashboard
+msgid "This file is known to be used in important documents."
+msgstr "Ce fichier est reconnu d'être utilisé dans des documents importants."
+
+#: .\dashboard
+msgid "This file is no longer considered the primary file. Note that no other file currently holds this status."
+msgstr "Ce fichier n'est plus considéré comme le fichier principal. Veuillez noter qu'aucun autre fichier ne possède actuellement ce statut."
+
+#: .\dashboard
+msgid "This file is no longer a special file."
+msgstr "Ce fichier n'est plus un fichier spécial."
+
+#: .\dashboard
+msgid "Comments and actions history"
+msgstr "Historique des commentaires et actions"
+
+#: .\dashboard
+msgid "Validation action"
+msgstr "Action de validation"
+
+#: .\dashboard
+msgid "Invalidation action"
+msgstr "Action d'invalidation"
+
+#: .\dashboard
+msgid "Another action"
+msgstr "Autre action"
+
+#: .\dashboard
+msgid "Download all"
+msgstr "Télécharger tout"
+
+#: .\dashboard
+msgid "Show for all projects"
+msgstr "Afficher pour tous projets"
+
+#: .\dashboard
+msgid "Color (hexadecimal)"
+msgstr "Couleur (hexadécimal)"
+
+#: .\subprojects
+msgid "Refresh"
+msgstr "Rafraichier"
+
+#: .\subprojects
+msgid "Total number of images of completed infrastructure"
+msgstr "Nombre total d'images d'infrastructures achevées"
+
+#: .\subprojects
+msgid "Total number of validated images of completed infrastructure"
+msgstr "Nombre total d'images d'infrastructures achevées validées"
+
+#: .\subprojects
+msgid "Total number of invalidated completed infrastructure images"
+msgstr "Nombre total d'images d'infrastructures achevées invalidées"
+
+#: .\subprojects
+msgid "Total number of validated images"
+msgstr "Nombre total d'images validées"
+
+#: .\subprojects
+msgid "Total number of invalidated images"
+msgstr "Nombre total d'images invalidées"
+
+#: .\subprojects
+msgid "Total number of images not reviewed at least once after upload"
+msgstr "Nombre total d'images n'ayant pas été vérifiées au moins une fois après leur mise en ligne"
+
+#: .\subprojects
+msgid "Total number of images not reviewed after upload"
+msgstr "Nombre total d'images non vérifiées après leur mise en ligne"
+
+#: .\subprojects
+msgid "Apply"
+msgstr "Appliquer"
+
+#: .\subprojects
+msgid "Community facilitator"
+msgstr "Facilitateur(trice) communautaire"
+
+#: .\subprojects
+msgid "Technical facilitator"
+msgstr "Facilitateur(trice) technique"
+
+#: .\subprojects
+msgid "by"
+msgstr "par"

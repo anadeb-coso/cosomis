@@ -21,7 +21,8 @@ SUB_PROJECT_SECTORS = (
     ('Energie', _('Energy')), 
     ('Sport–Loisir', _('Sport-Loisir')), 
     ('Assainissement', _('Sanitation')), 
-    ('Environnement', _('Environment'))
+    ('Environnement', _('Environment')), 
+    ('Commerce', _('Trade'))
 )
 
 # TYPES_OF_SUB_PROJECT = tuple([('', '')],[

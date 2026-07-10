@@ -2,6 +2,8 @@ from PIL import Image, ImageFilter
 from io import BytesIO
 import gzip
 import zlib
+import unicodedata
+import re
 
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -107,3 +109,19 @@ def compress_file(file_content, target_size_mb: float=1):
 
 def get_validation_code(seed):
     return str(zlib.adler32(str(seed).encode('utf-8')))[:6]
+
+
+def normaliser_chaine(chaine):
+    chaine = chaine.upper() # Mettre en majuscule
+    
+    chaine = ''.join(
+        c for c in unicodedata.normalize('NFD', chaine)
+        if unicodedata.category(c) != 'Mn'
+    ) # Suppression des accents
+    
+    chaine = re.sub(r'[^A-Z0-9]', '', chaine) # Suppression de tous les caractères sauf les lettres et chiffres
+    
+    return chaine
+
+def comparer_chaines(str1, str2):
+    return normaliser_chaine(str1) == normaliser_chaine(str2)

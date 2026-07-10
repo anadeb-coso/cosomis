@@ -1,0 +1,189 @@
+{% load static i18n humanize bootstrap4 custom_tags %}
+
+    <div class="babylongrid grid-content"
+                    hx-trigger="revealed"
+                    {% comment %} hx-get="{% url 'administrativelevels:attachments' %}?page={{ page_obj.number|add:1 }}{{ babylong_query_params }}" {% endcomment %}
+                    hx-swap="afterend"
+            >
+        {% for attachment in attachments %}
+        {% if attachment.url|not_local and not attachment.url|is_pdf %}
+            <article 
+                data-attachment-id="{{ attachment.id }}"
+                data-count="{{ forloop.counter0 }}"
+                data-url="{{ attachment.url|imgAWSS3Filter }}"
+            >
+                <div class="card mr-3">
+                    <div class="card-body"  style="margin-bottom: -20px !important;">
+                        <h5 class="card-title">
+                            <a href="#">
+                                {{ attachment.subproject.location_subproject_realized.type }}: {{ attachment.subproject.location_subproject_realized.name }}
+                            </a>
+                        </h5>
+
+                        <p class="card-text" style="display: inline-block;">
+                            <b>{% translate 'Subproject' %}</b>: {{ attachment.subproject.full_title_of_approved_subproject }}
+                            <span class="badge badge-pill badge-info" style="white-space: normal !important; overflow-wrap: break-word !important;">
+                                {% if attachment.subproject_level %}
+                                    {{ attachment.subproject_level.wording }} ({{ attachment.subproject_level.percent }}%)
+                                {% elif attachment.subproject_step %}
+                                    {{ attachment.subproject_step.wording }}
+                                {% comment %} {% elif attachment.subproject.get_current_subproject_step_and_level %}
+                                    {{ attachment.subproject.get_current_subproject_step_and_level }} {% endcomment %}
+                                {% elif attachment.name %}
+                                    {{ attachment.name }} {% if attachment.description %}({{ attachment.description }}){% endif %}
+                                {% elif attachment.description %}
+                                    {{ attachment.description }}
+                                {% endif %}
+                            </span><br />
+                            <span style="font-size: 7px;">{% if attachment.date_taken|date != attachment.updated_date|date %}{% translate "Last Updated" %} {% translate "the" %} {{ attachment.updated_date|date }}{% if attachment.update_by_user and attachment.update_by_user.type != None %} ({% translate "by" %} {% if attachment.update_by_user.last_name %}{{ attachment.update_by_user.last_name }} {{ attachment.update_by_user.first_name }}{% else %}{{ attachment.update_by_user.name }}{% endif %}){% endif %} | {% endif %}{% translate "Taken" %} {% translate "the" %} {{ attachment.date_taken|date }}{% if attachment.create_by_user and attachment.create_by_user.type != None %} ({% translate "by" %} {% if attachment.create_by_user.last_name %}{{ attachment.create_by_user.last_name }} {{ attachment.create_by_user.first_name }}{% else %}{{ attachment.create_by_user.name }}{% endif %}){% endif %} </span>
+                            {% with attachment.comments.count as comments_count %}{% if comments_count %}<span style="margin-left: 8px; cursor: pointer;" class="attachment-item-display-comments" id="file-comments-icon-{{ attachment.id }}">{{comments_count}}<i class="fas fa-envelope"></i></span>{% endif %}{% endwith %}
+                            <a 
+                                style="margin-left: 8px;"
+                                href="{% url 'subprojects:files:file_download' attachment.url %}">
+                                <i class="fas fa-download"></i>
+                            </a>
+                        </p>
+                        
+                        {% comment %} <p class="card-text">
+                            {{ attachment.subproject.location_subproject_realized.name }}
+                        </p> {% endcomment %}
+                        
+                    </div>
+
+                                
+                    {% if attachment.url|is_pdf %}
+                    
+
+
+                    <div class="card second-target">
+                            <div class="card-body attach-file">
+                                
+                                    {% if "file:///data" in attachment.url %}
+                                        <p><i class="fas fa-paperclip mr-2"></i>{% translate 'Not synchronized' %}</p>
+                                    {% elif ".pdf" in attachment.url %}
+                                        <a href="{{ attachment.url|imgAWSS3Filter }}" target="_blank" >
+                                            {% translate "Link" %}
+                                        </a><br />
+                                        <a href="{{ attachment.url|imgAWSS3Filter }}" target="_blank" >
+                                            <iframe src="{{ attachment.url|imgAWSS3Filter }}" 
+                                            {% comment %} width="250" height="300" {% endcomment %}
+                                            width="100%"
+                                            ></iframe>
+                                        </a>
+                                    {% elif ".docx" in attachment.url or ".doc" in attachment.url %}
+                                        <a href="{% url 'download_from_url' %}?url={{ attachment.url|imgAWSS3Filter }}" target="_blank" >
+                                            {% translate "Download" %}
+                                        </a><br />
+                                        <a href="{% url 'download_from_url' %}?url={{ attachment.url|imgAWSS3Filter }}" target="_blank" >
+                                            <iframe style="float: left;"
+                                                src='https://view.officeapps.live.com/op/embed.aspx?src={{ attachment.url|imgAWSS3Filter }}'
+                                                {% comment %} width="250" height="300"  {% endcomment %}
+                                                width="100%"
+                                                frameborder='0'>
+                                                    This is an embedded
+                                                    <a target='_blank' href='http://office.com'>Microsoft Office</a>
+                                                    document, powered by
+                                                    <a target='_blank' href='http://office.com/webapps'>Office Online</a>.
+                                            </iframe>
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'download_from_url' %}?url={{ attachment.url|imgAWSS3Filter }}" target="_blank" >
+                                        <!-- class="btn btn-primary" data-toggle="modal"
+                                        data-target="#item-attach-{{ forloop.counter }}" -->
+                                            <img src="{% url 'download_from_url' %}?url={{ attachment.url|imgAWSS3Filter }}" 
+                                            {% comment %} width="200" height="200"  {% endcomment %}
+                                            width="100%"
+                                            />
+                                        </a>
+                                    {% endif %}
+                                    
+                            </div>
+                            <div class="card-footer">
+                                <p>{{ attachment.name|replace:"Télecharger le " }}</p>
+                            </div>
+                            <div class="clearfix"></div>
+                        </div>
+
+
+
+
+                    {% else %}
+                    {% if user|has_in_a_group %}
+                    <span id="span-file-validation-btn-container-{{ attachment.id }}" class="" style="background-color: {% if attachment.validated %}green{% elif attachment.validated == False %}red{% else %}yellow{% endif %}; height: 5px !important;">
+                        <div class="clearfix">
+                            <div class="form-check" style="height: 5px !important;" id="file-validation-btn-container-{{ attachment.id }}">
+                                {% if attachment.validated is True or attachment.validated is False %}
+                                    <input 
+                                        {% if attachment.validated is True %}data-toggle="modal" data-target="#fileCommentModal"{% endif %}
+                                        class="form-check-input checks-inputs-container" type="checkbox" name="flexCheckbox-{% if attachment.validated %}invalidated{% else %}validated{% endif %}-{{ attachment.id }}" 
+                                        id="flexCheckbox-{% if attachment.validated %}invalidated{% else %}validated{% endif %}-{{ attachment.id }}" style="font-weight: bold !important; color: black;"
+                                        {% if attachment.validated %} checked=""{% endif %}>
+                                    <label class="form-check-label" for="flexCheckbox-{% if attachment.validated %}invalidated{% else %}validated{% endif %}-{{ attachment.id }}" style="font-weight: bold !important; color: black; background-color: white;">
+                                        {% if attachment.validated is True %}    
+                                            {% translate "validated" %}
+                                        {% else %}
+                                            {% translate "File invalidated (click to validate)" %}
+                                        {% endif %}
+                                    </label>
+                                {% else %}
+                                    <div class="form-check form-check-inline" style="margin-top: -10px !important;">
+                                        <input 
+                                            class="form-check-input checks-inputs-container" type="radio" name="flexRadio-{{ attachment.id }}" 
+                                            id="flexRadio-validated-{{ attachment.id }}" style="font-weight: bold !important; color: black;">
+                                        <label class="form-check-label" for="flexRadio-validated-{{ attachment.id }}" style="font-weight: bold !important; color: black; background-color: white;">
+                                            {% translate "Validate" %}
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline" style="margin-top: -10px !important;">
+                                        <input 
+                                            data-toggle="modal" data-target="#fileCommentModal"
+                                            class="form-check-input checks-inputs-container" type="radio" name="flexRadio-{{ attachment.id }}" 
+                                            id="flexRadio-invalidated-{{ attachment.id }}" style="font-weight: bold !important; color: black;">
+                                        <label class="form-check-label" for="flexRadio-invalidated-{{ attachment.id }}" style="font-weight: bold !important; color: black; background-color: white;">
+                                            {% translate "Invalidate" %}
+                                        </label>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    
+                        <div class="clearfix">
+                            <div style="padding-top: -20px !important; margin-top: -20px !important;" id="file-principal-special-btn-container-{{ attachment.id }}">
+                                <div class="form-check form-check-inline">
+                                    <input 
+                                        class="form-check-input checks-inputs-container-principal" type="checkbox" name="flexCheckbox-principal-{{ attachment.id }}" 
+                                        id="flexCheckbox-principal-{{ attachment.id }}" style="font-weight: bold !important; color: black;"
+                                        {% if attachment.principal %} checked=""{% endif %}>
+                                    <label class="form-check-label" for="flexCheckbox-principal-{{ attachment.id }}" style="font-weight: bold !important; color: black; background-color: white;">
+                                        {% translate "Principal" %}
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input 
+                                        class="form-check-input checks-inputs-container-special" type="checkbox" name="flexCheckbox-special-{{ attachment.id }}" 
+                                        id="flexCheckbox-special-{{ attachment.id }}" style="font-weight: bold !important; color: black;"
+                                        {% if attachment.special %} checked=""{% endif %}>
+                                    <label class="form-check-label" for="flexCheckbox-special-{{ attachment.id }}" style="font-weight: bold !important; color: black; background-color: white;">
+                                        {% translate "Special" %}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                    </span>
+                    {% endif %}
+
+                    <a 
+                        id="{{ attachment.url|imgAWSS3Filter }}" 
+                        href="#"
+                        class="attachment-item-display"
+                        {% comment %} target="_blank" {% endcomment %}
+                        >
+                        <img src="{{ attachment.url|imgAWSS3Filter }}" class="card-img-elt card-img-top second-target" alt="{{ attachment.url|imgAWSS3Filter }}">
+                    </a>
+                    {% endif %}
+                </div>
+            </article>
+        {% endif %}
+        {% endfor %}
+    </div>

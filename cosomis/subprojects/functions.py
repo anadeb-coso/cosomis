@@ -12,13 +12,17 @@ from administrativelevels.models import AdministrativeLevel, CVD
 from subprojects.models import Subproject, Project, Component
 from cosomis.utils import (
     link_infrastures_to_subproject, copy_cvd_to_list_of_beneficiary_villages,
-    attribute_project_to_subprojects, attribute_component_to_subprojects,
+    # attribute_project_to_subprojects, 
+    # attribute_component_to_subprojects,
     save_subproject_tracking
 )
 
 
 def get_value(elt):
     # return elt if not pd.isna(elt) else None
+    if elt is None:
+        return elt
+    
     _elt  = elt if not pd.isna(elt) else None
     if _elt and _elt.__str__() == "00:00:00":
         return None
@@ -86,7 +90,7 @@ def get_adminstrative_level_by_name(ad_name, canton_str: str):
 
 def get_adminstrative_level_by_name_with_slash(ad_name: str, canton_str: str):
     villages_name = re_module.split('[&,;/+]| Et ', ad_name.title()) #ad_name.split("/")
-    print(villages_name)
+
     for village_name in villages_name:
         v = get_adminstrative_level_by_name(village_name.upper(), canton_str)
         if v:
@@ -122,8 +126,13 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
         '2': 'COMPOSANTE 2', '3': 'COMPOSANTE 3', '4': 'COMPOSANTE 4', '5': 'COMPOSANTE 5'
     }
     _types = []
+    numbers = []
+    joint_subproject_numbers = []
+    projects = {p.name: p for p in Project.objects.all()}
+    default_project = Project.objects.filter(name="COSO").first()
+
     if datas_file:
-        print(datas_file.keys())
+        
         count = 0
         long = len(list(datas_file.values())[0])
         while count < long:
@@ -133,8 +142,11 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                 canton_file_data = str(datas_file["CANTON"][count]).upper()
                 _village = str(datas_file["VILLAGE/CDV"][count])
                 __village = _village.upper()
+                id_village = get_value(datas_file["ID LOCALITE"][count])
                 number = get_value(datas_file["N°"][count])
+                numbers.append(number)
                 joint_subproject_number = get_value(datas_file["num_kit"][count])
+                joint_subproject_numbers.append(joint_subproject_number)
                 intervention_unit = get_value(datas_file["UNITE D'INTERVENTION"][count])
                 facilitator_name = get_value(datas_file["NOM DE L'AC"][count])
                 wave = get_value(datas_file["VAGUE"][count])
@@ -175,11 +187,15 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                 care_and_maintenance_amount_on_village_account = get_value(datas_file["MONTANT DU FONDS D'ENTRETIEN ET DE MAINTENANCE (EMI)  MOBILISE ET DEPOSE SUR LE COMPTE DU VILLAGE"][count])
                 existence_of_maintenance_and_upkeep_plan_developed_by_community = get_value(datas_file["""Existence d'un Plan d'Entretien et de Maintenance (Plan EMI) élaboré par la Communauaté 
 (Si Oui mettre 1; Si non mettre 0)"""][count])
+                work_completion_date = get_value(datas_file.get("Date d'achèvement (Notification)", {}).get(count))
+                amount_spent_on_completing_the_infrastructure = get_value(datas_file.get("Montant dépensé pour achever l'infrastructure", {}).get(count))
                 date_of_technical_acceptance_of_work_contracts = get_value(datas_file["DATES DE RECEPTION TECHNIQUE DES MARCHE DE TRAVAUX (BTP OU FORAGE)"][count])
                 technical_acceptance_date_for_efme_contracts = get_value(datas_file["DATES DE RECEPTION TECHNIQUE DES MARCHE DE FOURNITURE DE MOBILIERS ET EQUIPEMENTS"][count])
                 date_of_provisional_acceptance_of_work_contracts = get_value(datas_file["DATES DE RECEPTION PROVISOIRE DES MARCHE DE TRAVAUX (BTP OU FORAGE)"][count])
+                amount_spent_on_infrastructure_up_to_provisional_acceptance = get_value(datas_file.get("MONTANT DEPENSE SUR L'INFRASTRUCTURE JUSQU'A LA RECEPTION PROVISOIRE", {}).get(count))
                 provisional_acceptance_date_for_efme_contracts = get_value(datas_file["DATES DE RECEPTION PROVISOIRE DES MARCHE DE FOURNITURE DE MOBILIERS ET EQUIPEMENTS"][count])
                 official_handover_date_of_the_microproject_to_the_community = get_value(datas_file["DATE DE REMISE OFFICIELLE DU MICROPROJET A LA COMMUNAUTE"][count])
+                date_of_final_acceptance_of_the_work = get_value(datas_file.get("DATE DE RECEPTION DEFINITIVE DE L'OUVRAGE", {}).get(count))
                 official_handover_date_of_the_microproject_to_the_sector = get_value(datas_file["DATE DE REMISE OFFICIELLE DU MICROPROJET AU SECTORIEL"][count])
                 comments = get_value(datas_file["COMMENTAIRES"][count])
                 longitude = get_value(datas_file["Longitude (x)"][count])
@@ -191,21 +207,44 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                 indirect_beneficiaries_men = get_value(datas_file["H (BENEFICIAIRES INDIRECTS)"][count])
                 indirect_beneficiaries_women = get_value(datas_file["F (BENEFICIAIRES INDIRECTS)"][count])
 
+                estimated_number_of_beneficiaries = get_value(datas_file.get("NOMBRE ESTIME DE BENEFICIAIRES", {}).get(count))
+
                 women_s_group = get_value(datas_file["Groupe des femmes"][count])
                 youth_group = get_value(datas_file["Groupe des jeunes"][count])
                 breeders_farmers_group = get_value(datas_file["Groupe des éleveurs/Agriculteurs"][count])
                 ethnic_minority_group = get_value(datas_file["Groupe des minorités ethniques"][count])
+                refugee_and_internally_displaced_persons_group = get_value(datas_file.get("Groupe des réfugiés et des personnes déplacées internes", {}).get(count))
                 
                 # has_latrine_blocs = get_value(datas_file["Blocs latrine? (Oui, Non)"][count])
-                # number_of_latrine_blocks = get_value(datas_file["Nombre de blocs latrine (de 3 cabines)"][count])
+                number_of_latrine_blocks = get_value(datas_file["Nombre de blocs latrine (de 3 cabines)"][count])
                 number_of_classrooms = get_value(datas_file["Nombre de salle de classes"][count])
                 # has_fence = get_value(datas_file["Clôture"][count])
                 
                 infrastructure_changed = get_value(datas_file["Ouvrage changé"][count])
-                infrastructure_deleted = get_value(datas_file["Ouvrage supprimé"][count])
+                if current_status_of_the_site == "current_status_of_the_site": #Ne sera plus réalisé
+                    infrastructure_deleted = True
+                else:
+                    infrastructure_deleted = get_value(datas_file["Ouvrage supprimé"][count])
                 
 
                 list_of_villages_crossed_by_the_track_or_electrification = get_value(datas_file["LISTE DE VILLAGES TRAVERSÉ PAR LA PISTE OU L'ÉLECTRIFICATION"][count])
+                
+                market_name = get_value(datas_file["NOM DU MARCHE"][count])
+                subcomponent = get_value(datas_file["S-C"][count])
+                projet = get_value(datas_file["Projet"][count])
+                storage_capacity = get_value(datas_file["Capacité du magasin de stockage"][count])
+                extension_length = get_value(datas_file.get("Longueur de l'extension (km)", {}).get(count))
+
+                number_of_streetlights = get_value(datas_file["Nombre de lampadaires installés"][count])
+                number_of_sections_of_track_developed = get_value(datas_file["Nombre de tronçons de piste aménagés"][count])
+                distance_covered_by_streetlights = get_value(datas_file.get("Distance couverte par les lampadaires (km)", {}).get(count))
+                number_of_drinking_fountains = get_value(datas_file["Nombre de bornes fontaines"][count])
+                date_of_organization_of_the_social_audit = get_value(datas_file["Date d'organisation de l'audit social"][count])
+                number_of_participants_m_in_the_social_audit = get_value(datas_file["Nombre de participants (H) à l'audit social"][count])
+                number_of_participants_w_in_the_social_audit = get_value(datas_file["Nombre de participants (F) à l'audit social"][count])
+                number_of_participants_t_in_the_social_audit = get_value(datas_file["Nombre de participants (T) à l'audit social"][count])
+                
+                number_of_infrastructures = get_value(datas_file.get("Nombre d'infras", {}).get(count))
                 
                 
                 # for village in __village.split("/"):
@@ -217,7 +256,12 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                 administrative_level = None
                 administrative_level_canton = None
                 subproject = None
-                if village in ("CCD", "TOUTE LA COMMUNAUTE"):
+                if id_village:
+                    administrative_level = AdministrativeLevel.objects.get(id=id_village, type="Village")
+                
+                if administrative_level:
+                    pass
+                elif village in ("CCD", "TOUTE LA COMMUNAUTE"):
                     pass
                 else:
                     try:
@@ -292,7 +336,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                             del list_villages_not_found_full_infos[-1]
                             del list_villages_not_found[-1]
                             _is_object_error = False
-                        print(administrative_level)
+                        
                 if not _is_object_error:
                     
                     if administrative_level and ((cvd_ids and administrative_level.cvd_id not in cvd_ids) or (canton_ids and administrative_level.cvd_id not in canton_ids)):
@@ -315,7 +359,8 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
 
                     if village in ("CCD", "TOUTE LA COMMUNAUTE"):
                         subprojects = Subproject.objects.filter(
-                            number=number
+                            number=number,
+                            joint_subproject_number=joint_subproject_number
                             # full_title_of_approved_subproject=full_title_of_approved_subproject
                             )#.get_actifs()
                         canton = get_value(datas_file["CANTON"][count])
@@ -388,7 +433,8 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
 
                     else:
                         subprojects = Subproject.objects.filter(
-                            number=number
+                            number=number,
+                            joint_subproject_number=joint_subproject_number
                             # full_title_of_approved_subproject=full_title_of_approved_subproject,
                             # location_subproject_realized=administrative_level, 
                             # subproject_sector=subproject_sector,
@@ -396,10 +442,6 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                             )#.get_actifs()
                         # if subproject:
                         #     subproject = list(subproject)[0]
-                        if number in (48, 375, 480, 526):
-                            print("===============================================================================")
-                            print(type(number))
-                            print(subprojects)
                         subproject = subprojects.first()
 
                     # if is_link_to_subproject:
@@ -441,7 +483,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                     if type_of_subproject:
                         subproject.type_of_subproject = type_of_subproject
                     if full_title_of_approved_subproject:
-                        if str(full_title_of_approved_subproject).upper() != str(subproject.full_title_of_approved_subproject).upper():
+                        if subproject.id and str(full_title_of_approved_subproject).upper() != str(subproject.full_title_of_approved_subproject).upper():
                             subproject.infrastructure_changed = True
                         subproject.full_title_of_approved_subproject = full_title_of_approved_subproject
                     if works_type:
@@ -484,6 +526,10 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                         subproject.launch_date_of_the_construction_site_in_the_village = launch_date_of_the_construction_site_in_the_village
                     if _current_level_of_physical_realization_of_the_work:
                         subproject.current_level_of_physical_realization_of_the_work = _current_level_of_physical_realization_of_the_work
+                        # _physical_level = str(current_level_of_physical_realization_of_the_work).split(".")[0].split(",")[0]
+                        # if _physical_level.isdigit():
+                        #     subproject.current_level_of_physical_realization_of_the_work_percent = float(_physical_level)
+                        # subproject.current_level_of_physical_realization_of_the_work_wording = subproject.get_current_subproject_step_and_level_without_percent
                     if length_of_the_track:
                         subproject.length_of_the_track = length_of_the_track
                     if depth_of_drilling:
@@ -491,7 +537,10 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                     if drilling_flow_rate:
                         subproject.drilling_flow_rate = drilling_flow_rate
                     if current_status_of_the_site:
-                        subproject.current_status_of_the_site = current_status_of_the_site
+                        if current_status_of_the_site == 'Non entamé':
+                            subproject.current_status_of_the_site = 'Identifié'
+                        else:
+                            subproject.current_status_of_the_site = current_status_of_the_site
                     if _expected_duration_of_the_work:
                         subproject.expected_duration_of_the_work = _expected_duration_of_the_work
                     if expected_end_date_of_the_contract:
@@ -504,16 +553,24 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                         subproject.care_and_maintenance_amount_on_village_account = care_and_maintenance_amount_on_village_account
                     if existence_of_maintenance_and_upkeep_plan_developed_by_community != None:
                         subproject.existence_of_maintenance_and_upkeep_plan_developed_by_community = bool(existence_of_maintenance_and_upkeep_plan_developed_by_community) if existence_of_maintenance_and_upkeep_plan_developed_by_community else False
+                    if work_completion_date:
+                        subproject.work_completion_date = work_completion_date
+                    if amount_spent_on_completing_the_infrastructure:
+                        subproject.amount_spent_on_completing_the_infrastructure = amount_spent_on_completing_the_infrastructure
                     if date_of_technical_acceptance_of_work_contracts:
                         subproject.date_of_technical_acceptance_of_work_contracts = date_of_technical_acceptance_of_work_contracts
                     if technical_acceptance_date_for_efme_contracts:
                         subproject.technical_acceptance_date_for_efme_contracts = technical_acceptance_date_for_efme_contracts
                     if date_of_provisional_acceptance_of_work_contracts:
                         subproject.date_of_provisional_acceptance_of_work_contracts = date_of_provisional_acceptance_of_work_contracts
+                    if amount_spent_on_infrastructure_up_to_provisional_acceptance:
+                        subproject.amount_spent_on_infrastructure_up_to_provisional_acceptance = amount_spent_on_infrastructure_up_to_provisional_acceptance
                     if provisional_acceptance_date_for_efme_contracts:
                         subproject.provisional_acceptance_date_for_efme_contracts = provisional_acceptance_date_for_efme_contracts
                     if official_handover_date_of_the_microproject_to_the_community:
                         subproject.official_handover_date_of_the_microproject_to_the_community = official_handover_date_of_the_microproject_to_the_community
+                    if date_of_final_acceptance_of_the_work:
+                        subproject.date_of_final_acceptance_of_the_work = date_of_final_acceptance_of_the_work
                     if official_handover_date_of_the_microproject_to_the_sector:
                         subproject.official_handover_date_of_the_microproject_to_the_sector = official_handover_date_of_the_microproject_to_the_sector
                     # subproject.comments = comments
@@ -521,11 +578,19 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                         subproject.latitude = latitude
                         subproject.longitude = longitude
                     
-                    # subproject.population = population #
-                    # subproject.direct_beneficiaries_men = direct_beneficiaries_men #
-                    # subproject.direct_beneficiaries_women = direct_beneficiaries_women #
-                    # subproject.indirect_beneficiaries_men = indirect_beneficiaries_men #
-                    # subproject.indirect_beneficiaries_women = indirect_beneficiaries_women #
+                    if population:
+                        subproject.population = population #
+                    if direct_beneficiaries_men:
+                        subproject.direct_beneficiaries_men = direct_beneficiaries_men #
+                    if direct_beneficiaries_women:
+                        subproject.direct_beneficiaries_women = direct_beneficiaries_women #
+                    if indirect_beneficiaries_men:
+                        subproject.indirect_beneficiaries_men = indirect_beneficiaries_men #
+                    if indirect_beneficiaries_women:
+                        subproject.indirect_beneficiaries_women = indirect_beneficiaries_women #
+                    
+                    if estimated_number_of_beneficiaries:
+                        subproject.estimated_number_of_beneficiaries = estimated_number_of_beneficiaries
                     
                     if women_s_group != None:
                         subproject.women_s_group = bool(women_s_group)
@@ -535,29 +600,70 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                         subproject.breeders_farmers_group = bool(breeders_farmers_group)
                     if ethnic_minority_group != None:
                         subproject.ethnic_minority_group = bool(ethnic_minority_group)
+                    if refugee_and_internally_displaced_persons_group != None:
+                        subproject.refugee_and_internally_displaced_persons_group = bool(refugee_and_internally_displaced_persons_group)
                         
                     # if has_latrine_blocs != None:
                     #     subproject.has_latrine_blocs = True if str(has_latrine_blocs).upper() in ("OUI", "1") else False
-                    # if number_of_latrine_blocks != None:
-                    #     subproject.number_of_latrine_blocks = number_of_latrine_blocks
+                    if number_of_latrine_blocks != None:
+                        subproject.number_of_latrine_blocks = number_of_latrine_blocks
                     if number_of_classrooms != None:
                         subproject.number_of_classrooms = number_of_classrooms
                     # if has_fence != None:
                     #     subproject.has_fence = True if str(has_fence).upper() in ("OUI", "1") else False
 
-                    if infrastructure_changed != None:
+                    if infrastructure_changed not in (False, True, None):
                         subproject.infrastructure_changed = True if str(infrastructure_changed).upper() in ("OUI", "1") else False
-                    if infrastructure_deleted != None:
+                    if infrastructure_deleted not in (False, True, None):
                         subproject.infrastructure_deleted = True if str(infrastructure_deleted).upper() in ("OUI", "1") else False
+                    else:
+                        subproject.infrastructure_deleted = False
+
+                    if market_name:
+                        subproject.market_name = market_name
+                    if storage_capacity:
+                        subproject.storage_capacity = storage_capacity
+                    if extension_length:
+                        subproject.extension_length = extension_length
+                    if number_of_streetlights:
+                        subproject.number_of_streetlights = number_of_streetlights
+                    if number_of_sections_of_track_developed:
+                        subproject.number_of_sections_of_track_developed = number_of_sections_of_track_developed
+                    if distance_covered_by_streetlights:
+                        subproject.distance_covered_by_streetlights = distance_covered_by_streetlights
+                    if number_of_drinking_fountains:
+                        subproject.number_of_drinking_fountains = number_of_drinking_fountains
+                    if date_of_organization_of_the_social_audit:
+                        subproject.date_of_organization_of_the_social_audit = date_of_organization_of_the_social_audit
+                    if number_of_participants_m_in_the_social_audit:
+                        subproject.number_of_participants_m_in_the_social_audit = number_of_participants_m_in_the_social_audit
+                    if number_of_participants_w_in_the_social_audit:
+                        subproject.number_of_participants_w_in_the_social_audit = number_of_participants_w_in_the_social_audit
+                    if number_of_participants_t_in_the_social_audit:
+                        subproject.number_of_participants_t_in_the_social_audit = number_of_participants_t_in_the_social_audit
+                        
+                    if number_of_infrastructures in (0, 1, "0", "0.0", 0.0, "0,0", "1", "1.0", 1.0, "1,0"):
+                        subproject.number_of_infrastructures = int(float(number_of_infrastructures))
                     
+                    if subcomponent:
+                        subproject.component = Component.objects.filter(name=f"COMPOSANTE {str(subcomponent).split(' ')[1]}").first()
 
                     subproject = subproject.save_and_return_object()
+
+                    if projet:
+                        projet_name = str(projet).upper()
+                        if projet_name == "PARENT":
+                            subproject.projects.add(projects.get('COSO', default_project))
+                        elif projet_name == "FA":
+                            subproject.projects.add(projects.get('FA-COSO', default_project))
+                        else:
+                            subproject.projects.add(projects.get(projet_name, default_project))
                     
                     if village in ("CCD", "TOUTE LA COMMUNAUTE") and administrative_level_canton:
                         subproject.canton = administrative_level_canton
 
                         if list_of_villages_crossed_by_the_track_or_electrification:
-                            liste = str(list_of_villages_crossed_by_the_track_or_electrification).split(";")
+                            liste = [word.strip() for word in re_module.split(r"/|,|;|\+|\bet\b|-", str(list_of_villages_crossed_by_the_track_or_electrification)) if word.strip()] #str(list_of_villages_crossed_by_the_track_or_electrification).split(";")
                             for ad_name in liste:
                                 ad = get_adminstrative_level_by_name(ad_name.strip(), canton_file_data)
                                 if ad:
@@ -583,15 +689,27 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
             #     break
     print(count)
     
-    subprojects = Subproject.objects.all()#.get_actifs()
+    numbers_joint_subproject_numbers = list(zip(numbers, joint_subproject_numbers))
+    # Construire la condition pour les garder
+    keep_filter = Q()
+    for n, jn in numbers_joint_subproject_numbers:
+        keep_filter |= Q(number=n, joint_subproject_number=jn)
+
+    # Mettre à jour tous les autres
+    Subproject.objects.exclude(keep_filter).update(infrastructure_deleted=True)
+        
+    
+
+    # subprojects = Subproject.objects.all()#.get_actifs()
+
     link_infrastures_to_subproject() #Link each infrastructure to their subproject
     copy_cvd_to_list_of_beneficiary_villages() #Link villages to theirs subprojects
-    attribute_project_to_subprojects(
-        subprojects, Project.objects.get(id=1)
-    ) #Link projects to COSO project
-    attribute_component_to_subprojects(
-        subprojects, Component.objects.get(id=2)
-    ) #Link projects to Component 1.1
+    # attribute_project_to_subprojects(
+    #     subprojects, Project.objects.get(id=1)
+    # ) #Link projects to COSO project
+    # attribute_component_to_subprojects(
+    #     subprojects, Component.objects.get(id=2)
+    # ) #Link projects to Component 1.1
     
     save_subproject_tracking() #Update Subproject Step-level
     
@@ -632,6 +750,10 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
     summary_errors += "\n\n\n##########################################################Details###################################################################\n"
     summary_errors += "\n" + text_errors
 
+    if numbers_joint_subproject_numbers:
+        summary_errors += "\n\n\n##########################################################numbers, joint_subproject_numbers (add, edit)###################################################################\n"
+        summary_errors += f"\n {numbers_joint_subproject_numbers}"
+
     if not os.path.exists("media/logs/errors"):
         os.makedirs("media/logs/errors")
     file_path = "logs/errors/upload_subprojects_logs_errors_" + str(datetime.today().replace(microsecond=0)).replace("-", "").replace(":", "").replace(" ", "_") + ".txt"
@@ -639,7 +761,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
     f = open("media/"+file_path, "a")
     f.write(summary_errors)
     f.close()
-    print(list(set(_types)))
+    
     return (message, file_path.replace("/", "\\\\") if platform == "win32" else file_path)
 
     #Excel error
@@ -714,6 +836,7 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         "T_Benef_H": {},
         "T_Benef_F": {},
         "TOTAL (Bénéficiaires)": {},
+        "NOMBRE ESTIME DE BENEFICIAIRES": {},
         "NOM DE L'AC": {},
         "VAGUE": {},
         "LOT": {},
@@ -725,6 +848,7 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         "COUT ESTIMATIF": {},
         "NIVEAU D'OBTENTION ATTESTATION DE DONATION": {},
         "DATE D'APPROBATION CORA": {},
+        "Nombre d'infras": {},
         "DATE SIGNATURE CONTRAT CONTROLEURS DE TRAVAUX BTP (CT)": {},
         "MONTANT DU CONTRAT CONTROLEURS DE TRAVAUX BTP (CT)": {},
         "DATE SIGNATURE CONTRAT CONTROLEURS EN SES (CSES)": {},
@@ -753,23 +877,41 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         "MONTANT DU FONDS D'ENTRETIEN ET DE MAINTENANCE (EMI)  MOBILISE ET DEPOSE SUR LE COMPTE DU VILLAGE": {},
         """Existence d'un Plan d'Entretien et de Maintenance (Plan EMI) élaboré par la Communauaté 
 (Si Oui mettre 1; Si non mettre 0)""": {},
+        "Date d'achèvement (Notification)": {},
+        "Montant dépensé pour achever l'infrastructure": {},
         "DATES DE RECEPTION TECHNIQUE DES MARCHE DE TRAVAUX (BTP OU FORAGE)": {},
         "DATES DE RECEPTION TECHNIQUE DES MARCHE DE FOURNITURE DE MOBILIERS ET EQUIPEMENTS": {},
         "DATES DE RECEPTION PROVISOIRE DES MARCHE DE TRAVAUX (BTP OU FORAGE)": {},
+        "MONTANT DEPENSE SUR L'INFRASTRUCTURE JUSQU'A LA RECEPTION PROVISOIRE": {},
         "DATES DE RECEPTION PROVISOIRE DES MARCHE DE FOURNITURE DE MOBILIERS ET EQUIPEMENTS": {},
         "DATE DE REMISE OFFICIELLE DU MICROPROJET A LA COMMUNAUTE": {},
+        "DATE DE RECEPTION DEFINITIVE DE L'OUVRAGE": {},
         "DATE DE REMISE OFFICIELLE DU MICROPROJET AU SECTORIEL": {},
         "Groupe des femmes": {},
         "Groupe des jeunes": {},
         "Groupe des éleveurs/Agriculteurs": {},
         "Groupe des minorités ethniques": {},
+        "Groupe des réfugiés et des personnes déplacées internes": {},
         "COMMENTAIRES": {},
         "Blocs latrine? (Oui, Non)": {},
         "Nombre de blocs latrine (de 3 cabines)": {},
         "Nombre de salle de classes": {},
         "Clôture": {},
+        "Capacité du magasin de stockage": {},
+        "Longueur de l'extension (km)": {},
+        "Nombre de tronçons de piste aménagés": {},
+        "Distance couverte par les lampadaires (km)": {},
+        "Nombre de lampadaires installés": {},
+        "Nombre de bornes fontaines": {},
+        "Date d'organisation de l'audit social": {},
+        "Nombre de participants (H) à l'audit social": {},
+        "Nombre de participants (F) à l'audit social": {},
+        "Nombre de participants (T) à l'audit social": {},
         "Ouvrage changé": {},
-        "Ouvrage supprimé": {}
+        "Ouvrage supprimé": {},
+        "project": {},
+        "priorité": {},
+        "Composante": {}
     }
 
     # administratives_levels = []
@@ -916,6 +1058,8 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         datas["T_Benef_F"][count] = (elt.direct_beneficiaries_women if elt.direct_beneficiaries_women else 0) + (elt.indirect_beneficiaries_women if elt.indirect_beneficiaries_women else 0)
         datas["TOTAL (Bénéficiaires)"][count] = datas["T_Benef_H"][count] + datas["T_Benef_F"][count]
 
+        datas["NOMBRE ESTIME DE BENEFICIAIRES"][count] = elt.estimated_number_of_beneficiaries
+
         datas["NOM DE L'AC"][count] = elt.facilitator_name
         datas["VAGUE"][count] = elt.wave
         datas["LOT"][count] = elt.lot
@@ -938,6 +1082,7 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         datas["COUT ESTIMATIF"][count] = elt.estimated_cost
         datas["NIVEAU D'OBTENTION ATTESTATION DE DONATION"][count] = elt.level_of_achievement_donation_certificate
         datas["DATE D'APPROBATION CORA"][count] = elt.approval_date_cora
+        datas["Nombre d'infras"][count] = elt.number_of_infrastructures
         datas["DATE SIGNATURE CONTRAT CONTROLEURS DE TRAVAUX BTP (CT)"][count] = elt.date_of_signature_of_contract_for_construction_supervisors
         datas["MONTANT DU CONTRAT CONTROLEURS DE TRAVAUX BTP (CT)"][count] = elt.amount_of_the_contract_for_construction_supervisors
         datas["DATE SIGNATURE CONTRAT CONTROLEURS EN SES (CSES)"][count] = elt.date_signature_contract_controllers_in_SES
@@ -965,27 +1110,53 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         datas["MONTANT DU FONDS D'ENTRETIEN ET DE MAINTENANCE (EMI)  PREVU POUR ETRE MOBILISE"][count] = elt.amount_of_the_care_and_maintenance_fund_expected_to_be_mobilized
         datas["MONTANT DU FONDS D'ENTRETIEN ET DE MAINTENANCE (EMI)  MOBILISE ET DEPOSE SUR LE COMPTE DU VILLAGE"][count] = elt.care_and_maintenance_amount_on_village_account
         datas["""Existence d'un Plan d'Entretien et de Maintenance (Plan EMI) élaboré par la Communauaté 
-(Si Oui mettre 1; Si non mettre 0)"""][count] = 1 if elt.existence_of_maintenance_and_upkeep_plan_developed_by_community else 0
+(Si Oui mettre 1; Si non mettre 0)"""][count] = 1 if elt.existence_of_maintenance_and_upkeep_plan_developed_by_community else (0 if elt.existence_of_maintenance_and_upkeep_plan_developed_by_community == False else "")
+        datas["Date d'achèvement (Notification)"][count] = elt.work_completion_date
+        datas["Montant dépensé pour achever l'infrastructure"][count] = elt.amount_spent_on_completing_the_infrastructure
         datas["DATES DE RECEPTION TECHNIQUE DES MARCHE DE TRAVAUX (BTP OU FORAGE)"][count] = elt.date_of_technical_acceptance_of_work_contracts
         datas["DATES DE RECEPTION TECHNIQUE DES MARCHE DE FOURNITURE DE MOBILIERS ET EQUIPEMENTS"][count] = elt.technical_acceptance_date_for_efme_contracts
         datas["DATES DE RECEPTION PROVISOIRE DES MARCHE DE TRAVAUX (BTP OU FORAGE)"][count] = elt.date_of_provisional_acceptance_of_work_contracts
+        datas["MONTANT DEPENSE SUR L'INFRASTRUCTURE JUSQU'A LA RECEPTION PROVISOIRE"][count] = elt.amount_spent_on_infrastructure_up_to_provisional_acceptance
         datas["DATES DE RECEPTION PROVISOIRE DES MARCHE DE FOURNITURE DE MOBILIERS ET EQUIPEMENTS"][count] = elt.provisional_acceptance_date_for_efme_contracts
         datas["DATE DE REMISE OFFICIELLE DU MICROPROJET A LA COMMUNAUTE"][count] = elt.official_handover_date_of_the_microproject_to_the_community
+        datas["DATE DE RECEPTION DEFINITIVE DE L'OUVRAGE"][count] = elt.date_of_final_acceptance_of_the_work
         datas["DATE DE REMISE OFFICIELLE DU MICROPROJET AU SECTORIEL"][count] = elt.official_handover_date_of_the_microproject_to_the_sector
 
         datas["Groupe des femmes"][count] = 1 if elt.women_s_group else (0 if elt.women_s_group == False else "")
         datas["Groupe des jeunes"][count] = 1 if elt.youth_group else (0 if elt.youth_group == False else "")
         datas["Groupe des éleveurs/Agriculteurs"][count] = 1 if elt.breeders_farmers_group else (0 if elt.breeders_farmers_group == False else "")
         datas["Groupe des minorités ethniques"][count] = 1 if elt.ethnic_minority_group else (0 if elt.ethnic_minority_group == False else "")
+        datas["Groupe des réfugiés et des personnes déplacées internes"][count] = 1 if elt.refugee_and_internally_displaced_persons_group else (0 if elt.refugee_and_internally_displaced_persons_group == False else "")
 
         # datas["Blocs latrine? (Oui, Non)"][count] = "Oui" if elt.has_latrine_blocs else ("Non" if elt.has_latrine_blocs == False else "")
-        # datas["Nombre de blocs latrine (de 3 cabines)"][count] = elt.number_of_latrine_blocks if elt.number_of_latrine_blocks else ""
+        datas["Nombre de blocs latrine (de 3 cabines)"][count] = elt.number_of_latrine_blocks if elt.number_of_latrine_blocks else ""
         datas["Nombre de salle de classes"][count] = elt.number_of_classrooms if elt.number_of_classrooms else ""
         # datas["Clôture"][count] = "Oui" if elt.has_fence else ("Non" if elt.has_fence == False else "")
+        
+        datas["Capacité du magasin de stockage"][count] = elt.storage_capacity
+        datas["Longueur de l'extension (km)"][count] = elt.extension_length
+        datas["Nombre de tronçons de piste aménagés"][count] = elt.number_of_sections_of_track_developed
+        datas["Distance couverte par les lampadaires (km)"][count] = elt.distance_covered_by_streetlights
+        datas["Nombre de lampadaires installés"][count] = elt.number_of_streetlights
+        datas["Nombre de bornes fontaines"][count] = elt.number_of_drinking_fountains
+
+        datas["Date d'organisation de l'audit social"][count] = elt.date_of_organization_of_the_social_audit
+        datas["Nombre de participants (H) à l'audit social"][count] = elt.number_of_participants_m_in_the_social_audit
+        datas["Nombre de participants (F) à l'audit social"][count] = elt.number_of_participants_w_in_the_social_audit
+        datas["Nombre de participants (T) à l'audit social"][count] = elt.number_of_participants_t_in_the_social_audit
 
         datas["Ouvrage changé"][count] = "Oui" if elt.infrastructure_changed else ""
         datas["Ouvrage supprimé"][count] = "Oui" if elt.infrastructure_deleted else ""
-        
+
+        datas["project"][count] = ",".join([_e.name for _e in elt.projects.all()])
+        try:
+            _autre_description = elt.priority['siAutreVeuillezDecrire']
+            _priorite = elt.priority['priorite']
+            datas["priorité"][count] = (f"Autre ({_autre_description})" if _autre_description else "Autre") if _priorite == 'Autre' else _priorite
+        except Exception as exc:
+            pass
+        datas["Composante"][count] = elt.component.name if elt.component else ""
+
         datas["COMMENTAIRES"][count] = elt.comments
         
         count += 1

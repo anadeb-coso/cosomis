@@ -10,7 +10,7 @@ import pandas as pd
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils.translation import gettext_lazy as _
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Count, Sum
 
 from administrativelevels.models import AdministrativeLevel, GeographicalUnit, CVD
 from administrativelevels.libraries import convert_file_to_dict, download_file
@@ -26,7 +26,10 @@ from administrativelevels.functions import (
     get_administrative_level_ids_descendants,
 )
 from administrativelevels.functions_cvd import save_cvd_instead_of_csv_file_datas_in_db
+from administrativelevels.functions_adl import get_cascade_villages_ids_by_administrative_level_id
 from financial import function_allocation
+from financial.models.allocation import AdministrativeLevelAllocation
+from dashboard.forms import AdministrativeLevelFilterForm
 
 
 class VillageDetailView(PageMixin, LoginRequiredMixin, DetailView):
@@ -282,7 +285,7 @@ class DownloadCSVView(PageMixin, LoginRequiredMixin, TemplateView):
         for ald_id in administrative_level_ids_get:
             ald_id = 0 if ald_id in ("", "null", "undefined", "All") else ald_id
             administrative_levels_ids += get_administrative_level_ids_descendants(
-                ald_id, None, []
+                ald_id, None, [], self.request.session.get('project_id')
             )
             if ald_id:
                 ald_filter_ids.append(int(ald_id))
@@ -326,24 +329,170 @@ class AdministrativeLevelsListView(PageMixin, LoginRequiredMixin, ListView):
         },
     ]
 
+    def filter_list_by_delete_empty(self, _list):
+        if _list:
+            return [elt for elt in _list if elt]
+        else:
+            return []
+        
+    def get_filters_context(self):
+        kwargs = dict()
+
+        kwargs["all_projects"] = self.request.session.get('tree_structure_projects_ids') if self.request.GET.get('include_all_projects', 0) in (1, '1') else []
+
+        id_regions = self.filter_list_by_delete_empty(self.request.GET.getlist('region', []))
+        id_prefectures = self.filter_list_by_delete_empty(self.request.GET.getlist('prefecture', []))
+        id_communes = self.filter_list_by_delete_empty(self.request.GET.getlist('commune', []))
+        id_cantons = self.filter_list_by_delete_empty(self.request.GET.getlist('canton', []))
+        id_villages = self.filter_list_by_delete_empty(self.request.GET.getlist('village', []))
+
+        kwargs["id_regions_selected"] = id_regions
+        kwargs["id_prefectures_selected"] = id_prefectures
+        kwargs["id_communes_selected"] = id_communes
+        kwargs["id_cantons_selected"] = id_cantons
+        kwargs["id_villages_selected"] = id_villages
+        kwargs["include_all_projects_checked"] = self.request.GET.get('include_all_projects')
+        
+        adm_queryset = AdministrativeLevel.objects.all()
+        kwargs["regions"] = adm_queryset.filter(type=AdministrativeLevel.REGION)
+
+        kwargs["prefectures"] = adm_queryset.filter(type=AdministrativeLevel.PREFECTURE)
+        if id_regions:
+            kwargs["prefectures"] = kwargs["prefectures"].filter(
+                parent__id__in=id_regions
+            )
+
+        kwargs["communes"] = adm_queryset.filter(type=AdministrativeLevel.COMMUNE)
+        if id_prefectures:
+            kwargs["communes"] = kwargs["communes"].filter(
+                parent__id__in=id_prefectures
+            )
+        elif id_regions:
+            kwargs["communes"] = kwargs["communes"].filter(
+                parent__parent__id__in=id_regions
+            )
+
+        kwargs["cantons"] = adm_queryset.filter(type=AdministrativeLevel.CANTON)
+        if id_communes:
+            kwargs["cantons"] = kwargs["cantons"].filter(
+                parent__id__in=id_communes
+            )
+        elif id_prefectures:
+            kwargs["cantons"] = kwargs["cantons"].filter(
+                parent__parent__id__in=id_prefectures
+            )
+        elif id_regions:
+            kwargs["cantons"] = kwargs["cantons"].filter(
+                parent__parent__parent__id__in=id_regions
+            )
+
+        kwargs["villages"] = adm_queryset.filter(type=AdministrativeLevel.VILLAGE)
+        if id_cantons:
+            kwargs["villages"] = kwargs["villages"].filter(
+                parent__id__in=id_cantons
+            )
+        elif id_communes:
+            kwargs["villages"] = kwargs["villages"].filter(
+                parent__parent__id__in=id_communes
+            )
+        elif id_prefectures:
+            kwargs["villages"] = kwargs["villages"].filter(
+                parent__parent__parent__id__in=id_prefectures
+            )
+        elif id_regions:
+            kwargs["villages"] = kwargs["villages"].filter(
+                parent__parent__parent__parent__id__in=id_regions
+            )
+
+        return kwargs
+
     def get_queryset(self):
+        count = 100
         search = self.request.GET.get("search", None)
         page_number = self.request.GET.get("page", None)
         _type = self.request.GET.get("type", "Village")
-        if search:
-            if search == "All":
-                ads = AdministrativeLevel.objects.filter(type=_type)
-                return Paginator(ads, ads.count()).get_page(page_number)
+        id_regions = self.filter_list_by_delete_empty(self.request.GET.getlist('region', []))
+        id_prefectures = self.filter_list_by_delete_empty(self.request.GET.getlist('prefecture', []))
+        id_communes = self.filter_list_by_delete_empty(self.request.GET.getlist('commune', []))
+        id_cantons = self.filter_list_by_delete_empty(self.request.GET.getlist('canton', []))
+        id_villages = self.filter_list_by_delete_empty(self.request.GET.getlist('village', []))
+        include_all_projects_checked = self.request.GET.get('include_all_projects', 0) in (1, '1')
+
+        all_projects = self.request.session.get('tree_structure_projects_ids') if include_all_projects_checked else [self.request.session.get('project_id')]
+        
+        administrative_levels = AdministrativeLevel.objects.filter(
+            type=_type,
+            administrative_levels_projects__in=all_projects
+        )
+
+        if (
+            (id_regions and 'All' not in id_regions) or 
+            (id_prefectures and 'All' not in id_prefectures) or 
+            (id_communes and 'All' not in id_communes) or 
+            (id_cantons and 'All' not in id_cantons) or 
+            (id_villages and 'All' not in id_villages)
+        ):
+            if id_villages:
+                _ids = id_villages
+            elif id_cantons:
+                _ids = id_cantons
+            elif id_communes:
+                _ids = id_communes
+            elif id_prefectures:
+                _ids = id_prefectures
+            elif id_regions:
+                _ids = id_regions
+            
+            administrative_levels = administrative_levels.filter(
+                Q(id__in=_ids) | 
+                Q(parent__id__in=_ids) | 
+                Q(parent__parent__id__in=_ids) | 
+                Q(parent__parent__parent__id__in=_ids) | 
+                Q(parent__parent__parent__parent__id__in=_ids)
+            )
+        
+        if search and search != "All":
             search = search.upper()
-            return Paginator(AdministrativeLevel.objects.filter(type=_type, name__icontains=search), 100).get_page(page_number)
-        else:
-            return Paginator(AdministrativeLevel.objects.filter(type=_type), 100).get_page(page_number)
+            administrative_levels = administrative_levels.filter(name__icontains=search).distinct()
+        
+        administrative_levels = administrative_levels.distinct()
+
+        if (
+            id_regions or id_prefectures or id_communes or id_cantons or id_villages or search or include_all_projects_checked
+        ):
+            count = administrative_levels.count()
+            if count == 0:
+                count = 1
+        
+        return Paginator(administrative_levels, count).get_page(page_number)
+    
 
         # return super().get_queryset()
     def get_context_data(self, **kwargs):
         ctx = super(AdministrativeLevelsListView, self).get_context_data(**kwargs)
+        ctx.update(self.get_filters_context())
+
+        # ctx['hide_content_header'] = True
+
         ctx['search'] = self.request.GET.get("search", None)
         ctx['type'] = self.request.GET.get("type", "Village")
+
+        ctx['form_adl'] = AdministrativeLevelFilterForm(
+            has_all=False, 
+
+            regions=ctx.get('regions', []),
+            prefectures=ctx.get('prefectures', []),
+            communes=ctx.get('communes', []),
+            cantons=ctx.get('cantons', []),
+            villages=ctx.get('villages', []),
+
+            default_regions=ctx.get('id_regions_selected', []),
+            default_prefectures=ctx.get('id_prefectures_selected', []),
+            default_communes=ctx.get('id_communes_selected', []),
+            default_cantons=ctx.get('id_cantons_selected', []),
+            default_villages=ctx.get('id_villages_selected', []),
+        )
+
         return ctx
     
 
@@ -647,27 +796,170 @@ class GeographicalUnitListView(PageMixin, LoginRequiredMixin, ListView):
         },
     ]
 
+    def filter_list_by_delete_empty(self, _list):
+        if _list:
+            return [elt for elt in _list if elt]
+        else:
+            return []
+        
+    def get_filters_context(self):
+        kwargs = dict()
+
+        kwargs["all_projects"] = self.request.session.get('tree_structure_projects_ids') if self.request.GET.get('include_all_projects', 0) in (1, '1') else []
+
+        id_regions = self.filter_list_by_delete_empty(self.request.GET.getlist('region', []))
+        id_prefectures = self.filter_list_by_delete_empty(self.request.GET.getlist('prefecture', []))
+        id_communes = self.filter_list_by_delete_empty(self.request.GET.getlist('commune', []))
+        id_cantons = self.filter_list_by_delete_empty(self.request.GET.getlist('canton', []))
+        id_villages = self.filter_list_by_delete_empty(self.request.GET.getlist('village', []))
+
+        kwargs["id_regions_selected"] = id_regions
+        kwargs["id_prefectures_selected"] = id_prefectures
+        kwargs["id_communes_selected"] = id_communes
+        kwargs["id_cantons_selected"] = id_cantons
+        kwargs["id_villages_selected"] = id_villages
+        kwargs["include_all_projects_checked"] = self.request.GET.get('include_all_projects')
+        
+        adm_queryset = AdministrativeLevel.objects.all()
+        kwargs["regions"] = adm_queryset.filter(type=AdministrativeLevel.REGION)
+
+        kwargs["prefectures"] = adm_queryset.filter(type=AdministrativeLevel.PREFECTURE)
+        if id_regions:
+            kwargs["prefectures"] = kwargs["prefectures"].filter(
+                parent__id__in=id_regions
+            )
+
+        kwargs["communes"] = adm_queryset.filter(type=AdministrativeLevel.COMMUNE)
+        if id_prefectures:
+            kwargs["communes"] = kwargs["communes"].filter(
+                parent__id__in=id_prefectures
+            )
+        elif id_regions:
+            kwargs["communes"] = kwargs["communes"].filter(
+                parent__parent__id__in=id_regions
+            )
+
+        kwargs["cantons"] = adm_queryset.filter(type=AdministrativeLevel.CANTON)
+        if id_communes:
+            kwargs["cantons"] = kwargs["cantons"].filter(
+                parent__id__in=id_communes
+            )
+        elif id_prefectures:
+            kwargs["cantons"] = kwargs["cantons"].filter(
+                parent__parent__id__in=id_prefectures
+            )
+        elif id_regions:
+            kwargs["cantons"] = kwargs["cantons"].filter(
+                parent__parent__parent__id__in=id_regions
+            )
+
+        kwargs["villages"] = adm_queryset.filter(type=AdministrativeLevel.VILLAGE)
+        if id_cantons:
+            kwargs["villages"] = kwargs["villages"].filter(
+                parent__id__in=id_cantons
+            )
+        elif id_communes:
+            kwargs["villages"] = kwargs["villages"].filter(
+                parent__parent__id__in=id_communes
+            )
+        elif id_prefectures:
+            kwargs["villages"] = kwargs["villages"].filter(
+                parent__parent__parent__id__in=id_prefectures
+            )
+        elif id_regions:
+            kwargs["villages"] = kwargs["villages"].filter(
+                parent__parent__parent__parent__id__in=id_regions
+            )
+
+        return kwargs
+
     # def get_queryset(self):
     #     return super().get_queryset()
     def get_queryset(self):
+        count = 100
         search = self.request.GET.get("search", None)
-        page_number = self.request.GET.get("page", None)
-        if search:
-            gs = GeographicalUnit.objects.all()
-            if search == "All":
-                return Paginator(gs, gs.count()).get_page(page_number)
-            search = search.upper()
-            _gs = []
-            for g in gs:
-                if search in g.get_name() or (g.canton and search in g.canton.name):
-                    _gs.append(g)
-            return Paginator(_gs, 100).get_page(page_number)
-        else:
-            return Paginator(GeographicalUnit.objects.all(), 100).get_page(page_number)
+        page_number = self.request.GET.get("page", None)        
+        id_regions = self.filter_list_by_delete_empty(self.request.GET.getlist('region', []))
+        id_prefectures = self.filter_list_by_delete_empty(self.request.GET.getlist('prefecture', []))
+        id_communes = self.filter_list_by_delete_empty(self.request.GET.getlist('commune', []))
+        id_cantons = self.filter_list_by_delete_empty(self.request.GET.getlist('canton', []))
+        id_villages = self.filter_list_by_delete_empty(self.request.GET.getlist('village', []))
+        include_all_projects_checked = self.request.GET.get('include_all_projects', 0) in (1, '1')
+
+        all_projects = self.request.session.get('tree_structure_projects_ids') if include_all_projects_checked else [self.request.session.get('project_id')]
         
+        geographical_units = GeographicalUnit.objects.filter(
+            canton__administrative_levels_projects__in=all_projects
+        )
+
+        if (
+            (id_regions and 'All' not in id_regions) or 
+            (id_prefectures and 'All' not in id_prefectures) or 
+            (id_communes and 'All' not in id_communes) or 
+            (id_cantons and 'All' not in id_cantons) or 
+            (id_villages and 'All' not in id_villages)
+        ):
+            if id_villages:
+                _ids = id_villages
+            elif id_cantons:
+                _ids = id_cantons
+            elif id_communes:
+                _ids = id_communes
+            elif id_prefectures:
+                _ids = id_prefectures
+            elif id_regions:
+                _ids = id_regions
+            
+            geographical_units = geographical_units.filter(
+                Q(administrativelevel__id__in=_ids) | 
+                Q(administrativelevel__parent__id__in=_ids) | 
+                Q(administrativelevel__parent__parent__id__in=_ids) | 
+                Q(administrativelevel__parent__parent__parent__id__in=_ids) | 
+                Q(administrativelevel__parent__parent__parent__parent__id__in=_ids)
+            )
+        
+        if search and search != "All":
+            search = search.upper()
+            geographical_units = geographical_units.filter(
+                Q(administrativelevel__name__icontains=search) | Q(administrativelevel__parent__name__icontains=search)
+            )
+                    
+        geographical_units = geographical_units.distinct()
+
+        if (
+            id_regions or id_prefectures or id_communes or id_cantons or id_villages or search or include_all_projects_checked
+        ):
+            count = geographical_units.count()
+            if count == 0:
+                count = 1
+        
+        return Paginator(geographical_units, count).get_page(page_number)
+    
     def get_context_data(self, **kwargs):
         ctx = super(GeographicalUnitListView, self).get_context_data(**kwargs)
+        ctx.update(self.get_filters_context())
+
+        # ctx['hide_content_header'] = True
+
         ctx['search'] = self.request.GET.get("search", None)
+        ctx['type'] = self.request.GET.get("type", "Village")
+
+        ctx['form_adl'] = AdministrativeLevelFilterForm(
+            has_all=False, 
+
+            regions=ctx.get('regions', []),
+            prefectures=ctx.get('prefectures', []),
+            communes=ctx.get('communes', []),
+            cantons=ctx.get('cantons', []),
+            villages=ctx.get('villages', []),
+
+            default_regions=ctx.get('id_regions_selected', []),
+            default_prefectures=ctx.get('id_prefectures_selected', []),
+            default_communes=ctx.get('id_communes_selected', []),
+            default_cantons=ctx.get('id_cantons_selected', []),
+            default_villages=ctx.get('id_villages_selected', []),
+        )
+
         return ctx
 
 class GeographicalUnitCreateView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, CreateView):
@@ -708,7 +1000,7 @@ class GeographicalUnitCreateView(PageMixin, LoginRequiredMixin, AdminPermissionR
                     village.geographical_unit = unit
                     village.save(user=self.request.user)
                 except Exception as exc:
-                    print(exc)
+                    pass
             
             #Record automatically CVD if unit has one village
             if villages and len(villages) == 1:
@@ -780,7 +1072,7 @@ class GeographicalUnitUpdateView(PageMixin, LoginRequiredMixin, AdminPermissionR
                     village.geographical_unit = unit
                     village.save(user=self.request.user)
                 except Exception as exc:
-                    print(exc)
+                    pass
 
             # for cvd_id in cvds:
             #     try:
@@ -788,7 +1080,7 @@ class GeographicalUnitUpdateView(PageMixin, LoginRequiredMixin, AdminPermissionR
             #         cvd.geographical_unit = unit
             #         cvd.save()
             #     except Exception as exc:
-            #         print(exc)
+            #         pass
 
             return redirect('administrativelevels:geographical_units_list')
         return super(GeographicalUnitUpdateView, self).get(request, *args, **kwargs)
@@ -832,25 +1124,171 @@ class CVDListView(PageMixin, LoginRequiredMixin, ListView):
         },
     ]
 
+    def filter_list_by_delete_empty(self, _list):
+        if _list:
+            return [elt for elt in _list if elt]
+        else:
+            return []
+        
+    def get_filters_context(self):
+        kwargs = dict()
+
+        kwargs["all_projects"] = self.request.session.get('tree_structure_projects_ids') if self.request.GET.get('include_all_projects', 0) in (1, '1') else []
+
+        id_regions = self.filter_list_by_delete_empty(self.request.GET.getlist('region', []))
+        id_prefectures = self.filter_list_by_delete_empty(self.request.GET.getlist('prefecture', []))
+        id_communes = self.filter_list_by_delete_empty(self.request.GET.getlist('commune', []))
+        id_cantons = self.filter_list_by_delete_empty(self.request.GET.getlist('canton', []))
+        id_villages = self.filter_list_by_delete_empty(self.request.GET.getlist('village', []))
+
+        kwargs["id_regions_selected"] = id_regions
+        kwargs["id_prefectures_selected"] = id_prefectures
+        kwargs["id_communes_selected"] = id_communes
+        kwargs["id_cantons_selected"] = id_cantons
+        kwargs["id_villages_selected"] = id_villages
+        kwargs["include_all_projects_checked"] = self.request.GET.get('include_all_projects')
+        
+        adm_queryset = AdministrativeLevel.objects.all()
+        kwargs["regions"] = adm_queryset.filter(type=AdministrativeLevel.REGION)
+
+        kwargs["prefectures"] = adm_queryset.filter(type=AdministrativeLevel.PREFECTURE)
+        if id_regions:
+            kwargs["prefectures"] = kwargs["prefectures"].filter(
+                parent__id__in=id_regions
+            )
+
+        kwargs["communes"] = adm_queryset.filter(type=AdministrativeLevel.COMMUNE)
+        if id_prefectures:
+            kwargs["communes"] = kwargs["communes"].filter(
+                parent__id__in=id_prefectures
+            )
+        elif id_regions:
+            kwargs["communes"] = kwargs["communes"].filter(
+                parent__parent__id__in=id_regions
+            )
+
+        kwargs["cantons"] = adm_queryset.filter(type=AdministrativeLevel.CANTON)
+        if id_communes:
+            kwargs["cantons"] = kwargs["cantons"].filter(
+                parent__id__in=id_communes
+            )
+        elif id_prefectures:
+            kwargs["cantons"] = kwargs["cantons"].filter(
+                parent__parent__id__in=id_prefectures
+            )
+        elif id_regions:
+            kwargs["cantons"] = kwargs["cantons"].filter(
+                parent__parent__parent__id__in=id_regions
+            )
+
+        kwargs["villages"] = adm_queryset.filter(type=AdministrativeLevel.VILLAGE)
+        if id_cantons:
+            kwargs["villages"] = kwargs["villages"].filter(
+                parent__id__in=id_cantons
+            )
+        elif id_communes:
+            kwargs["villages"] = kwargs["villages"].filter(
+                parent__parent__id__in=id_communes
+            )
+        elif id_prefectures:
+            kwargs["villages"] = kwargs["villages"].filter(
+                parent__parent__parent__id__in=id_prefectures
+            )
+        elif id_regions:
+            kwargs["villages"] = kwargs["villages"].filter(
+                parent__parent__parent__parent__id__in=id_regions
+            )
+
+        return kwargs
+
     # def get_queryset(self):
     #     return super().get_queryset()
     def get_queryset(self):
+        count = 100
         search = self.request.GET.get("search", None)
-        page_number = self.request.GET.get("page", None)
-        if search:
-            if search == "All":
-                cs = CVD.objects.all()
-                return Paginator(cs, cs.count()).get_page(page_number)
+        page_number = self.request.GET.get("page", None)        
+        id_regions = self.filter_list_by_delete_empty(self.request.GET.getlist('region', []))
+        id_prefectures = self.filter_list_by_delete_empty(self.request.GET.getlist('prefecture', []))
+        id_communes = self.filter_list_by_delete_empty(self.request.GET.getlist('commune', []))
+        id_cantons = self.filter_list_by_delete_empty(self.request.GET.getlist('canton', []))
+        id_villages = self.filter_list_by_delete_empty(self.request.GET.getlist('village', []))
+        include_all_projects_checked = self.request.GET.get('include_all_projects', 0) in (1, '1')
+
+        all_projects = self.request.session.get('tree_structure_projects_ids') if include_all_projects_checked else [self.request.session.get('project_id')]
+        
+        cvds = CVD.objects.filter(
+            headquarters_village__administrative_levels_projects__in=all_projects
+        )
+
+        if (
+            (id_regions and 'All' not in id_regions) or 
+            (id_prefectures and 'All' not in id_prefectures) or 
+            (id_communes and 'All' not in id_communes) or 
+            (id_cantons and 'All' not in id_cantons) or 
+            (id_villages and 'All' not in id_villages)
+        ):
+            if id_villages:
+                _ids = id_villages
+            elif id_cantons:
+                _ids = id_cantons
+            elif id_communes:
+                _ids = id_communes
+            elif id_prefectures:
+                _ids = id_prefectures
+            elif id_regions:
+                _ids = id_regions
+            
+            cvds = cvds.filter(
+                Q(headquarters_village__id__in=_ids) | 
+                Q(headquarters_village__parent__id__in=_ids) | 
+                Q(headquarters_village__parent__parent__id__in=_ids) | 
+                Q(headquarters_village__parent__parent__parent__id__in=_ids) | 
+                Q(headquarters_village__parent__parent__parent__parent__id__in=_ids)
+            )
+        
+        if search and search != "All":
             search = search.upper()
-            return Paginator(CVD.objects.filter(
+            cvds = cvds.filter(
                 Q(name__icontains=search) | Q(headquarters_village__parent__name__icontains=search)
-            ), 100).get_page(page_number)
-        else:
-            return Paginator(CVD.objects.all(), 100).get_page(page_number)
+            )
+        
+        cvds = cvds.distinct()
+
+        if (
+            id_regions or id_prefectures or id_communes or id_cantons or id_villages or search or include_all_projects_checked
+        ):
+            count = cvds.count()
+            if count == 0:
+                count = 1
+        
+        return Paginator(cvds, count).get_page(page_number)
+    
 
     def get_context_data(self, **kwargs):
         ctx = super(CVDListView, self).get_context_data(**kwargs)
+        ctx.update(self.get_filters_context())
+
+        # ctx['hide_content_header'] = True
+
         ctx['search'] = self.request.GET.get("search", None)
+        ctx['type'] = self.request.GET.get("type", "Village")
+
+        ctx['form_adl'] = AdministrativeLevelFilterForm(
+            has_all=False, 
+
+            regions=ctx.get('regions', []),
+            prefectures=ctx.get('prefectures', []),
+            communes=ctx.get('communes', []),
+            cantons=ctx.get('cantons', []),
+            villages=ctx.get('villages', []),
+
+            default_regions=ctx.get('id_regions_selected', []),
+            default_prefectures=ctx.get('id_prefectures_selected', []),
+            default_communes=ctx.get('id_communes_selected', []),
+            default_cantons=ctx.get('id_cantons_selected', []),
+            default_villages=ctx.get('id_villages_selected', []),
+        )
+
         return ctx
 
 
@@ -889,7 +1327,7 @@ class CVDCreateView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin,
                     village.cvd = cvd
                     village.save(user=self.request.user)
                 except Exception as exc:
-                    print(exc)
+                    pass
 
             return redirect('administrativelevels:cvds_list')
         return super(CVDCreateView, self).get(request, *args, **kwargs)
@@ -937,7 +1375,7 @@ class CVDUpdateView(PageMixin, LoginRequiredMixin, AccountantPermissionRequiredM
                     village.cvd = cvd
                     village.save(user=self.request.user)
                 except Exception as exc:
-                    print(exc)
+                    pass
 
             return redirect('administrativelevels:cvds_list')
         return super(CVDUpdateView, self).get(request, *args, **kwargs)
@@ -959,6 +1397,74 @@ class CVDDetailView(PageMixin, LoginRequiredMixin, DetailView):
             'title': title
         },
     ]
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['list_subprojects_kit'] = context['object'].get_list_subprojects_kit()
+        context['list_subprojects'] = context['object'].get_list_subprojects()
+
+        allocations_project = AdministrativeLevelAllocation.objects.filter(
+            project_id=self.request.session.get('project_id'), 
+            cvd_id=context['object'].id, 
+            administrative_level=None
+        )
+
+        # Définir les composants de financement
+        components_mapping = { _('Component 1.1'): 2, _('Component 1.2'): 3, _('Component 1.3'): 6 }
+        financing_components = {}
+        context['pie_graphes'] = []
+        for component_label, component_id in components_mapping.items():
+            comp_qs = context['list_subprojects'].filter(component_id=component_id)
+
+            # Agrégation des montants en une seule passe
+            agg = comp_qs.aggregate(
+                estimated_cost=Sum('estimated_cost'),
+                contract_amount=Sum('contract_amount_work_companies')
+            )
+            total_estimated = agg['estimated_cost'] or 0
+            total_contract = agg['contract_amount'] or 0
+
+            total_allocations = allocations_project.filter(component_id=component_id).aggregate(Sum('amount'))['amount__sum'] or 0
+
+            financing_components[component_label] = {
+                'total_amount_subprojects_estimated_cost': total_estimated,
+                'total_amount_subprojects_contract_amount_work_companies': total_contract,
+                'total_allocations_cantons': total_allocations,
+                'total_amount_remaining_after_allocation': total_allocations - total_estimated,
+                'total_amount_residual': total_allocations - total_contract
+            }
+
+            # Graphique pour chaque composant
+            context['pie_graphes'].append({
+                'type': _("Wording"),
+                'type_value_label': _("Amount"),
+                'title': _("Amount of infrastructures by status") + f" {component_label}",
+                'labels': [_("Residual"), _("Spent")],
+                'data': [financing_components[component_label]['total_amount_residual'], total_contract],
+                'sorted': 0
+            })
+
+        context['financing_components'] = financing_components
+
+        # Totaux globaux
+        agg_total = context['list_subprojects'].aggregate(
+            total_estimated_cost=Sum('estimated_cost'),
+            total_contract_amount=Sum('contract_amount_work_companies')
+        )
+        total_estimated = agg_total['total_estimated_cost'] or 0
+        total_contract = agg_total['total_contract_amount'] or 0
+        total_allocations = allocations_project.aggregate(Sum('amount'))['amount__sum'] or 0
+
+        context.update({
+            'total_amount_subprojects_estimated_cost': total_estimated,
+            'total_amount_subprojects_contract_amount_work_companies': total_contract,
+            'total_allocations_cantons': total_allocations,
+            'total_amount_remaining_after_allocation': total_allocations - total_estimated,
+            'total_amount_residual': total_allocations - total_contract
+        })
+
+        return context
+
 
 class DownloadCVDCSVView(PageMixin, LoginRequiredMixin, TemplateView):
     """Class to download CVD under excel file"""
@@ -988,7 +1494,7 @@ class DownloadCVDCSVView(PageMixin, LoginRequiredMixin, TemplateView):
         for ald_id in administrative_level_ids_get:
             ald_id = 0 if ald_id in ("", "null", "undefined", "All") else ald_id
             administrative_levels_ids += get_administrative_level_ids_descendants(
-                ald_id, None, []
+                ald_id, None, [], self.request.session.get('project_id')
             )
             if ald_id:
                 ald_filter_ids.append(int(ald_id))

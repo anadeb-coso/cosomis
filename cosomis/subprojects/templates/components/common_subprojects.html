@@ -35,7 +35,7 @@
                             <i class="fa fa-eye"></i>
                         </a>
                         {% if user.is_superuser or user|has_group:"Admin" %}
-                        <a href="{% url 'subprojects:update' subproject.pk %}" style="font-size: 9px !important;"
+                        <a href="{% url 'subprojects:update_without_link_heavy_object' subproject.pk %}" style="font-size: 9px !important;"
                             class="btn btn-primary btn-xs" title="{% translate 'Edit' %}">
                             <i class="fa fa-edit"></i>
                         </a>
