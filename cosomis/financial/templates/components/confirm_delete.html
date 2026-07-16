@@ -1,0 +1,22 @@
+{% extends 'layouts/base.html' %}
+{% load i18n %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title text-danger">{% translate 'Confirm deletion' %}</h3>
+                </div>
+                <div class="card-body">
+                    <p>{% blocktranslate %}Are you sure you want to delete "{{ object }}"? This action cannot be undone.{% endblocktranslate %}</p>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <a href="{{ cancel_url }}" class="btn btn-secondary">{% translate 'Cancel' %}</a>
+                        <button type="submit" class="btn btn-danger">{% translate 'Delete' %}</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,7 +1,9 @@
-{% comment %} {% extends 'layouts/base.html' %} {% endcomment %}
+{% extends 'layouts/base.html' %}
 {% load static i18n custom_tags %}
 
-{% comment %} {% block content %} {% endcomment %}
+{% block content %}
+{% include 'components/financial_menu.html' with active_menu='allocations' %}
+{% include 'components/entity_filters.html' %}
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -15,70 +17,70 @@
                                     <div> &nbsp; &nbsp; </div>
                                 {% endif %}
 
-                                <button class="btn btn-primary" 
+                                <button class="btn btn-primary"
                                     type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     {% if type %}{{ type }}{% else %}{% translate 'See Others' %}{% endif %} <i class="fa fa-chevron-down"></i>
                                 </button>
                                 <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                    <a class="dropdown-item tab-allocation-other" href="#allocations" data-href="{% url 'financial:allocations_list' %}?type=cvd">
+                                    <a class="dropdown-item" href="{% url 'financial:allocations_list' %}?type=cvd">
                                     {% translate 'CVD' %}
                                     </a>
-                                    <a class="dropdown-item tab-allocation-other" href="#allocations" data-href="{% url 'financial:allocations_list' %}?type=Village">
+                                    <a class="dropdown-item" href="{% url 'financial:allocations_list' %}?type=Village">
                                     {% translate 'Village' %}
                                     </a>
-                                    <a class="dropdown-item tab-allocation-other" href="#allocations" data-href="{% url 'financial:allocations_list' %}?type=Canton">
+                                    <a class="dropdown-item" href="{% url 'financial:allocations_list' %}?type=Canton">
                                     {% translate 'Canton' %}
                                     </a>
-                                    <a class="dropdown-item tab-allocation-other" href="#allocations" data-href="{% url 'financial:allocations_list' %}?type=Commune">
+                                    <a class="dropdown-item" href="{% url 'financial:allocations_list' %}?type=Commune">
                                     {% translate 'Commune' %}
                                     </a>
-                                    <a class="dropdown-item tab-allocation-other" href="#allocations" data-href="{% url 'financial:allocations_list' %}?type=Prefecture">
+                                    <a class="dropdown-item" href="{% url 'financial:allocations_list' %}?type=Prefecture">
                                     {% translate 'Prefecture' %}
                                     </a>
-                                    <a class="dropdown-item tab-allocation-other" href="#allocations" data-href="{% url 'financial:allocations_list' %}?type=Region">
+                                    <a class="dropdown-item" href="{% url 'financial:allocations_list' %}?type=Region">
                                     {% translate 'Region' %}
                                     </a>
                                 </div>
-                                &nbsp; &nbsp; 
-                                
-                                <a class="btn btn-primary tab-allocation-other" href="#allocations" data-href="{% url 'financial:allocations_list' %}?type={{ type }}&search=All">
+                                &nbsp; &nbsp;
+
+                                <a class="btn btn-primary" href="{% url 'financial:allocations_list' %}?type={{ type }}&search=All">
                                     {% translate 'See All' %}
                                 </a>
 
                                 {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
                                 &nbsp; &nbsp;
                                 <div class="" style="display: inline-block;">
-                                    <button class="btn btn-primary" style="display: inline-block;" 
+                                    <button class="btn btn-primary" style="display: inline-block;"
                                         type="button" id="dropdownMenuButtonCreate" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                         {% translate 'Register an allocation' %} <i class="fa fa-chevron-down"></i>
                                     </button>
                                     <div class="dropdown-menu" aria-labelledby="dropdownMenuButtonCreate">
-                                        <a class="dropdown-item" target="_blank" href="{% url 'financial:allocation_create' %}?type=cvd">
+                                        <a class="dropdown-item" href="{% url 'financial:allocation_create' %}?type=cvd">
                                         {% translate 'CVD' %}
                                         </a>
-                                        <a class="dropdown-item" target="_blank" href="{% url 'financial:allocation_create' %}?type=Village">
+                                        <a class="dropdown-item" href="{% url 'financial:allocation_create' %}?type=Village">
                                         {% translate 'Village' %}
                                         </a>
-                                        <a class="dropdown-item" target="_blank" href="{% url 'financial:allocation_create' %}?type=Canton">
+                                        <a class="dropdown-item" href="{% url 'financial:allocation_create' %}?type=Canton">
                                         {% translate 'Canton' %}
                                         </a>
-                                        <a class="dropdown-item" target="_blank" href="{% url 'financial:allocation_create' %}?type=Commune">
+                                        <a class="dropdown-item" href="{% url 'financial:allocation_create' %}?type=Commune">
                                         {% translate 'Commune' %}
                                         </a>
-                                        <a class="dropdown-item" target="_blank" href="{% url 'financial:allocation_create' %}?type=Prefecture">
+                                        <a class="dropdown-item" href="{% url 'financial:allocation_create' %}?type=Prefecture">
                                         {% translate 'Prefecture' %}
                                         </a>
-                                        <a class="dropdown-item" target="_blank" href="{% url 'financial:allocation_create' %}?type=Region">
+                                        <a class="dropdown-item" href="{% url 'financial:allocation_create' %}?type=Region">
                                         {% translate 'Region' %}
                                         </a>
                                     </div>
                                 </div>
-
-                                {% comment %} <a class="btn btn-primary" target="_blank"
-                                    href="{% url 'financial:allocation_create' %}">
-                                        {% translate 'Register an allocation' %}
-                                </a> {% endcomment %}
                                 {% endif %}
+
+                                &nbsp; &nbsp;
+                                <a class="btn btn-outline-primary" href="{% url 'financial:allocation_export' %}?{{ request.GET.urlencode }}">
+                                    <i class="fas fa-file-excel"></i> {% translate 'Export' %}
+                                </a>
 
                             </div>
                         </div>
@@ -111,16 +113,23 @@
                                 <td>{{ allocation.project.name }}</td>
                                 <td>{% if allocation.component %}{{ allocation.component }}{% else %} - {% endif %}</td>
                                 <td>
-                                    <a href="#" data-toggle="modal" data-target="#allocation-details-{{ allocation.pk }}" 
-                                        style="font-size: 9px !important;" 
+                                    <a href="#" data-toggle="modal" data-target="#allocation-details-{{ allocation.pk }}"
+                                        style="font-size: 9px !important;"
                                        class="btn btn-primary btn-xs" title="{% translate 'View details' %}">
                                         <i class="fa fa-eye"></i>
                                     </a>
                                     {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
-                                    <a href="{% url 'financial:allocation_update' allocation.pk %}?type={% if allocation.administrative_level %}{{allocation.administrative_level.type}}{% else %}cvd{% endif %}" 
-                                        style="font-size: 9px !important;" target="_blank"
+                                    <a href="{% url 'financial:allocation_update' allocation.pk %}?type={% if allocation.administrative_level %}{{allocation.administrative_level.type}}{% else %}cvd{% endif %}"
+                                        style="font-size: 9px !important;"
                                        class="btn btn-primary btn-xs" title="{% translate 'Edit' %}">
                                         <i class="fa fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if user.is_superuser or user|has_group:"Financial" %}
+                                    <a href="{% url 'financial:allocation_delete' allocation.pk %}"
+                                        style="font-size: 9px !important;"
+                                       class="btn btn-danger btn-xs" title="{% translate 'Delete' %}">
+                                        <i class="fa fa-trash"></i>
                                     </a>
                                     {% endif %}
                                 </td>
@@ -133,9 +142,7 @@
                         <ul class="pagination justify-content-center">
                             {% if allocations.has_previous %}
                                 <li>
-                                    <a class="page-link tab-allocation-other" href="#allocations" data-href="{% url 'financial:allocations_list' %}?page={{ allocations.previous_page_number }}" 
-                                        >
-                                        {% comment %} <span aria-hiden="true">&laquo;</span> {% endcomment %}
+                                    <a class="page-link" href="{% url 'financial:allocations_list' %}?page={{ allocations.previous_page_number }}">
                                         <i class="fa fa-arrow-left text-bold"></i>
                                     </a>
                                 </li>
@@ -147,16 +154,14 @@
                             </li>
                             {% if allocations.has_next %}
                                 <li class="page-item">
-                                    <a class="page-link tab-allocation-other" href="#allocations" data-href="{% url 'financial:allocations_list' %}?page={{ allocations.next_page_number }}" 
-                                        >
-                                        {% comment %} <span aria-hidden="true">&laquo;</span> {% endcomment %}
+                                    <a class="page-link" href="{% url 'financial:allocations_list' %}?page={{ allocations.next_page_number }}">
                                         <i class="fa fa-arrow-right text-bold"></i>
                                     </a>
                                 </li>
                             {% endif %}
                         </ul>
                     </nav>
-                    
+
 
                     <b>{{ sum_allocation_mount|separate_with_space }} ==> {% translate 'Total amount allocated' %}</b><br />
                     <b>{{ sum_allocation_amount_in_dollars|separate_with_space:'$' }} ==> {% translate 'Total amount allocated in dollars' %}</b><br />
@@ -176,10 +181,9 @@
             </div>
         </div>
     </div>
-{% comment %} {% endblock %} {% endcomment %}
+{% endblock %}
 
-
-
+{% block modals %}
 <!-- Modal -->
 {% for allocation in allocations %}
 <div class="modal fade" id="allocation-details-{{ allocation.pk }}" tabindex="-1" role="dialog" aria-labelledby="allocation-center-title-{{ allocation.pk }}" aria-hidden="true">
@@ -243,10 +247,10 @@
 </div>
 {% endfor %}
 <!-- End Modal -->
+{% endblock %}
 
-
-{% comment %} {% block javascript %}
-    {{ block.super }} {% endcomment %}
+{% block javascript %}
+    {{ block.super }}
 
     <!-- DataTables export files -->
     {% include 'layouts/datatable-js.html' %}
@@ -254,7 +258,7 @@
     <script type="text/javascript">
         $(document).ready(function () {
             {% get_current_language as lang %}
-            
+
             let table_allocations = $('#table-allocations').DataTable({
                 retrieve: true,
                 language: {
@@ -266,14 +270,6 @@
                 pageLength: 10,
                 order: []
             });
-        
-            $('a.tab-allocation-other').on('click', function () {
-                var elt = $(this).attr('href').replace('#', '');
-                loadPage($(this).attr('data-href'), $(`#${elt}-data`), $(`#${elt}-spin`));
-            });
-
-
-            
         });
     </script>
-{% comment %} {% endblock %} {% endcomment %}
+{% endblock %}

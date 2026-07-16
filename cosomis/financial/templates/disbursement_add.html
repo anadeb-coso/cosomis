@@ -11,6 +11,7 @@
                             {% comment %} <a class="nav-link font-weight-bold" href="{% url 'financial:financials' %}" 
                                 role="button"><i class="fas fa-chevron-left text-primary"></i></a> {% endcomment %}
                                 <a href="javascript:close_window();"><i class="fas fa-times text-danger"></i></a>
+                                <a href="{% url 'financial:disbursements_list' %}" class="btn btn-secondary btn-sm">{% translate 'Back to list' %}</a>
                         </div>
                     </div>
                 </div>

@@ -11,6 +11,7 @@
                             {% comment %} <a class="nav-link font-weight-bold" href="{% url 'financial:financials' %}" 
                                 role="button"><i class="fas fa-chevron-left text-primary"></i></a> {% endcomment %}
                                 <a href="javascript:close_window();"><i class="fas fa-times text-danger"></i></a>
+                                <a href="{% url 'financial:bank_transfers_list' %}" class="btn btn-secondary btn-sm">{% translate 'Back to list' %}</a>
                         </div>
                     </div>
                 </div>
@@ -55,11 +56,14 @@
                         </div>
                     </div>
                 </div>
-                
-                
+
+
             </div>
         </div>
     </div>
+    {{ disbursement_meta|json_script:"disbursement-meta" }}
+    {{ funding_meta|json_script:"funding-meta" }}
+    {{ allocation_meta|json_script:"allocation-meta" }}
 {% endblock %}
 
 {% block javascript %}
@@ -196,7 +200,87 @@
                 }
             });
 
-            
+
+        });
+    </script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var disbursementMeta = JSON.parse(document.getElementById('disbursement-meta').textContent);
+            var fundingMeta = JSON.parse(document.getElementById('funding-meta').textContent);
+            var allocationMeta = JSON.parse(document.getElementById('allocation-meta').textContent);
+
+            var $project = $('#id_project');
+            var $funding = $('#id_funding');
+            var $disbursement = $('#id_disbursement');
+            var $allocation = $('#id_linked_to_allocation');
+
+            if (!$project.length || !$funding.length || !$disbursement.length || !$allocation.length) {
+                return;
+            }
+
+            // Full option lists, kept aside so any filter can always be rebuilt from scratch.
+            var allProjectOptions = $project.find('option').clone();
+            var allFundingOptions = $funding.find('option').clone();
+            var allDisbursementOptions = $disbursement.find('option').clone();
+            var allAllocationOptions = $allocation.find('option').clone();
+
+            function rebuildSelect($select, allOptions, allowedIds) {
+                var currentVal = $select.val();
+                $select.empty();
+                allOptions.each(function () {
+                    var val = $(this).val();
+                    if (val === '' || allowedIds === null || allowedIds.indexOf(val) !== -1) {
+                        $select.append($(this).clone());
+                    }
+                });
+                $select.val(allowedIds === null || allowedIds.indexOf(currentVal) !== -1 ? currentVal : '');
+                $select.trigger('change.select2');
+            }
+
+            function onDisbursementChange() {
+                var id = $disbursement.val();
+                var meta = id ? disbursementMeta[id] : null;
+                rebuildSelect($project, allProjectOptions, id ? (meta && meta.project_id != null ? [String(meta.project_id)] : []) : null);
+                rebuildSelect($funding, allFundingOptions, id ? (meta && meta.funding_id != null ? [String(meta.funding_id)] : []) : null);
+            }
+
+            function onProjectChange() {
+                var id = $project.val();
+                var fundingIds = null, disbursementIds = null, allocationIds = null;
+                if (id) {
+                    fundingIds = Object.keys(fundingMeta).filter(function (fid) {
+                        return String(fundingMeta[fid].project_id) === id;
+                    });
+                    disbursementIds = Object.keys(disbursementMeta).filter(function (did) {
+                        return String(disbursementMeta[did].project_id) === id;
+                    });
+                    allocationIds = Object.keys(allocationMeta).filter(function (aid) {
+                        return String(allocationMeta[aid].project_id) === id;
+                    });
+                }
+                rebuildSelect($funding, allFundingOptions, fundingIds);
+                rebuildSelect($disbursement, allDisbursementOptions, disbursementIds);
+                rebuildSelect($allocation, allAllocationOptions, allocationIds);
+            }
+
+            function onFundingChange() {
+                var id = $funding.val();
+                var projectIds = null, disbursementIds = null;
+                if (id) {
+                    var meta = fundingMeta[id];
+                    projectIds = (meta && meta.project_id != null) ? [String(meta.project_id)] : [];
+                    disbursementIds = Object.keys(disbursementMeta).filter(function (did) {
+                        return String(disbursementMeta[did].funding_id) === id;
+                    });
+                }
+                rebuildSelect($project, allProjectOptions, projectIds);
+                rebuildSelect($disbursement, allDisbursementOptions, disbursementIds);
+            }
+
+            $disbursement.on('change', onDisbursementChange);
+            $project.on('change', onProjectChange);
+            $funding.on('change', onFundingChange);
         });
     </script>
 

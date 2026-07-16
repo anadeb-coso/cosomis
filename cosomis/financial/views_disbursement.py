@@ -1,5 +1,6 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
+from django.urls import reverse_lazy
 from django.views import generic
 from cosomis.mixins import PageMixin
 from django.utils.translation import gettext_lazy as _
@@ -7,12 +8,37 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 
 
-from financial.models.financial import Disbursement
+from financial.models.financial import BankTransfer, Disbursement
+from financial.models.supporting_document import SupportingDocument
 from usermanager.permissions import (
     AccountantPermissionRequiredMixin,
+    FinancialPermissionRequiredMixin,
     )
 from financial.forms import DisbursementForm
+from financial.list_filters import apply_entity_filters, build_filter_context
+from financial.exports import export_disbursement
 # Create your views here.
+
+
+def _filtered_disbursements(get):
+    qs = Disbursement.objects.all().order_by('-disbursement_date')
+    search = get.get('search', None)
+    if search and search != 'All':
+        search_upper = search.upper()
+        qs = qs.filter(
+            Q(disbursement_request__project__name__icontains=search_upper) |
+            Q(disbursement_date__icontains=search_upper) |
+            Q(description__icontains=search_upper) |
+            Q(amount_disbursed__icontains=search_upper)
+        )
+    return apply_entity_filters(
+        qs, get,
+        project='disbursement_request__project_id',
+        funding='disbursement_request__funding_id',
+        category='disbursement_request__funding__component__category_id',
+        component='disbursement_request__funding__component_id',
+        disbursement_request='disbursement_request_id',
+    )
 
 
 
@@ -98,30 +124,39 @@ class DisbursementsListView(PageMixin, LoginRequiredMixin, generic.ListView):
     ]
 
     def get_queryset(self):
-        search = self.request.GET.get("search", None)
         page_number = self.request.GET.get("page", None)
-        if search:
-            if search == "All":
-                ads = Disbursement.objects.filter()
-                return Paginator(ads, ads.count()).get_page(page_number)
-            search = search.upper()
-            return Paginator(Disbursement.objects.filter(
-                Q(project__name__icontains=search) | 
-                Q(transfer_date__icontains=search) | 
-                Q(description__icontains=search) | 
-                Q(motif__icontains=search) | 
-                Q(amount_transferred__icontains=search)
-            ), 100).get_page(page_number)
-        else:
-            return Paginator(Disbursement.objects.filter(), 100).get_page(page_number)
+        return Paginator(_filtered_disbursements(self.request.GET), 100).get_page(page_number)
 
-        # return super().get_queryset()
     def get_context_data(self, **kwargs):
         ctx = super(DisbursementsListView, self).get_context_data(**kwargs)
         ctx['search'] = self.request.GET.get("search", None)
         ctx['type'] = self.request.GET.get("type", "cvd")
+        ctx.update(build_filter_context(
+            self.request, projects=True, fundings=True, categories=True,
+            components=True, disbursement_requests=True,
+        ))
         return ctx
-    
+
+
+class DisbursementExportView(PageMixin, LoginRequiredMixin, generic.View):
+    def get(self, request, *args, **kwargs):
+        return export_disbursement(_filtered_disbursements(request.GET))
+
+
+class DisbursementDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, generic.DeleteView):
+    """Only the Financial group and superusers may delete a disbursement."""
+
+    model = Disbursement
+    template_name = 'components/confirm_delete.html'
+    title = _('Delete disbursement')
+    active_level1 = 'financial'
+    success_url = reverse_lazy('financial:disbursements_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['cancel_url'] = reverse_lazy('financial:disbursements_list')
+        return context
+
 
 class DisbursementDetailView(PageMixin, LoginRequiredMixin, generic.DetailView):
     """Class to present the detail page of one Disbursement"""
@@ -137,4 +172,9 @@ class DisbursementDetailView(PageMixin, LoginRequiredMixin, generic.DetailView):
             'title': title
         },
     ]
-    
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['supporting_documents'] = SupportingDocument.objects.filter(disbursement=self.object)
+        ctx['bank_transfers'] = BankTransfer.objects.filter(disbursement=self.object).order_by('-transfer_date')
+        return ctx

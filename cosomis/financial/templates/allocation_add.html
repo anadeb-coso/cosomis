@@ -10,6 +10,7 @@
                         <div class="btn-group pull-left">
                             {% comment %} <a class="btn btn-primary" href="{% url 'financial:allocations_list' %}">{% translate 'Allocations' %}</a> {% endcomment %}
                             <a href="javascript:close_window();"><i class="fas fa-times text-danger"></i></a>
+                            <a href="{% url 'financial:allocations_list' %}" class="btn btn-secondary btn-sm">{% translate 'Back to list' %}</a>
                         </div>
                     </div>
                 </div>
@@ -51,11 +52,12 @@
                         </div>
                     </div>
                 </div>
-                
-                
+
+
             </div>
         </div>
     </div>
+    {{ component_meta|json_script:"component-meta" }}
 {% endblock %}
 
 {% block javascript %}
@@ -192,7 +194,42 @@
                 }
             });
 
-            
+
+        });
+    </script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var componentMetaEl = document.getElementById('component-meta');
+            var $project = $('#id_project');
+            var $component = $('#id_component');
+
+            if (!componentMetaEl || !$project.length || !$component.length) {
+                return;
+            }
+
+            var componentMeta = JSON.parse(componentMetaEl.textContent);
+            var allComponentOptions = $component.find('option').clone();
+
+            function onProjectChange() {
+                var projectId = $project.val();
+                var allowedIds = projectId ? Object.keys(componentMeta).filter(function (cid) {
+                    return String(componentMeta[cid].project_id) === projectId;
+                }) : null;
+
+                var currentVal = $component.val();
+                $component.empty();
+                allComponentOptions.each(function () {
+                    var val = $(this).val();
+                    if (val === '' || allowedIds === null || allowedIds.indexOf(val) !== -1) {
+                        $component.append($(this).clone());
+                    }
+                });
+                $component.val(allowedIds === null || allowedIds.indexOf(currentVal) !== -1 ? currentVal : '');
+                $component.trigger('change.select2');
+            }
+
+            $project.on('change', onProjectChange);
         });
     </script>
 

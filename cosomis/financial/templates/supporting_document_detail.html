@@ -1,0 +1,57 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n custom_tags %}
+
+{% block content %}
+{% include 'components/financial_menu.html' with active_menu='supporting_document' %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ supporting_document.reference }} <span class="badge badge-secondary">{{ supporting_document.get_document_type_display }}</span></h3>
+                    <div class="card-tools">
+                        <a class="btn btn-outline-primary btn-sm" href="{% url 'financial:supporting_document_export' %}"><i class="fas fa-file-excel"></i> {% translate 'Export' %}</a>
+                        <a class="btn btn-secondary btn-sm" href="{% url 'financial:supporting_document_list' %}">{% translate 'Back to list' %}</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3"><strong>{% translate 'Related disbursement' %}</strong><br>{% if supporting_document.disbursement %}{{ supporting_document.disbursement }}{% else %}-{% endif %}</div>
+                        <div class="col-md-3"><strong>{% translate 'Related fund request' %}</strong><br>{% if supporting_document.disbursement_request %}{{ supporting_document.disbursement_request }}{% else %}-{% endif %}</div>
+                        <div class="col-md-3"><strong>{% translate 'Document date' %}</strong><br>{{ supporting_document.document_date }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Total amount justified' %}</strong><br>{{ supporting_document.total_justified_amount|separate_with_space }}</div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <strong>{% translate 'File' %}</strong><br>
+                            {% if supporting_document.file %}
+                                <a href="{{ supporting_document.file.url }}" target="_blank">{{ supporting_document.file_name|default:supporting_document.file.name }}</a>
+                            {% else %}-{% endif %}
+                        </div>
+                        <div class="col-md-6"><strong>{% translate 'Observations' %}</strong><br>{{ supporting_document.notes|default_if_none:'-' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Justified activities' %}</h3></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead><tr><th>{% translate 'Activity' %}</th><th>{% translate 'Allocated amount' %}</th><th>{% translate 'Balance to justify' %}</th><th>{% translate 'Observations' %}</th></tr></thead>
+                        <tbody>
+                        {% for line in lines %}
+                            <tr>
+                                <td>{{ line.activity.name }}</td>
+                                <td>{{ line.allocated_amount|separate_with_space }}</td>
+                                <td class="{% if line.activity.balance_to_justify < 0 %}text-danger{% else %}text-success{% endif %}">{{ line.activity.balance_to_justify|separate_with_space }}</td>
+                                <td>{{ line.notes|default_if_none:'-' }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="4" class="text-center">{% translate 'No data' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -323,3 +323,61 @@ def get_days_until_today(date_time):
 @register.filter
 def get_facilitator_with_ids(village, project_ids):
     return village.get_facilitator(project_ids)
+
+
+FINANCIAL_STATUS_BADGE_CLASSES = {
+    'PENDING': 'badge-warning',
+    'PARTIALLY_VALIDATED': 'badge-warning',
+    'PARTIALLY_JUSTIFIED': 'badge-warning',
+    'NOT_JUSTIFIED': 'badge-danger',
+    'FULLY_VALIDATED': 'badge-success',
+    'FULLY_JUSTIFIED': 'badge-success',
+    'EXECUTED': 'badge-success',
+    'REJECTED': 'badge-danger',
+    'CANCELLED': 'badge-danger',
+    'ACTIVE': 'badge-success',
+    'SUSPENDED': 'badge-warning',
+    'ABANDONED': 'badge-danger',
+    'CLOSED': 'badge-secondary',
+    'FORWARD': 'badge-info',
+    'RETURN': 'badge-dark',
+    'CREDIT': 'badge-primary',
+    'GRANT': 'badge-info',
+    'BANK_TRANSFER': 'badge-info',
+    'CHEQUE': 'badge-dark',
+}
+
+ACCOUNT_TYPE_BADGE_CLASSES = {
+    'PROJECT': 'badge-primary',
+    'REGIONAL_OFFICE': 'badge-info',
+    'TOWN_HALL': 'badge-dark',
+    'CVD': 'badge-success',
+    'PROJECT_SPECIALIST': 'badge-warning',
+    'SERVICE_PROVIDER': 'badge-secondary',
+}
+
+
+@register.filter(name='financial_status_badge')
+def financial_status_badge(value):
+    """Bootstrap badge class for the financial app's status-like TextChoices values."""
+    return FINANCIAL_STATUS_BADGE_CLASSES.get(str(value), 'badge-secondary')
+
+
+@register.filter(name='account_type_badge')
+def account_type_badge(value):
+    """Bootstrap badge class per financial.Account.AccountType, fixed per type (never reassigned)."""
+    return ACCOUNT_TYPE_BADGE_CLASSES.get(str(value), 'badge-secondary')
+
+
+@register.simple_tag(takes_context=True)
+def querystring_replace(context, **kwargs):
+    """Current request's querystring with the given params overridden/removed (value=None
+    removes it) - used so pagination links don't drop active filters (project/funding/...)."""
+    request = context['request']
+    query = request.GET.copy()
+    for key, value in kwargs.items():
+        if value is None:
+            query.pop(key, None)
+        else:
+            query[key] = value
+    return query.urlencode()

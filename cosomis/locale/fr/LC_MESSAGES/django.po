@@ -3346,3 +3346,773 @@ msgstr "Facilitateur(trice) technique"
 #: .\subprojects
 msgid "by"
 msgstr "par"
+
+#: .\subprojects\models.py:791 .\financial\models\funding.py:13
+#: .\financial\models\planning.py:8
+msgid "IDA Project"
+msgstr "Projet IDA"
+
+#: .\subprojects\models.py:774 .\subprojects\models.py:790
+msgid "IDA category"
+msgstr "Catégorie IDA"
+
+#: .\subprojects\models.py:775
+msgid "IDA categories"
+msgstr "Catégories IDA"
+
+#: .\subprojects\models.py:769 .\financial\models\planning.py:32
+msgid "Target(s)"
+msgstr "Cible(s)"
+
+#: .\subprojects\models.py:792 .\financial\models\financial.py:792
+msgid "Funding"
+msgstr "Financement"
+
+#: .\subprojects\models.py:796
+msgid "Own amount"
+msgstr "Montant propre"
+
+#: .\subprojects\models.py:854
+msgid "Active"
+msgstr "Actif"
+
+#: .\subprojects\models.py:855
+msgid "Suspended"
+msgstr "Interrompu"
+
+#: .\subprojects\models.py:856
+msgid "Abandoned"
+msgstr "Abandonné"
+
+#: .\subprojects\models.py:857
+msgid "Closed"
+msgstr "Fermé"
+
+#: .\financial\models\account.py:10 .\financial\models\financial.py:16
+msgid "Regional office"
+msgstr "Antenne régionale"
+
+#: .\financial\models\account.py:11 .\financial\models\financial.py:17
+msgid "Town hall"
+msgstr "Mairie"
+
+#: .\financial\models\account.py:12 .\financial\models\allocation.py:14
+#: .\financial\models\financial.py:18 .\financial\models\financial.py:56
+#: .\subprojects\models.py:61
+msgid "CVD"
+msgstr "CVD"
+
+#: .\financial\models\account.py:13
+msgid "Project specialist"
+msgstr "Spécialiste de projet"
+
+#: .\financial\models\account.py:14
+msgid "Service provider"
+msgstr "Prestataire de services"
+
+#: .\financial\models\account.py:17
+msgid "Main account"
+msgstr "Compte principal"
+
+#: .\financial\models\account.py:18
+msgid "Sub-account"
+msgstr "Sous-compte"
+
+#: .\financial\models\account.py:21
+msgid "Account type"
+msgstr "Type de compte"
+
+#: .\financial\models\account.py:22
+msgid "Account category"
+msgstr "Catégorie de compte"
+
+#: .\financial\models\account.py:24
+msgid "Contact"
+msgstr "Contact"
+
+#: .\financial\models\account.py:27 .\financial\models\funding.py:18
+#: .\financial\models\planning.py:10 .\financial\models\supporting_document.py:21
+#: .\financial\models\supporting_document.py:41
+msgid "Observations"
+msgstr "Observations"
+
+#: .\financial\models\account.py:32
+msgid "Account"
+msgstr "Compte"
+
+#: .\financial\models\account.py:33
+msgid "Accounts"
+msgstr "Comptes"
+
+#: .\financial\models\funding.py:10
+msgid "Credit"
+msgstr "Crédit"
+
+#: .\financial\models\funding.py:11
+msgid "Grant"
+msgstr "Don"
+
+#: .\financial\models\funding.py:14 .\financial\models\supporting_document.py:17
+msgid "Type"
+msgstr "Type"
+
+#: .\financial\models\funding.py:15
+msgid "IDA identification number"
+msgstr "N° d'identification IDA"
+
+#: .\financial\models\funding.py:16 .\financial\models\planning.py:9
+msgid "Label"
+msgstr "Libellé"
+
+#: .\financial\models\funding.py:17
+msgid "Initial amount"
+msgstr "Montant initial"
+
+#: .\financial\models\funding.py:23
+msgid "Fundings"
+msgstr "Financements"
+
+#: .\financial\models\planning.py:9
+msgid "Period (year)"
+msgstr "Période (année)"
+
+#: .\financial\models\planning.py:16
+msgid "Annual work plan"
+msgstr "Plan de travail annuel"
+
+#: .\financial\models\planning.py:17
+msgid "Annual work plans"
+msgstr "Plans de travail annuels"
+
+#: .\financial\models\planning.py:28
+msgid "Component / Sub-component"
+msgstr "Composante / Sous-composante"
+
+#: .\financial\models\supporting_document.py:9
+msgid "Invoice"
+msgstr "Facture"
+
+#: .\financial\models\supporting_document.py:10
+msgid "Receipt"
+msgstr "Reçu"
+
+#: .\financial\models\supporting_document.py:11
+msgid "Contract"
+msgstr "Contrat"
+
+#: .\financial\models\supporting_document.py:12
+msgid "Minutes"
+msgstr "Procès-verbal"
+
+#: .\financial\models\supporting_document.py:13
+msgid "Purchase order"
+msgstr "Bon de commande"
+
+#: .\financial\models\supporting_document.py:14
+msgid "Other"
+msgstr "Autre"
+
+#: .\financial\models\supporting_document.py:16 .\financial\models\financial.py:69
+msgid "Related disbursement"
+msgstr "Décaissement lié"
+
+#: .\financial\models\supporting_document.py:18
+msgid "Document type"
+msgstr "Type de pièce"
+
+#: .\financial\models\supporting_document.py:19
+msgid "Document reference"
+msgstr "Référence de la pièce"
+
+#: .\financial\models\supporting_document.py:20
+msgid "Document date"
+msgstr "Date de la pièce"
+
+#: .\financial\models\supporting_document.py:21
+msgid "File"
+msgstr "Fichier"
+
+#: .\financial\models\supporting_document.py:27
+msgid "Supporting document"
+msgstr "Justificatif"
+
+#: .\financial\models\supporting_document.py:28 .\financial\models\financial.py:68
+msgid "Supporting documents"
+msgstr "Justificatifs"
+
+#: .\financial\models\supporting_document.py:40
+msgid "Allocated amount"
+msgstr "Montant imputé"
+
+#: .\financial\models\supporting_document.py:46
+msgid "Supporting document / Activity allocation"
+msgstr "Justificatif / Imputation à l'activité"
+
+#: .\financial\models\supporting_document.py:47
+msgid "Supporting document / Activity allocations"
+msgstr "Justificatifs / Imputations aux activités"
+
+#: .\financial\models\financial.py:15
+msgid "Level 1 - Project"
+msgstr "Niveau 1 - Projet"
+
+#: .\financial\models\financial.py:16
+msgid "Level 2 - Regional office"
+msgstr "Niveau 2 - Antenne"
+
+#: .\financial\models\financial.py:17
+msgid "Level 3 - Town hall"
+msgstr "Niveau 3 - Mairie"
+
+#: .\financial\models\financial.py:18
+msgid "Level 4 - CVD"
+msgstr "Niveau 4 - CVD"
+
+#: .\financial\models\financial.py:21
+msgid "Bank transfer"
+msgstr "Virement bancaire"
+
+#: .\financial\models\financial.py:22
+msgid "Cheque"
+msgstr "Chèque"
+
+#: .\financial\models\financial.py:25
+msgid "Sender to recipient"
+msgstr "Normal (émetteur → bénéficiaire)"
+
+#: .\financial\models\financial.py:26
+msgid "Recipient to sender (return)"
+msgstr "Retour (bénéficiaire → émetteur)"
+
+#: .\financial\models\financial.py:29 .\financial\models\financial.py:122
+msgid "Pending"
+msgstr "En attente"
+
+#: .\financial\models\financial.py:30
+msgid "Executed"
+msgstr "Exécuté"
+
+#: .\financial\models\financial.py:31
+msgid "Cancelled"
+msgstr "Annulé"
+
+#: .\financial\models\financial.py:58
+msgid "Sender"
+msgstr "Émetteur"
+
+#: .\financial\models\financial.py:59
+msgid "Recipient"
+msgstr "Bénéficiaire"
+
+#: .\financial\models\financial.py:65
+msgid "Payment method"
+msgstr "Mode de paiement"
+
+#: .\financial\models\financial.py:66
+msgid "Direction"
+msgstr "Sens du virement"
+
+#: .\financial\models\financial.py:99
+msgid "Account type %(sender_type)s is not allowed to initiate a bank transfer."
+msgstr "Le type de compte %(sender_type)s n'est pas autorisé à initier un virement."
+
+#: .\financial\models\financial.py:106
+msgid ""
+"A transfer from %(sender_type)s to %(recipient_type)s is not authorized by "
+"the transfer rules."
+msgstr ""
+"Un virement de %(sender_type)s vers %(recipient_type)s n'est pas autorisé "
+"par les règles de virement."
+
+#: .\financial\models\financial.py:115
+msgid "The selected level does not match the sender's account type."
+msgstr "Le niveau sélectionné ne correspond pas au type de compte de l'émetteur."
+
+#: .\financial\models\financial.py:128
+msgid "Type (Credit/Grant)"
+msgstr "Type (Crédit/Don)"
+
+#: .\financial\models\financial.py:129
+msgid "Credit/Grant"
+msgstr "Crédit/Don"
+
+#: .\financial\models\financial.py:123
+msgid "Fully validated"
+msgstr "Validée intégralement"
+
+#: .\financial\models\financial.py:124
+msgid "Partially validated"
+msgstr "Validée partiellement"
+
+#: .\financial\models\financial.py:125
+msgid "Rejected"
+msgstr "Rejetée"
+
+#: .\financial\models\financial.py:137
+msgid "Amount validated"
+msgstr "Montant validé"
+
+#: .\financial\models\financial.py:135 .\financial\templates\disbursement_request_list.html:41
+#: .\financial\templates\disbursement_request_list.html:132
+msgid "Validation date"
+msgstr "Date de validation"
+
+#: .\financial\models\financial.py:162
+msgid "Not justified"
+msgstr "Non justifié"
+
+#: .\financial\models\financial.py:163
+msgid "Partially justified"
+msgstr "Partiellement justifié"
+
+#: .\financial\models\financial.py:164
+msgid "Fully justified"
+msgstr "Totalement justifié"
+
+#: .\financial\models\financial.py:172
+msgid "Justification status"
+msgstr "Statut de justification"
+
+#: .\financial\views_account.py:20 .\financial\templates\financials.html
+msgid "Account balances"
+msgstr "Soldes des comptes"
+
+#: .\financial\views_dashboard.py:16 .\financial\templates\financials.html
+msgid "Financial dashboard"
+msgstr "Tableau de bord financier"
+
+#: .\financial\templates\account_balances_list.html
+#: .\financial\templates\financial_dashboard.html
+msgid "Amount currently available"
+msgstr "Montant actuellement disponible"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Fund requests"
+msgstr "Demandes de fonds"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Number of requests"
+msgstr "Nombre de demandes"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Total amount requested"
+msgstr "Montant total demandé"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Total amount validated"
+msgstr "Montant total validé"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Validation rate"
+msgstr "Taux de validation"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Number of disbursements"
+msgstr "Nombre de décaissements"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Total amount disbursed"
+msgstr "Montant total décaissé"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Total amount justified"
+msgstr "Montant total justifié"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Justification gap"
+msgstr "Écart à justifier"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Number of transfers"
+msgstr "Nombre de virements"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Total amount transferred"
+msgstr "Montant total viré"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Balances per actor"
+msgstr "Soldes par acteur"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Amount currently available on the project account"
+msgstr "Montant disponible sur le compte du projet"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Amount currently available for the selected funding"
+msgstr "Montant disponible pour le crédit/don sélectionné"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Available balance per IDA Project"
+msgstr "Solde disponible par Projet IDA"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Total amount"
+msgstr "Montant total"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Available balance per Funding"
+msgstr "Solde disponible par Crédit/Don"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Total received"
+msgstr "Total reçu"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Received (executed)"
+msgstr "Reçu exécuté"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Total sent"
+msgstr "Total émis"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Sent (executed)"
+msgstr "Émis exécuté"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Returned to sender"
+msgstr "Reviré à l'émetteur (retour)"
+#: .\financial\models\supporting_document.py
+msgid "Related fund request"
+msgstr "Demande de fonds liée"
+
+#: .\financial\models\supporting_document.py
+msgid "File display name"
+msgstr "Nom d'affichage du fichier"
+
+#: .\financial\models\supporting_document.py
+msgid "Attach the supporting document to either a disbursement or a fund request, never both, never neither."
+msgstr "Rattachez le justificatif soit à un décaissement, soit à une demande de fonds, jamais les deux, jamais aucun."
+
+#: .\financial\templates\components\confirm_delete.html
+msgid "Are you sure you want to delete \"%(object)s\"? This action cannot be undone."
+msgstr "Voulez-vous vraiment supprimer « %(object)s » ? Cette action est irréversible."
+
+#: .\financial\templates\components\confirm_delete.html
+msgid "Cancel"
+msgstr "Annuler"
+
+#: .\financial\templates\components\confirm_delete.html
+msgid "Delete"
+msgstr "Supprimer"
+
+#: .\financial\templates\funding_list.html
+msgid "Credits & Grants"
+msgstr "Crédits & Dons"
+
+#: .\financial\templates\funding_list.html
+msgid "Register a funding"
+msgstr "Enregistrer un financement"
+
+#: .\financial\templates\funding_list.html
+msgid "Export"
+msgstr "Exporter"
+
+#: .\financial\views_funding.py
+msgid "Update funding"
+msgstr "Modifier le financement"
+
+#: .\financial\views_funding.py
+msgid "Delete funding"
+msgstr "Supprimer le financement"
+
+#: .\financial\templates\funding_detail.html
+msgid "Back to list"
+msgstr "Retour à la liste"
+
+#: .\financial\templates\funding_detail.html
+msgid "Components"
+msgstr "Composantes"
+
+#: .\financial\templates\funding_detail.html
+msgid "Sub-components"
+msgstr "Sous-composantes"
+
+#: .\financial\templates\funding_detail.html
+msgid "Effective amount"
+msgstr "Montant effectif"
+
+#: .\financial\templates\funding_detail.html
+msgid "No data"
+msgstr "Aucune donnée"
+
+#: .\financial\templates\funding_detail.html
+msgid "Balance to justify"
+msgstr "Solde à justifier"
+
+#: .\financial\views_category.py
+msgid "Register an IDA category"
+msgstr "Enregistrer une catégorie IDA"
+
+#: .\financial\views_category.py
+msgid "Update IDA category"
+msgstr "Modifier la catégorie IDA"
+
+#: .\financial\views_category.py
+msgid "Delete IDA category"
+msgstr "Supprimer la catégorie IDA"
+
+#: .\financial\templates\category_detail.html
+msgid "Justified amount"
+msgstr "Montant justifié"
+
+#: .\financial\templates\category_detail.html
+msgid "Available amount"
+msgstr "Solde disponible"
+
+#: .\financial\views_component.py
+msgid "Register a component"
+msgstr "Enregistrer une composante"
+
+#: .\financial\views_component.py
+msgid "Register a sub-component"
+msgstr "Enregistrer une sous-composante"
+
+#: .\financial\views_component.py
+msgid "Update component"
+msgstr "Modifier la composante"
+
+#: .\financial\views_component.py
+msgid "Update sub-component"
+msgstr "Modifier la sous-composante"
+
+#: .\financial\views_component.py
+msgid "Delete component"
+msgstr "Supprimer la composante"
+
+#: .\financial\templates\component_detail.html
+msgid "Add a sub-component"
+msgstr "Ajouter une sous-composante"
+
+#: .\financial\views_project.py
+msgid "IDA Projects"
+msgstr "Projets IDA"
+
+#: .\financial\views_project.py
+msgid "Register an IDA Project"
+msgstr "Enregistrer un projet IDA"
+
+#: .\financial\views_project.py
+msgid "Update IDA Project"
+msgstr "Modifier le projet IDA"
+
+#: .\financial\views_project.py
+msgid "Delete IDA Project"
+msgstr "Supprimer le projet IDA"
+
+#: .\financial\templates\project_ida_detail.html
+msgid "Budgeted amount"
+msgstr "Montant budgétisé"
+
+#: .\financial\views_ptba.py
+msgid "Register an annual work plan"
+msgstr "Enregistrer un PTBA"
+
+#: .\financial\views_ptba.py
+msgid "Update annual work plan"
+msgstr "Modifier le PTBA"
+
+#: .\financial\views_ptba.py
+msgid "Delete annual work plan"
+msgstr "Supprimer le PTBA"
+
+#: .\financial\views_ptba.py
+msgid "Delete activity"
+msgstr "Supprimer l'activité"
+
+#: .\financial\templates\annual_work_plan_detail.html
+msgid "Add an activity"
+msgstr "Ajouter une activité"
+
+#: .\financial\views_supporting_document.py
+msgid "Register a supporting document"
+msgstr "Enregistrer un justificatif"
+
+#: .\financial\views_supporting_document.py
+msgid "Update supporting document"
+msgstr "Modifier le justificatif"
+
+#: .\financial\views_supporting_document.py
+msgid "Delete supporting document"
+msgstr "Supprimer le justificatif"
+
+#: .\financial\templates\supporting_document_list.html
+msgid "Against a disbursement"
+msgstr "Contre un décaissement"
+
+#: .\financial\templates\supporting_document_list.html
+msgid "Against a fund request"
+msgstr "Contre une demande de fonds"
+
+#: .\financial\templates\supporting_document_add.html
+msgid "Justified activities"
+msgstr "Activités justifiées"
+
+#: .\financial\templates\components\financial_menu.html
+msgid "Structure & PTBA"
+msgstr "Structure & PTBA"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Export the fiduciary situation report"
+msgstr "Exporter le rapport de situation fiduciaire"
+
+#: .\financial\templates\components\entity_filters.html
+msgid "Parent component"
+msgstr "Composante parente"
+
+#: .\financial\templates\component_list.html
+msgid "Sub-component"
+msgstr "Sous-composante"
+
+#: .\financial\templates\components\entity_filters.html
+msgid "Fund request"
+msgstr "Demande de fonds"
+
+#: .\financial\templates\components\entity_filters.html
+msgid "Reset filters"
+msgstr "Réinitialiser les filtres"
+
+#: .\financial\models\account.py
+msgid "Parent account"
+msgstr "Compte parent"
+
+#: .\financial\models\account.py
+msgid "Only a sub-account can have a parent account."
+msgstr "Seul un sous-compte peut avoir un compte parent."
+
+#: .\financial\models\account.py
+msgid "An account cannot be its own parent."
+msgstr "Un compte ne peut pas être son propre parent."
+
+#: .\financial\models\account.py
+msgid "The parent account must be a main account."
+msgstr "Le compte parent doit être un compte principal."
+
+#: .\financial\views_account.py
+msgid "Register an account"
+msgstr "Enregistrer un compte"
+
+#: .\financial\views_account.py
+msgid "Update account"
+msgstr "Modifier le compte"
+
+#: .\financial\views_account.py
+msgid "Delete account"
+msgstr "Supprimer le compte"
+
+#: .\financial\templates\account_detail.html
+msgid "Account balance"
+msgstr "Solde du compte"
+
+#: .\financial\templates\account_detail.html
+msgid "Sub-accounts"
+msgstr "Sous-comptes"
+
+#: .\financial\templates\account_detail.html
+msgid "Bank transfers sent"
+msgstr "Virements envoyés"
+
+#: .\financial\templates\account_detail.html
+msgid "Bank transfers received"
+msgstr "Virements reçus"
+
+#: .\financial\forms.py
+msgid "Authorized recipients depend on the sender's level:"
+msgstr "Les destinataires autorisés dépendent du niveau de l'émetteur :"
+
+#: .\financial\forms.py
+msgid "Authorized recipients"
+msgstr "Destinataires autorisés"
+
+#: .\financial\forms.py
+msgid "A reverse transfer (recipient to sender) is possible, for example when a contract is cancelled and the recipient must return the funds to the sender. A cheque can be handed directly to a service provider."
+msgstr "Un virement en sens contraire (du bénéficiaire vers l'émetteur) est possible, par exemple en cas d'annulation d'un marché où le bénéficiaire doit reverser les fonds à l'émetteur. Un chèque peut être remis directement à une entreprise prestataire."
+
+#: .\financial\templates\account_detail.html
+msgid "Remaining amount to transfer"
+msgstr "Montant restant à virer"
+
+#: .\financial\templates\account_detail.html
+msgid "Amount already transferred"
+msgstr "Montant déjà viré"
+
+#: .\financial\models\financial.py
+msgid "Amount validated (this round)"
+msgstr "Montant validé (cette validation)"
+
+#: .\financial\models\financial.py
+msgid "Status after this validation"
+msgstr "Statut après cette validation"
+
+#: .\financial\models\financial.py
+msgid "Comment"
+msgstr "Commentaire"
+
+#: .\financial\models\financial.py
+msgid "Fund request validation"
+msgstr "Validation de demande de fonds"
+
+#: .\financial\models\financial.py
+msgid "Fund request validations"
+msgstr "Validations de demande de fonds"
+
+#: .\financial\views_disbursement_request.py
+msgid "Register a fund request validation"
+msgstr "Enregistrer une validation de demande de fonds"
+
+#: .\financial\templates\disbursement_request_detail.html
+msgid "Validation history"
+msgstr "Historique des validations"
+
+#: .\financial\models\financial.py
+msgid "Date of first response"
+msgstr "Date de la première réponse"
+
+#: .\financial\views_disbursement_request.py
+msgid "Delete disbursement request"
+msgstr "Supprimer la demande de décaissement"
+
+#: .\financial\views_disbursement_request.py
+msgid "Update fund request validation"
+msgstr "Modifier la validation de demande de fonds"
+
+#: .\financial\views_disbursement_request.py
+msgid "Delete fund request validation"
+msgstr "Supprimer la validation de demande de fonds"
+
+#: .\financial\views_bank_transfer.py
+msgid "Delete bank transfer"
+msgstr "Supprimer le virement"
+
+#: .\financial\views_disbursement.py
+msgid "Delete disbursement"
+msgstr "Supprimer le décaissement"
+
+#: .\financial\views.py
+msgid "Delete allocation"
+msgstr "Supprimer l'allocation"
+
+#: .\financial\templates\bank_transfer_list.html
+msgid "Change status of selection"
+msgstr "Changer le statut de la sélection"
+
+#: .\financial\templates\bank_transfer_list.html
+msgid "Apply to selected"
+msgstr "Appliquer à la sélection"
+
+#: .\financial\templates\bank_transfer_list.html
+msgid "Confirm the status change for this bank transfer to: __STATUS__?"
+msgstr "Confirmer le changement de statut de ce virement en : __STATUS__ ?"
+
+#: .\financial\templates\bank_transfer_list.html
+msgid "Please select at least one bank transfer."
+msgstr "Veuillez sélectionner au moins un virement."
+
+#: .\financial\templates\bank_transfer_list.html
+msgid "Confirm the status change to: __STATUS__ for __COUNT__ bank transfer(s)?"
+msgstr "Confirmer le changement de statut en : __STATUS__ pour __COUNT__ virement(s) ?"
+
+#: .\cosomis\models_base.py
+msgid "External ID"
+msgstr "ID externe"

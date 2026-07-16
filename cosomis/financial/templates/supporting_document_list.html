@@ -1,0 +1,89 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n custom_tags %}
+
+{% block content %}
+{% include 'components/financial_menu.html' with active_menu='supporting_document' %}
+{% include 'components/entity_filters.html' %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="col-md-12">
+                        <div class="btn-group pull-left">
+                            {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                            <div style="display: inline-block;">
+                                <button class="btn btn-primary" type="button" id="dropdownMenuButtonSDCreate" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    {% translate 'Register a supporting document' %} <i class="fa fa-chevron-down"></i>
+                                </button>
+                                <div class="dropdown-menu" aria-labelledby="dropdownMenuButtonSDCreate">
+                                    <a class="dropdown-item" href="{% url 'financial:supporting_document_create' %}?mode=disbursement">{% translate 'Against a disbursement' %}</a>
+                                    <a class="dropdown-item" href="{% url 'financial:supporting_document_create' %}?mode=disbursement_request">{% translate 'Against a fund request' %}</a>
+                                </div>
+                            </div>
+                            {% endif %}
+                            &nbsp;
+                            <a class="btn btn-outline-primary" href="{% url 'financial:supporting_document_export' %}?{{ request.GET.urlencode }}">
+                                <i class="fas fa-file-excel"></i> {% translate 'Export' %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body table-responsive">
+                    <table id="table-supporting-documents" class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>{% translate 'Related disbursement' %}</th>
+                            <th>{% translate 'Related fund request' %}</th>
+                            <th>{% translate 'Document type' %}</th>
+                            <th>{% translate 'Document reference' %}</th>
+                            <th>{% translate 'Document date' %}</th>
+                            <th>{% translate 'Total amount justified' %}</th>
+                            <th width="14%">{% translate 'Action' %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for doc in supporting_documents %}
+                            <tr>
+                                <td>{% if doc.disbursement %}{{ doc.disbursement }}{% else %}-{% endif %}</td>
+                                <td>{% if doc.disbursement_request %}{{ doc.disbursement_request }}{% else %}-{% endif %}</td>
+                                <td>{{ doc.get_document_type_display }}</td>
+                                <td>{{ doc.reference }}</td>
+                                <td>{{ doc.document_date }}</td>
+                                <td class="font-weight-bold">{{ doc.total_justified_amount|separate_with_space }}</td>
+                                <td>
+                                    <a href="{% url 'financial:supporting_document_detail' doc.pk %}" style="font-size: 9px !important;" class="btn btn-primary btn-xs" title="{% translate 'View details' %}"><i class="fa fa-eye"></i></a>
+                                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                                    <a href="{% url 'financial:supporting_document_update' doc.pk %}" style="font-size: 9px !important;" class="btn btn-primary btn-xs" title="{% translate 'Edit' %}"><i class="fa fa-edit"></i></a>
+                                    {% endif %}
+                                    {% if user.is_superuser or user|has_group:"Financial" %}
+                                    <a href="{% url 'financial:supporting_document_delete' doc.pk %}" style="font-size: 9px !important;" class="btn btn-danger btn-xs" title="{% translate 'Delete' %}"><i class="fa fa-trash"></i></a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    {% include 'layouts/datatable-js.html' %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            {% get_current_language as lang %}
+            $('#table-supporting-documents').DataTable({
+                retrieve: true,
+                language: { url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}') },
+                dom: 'Blfrtip',
+                buttons: [ 'copy', 'excel', 'pdf', 'colvis' ],
+                lengthMenu: [10, 20, 50, 100],
+                pageLength: 10,
+                order: []
+            });
+        });
+    </script>
+{% endblock %}

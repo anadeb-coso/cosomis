@@ -1,0 +1,202 @@
+{% load i18n %}
+<div class="card card-outline card-primary mb-3">
+    <div class="card-body">
+        <form method="get" class="form-row align-items-end">
+            {% if preserve_type %}<input type="hidden" name="type" value="{{ preserve_type }}">{% endif %}
+            {% if show_project_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'IDA Project' %}</label>
+                <select name="project" class="form-control">
+                    <option value="">{% translate 'All' %}</option>
+                    {% for p in filter_projects %}
+                        <option value="{{ p.pk }}" {% if selected_project == p.pk|stringformat:'s' %}selected{% endif %}>{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if show_funding_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Funding' %}</label>
+                <select name="funding" class="form-control">
+                    <option value="">{% translate 'All' %}</option>
+                    {% for f in filter_fundings %}
+                        <option value="{{ f.pk }}" {% if selected_funding == f.pk|stringformat:'s' %}selected{% endif %}>{{ f.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if show_category_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Category' %}</label>
+                <select name="category" class="form-control">
+                    <option value="">{% translate 'All' %}</option>
+                    {% for c in filter_categories %}
+                        <option value="{{ c.pk }}" {% if selected_category == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if show_component_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Component / Sub-component' %}</label>
+                <select name="component" class="form-control">
+                    <option value="">{% translate 'All' %}</option>
+                    {% for comp in filter_components %}
+                        <option value="{{ comp.pk }}" {% if selected_component == comp.pk|stringformat:'s' %}selected{% endif %}>{% if comp.parent_id %}&mdash; {% endif %}{{ comp.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if show_disbursement_request_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Fund request' %}</label>
+                <select name="disbursement_request" class="form-control">
+                    <option value="">{% translate 'All' %}</option>
+                    {% for r in filter_disbursement_requests %}
+                        <option value="{{ r.pk }}" {% if selected_disbursement_request == r.pk|stringformat:'s' %}selected{% endif %}>{{ r }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if show_parent_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Parent component' %}</label>
+                <select name="parent" class="form-control">
+                    <option value="">{% translate 'All' %}</option>
+                    {% for comp in filter_parent_components %}
+                        <option value="{{ comp.pk }}" {% if selected_parent == comp.pk|stringformat:'s' %}selected{% endif %}>{% if comp.parent_id %}&mdash; {% endif %}{{ comp.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if show_disbursement_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Disbursement' %}</label>
+                <select name="disbursement" class="form-control">
+                    <option value="">{% translate 'All' %}</option>
+                    {% for d in filter_disbursements %}
+                        <option value="{{ d.pk }}" {% if selected_disbursement == d.pk|stringformat:'s' %}selected{% endif %}>{{ d }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if show_sender_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Sender' %}</label>
+                <select name="sender" class="form-control">
+                    <option value="">{% translate 'All' %}</option>
+                    {% for a in filter_accounts %}
+                        <option value="{{ a.pk }}" {% if selected_sender == a.pk|stringformat:'s' %}selected{% endif %}>{{ a.get_account_type_display }}: {{ a.name }} ({{ a.account_number }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if show_recipient_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Recipient' %}</label>
+                <select name="recipient" class="form-control">
+                    <option value="">{% translate 'All' %}</option>
+                    {% for a in filter_accounts %}
+                        <option value="{{ a.pk }}" {% if selected_recipient == a.pk|stringformat:'s' %}selected{% endif %}>{{ a.get_account_type_display }}: {{ a.name }} ({{ a.account_number }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if show_parent_account_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Parent account' %}</label>
+                <select name="parent" class="form-control">
+                    <option value="">{% translate 'All' %}</option>
+                    {% for a in filter_parent_accounts %}
+                        <option value="{{ a.pk }}" {% if selected_parent_account == a.pk|stringformat:'s' %}selected{% endif %}>{{ a.get_account_type_display }}: {{ a.name }} ({{ a.account_number }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if show_level_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Level' %}</label>
+                <select name="level" class="form-control">
+                    <option value="">{% translate 'All' %}</option>
+                    {% for value, label in filter_levels %}
+                        <option value="{{ value }}" {% if selected_level == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if show_status_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Status' %}</label>
+                <select name="status" class="form-control">
+                    <option value="">{% translate 'All' %}</option>
+                    {% for value, label in filter_statuses %}
+                        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if show_direction_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Direction' %}</label>
+                <select name="direction" class="form-control">
+                    <option value="">{% translate 'All' %}</option>
+                    {% for value, label in filter_directions %}
+                        <option value="{{ value }}" {% if selected_direction == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if show_payment_method_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Payment method' %}</label>
+                <select name="payment_method" class="form-control">
+                    <option value="">{% translate 'All' %}</option>
+                    {% for value, label in filter_payment_methods %}
+                        <option value="{{ value }}" {% if selected_payment_method == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if show_account_type_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Account type' %}</label>
+                <select name="account_type" class="form-control">
+                    <option value="">{% translate 'All' %}</option>
+                    {% for value, label in filter_account_types %}
+                        <option value="{{ value }}" {% if selected_account_type == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if show_account_category_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Account category' %}</label>
+                <select name="account_category" class="form-control">
+                    <option value="">{% translate 'All' %}</option>
+                    {% for value, label in filter_account_categories %}
+                        <option value="{{ value }}" {% if selected_account_category == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if show_year_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Period (year)' %}</label>
+                <input type="number" name="year" class="form-control" value="{{ selected_year|default_if_none:'' }}">
+            </div>
+            {% endif %}
+            {% if show_search_filter %}
+            <div class="col-md-2 form-group mb-2">
+                <label class="small font-weight-bold text-muted mb-1">{% translate 'Search' %}</label>
+                <input type="text" name="search" class="form-control" value="{{ request.GET.search|default_if_none:'' }}">
+            </div>
+            {% endif %}
+            <div class="col-md-1 form-group mb-2">
+                <button type="submit" class="btn btn-primary btn-block" title="{% translate 'Search' %}"><i class="fas fa-filter"></i></button>
+            </div>
+            <div class="col-md-1 form-group mb-2">
+                <a href="{{ request.path }}" class="btn btn-outline-secondary btn-block" title="{% translate 'Reset filters' %}"><i class="fas fa-times"></i></a>
+            </div>
+        </form>
+    </div>
+</div>

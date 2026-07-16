@@ -1,7 +1,9 @@
-{% comment %} {% extends 'layouts/base.html' %} {% endcomment %}
+{% extends 'layouts/base.html' %}
 {% load static i18n custom_tags %}
 
-{% comment %} {% block content %} {% endcomment %}
+{% block content %}
+{% include 'components/financial_menu.html' with active_menu='disbursement_requests' %}
+{% include 'components/entity_filters.html' %}
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -10,23 +12,28 @@
                         <div class="btn-group pull-left">
                         
                             {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
-                            <a class="btn btn-primary" target="_blank"
+                            <a class="btn btn-primary"
                                 href="{% url 'financial:disbursement_request_create' %}">
                                     {% translate 'Register a request' %}
                             </a>
                             {% endif %}
+                            <a class="btn btn-outline-primary" href="{% url 'financial:disbursement_request_export' %}?{{ request.GET.urlencode }}">
+                                <i class="fas fa-file-excel"></i> {% translate 'Export' %}
+                            </a>
                         </div>
                     </div>
                 </div>
                 <div class="card-body table-responsive">
-                    <table id="table-disbursements-requests" class="table">
+                    <table id="table-disbursements-requests" class="table table-striped">
                         <thead>
                         <tr>
                             <th>{% translate 'Request date' %}</th>
                             <th>{% translate 'Amount requested' %}</th>
-                            <th>{% translate 'Amount requested in dollars' %}</th>
                             <th>{% translate 'Project' %}</th>
-                            <th>{% translate 'Replied' %}</th>
+                            <th>{% translate 'Funding' %}</th>
+                            <th>{% translate 'Amount validated' %}</th>
+                            <th>{% translate 'Amount currently available' %}</th>
+                            <th>{% translate 'Status' %}</th>
                             <th width="12%">{% translate 'Action' %}</th>
                         </tr>
                         </thead>
@@ -35,26 +42,29 @@
                             <tr>
                                 <td>{{ disbursement_request.requested_date }}</td>
                                 <td>{{ disbursement_request.amount_requested|separate_with_space }}</td>
-                                <td>{{ disbursement_request.amount_requested_in_dollars|separate_with_space:"$" }}</td>
                                 <td>{{ disbursement_request.project.name }}</td>
+                                <td>{{ disbursement_request.funding.label|default_if_none:'-' }}</td>
+                                <td>{% if disbursement_request.amount_validated is not None %}{{ disbursement_request.amount_validated|separate_with_space }}{% else %}-{% endif %}</td>
+                                <td class="{% if disbursement_request.available_balance < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ disbursement_request.available_balance|separate_with_space }}</td>
+                                <td><span class="badge {{ disbursement_request.status|financial_status_badge }}">{{ disbursement_request.get_status_display }}</span></td>
                                 <td>
-                                    {% if disbursement_request.reply_date %}
-                                        {% translate "Yes" %}, {{ disbursement_request.reply_date }}
-                                    {% else %}
-                                        {% translate "No" %}
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="#" data-toggle="modal" data-target="#modal-disbursement-request-details-{{ disbursement_request.pk }}" 
-                                        style="font-size: 9px !important;" 
+                                    <a href="{% url 'financial:disbursement_request_detail' disbursement_request.pk %}"
+                                        style="font-size: 9px !important;"
                                        class="btn btn-primary btn-xs" title="{% translate 'View details' %}">
                                         <i class="fa fa-eye"></i>
                                     </a>
                                     {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
-                                    <a href="{% url 'financial:disbursement_request_update' disbursement_request.pk %}" 
-                                        style="font-size: 9px !important;" target="_blank"
+                                    <a href="{% url 'financial:disbursement_request_update' disbursement_request.pk %}"
+                                        style="font-size: 9px !important;"
                                        class="btn btn-primary btn-xs" title="{% translate 'Edit' %}">
                                         <i class="fa fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if user.is_superuser or user|has_group:"Financial" %}
+                                    <a href="{% url 'financial:disbursement_request_delete' disbursement_request.pk %}"
+                                        style="font-size: 9px !important;"
+                                       class="btn btn-danger btn-xs" title="{% translate 'Delete' %}">
+                                        <i class="fa fa-trash"></i>
                                     </a>
                                     {% endif %}
                                 </td>
@@ -67,9 +77,7 @@
                         <ul class="pagination justify-content-center">
                             {% if disbursement_requests.has_previous %}
                                 <li>
-                                    <a class="page-link tab-disbursement-request-other" href="#disbursements-requests" data-href="{% url 'financial:disbursement_requests_list' %}?page={{ disbursement_requests.previous_page_number }}" 
-                                        >
-                                        {% comment %} <span aria-hiden="true">&laquo;</span> {% endcomment %}
+                                    <a class="page-link" href="?{% querystring_replace page=disbursement_requests.previous_page_number %}">
                                         <i class="fa fa-arrow-left text-bold"></i>
                                     </a>
                                 </li>
@@ -81,9 +89,7 @@
                             </li>
                             {% if disbursement_requests.has_next %}
                                 <li class="page-item">
-                                    <a class="page-link tab-disbursement-request-other" href="#disbursements-requests" data-href="{% url 'financial:disbursement_requests_list' %}?page={{ disbursement_requests.next_page_number }}" 
-                                        >
-                                        {% comment %} <span aria-hidden="true">&laquo;</span> {% endcomment %}
+                                    <a class="page-link" href="?{% querystring_replace page=disbursement_requests.next_page_number %}">
                                         <i class="fa fa-arrow-right text-bold"></i>
                                     </a>
                                 </li>
@@ -95,60 +101,10 @@
             </div>
         </div>
     </div>
-{% comment %} {% endblock %} {% endcomment %}
+{% endblock %}
 
-
-<!-- Modal -->
-{% for disbursement_request in disbursement_requests %}
-<div class="modal fade" id="modal-disbursement-request-details-{{ disbursement_request.pk }}" tabindex="-1" role="dialog" aria-labelledby="modal-disbursement-request-center-title-{{ disbursement_request.pk }}" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modal-disbursement-request-log-title-{{ disbursement_request.pk }}">{% translate 'Disbursement request details' %}</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div>
-            <span style="font-weight: bold;">{% translate 'Project' %}</span> : <span>{{ disbursement_request.project.name }}</span>
-        </div><br />
-        <div>
-            <span style="font-weight: bold;">{% translate 'Amount requested' %}</span> : <span>{{ disbursement_request.amount_requested|separate_with_space }}</span>
-        </div><br />
-        <div>
-            <span style="font-weight: bold;">{% translate 'Amount requested in dollars' %}</span> : <span>{{ disbursement_request.amount_requested_in_dollars|separate_with_space:"$" }}</span>
-        </div><br />
-        <div>
-            <span style="font-weight: bold;">{% translate 'Request date' %}</span> : <span>{{ disbursement_request.requested_date }}</span>
-        </div><br />
-        <div>
-            <span style="font-weight: bold;">{% translate 'Motif' %}</span> : <span>{% if disbursement_request.motif %}{{ disbursement_request.motif }}{% else %}-{% endif %}</span>
-        </div><br />
-        <div>
-            <span style="font-weight: bold;">{% translate 'Description' %}</span> : <span>{% if disbursement_request.description %}{{ disbursement_request.description }}{% else %}-{% endif %}</span>
-        </div><br />
-        <div>
-            <span style="font-weight: bold;">{% translate 'Reply date' %}</span> : <span>{% if disbursement_request.reply_date %}{{ disbursement_request.reply_date }}{% else %}-{% endif %}</span>
-        </div><br />
-        <div>
-            <span style="font-weight: bold;">{% translate 'Comment related to the request response' %}</span> : <span>{% if disbursement_request.comment_linked_to_reply %}{{ disbursement_request.comment_linked_to_reply }}{% else %}-{% endif %}</span>
-        </div>
-        
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">{% translate 'Close' %}</button>
-      </div>
-    </div>
-  </div>
-</div>
-{% endfor %}
-<!-- End Modal -->
-
-
-
-{% comment %} {% block javascript %}
-    {{ block.super }} {% endcomment %}
+{% block javascript %}
+    {{ block.super }}
 
     <!-- DataTables export files -->
     {% include 'layouts/datatable-js.html' %}
@@ -169,12 +125,6 @@
                 pageLength: 10,
                 order: []
             });
-        
-            $('a.tab-disbursement-request-other').on('click', function () {
-                var elt = $(this).attr('href').replace('#', '');
-                loadPage($(this).attr('data-href'), $(`#${elt}-data`), $(`#${elt}-spin`));
-            });
-
         });
     </script>
-{% comment %} {% endblock %} {% endcomment %}
+{% endblock %}

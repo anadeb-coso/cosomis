@@ -1,0 +1,74 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n custom_tags %}
+
+{% block content %}
+{% include 'components/financial_menu.html' with active_menu='project_ida' %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="col-md-12">
+                        <div class="btn-group pull-left">
+                            {% if user.is_superuser %}
+                            <a class="btn btn-primary" href="{% url 'financial:project_ida_create' %}">
+                                {% translate 'Register an IDA Project' %}
+                            </a>
+                            {% endif %}
+                            <a class="btn btn-outline-primary" href="{% url 'financial:project_ida_export' %}">
+                                <i class="fas fa-file-excel"></i> {% translate 'Export' %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body table-responsive">
+                    <table id="table-projects-ida" class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>{% translate 'Name' %}</th>
+                            <th>{% translate 'Description' %}</th>
+                            <th>{% translate 'Status' %}</th>
+                            <th>{% translate 'Total amount' %}</th>
+                            <th width="14%">{% translate 'Action' %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for project in projects %}
+                            <tr>
+                                <td>{{ project.name }}</td>
+                                <td>{{ project.description|default_if_none:'-'|truncatechars:60 }}</td>
+                                <td><span class="badge {{ project.status|financial_status_badge }}">{{ project.get_status_display }}</span></td>
+                                <td class="font-weight-bold">{{ project.total_amount|separate_with_space }}</td>
+                                <td>
+                                    <a href="{% url 'financial:project_ida_detail' project.pk %}" style="font-size: 9px !important;" class="btn btn-primary btn-xs" title="{% translate 'View details' %}"><i class="fa fa-eye"></i></a>
+                                    {% if user.is_superuser %}
+                                    <a href="{% url 'financial:project_ida_update' project.pk %}" style="font-size: 9px !important;" class="btn btn-primary btn-xs" title="{% translate 'Edit' %}"><i class="fa fa-edit"></i></a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    {% include 'layouts/datatable-js.html' %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            {% get_current_language as lang %}
+            $('#table-projects-ida').DataTable({
+                retrieve: true,
+                language: { url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}') },
+                dom: 'Blfrtip',
+                buttons: [ 'copy', 'excel', 'pdf', 'colvis' ],
+                lengthMenu: [10, 20, 50, 100],
+                pageLength: 10,
+                order: []
+            });
+        });
+    </script>
+{% endblock %}

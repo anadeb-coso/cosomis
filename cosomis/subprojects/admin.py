@@ -187,16 +187,17 @@ class StepAdmin(admin.ModelAdmin):
 
 # Register your models here.
 admin.site.register([
-    Subproject, 
+    Subproject,
     VulnerableGroup,
     VillagePriority,
     VillageMeeting,
     Component,
+    CategoryIDA,
     VillageObstacle,
     VillageGoal,
     Financier,
     SubprojectSector,
-    SubprojectType    
+    SubprojectType
 ])
 
 admin.site.register(Project, ProjectFormAdmin)

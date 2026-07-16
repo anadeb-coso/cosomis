@@ -1,0 +1,121 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n bootstrap4 custom_tags %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ disbursement_request }}</h3>
+                    <div class="col-md-12">
+                        <div class="btn-group pull-left">
+                            <a href="javascript:close_window();"><i class="fas fa-times text-danger"></i></a>
+                            <a href="{% url 'financial:disbursement_request_detail' disbursement_request.pk %}" class="btn btn-secondary btn-sm">{% translate 'Back to list' %}</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>{% translate 'Amount requested' %}</strong><br>{{ disbursement_request.amount_requested|separate_with_space }}</div>
+                        <div class="col-md-4"><strong>{% translate 'Amount validated' %}</strong><br>{{ disbursement_request.amount_validated|default_if_none:0|separate_with_space }}</div>
+                        <div class="col-md-4"><strong>{% translate 'Status' %}</strong><br><span class="badge {{ disbursement_request.status|financial_status_badge }}">{{ disbursement_request.get_status_display }}</span></div>
+                    </div>
+                    <div class="row justify-content-center">
+                        <div class="col-9">
+                            <form method="POST">
+                                {% csrf_token %}
+                                {% if form_mixin.errors %}
+                                    {% for field in form_mixin %}
+                                        {% for error in field.errors %}
+                                            <div class="alert alert-danger"><strong>{{ error|escape }}</strong></div>
+                                        {% endfor %}
+                                    {% endfor %}
+                                    {% for error in form_mixin.non_field_errors %}
+                                        <div class="alert alert-danger"><strong>{{ error|escape }}</strong></div>
+                                    {% endfor %}
+                                {% endif %}
+                                {% for field in form %}
+                                    {% bootstrap_field field %}
+                                    {% if field.errors %}
+                                        <div class="alert alert-danger alert-sm form_alert">{{ field.errors }}</div>
+                                    {% endif %}
+                                    <div class="clearfix"></div>
+                                {% endfor %}
+                                <button type="submit" class="btn btn-primary float-right">{% translate 'Submit' %}</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+
+{% block javascript %}
+    {{ block.super }}
+
+    <script type="text/javascript">
+        
+
+        $(document).ready(function () {
+            {% get_current_language as lang %}
+
+
+
+            //Datetimepicker Input
+            $('b[role="presentation"]').hide();
+            $('.select2-selection__arrow').append(
+                '<i class="fas fa-chevron-circle-down text-primary" style="margin-top:12px;"></i>');
+            let dp1 = '<div class="input-group-prepend" data-target="#{id}" data-toggle="datetimepicker">' +
+                '<div class="input-group-text"><i class="fa fa-calendar text-primary"></i></div></div>';
+            let dp2 = '<div class="input-group date" id="{id}" data-target-input="nearest"></div>';
+            //Datemask dd/mm/yyyy
+            $('.datetimepicker-input').inputmask({alias: "datetime", inputFormat: "dd/mm/yyyy"});
+            let defaultDate = Date.now();
+            
+            let help_text1 = null;
+            {% for field in form %}
+                {% if "validation_date" in field.name %}
+                    $(('#id_{{ field.name }}')).before(dp1.replace('{id}', '{{ field.name }}')).parent().wrapInner(
+                        dp2.replace('{id}', '{{ field.name }}'));
+                    
+                    help_text1 = $('#{{ field.name }} small')[0];
+                    $('#{{ field.name }} small').remove();
+                    $('#{{ field.name }}').after(help_text1);
+
+                    {% if field.value %}
+                        defaultDate = '{{ field.value|date:'Y-m-d' }}';//moment('{{ field.value }}').format('YYYY-MM-DD'); //moment("{{ field.value }}", "YYYY-MM-DD");
+                        {% else %}
+                            defaultDate = false;
+                        {% endif %}
+                        
+                        if(defaultDate){
+                            $('#{{ field.name }}').datetimepicker({
+                                maxDate: Date.now(),
+                                useCurrent: false,
+                                defaultDate: defaultDate,
+                                format: "DD/MM/YYYY",
+                                widgetPositioning: {
+                                    vertical: 'bottom',
+                                }
+                            });
+                        }else{
+                            $('#{{ field.name }}').datetimepicker({
+                                maxDate: Date.now(),
+                                format: "DD/MM/YYYY",
+                                widgetPositioning: {
+                                    vertical: 'bottom',
+                                }
+                            });
+                        }
+
+                {% endif %}
+            {% endfor %}
+
+            //End Datetimepicker Input
+            
+        });
+    </script>
+
+{% endblock %}

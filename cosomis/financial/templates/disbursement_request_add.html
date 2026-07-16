@@ -11,6 +11,7 @@
                             {% comment %} <a class="nav-link font-weight-bold" href="{% url 'financial:financials' %}" 
                                 role="button"><i class="fas fa-chevron-left text-primary"></i></a> {% endcomment %}
                                 <a href="javascript:close_window();"><i class="fas fa-times text-danger"></i></a>
+                                <a href="{% url 'financial:disbursement_requests_list' %}" class="btn btn-secondary btn-sm">{% translate 'Back to list' %}</a>
                         </div>
                     </div>
                 </div>
@@ -55,11 +56,12 @@
                         </div>
                     </div>
                 </div>
-                
-                
+
+
             </div>
         </div>
     </div>
+    {{ funding_meta|json_script:"funding-meta" }}
 {% endblock %}
 
 {% block javascript %}
@@ -196,7 +198,54 @@
                 }
             });
 
-            
+
+        });
+    </script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var fundingMetaEl = document.getElementById('funding-meta');
+            var $project = $('#id_project');
+            var $funding = $('#id_funding');
+
+            if (!fundingMetaEl || !$project.length || !$funding.length) {
+                return;
+            }
+
+            var fundingMeta = JSON.parse(fundingMetaEl.textContent);
+            var allProjectOptions = $project.find('option').clone();
+            var allFundingOptions = $funding.find('option').clone();
+
+            function rebuildSelect($select, allOptions, allowedIds) {
+                var currentVal = $select.val();
+                $select.empty();
+                allOptions.each(function () {
+                    var val = $(this).val();
+                    if (val === '' || allowedIds === null || allowedIds.indexOf(val) !== -1) {
+                        $select.append($(this).clone());
+                    }
+                });
+                $select.val(allowedIds === null || allowedIds.indexOf(currentVal) !== -1 ? currentVal : '');
+                $select.trigger('change.select2');
+            }
+
+            function onProjectChange() {
+                var id = $project.val();
+                var fundingIds = id ? Object.keys(fundingMeta).filter(function (fid) {
+                    return String(fundingMeta[fid].project_id) === id;
+                }) : null;
+                rebuildSelect($funding, allFundingOptions, fundingIds);
+            }
+
+            function onFundingChange() {
+                var id = $funding.val();
+                var meta = id ? fundingMeta[id] : null;
+                var projectIds = id ? (meta && meta.project_id != null ? [String(meta.project_id)] : []) : null;
+                rebuildSelect($project, allProjectOptions, projectIds);
+            }
+
+            $project.on('change', onProjectChange);
+            $funding.on('change', onFundingChange);
         });
     </script>
 

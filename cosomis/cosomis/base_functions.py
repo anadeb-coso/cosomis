@@ -1,6 +1,8 @@
 from django.forms.models import model_to_dict
+from django.db.models.fields.files import FieldFile
 import json
 from decimal import Decimal
+from enum import Enum
 from uuid import UUID
 from datetime import date, datetime, time
 from pathlib import Path
@@ -62,6 +64,16 @@ def format_value(value):
         return value.decode("utf-8", errors="ignore")
     if isinstance(value, set):
         return [format_value(v) for v in value]
+    # enums (e.g. Django TextChoices/IntegerChoices) - store their plain value,
+    # not the member's __dict__ (which holds __objclass__, a class whose own
+    # __dict__ is a non-JSON-serializable mappingproxy)
+    if isinstance(value, Enum):
+        return format_value(value.value)
+    # FieldFile (FileField/ImageField value) - __dict__ holds a back-reference to
+    # its owning model instance ("instance"), which would recurse into this same
+    # FieldFile forever; store its relative path instead, like the CharField it replaces.
+    if isinstance(value, FieldFile):
+        return value.name or None
     # objets Django (model, queryset, etc.)
     if hasattr(value, "__dict__"):
         return format_value(value.__dict__)

@@ -13,21 +13,50 @@ from django.db.models import Q
 from financial.models.allocation import AdministrativeLevelAllocation
 from usermanager.permissions import (
     AccountantPermissionRequiredMixin,
+    FinancialPermissionRequiredMixin,
     )
 from financial.forms import AdministrativeLevelAllocationForm
 from financial import function_allocation
+from financial.list_filters import build_filter_context
+from financial.exports import export_allocation
+from financial.aggregations import component_cascade_meta
 # Create your views here.
 
 
-class FinancialTemplateView(PageMixin, LoginRequiredMixin, generic.TemplateView):
-    template_name = 'financials.html'
-    active_level1 = 'financial'
-    title = _('Financials')
-    
-    def get_context_data(self, **kwargs):
-        ctx = super(FinancialTemplateView, self).get_context_data(**kwargs)
-        ctx['hide_content_header'] = True
-        return ctx
+def _filtered_allocations(get):
+    _type = get.get("type", "Canton").title()
+    qs = AdministrativeLevelAllocation.objects.filter(
+        Q(administrative_level__type=_type) if _type != "Cvd" else Q(cvd__isnull=False)
+    )
+    search = get.get("search", None)
+    if search and search != "All":
+        search_upper = search.upper()
+        qs = qs.filter(
+            Q(administrative_level__name__icontains=search_upper) if _type != "Cvd" else Q(cvd__name__icontains=search_upper)
+        ) | qs.filter(
+            Q(project__name__icontains=search_upper) |
+            Q(allocation_date__icontains=search_upper) |
+            Q(description__icontains=search_upper) |
+            Q(amount__icontains=search_upper)
+        )
+
+    project_id = get.get('project')
+    if project_id:
+        qs = qs.filter(project_id=project_id)
+    component_id = get.get('component')
+    if component_id:
+        qs = qs.filter(component_id=component_id)
+    year = get.get('year')
+    if year:
+        qs = qs.filter(allocation_date__year=year)
+    return qs
+
+
+class FinancialTemplateView(LoginRequiredMixin, generic.RedirectView):
+    """`/financial/` is the historical entry point of the app (linked from
+    redirect()-after-save calls across the financial views) - each section is
+    now its own real GET page, with the dashboard as the section's home page."""
+    pattern_name = 'financial:financial_dashboard'
 
 
 
@@ -51,6 +80,7 @@ class AdministrativeLevelAllocationCreateView(PageMixin, LoginRequiredMixin, Acc
             context['form'] = self.form_mixin
         else:
             context['form'] = AdministrativeLevelAllocationForm(self.request.GET.get("type"))
+        context['component_meta'] = component_cascade_meta()
         return context
     
     def post(self, request, *args, **kwargs):
@@ -82,6 +112,7 @@ class AdministrativeLevelAllocationUpdateView(PageMixin, LoginRequiredMixin, Acc
             context['form'] = self.form_mixin
         else:
             context['form'] = AdministrativeLevelAllocationForm(self.request.GET.get("type"), instance=self.get_object())
+        context['component_meta'] = component_cascade_meta()
         return context
     
     
@@ -114,40 +145,17 @@ class AdministrativeLevelAllocationsListView(PageMixin, LoginRequiredMixin, gene
     def get_queryset(self):
         search = self.request.GET.get("search", None)
         page_number = self.request.GET.get("page", None)
-        _type = self.request.GET.get("type", "Canton").title()
-        if search:
-            if search == "All":
-                ads = AdministrativeLevelAllocation.objects.filter(
-                    Q(
-                        Q(administrative_level__type=_type) if _type != "Cvd" else Q(cvd__isnull=False)
-                    )
-                )
-                return Paginator(ads, ads.count()).get_page(page_number)
-            search = search.upper()
-            return Paginator(AdministrativeLevelAllocation.objects.filter(
-                Q(
-                    Q(administrative_level__name__icontains=search) if _type != "Cvd" else Q(cvd__name__icontains=search)
-                ) | 
-                Q(project__name__icontains=search) | 
-                Q(allocation_date__icontains=search) | 
-                Q(description__icontains=search) | 
-                Q(amount__icontains=search),
-                Q(
-                    Q(administrative_level__type=_type) if _type != "Cvd" else Q(cvd__isnull=False)
-                )
-            ), 100).get_page(page_number)
-        else:
-            return Paginator(AdministrativeLevelAllocation.objects.filter(
-                Q(
-                    Q(administrative_level__type=_type) if _type != "Cvd" else Q(cvd__isnull=False)
-                )
-            ), 100).get_page(page_number)
+        qs = _filtered_allocations(self.request.GET)
+        if search == "All":
+            return Paginator(qs, qs.count() or 1).get_page(page_number)
+        return Paginator(qs, 100).get_page(page_number)
 
-        # return super().get_queryset()
     def get_context_data(self, **kwargs):
         ctx = super(AdministrativeLevelAllocationsListView, self).get_context_data(**kwargs)
         ctx['search'] = self.request.GET.get("search", None)
         ctx['type'] = self.request.GET.get("type", "Canton")
+        ctx.update(build_filter_context(self.request, projects=True, components=True, year=True))
+        ctx['preserve_type'] = ctx['type']
         is_administrative_level = False if str(ctx['type']).lower() == 'cvd' else True
         ctx['sum_allocation_mount'] = function_allocation.sum_allocation_amount(is_administrative_level)
         ctx['sum_allocation_amount_in_dollars'] = function_allocation.sum_allocation_amount_in_dollars(is_administrative_level)
@@ -160,7 +168,27 @@ class AdministrativeLevelAllocationsListView(PageMixin, LoginRequiredMixin, gene
         ctx['sum_allocation_amount_in_dollars_by_component_1_2'] = function_allocation.sum_allocation_amount_in_dollars_by_component(3, is_administrative_level)
         ctx['sum_allocation_amount_in_dollars_by_component_1_3'] = function_allocation.sum_allocation_amount_in_dollars_by_component(6, is_administrative_level)
         return ctx
-    
+
+
+class AdministrativeLevelAllocationExportView(PageMixin, LoginRequiredMixin, generic.View):
+    def get(self, request, *args, **kwargs):
+        return export_allocation(_filtered_allocations(request.GET))
+
+
+class AdministrativeLevelAllocationDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, generic.DeleteView):
+    """Only the Financial group and superusers may delete an allocation."""
+
+    model = AdministrativeLevelAllocation
+    template_name = 'components/confirm_delete.html'
+    title = _('Delete allocation')
+    active_level1 = 'financial'
+    success_url = reverse_lazy('financial:allocations_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['cancel_url'] = reverse_lazy('financial:allocations_list')
+        return context
+
 
 class AdministrativeLevelAllocationDetailView(PageMixin, LoginRequiredMixin, generic.DetailView):
     """Class to present the detail page of one allocations"""

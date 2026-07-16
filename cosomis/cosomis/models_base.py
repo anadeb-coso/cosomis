@@ -1,6 +1,20 @@
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 import datetime
 from cosomis.base_functions import model_to_full_dict, format_value
+
+
+class ExternalIdMixin(models.Model):
+    """Reference ID (the workbook's own `ID_xxx` column value) for models covered
+    by `financial/management/commands/import_disbursement_workbook.py` - lets a
+    later re-import of the same workbook match and update an existing row instead
+    of creating a duplicate. Stays None for a record created directly in the app
+    (never backfilled from the app's own primary key)."""
+
+    external_id = models.CharField(max_length=50, null=True, blank=True, unique=True, verbose_name=_("External ID"))
+
+    class Meta:
+        abstract = True
 
 
 # Create your models here.

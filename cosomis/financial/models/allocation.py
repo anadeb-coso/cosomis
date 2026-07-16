@@ -2,18 +2,16 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.db.models import Sum, Q
 
-from administrativelevels.models import AdministrativeLevel, CVD
-from subprojects.models import Project, Component
 from cosomis.customers_fields import CustomerFloatRangeField
 from cosomis.models_base import BaseModel
 
 
-    
+
 class AdministrativeLevelAllocation(BaseModel):
-    administrative_level = models.ForeignKey(AdministrativeLevel, on_delete=models.CASCADE, verbose_name=_("Administrative level"), null=True, blank=True)
-    cvd = models.ForeignKey(CVD, on_delete=models.CASCADE, verbose_name=_("CVD"), null=True, blank=True)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, verbose_name=_("Project"))
-    component = models.ForeignKey(Component, on_delete=models.CASCADE, verbose_name=_("Component (Subcomponent)"), null=True, blank=True)
+    administrative_level = models.ForeignKey('administrativelevels.AdministrativeLevel', on_delete=models.CASCADE, verbose_name=_("Administrative level"), null=True, blank=True)
+    cvd = models.ForeignKey('administrativelevels.CVD', on_delete=models.CASCADE, verbose_name=_("CVD"), null=True, blank=True)
+    project = models.ForeignKey('subprojects.Project', on_delete=models.CASCADE, verbose_name=_("Project"))
+    component = models.ForeignKey('subprojects.Component', on_delete=models.CASCADE, verbose_name=_("Component (Subcomponent)"), null=True, blank=True)
     amount = CustomerFloatRangeField(verbose_name=_("Amount allocated"), min_value=0)
     amount_in_dollars = CustomerFloatRangeField(verbose_name=_("Amount allocated in dollars"), min_value=0)
     allocation_date = models.DateField(verbose_name=_("Allocation Date"), null=True, blank=True)
@@ -30,7 +28,7 @@ class AdministrativeLevelAllocation(BaseModel):
     def __str__(self) -> str:
         _str = ""
         if self.administrative_level:
-            _str = f"{self.project}.ADL.{self.administrative_level}.{self.amount}"
+            _str = f"{self.project}.{self.administrative_level.type.upper()}.{self.administrative_level}.{self.amount}"
         elif self.cvd:
             _str = f"{self.project}.CVD.{self.cvd}.{self.amount}"
         if _str:
@@ -39,7 +37,7 @@ class AdministrativeLevelAllocation(BaseModel):
                     {self.allocation_date.month if self.allocation_date.year > 9 else ('0' + str(self.allocation_date.month))}\
                     {self.allocation_date.day if self.allocation_date.day > 9 else ('0' + str(self.allocation_date.day))}"
             return _str
-        return self.amount
+        return str(self.amount)
 
     def sum_amount_by_administrative_level(self):
         return AdministrativeLevelAllocation.objects.filter(

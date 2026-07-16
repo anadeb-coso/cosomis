@@ -1,1 +1,101 @@
-Details
+{% extends 'layouts/base.html' %}
+{% load static i18n custom_tags %}
+
+{% block content %}
+{% include 'components/financial_menu.html' with active_menu='disbursement_requests' %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ disbursement_request }} <span class="badge {{ disbursement_request.status|financial_status_badge }}">{{ disbursement_request.get_status_display }}</span></h3>
+                    <div class="card-tools">
+                        {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                        <a class="btn btn-primary btn-sm" href="{% url 'financial:disbursement_request_update' disbursement_request.pk %}">{% translate 'Edit' %}</a>
+                        {% endif %}
+                        {% if user.is_superuser or user|has_group:"Financial" %}
+                        <a class="btn btn-danger btn-sm" href="{% url 'financial:disbursement_request_delete' disbursement_request.pk %}">{% translate 'Delete' %}</a>
+                        {% endif %}
+                        <a class="btn btn-secondary btn-sm" href="{% url 'financial:disbursement_requests_list' %}">{% translate 'Back to list' %}</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3"><strong>{% translate 'Project' %}</strong><br>{{ disbursement_request.project.name }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Credit/Grant' %}</strong><br>{{ disbursement_request.funding|default_if_none:'-' }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Request date' %}</strong><br>{{ disbursement_request.requested_date }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Date of first response' %}</strong><br>{{ disbursement_request.first_response_date|default_if_none:'-' }}</div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-3"><strong>{% translate 'Amount requested' %}</strong><br>{{ disbursement_request.amount_requested|separate_with_space }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Amount validated' %}</strong><br>{{ disbursement_request.amount_validated|default_if_none:0|separate_with_space }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Total amount disbursed' %}</strong><br>{{ disbursement_request.total_disbursed|separate_with_space }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Amount currently available' %}</strong><br><span class="{% if disbursement_request.available_balance < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ disbursement_request.available_balance|separate_with_space }}</span></div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6"><strong>{% translate 'Motif' %}</strong><br>{{ disbursement_request.motif|default_if_none:'-' }}</div>
+                        <div class="col-md-6"><strong>{% translate 'Description' %}</strong><br>{{ disbursement_request.description|default_if_none:'-' }}</div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-12"><strong>{% translate 'Comment related to the request response' %}</strong><br>{{ disbursement_request.comment_linked_to_reply|default_if_none:'-' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{% translate 'Validation history' %}</h3>
+                    <div class="card-tools">
+                        {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                        <a class="btn btn-primary btn-sm" href="{% url 'financial:disbursement_request_validation_create' disbursement_request.pk %}">{% translate 'Register a fund request validation' %}</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead><tr><th>{% translate 'Validation date' %}</th><th>{% translate 'Amount validated (this round)' %}</th><th>{% translate 'Status after this validation' %}</th><th>{% translate 'Comment' %}</th><th width="10%">{% translate 'Action' %}</th></tr></thead>
+                        <tbody>
+                        {% for validation in validations %}
+                            <tr>
+                                <td>{{ validation.validation_date }}</td>
+                                <td>{{ validation.amount_validated|separate_with_space }}</td>
+                                <td><span class="badge {{ validation.status_after|financial_status_badge }}">{{ validation.get_status_after_display }}</span></td>
+                                <td>{{ validation.comment|default_if_none:'-' }}</td>
+                                <td>
+                                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                                    <a href="{% url 'financial:disbursement_request_validation_update' validation.pk %}" style="font-size: 9px !important;" class="btn btn-primary btn-xs" title="{% translate 'Edit' %}"><i class="fa fa-edit"></i></a>
+                                    {% endif %}
+                                    {% if user.is_superuser or user|has_group:"Financial" %}
+                                    <a href="{% url 'financial:disbursement_request_validation_delete' validation.pk %}" style="font-size: 9px !important;" class="btn btn-danger btn-xs" title="{% translate 'Delete' %}"><i class="fa fa-trash"></i></a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="5" class="text-center">{% translate 'No data' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Disbursements' %}</h3></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead><tr><th>{% translate 'Disbursement date' %}</th><th>{% translate 'Amount disbursed' %}</th><th>{% translate 'Justification status' %}</th></tr></thead>
+                        <tbody>
+                        {% for disb in disbursements %}
+                            <tr>
+                                <td><a href="{% url 'financial:disbursement_detail' disb.pk %}">{{ disb.disbursement_date }}</a></td>
+                                <td>{{ disb.amount_disbursed|separate_with_space }}</td>
+                                <td><span class="badge {{ disb.justification_status|financial_status_badge }}">{{ disb.get_justification_status_display }}</span></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="3" class="text-center">{% translate 'No data' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

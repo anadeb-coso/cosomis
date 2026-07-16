@@ -1,0 +1,93 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n custom_tags %}
+
+{% block content %}
+{% include 'components/financial_menu.html' with active_menu='account_balances' %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="col-md-12">
+                        <div class="btn-group pull-left">
+                            <div style="display: inline-block;">
+                                <button class="btn btn-primary" type="button" id="dropdownMenuButtonAccountType" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    {% if type %}{{ type }}{% else %}{% translate 'Account type' %}{% endif %} <i class="fa fa-chevron-down"></i>
+                                </button>
+                                <div class="dropdown-menu" aria-labelledby="dropdownMenuButtonAccountType">
+                                    <a class="dropdown-item" href="{% url 'financial:account_balances_list' %}">{% translate 'All' %}</a>
+                                    <a class="dropdown-item" href="{% url 'financial:account_balances_list' %}?type=PROJECT">{% translate 'Project' %}</a>
+                                    <a class="dropdown-item" href="{% url 'financial:account_balances_list' %}?type=REGIONAL_OFFICE">{% translate 'Regional office' %}</a>
+                                    <a class="dropdown-item" href="{% url 'financial:account_balances_list' %}?type=TOWN_HALL">{% translate 'Town hall' %}</a>
+                                    <a class="dropdown-item" href="{% url 'financial:account_balances_list' %}?type=CVD">{% translate 'CVD' %}</a>
+                                    <a class="dropdown-item" href="{% url 'financial:account_balances_list' %}?type=PROJECT_SPECIALIST">{% translate 'Project specialist' %}</a>
+                                    <a class="dropdown-item" href="{% url 'financial:account_balances_list' %}?type=SERVICE_PROVIDER">{% translate 'Service provider' %}</a>
+                                </div>
+                            </div>
+                            &nbsp;
+                            <form method="get" class="form-inline" style="display: inline-block;">
+                                {% if type %}<input type="hidden" name="type" value="{{ type }}">{% endif %}
+                                <input type="number" name="year" class="form-control mr-2" placeholder="{% translate 'Period (year)' %}" value="{{ year|default_if_none:'' }}">
+                                <button type="submit" class="btn btn-outline-primary">{% translate 'Search' %}</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body table-responsive">
+                    <table id="table-account-balances" class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>{% translate 'Name' %}</th>
+                            <th>{% translate 'Account type' %}</th>
+                            <th>{% translate 'Parent account' %}</th>
+                            <th>{% translate 'Account number' %}</th>
+                            <th>{% translate 'Contact' %}</th>
+                            <th>{% translate 'Total received' %}</th>
+                            <th>{% translate 'Received (executed)' %}</th>
+                            <th>{% translate 'Total sent' %}</th>
+                            <th>{% translate 'Sent (executed)' %}</th>
+                            <th>{% translate 'Returned to sender' %}</th>
+                            <th>{% translate 'Amount currently available' %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in accounts_with_balance %}
+                            <tr>
+                                <td>{{ row.account.name }}</td>
+                                <td><span class="badge {{ row.account.account_type|account_type_badge }}">{{ row.account.get_account_type_display }}</span></td>
+                                <td>{{ row.account.parent.name|default_if_none:'-' }}</td>
+                                <td>{{ row.account.account_number|default_if_none:'-' }}</td>
+                                <td>{{ row.account.contact|default_if_none:'-' }}</td>
+                                <td>{{ row.total_received|separate_with_space }}</td>
+                                <td>{{ row.received_executed|separate_with_space }}</td>
+                                <td>{{ row.total_sent|separate_with_space }}</td>
+                                <td>{{ row.sent_executed|separate_with_space }}</td>
+                                <td>{{ row.returned_to_sender|separate_with_space }}</td>
+                                <td class="{% if row.available_balance < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ row.available_balance|separate_with_space }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+
+<!-- DataTables export files -->
+{% include 'layouts/datatable-js.html' %}
+<script>
+$(document).ready(function () {
+    {% get_current_language as lang %}
+    $('#table-account-balances').DataTable({
+        dom: 'Blfrtip',
+        language: { url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}') },
+        buttons: ['copy', 'excel', 'pdf', 'colvis'],
+        pageLength: 25,
+        order: [[10, 'asc']],
+    });
+});
+</script>
+{% endblock %}

@@ -12,7 +12,7 @@ from administrativelevels.models import AdministrativeLevel, CVD
 from subprojects import SUB_PROJECT_TYPE_DESIGNATION
 from cosomis.customers_fields import *
 from cosomis.types import _QS
-from cosomis.models_base import BaseModel
+from cosomis.models_base import BaseModel, ExternalIdMixin
 from administrativelevels.functions_adl import get_cascade_villages_ids_by_administrative_level_id
 from cosomis.constants import IMAGE_EXTENSIONS, STRUCTURE_IN_PROGRESS_STATUS, STRUCTURE_IN_PROGRESS_RANKING_LIST
 
@@ -762,13 +762,63 @@ class VillageMeeting(BaseModel):
         return self.description
 
 
-class Component(BaseModel):
-    name = models.CharField(max_length=255)
-    parent = models.ForeignKey('Component', null=True, blank=True, on_delete=models.CASCADE)
-    description = models.TextField(null=True, blank=True)
+class CategoryIDA(ExternalIdMixin, BaseModel):
+    project = models.ForeignKey('Project', null=True, blank=True, on_delete=models.CASCADE, verbose_name=_("IDA Project"))
+    name = models.CharField(max_length=255, verbose_name=_("Name"))
+    description = models.TextField(null=True, blank=True, verbose_name=_("Description"))
+    target = models.TextField(null=True, blank=True, verbose_name=_("Target(s)"))
+
+    class Meta(object):
+        app_label = 'subprojects'
+        db_table = 'subprojects_category_ida'
+        verbose_name = _("IDA category")
+        verbose_name_plural = _("IDA categories")
 
     def __str__(self):
         return self.name
+
+    @property
+    def effective_amount(self):
+        """Sum of the effective_amount of the "Component"-level Components directly attached to this category."""
+        return sum(
+            (component.effective_amount or 0)
+            for component in self.component_set.filter(parent__isnull=True)
+        )
+
+    @property
+    def justified_amount(self):
+        from financial.models.planning import Activity
+        return sum((activity.justified_amount or 0) for activity in Activity.objects.filter(component__category=self))
+
+    @property
+    def available_amount(self):
+        """Budgeted (effective_amount) minus justified - see CLAUDE.md aggregation note:
+        "disbursed" has no direct meaning at category level, so this is justified-vs-budgeted."""
+        return (self.effective_amount or 0) - self.justified_amount
+
+
+class Component(ExternalIdMixin, BaseModel):
+    category = models.ForeignKey('CategoryIDA', null=True, blank=True, on_delete=models.SET_NULL, verbose_name=_("IDA category"))
+    project = models.ForeignKey('Project', null=True, blank=True, on_delete=models.CASCADE, verbose_name=_("IDA Project"))
+    funding = models.ForeignKey('financial.Funding', null=True, blank=True, on_delete=models.SET_NULL, verbose_name=_("Funding"))
+    name = models.CharField(max_length=255)
+    parent = models.ForeignKey('Component', null=True, blank=True, on_delete=models.CASCADE)
+    description = models.TextField(null=True, blank=True)
+    amount = models.FloatField(null=True, blank=True, verbose_name=_("Own amount"))
+    target = models.TextField(null=True, blank=True, verbose_name=_("Target(s)"))
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def effective_amount(self):
+        """Own amount if set, otherwise the sum of the effective_amount of its children (never both)."""
+        if self.amount is not None:
+            return self.amount
+        return sum(
+            (child.effective_amount or 0)
+            for child in self.component_set.all()
+        )
 
 
 class SubprojectFile(BaseModel):
@@ -809,21 +859,33 @@ class Financier(BaseModel):
         return self.name
     
 
-class Project(BaseModel):
+class Project(ExternalIdMixin, BaseModel):
+    class Status(models.TextChoices):
+        ACTIVE = 'ACTIVE', _('Active')
+        SUSPENDED = 'SUSPENDED', _('Suspended')
+        ABANDONED = 'ABANDONED', _('Abandoned')
+        CLOSED = 'CLOSED', _('Closed')
+
     name = models.CharField(max_length=255, unique=True)
     description = models.TextField()
     parent = models.ForeignKey('Project', null=True, blank=True, on_delete=models.CASCADE)
     financiers = models.ManyToManyField('Financier', default=[], blank=True, related_name="financiers_projects")
 
     administrative_levels = models.ManyToManyField(AdministrativeLevel, default=[], blank=True, verbose_name=_("Administrative Levels"), related_name="administrative_levels_projects")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE, verbose_name=_("Status"))
 
 
     def __str__(self):
         return self.name
-    
+
     @property
     def get_all_financiers(self):
         return self.financiers.all()
+
+    @property
+    def total_amount(self):
+        """Sum of the initial_amount of all related Funding (Credit + Grant) records."""
+        return sum((funding.initial_amount or 0) for funding in self.funding_set.all())
     
     def build_the_tree_structure(self):
         """

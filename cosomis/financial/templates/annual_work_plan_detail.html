@@ -1,0 +1,75 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n custom_tags %}
+
+{% block content %}
+{% include 'components/financial_menu.html' with active_menu='ptba' %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ annual_work_plan.name }} ({{ annual_work_plan.period }})</h3>
+                    <div class="card-tools">
+                        <a class="btn btn-outline-primary btn-sm" href="{% url 'financial:annual_work_plan_export' %}"><i class="fas fa-file-excel"></i> {% translate 'Export' %}</a>
+                        <a class="btn btn-secondary btn-sm" href="{% url 'financial:annual_work_plan_list' %}">{% translate 'Back to list' %}</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3"><strong>{% translate 'IDA Project' %}</strong><br>{{ annual_work_plan.project.name }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Budgeted amount' %}</strong><br>{{ annual_work_plan.budgeted_amount|separate_with_space }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Amount currently available' %}</strong><br><span class="{% if annual_work_plan.available_amount < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ annual_work_plan.available_amount|separate_with_space }}</span></div>
+                        <div class="col-md-3"><strong>{% translate 'Observations' %}</strong><br>{{ annual_work_plan.notes|default_if_none:'-' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{% translate 'Activities' %}</h3>
+                    <div class="card-tools">
+                        {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                        <a class="btn btn-success btn-sm" target="_blank" href="{% url 'financial:activity_create' annual_work_plan.pk %}"><i class="fas fa-plus"></i> {% translate 'Add an activity' %}</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead>
+                        <tr>
+                            <th>{% translate 'Label' %}</th>
+                            <th>{% translate 'Component' %}</th>
+                            <th>{% translate 'Amount' %}</th>
+                            <th>{% translate 'Target(s)' %}</th>
+                            <th>{% translate 'Justified amount' %}</th>
+                            <th>{% translate 'Balance to justify' %}</th>
+                            <th width="12%">{% translate 'Action' %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for activity in activities %}
+                            <tr>
+                                <td>{{ activity.name }}</td>
+                                <td>{{ activity.component.name }}</td>
+                                <td>{{ activity.amount|separate_with_space }}</td>
+                                <td>{{ activity.target|default_if_none:'-' }}</td>
+                                <td>{{ activity.justified_amount|separate_with_space }}</td>
+                                <td class="{% if activity.balance_to_justify < 0 %}text-danger{% else %}text-success{% endif %}">{{ activity.balance_to_justify|separate_with_space }}</td>
+                                <td>
+                                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                                    <a href="{% url 'financial:activity_update' activity.pk %}" style="font-size: 9px !important;" target="_blank" class="btn btn-primary btn-xs" title="{% translate 'Edit' %}"><i class="fa fa-edit"></i></a>
+                                    {% endif %}
+                                    {% if user.is_superuser or user|has_group:"Financial" %}
+                                    <a href="{% url 'financial:activity_delete' activity.pk %}" style="font-size: 9px !important;" class="btn btn-danger btn-xs" title="{% translate 'Delete' %}"><i class="fa fa-trash"></i></a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="7" class="text-center">{% translate 'No data' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

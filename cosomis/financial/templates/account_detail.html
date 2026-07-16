@@ -1,0 +1,127 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n custom_tags %}
+
+{% block content %}
+{% include 'components/financial_menu.html' with active_menu='accounts' %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ account.name }} <span class="badge {{ account.account_type|account_type_badge }}">{{ account.get_account_type_display }}</span></h3>
+                    <div class="card-tools">
+                        <a class="btn btn-outline-primary btn-sm" href="{% url 'financial:account_export' %}"><i class="fas fa-file-excel"></i> {% translate 'Export' %}</a>
+                        <a class="btn btn-secondary btn-sm" href="{% url 'financial:account_list' %}">{% translate 'Back to list' %}</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3"><strong>{% translate 'Account category' %}</strong><br>{{ account.get_account_category_display }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Parent account' %}</strong><br>{% if account.parent %}<a href="{% url 'financial:account_detail' account.parent.pk %}">{{ account.parent.name }}</a>{% else %}-{% endif %}</div>
+                        <div class="col-md-3"><strong>{% translate 'Account number' %}</strong><br>{{ account.account_number|default_if_none:'-' }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Contact' %}</strong><br>{{ account.contact|default_if_none:'-' }}</div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-12"><strong>{% translate 'Observations' %}</strong><br>{{ account.notes|default_if_none:'-' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{% translate 'Account balance' %}</h3>
+                    <div class="card-tools">
+                        <form method="get" class="form-inline">
+                            <input type="number" name="year" class="form-control form-control-sm mr-2" placeholder="{% translate 'Period (year)' %}" value="{{ selected_year|default_if_none:'' }}">
+                            <button type="submit" class="btn btn-outline-primary btn-sm">{% translate 'Search' %}</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2"><strong>{% translate 'Total received' %}</strong><br>{{ balance.total_received|separate_with_space }}</div>
+                        <div class="col-md-2"><strong>{% translate 'Received (executed)' %}</strong><br>{{ balance.received_executed|separate_with_space }}</div>
+                        <div class="col-md-2"><strong>{% translate 'Total sent' %}</strong><br>{{ balance.total_sent|separate_with_space }}</div>
+                        <div class="col-md-2"><strong>{% translate 'Sent (executed)' %}</strong><br>{{ balance.sent_executed|separate_with_space }}</div>
+                        <div class="col-md-2"><strong>{% translate 'Returned to sender' %}</strong><br>{{ balance.returned_to_sender|separate_with_space }}</div>
+                        <div class="col-md-2"><strong>{% translate 'Amount currently available' %}</strong><br><span class="{% if balance.available_balance < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ balance.available_balance|separate_with_space }}</span></div>
+                    </div>
+                </div>
+            </div>
+
+            {% if allocation_summary is not None %}
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Remaining amount to transfer' %}</h3></div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4"><strong>{% translate 'Amount allocated' %}</strong><br>{{ allocation_summary.allocated_amount|separate_with_space }}</div>
+                        <div class="col-md-4"><strong>{% translate 'Amount already transferred' %}</strong><br>{{ allocation_summary.transferred_amount|separate_with_space }}</div>
+                        <div class="col-md-4"><strong>{% translate 'Remaining amount to transfer' %}</strong><br><span class="{% if allocation_summary.remaining_to_transfer < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ allocation_summary.remaining_to_transfer|separate_with_space }}</span></div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Sub-accounts' %}</h3></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead><tr><th>{% translate 'Name' %}</th><th>{% translate 'Account number' %}</th><th>{% translate 'Contact' %}</th></tr></thead>
+                        <tbody>
+                        {% for sub in sub_accounts %}
+                            <tr>
+                                <td><a href="{% url 'financial:account_detail' sub.pk %}">{{ sub.name }}</a></td>
+                                <td>{{ sub.account_number|default_if_none:'-' }}</td>
+                                <td>{{ sub.contact|default_if_none:'-' }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="3" class="text-center">{% translate 'No data' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Bank transfers sent' %}</h3></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead><tr><th>{% translate 'Recipient' %}</th><th>{% translate 'Amount Transfer' %}</th><th>{% translate 'Transfer date' %}</th><th>{% translate 'Status' %}</th></tr></thead>
+                        <tbody>
+                        {% for transfer in sent_transfers %}
+                            <tr>
+                                <td><a href="{% url 'financial:bank_transfer_detail' transfer.pk %}">{{ transfer.recipient.name|default_if_none:'-' }}</a></td>
+                                <td>{{ transfer.amount_transferred|separate_with_space }}</td>
+                                <td>{{ transfer.transfer_date }}</td>
+                                <td><span class="badge {{ transfer.status|financial_status_badge }}">{{ transfer.get_status_display }}</span></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="4" class="text-center">{% translate 'No data' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Bank transfers received' %}</h3></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead><tr><th>{% translate 'Sender' %}</th><th>{% translate 'Amount Transfer' %}</th><th>{% translate 'Transfer date' %}</th><th>{% translate 'Status' %}</th></tr></thead>
+                        <tbody>
+                        {% for transfer in received_transfers %}
+                            <tr>
+                                <td><a href="{% url 'financial:bank_transfer_detail' transfer.pk %}">{{ transfer.sender.name|default_if_none:'-' }}</a></td>
+                                <td>{{ transfer.amount_transferred|separate_with_space }}</td>
+                                <td>{{ transfer.transfer_date }}</td>
+                                <td><span class="badge {{ transfer.status|financial_status_badge }}">{{ transfer.get_status_display }}</span></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="4" class="text-center">{% translate 'No data' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

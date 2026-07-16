@@ -1,115 +1,114 @@
-{% comment %} {% extends 'layouts/base.html' %} {% endcomment %}
+{% extends 'layouts/base.html' %}
 {% load static i18n custom_tags %}
 
-{% comment %} {% block content %} {% endcomment %}
+{% block content %}
+{% include 'components/financial_menu.html' with active_menu='bank_transfers' %}
+{% include 'components/entity_filters.html' %}
     <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
                     <div class="col-md-12">
                         <div class="btn-group pull-left">
-
-                            <div class="" style="display: inline-block;">
-                                <button class="btn btn-primary" style="display: inline-block;" 
-                                    type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    {% if type %}{{ type }}{% else %}{% translate 'See Others' %}{% endif %} <i class="fa fa-chevron-down"></i>
-                                </button>
-                                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                    <a class="dropdown-item tab-bank-transfer-other" href="#bank-transfers" data-href="{% url 'financial:bank_transfers_list' %}?type=cvd">
-                                    {% translate 'CVD' %}
-                                    </a>
-                                    <a class="dropdown-item tab-bank-transfer-other" href="#bank-transfers" data-href="{% url 'financial:bank_transfers_list' %}?type=Village">
-                                    {% translate 'Village' %}
-                                    </a>
-                                    <a class="dropdown-item tab-bank-transfer-other" href="#bank-transfers" data-href="{% url 'financial:bank_transfers_list' %}?type=Canton">
-                                    {% translate 'Canton' %}
-                                    </a>
-                                    <a class="dropdown-item tab-bank-transfer-other" href="#bank-transfers" data-href="{% url 'financial:bank_transfers_list' %}?type=Commune">
-                                    {% translate 'Commune' %}
-                                    </a>
-                                    <a class="dropdown-item tab-bank-transfer-other" href="#bank-transfers" data-href="{% url 'financial:bank_transfers_list' %}?type=Prefecture">
-                                    {% translate 'Prefecture' %}
-                                    </a>
-                                    <a class="dropdown-item tab-bank-transfer-other" href="#bank-transfers" data-href="{% url 'financial:bank_transfers_list' %}?type=Region">
-                                    {% translate 'Region' %}
-                                    </a>
-                                </div>
-                            </div>
                             {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
-                            &nbsp; &nbsp; 
-                            <div class="" style="display: inline-block;">
-                                <button class="btn btn-primary" style="display: inline-block;" 
-                                    type="button" id="dropdownMenuButtonCreate" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    {% translate 'Register a bank transfer' %} <i class="fa fa-chevron-down"></i>
-                                </button>
-                                <div class="dropdown-menu" aria-labelledby="dropdownMenuButtonCreate">
-                                    <a class="dropdown-item" target="_blank" href="{% url 'financial:bank_transfer_create' %}?type=cvd">
-                                    {% translate 'CVD' %}
-                                    </a>
-                                    <a class="dropdown-item" target="_blank" href="{% url 'financial:bank_transfer_create' %}?type=Village">
-                                    {% translate 'Village' %}
-                                    </a>
-                                    <a class="dropdown-item" target="_blank" href="{% url 'financial:bank_transfer_create' %}?type=Canton">
-                                    {% translate 'Canton' %}
-                                    </a>
-                                    <a class="dropdown-item" target="_blank" href="{% url 'financial:bank_transfer_create' %}?type=Commune">
-                                    {% translate 'Commune' %}
-                                    </a>
-                                    <a class="dropdown-item" target="_blank" href="{% url 'financial:bank_transfer_create' %}?type=Prefecture">
-                                    {% translate 'Prefecture' %}
-                                    </a>
-                                    <a class="dropdown-item" target="_blank" href="{% url 'financial:bank_transfer_create' %}?type=Region">
-                                    {% translate 'Region' %}
-                                    </a>
-                                </div>
-                            </div>
-
-
-                            {% comment %} <a class="btn btn-primary" target="_blank"
-                                href="{% url 'financial:bank_transfer_create' %}">
-                                    {% translate 'Register a bank transfer' %}
-                            </a> {% endcomment %}
+                            <a class="btn btn-primary" href="{% url 'financial:bank_transfer_create' %}">
+                                {% translate 'Register a bank transfer' %}
+                            </a>
                             {% endif %}
+                            <a class="btn btn-outline-primary" href="{% url 'financial:bank_transfer_export' %}?{{ request.GET.urlencode }}">
+                                <i class="fas fa-file-excel"></i> {% translate 'Export' %}
+                            </a>
                         </div>
+                        {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                        <form id="bulk-status-form" method="post" action="{% url 'financial:bank_transfer_bulk_status_update' %}"
+                              class="form-inline pull-right" onsubmit="return confirmBulkStatusChange()">
+                            {% csrf_token %}
+                            <label class="mr-2 mb-0">{% translate 'Change status of selection' %}</label>
+                            <select name="status" id="bulk-status-select" class="form-control form-control-sm mr-2">
+                                {% for value, label in filter_statuses %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-outline-primary btn-sm">{% translate 'Apply to selected' %}</button>
+                        </form>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="card-body table-responsive">
-                    <table id="table-bank-transfers" class="table">
+                    <table id="table-bank-transfers" class="table table-striped">
                         <thead>
                         <tr>
-                            <th>{% translate 'Administrative level' %}</th>
-                            <th>{% translate 'Location' %}</th>
+                            {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                            <th><input type="checkbox" id="select-all-transfers" onclick="toggleAllTransferCheckboxes(this)"></th>
+                            {% endif %}
+                            <th>{% translate 'Sender' %}</th>
+                            <th>{% translate 'Recipient' %}</th>
                             <th>{% translate 'Amount Transfer' %}</th>
                             <th>{% translate 'Project' %}</th>
+                            <th>{% translate 'Credit/Grant' %}</th>
+                            <th>{% translate 'Level' %}</th>
+                            <th>{% translate 'Payment method' %}</th>
+                            <th>{% translate 'Status' %}</th>
                             <th>{% translate 'Date' %}</th>
-                            <th width="12%">{% translate 'Action' %}</th>
+                            <th width="10%">{% translate 'Action' %}</th>
                         </tr>
                         </thead>
                         <tbody>
                         {% for bank_transfer in bank_transfers %}
                             <tr>
-                                {% if bank_transfer.administrative_level %}
-                                <td>{{ bank_transfer.administrative_level.type }}</td>
-                                <td>{{ bank_transfer.administrative_level.name }}</td>
-                                {% else %}
-                                <td>CVD</td>
-                                <td>{{ bank_transfer.cvd.name }}</td>
+                                {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                                <td><input type="checkbox" name="selected_transfers" value="{{ bank_transfer.pk }}" form="bulk-status-form"></td>
                                 {% endif %}
-
-                                <td>{{ bank_transfer.amount_transferred|separate_with_space }}</td>
-                                <td>{{ bank_transfer.project.name }}</td>
+                                <td>
+                                    {% if bank_transfer.sender %}
+                                        <span class="badge {{ bank_transfer.sender.account_type|account_type_badge }}">{{ bank_transfer.sender.get_account_type_display }}</span> {{ bank_transfer.sender.name }}
+                                    {% elif bank_transfer.project %}
+                                        {{ bank_transfer.project.name }}
+                                    {% else %}-{% endif %}
+                                </td>
+                                <td>
+                                    {% if bank_transfer.recipient %}
+                                        <span class="badge {{ bank_transfer.recipient.account_type|account_type_badge }}">{{ bank_transfer.recipient.get_account_type_display }}</span> {{ bank_transfer.recipient.name }}
+                                    {% else %}-{% endif %}
+                                </td>
+                                <td class="font-weight-bold">{{ bank_transfer.amount_transferred|separate_with_space }}</td>
+                                <td>{{ bank_transfer.project.name|default_if_none:'-' }}</td>
+                                <td>{{ bank_transfer.funding.label|default_if_none:'-' }}</td>
+                                <td>{{ bank_transfer.get_level_display|default_if_none:'-' }}</td>
+                                <td>{{ bank_transfer.get_payment_method_display }}</td>
+                                <td>
+                                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                                    <form method="post" action="{% url 'financial:bank_transfer_status_update' bank_transfer.pk %}" class="mb-0">
+                                        {% csrf_token %}
+                                        <select name="status" class="form-control form-control-sm badge {{ bank_transfer.status|financial_status_badge }}" data-previous-value="{{ bank_transfer.status }}" onchange="confirmStatusChange(this)" style="min-width: 110px;">
+                                            {% for value, label in filter_statuses %}
+                                                <option value="{{ value }}" {% if bank_transfer.status == value %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </form>
+                                    {% else %}
+                                        <span class="badge {{ bank_transfer.status|financial_status_badge }}">{{ bank_transfer.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
                                 <td>{{ bank_transfer.transfer_date }}</td>
                                 <td>
-                                    <a href="#" data-toggle="modal" data-target="#bank-transfer-details-{{ bank_transfer.pk }}" 
-                                        style="font-size: 9px !important;" 
+                                    <a href="#" data-toggle="modal" data-target="#bank-transfer-details-{{ bank_transfer.pk }}"
+                                        style="font-size: 9px !important;"
                                        class="btn btn-primary btn-xs" title="{% translate 'View details' %}">
                                         <i class="fa fa-eye"></i>
                                     </a>
                                     {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
-                                    <a href="{% url 'financial:bank_transfer_update' bank_transfer.pk %}?type={% if bank_transfer.administrative_level %}{{bank_transfer.administrative_level.type}}{% else %}cvd{% endif %}" 
-                                        style="font-size: 9px !important;" target="_blank"
+                                    <a href="{% url 'financial:bank_transfer_update' bank_transfer.pk %}"
+                                        style="font-size: 9px !important;"
                                        class="btn btn-primary btn-xs" title="{% translate 'Edit' %}">
                                         <i class="fa fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if user.is_superuser or user|has_group:"Financial" %}
+                                    <a href="{% url 'financial:bank_transfer_delete' bank_transfer.pk %}"
+                                        style="font-size: 9px !important;"
+                                       class="btn btn-danger btn-xs" title="{% translate 'Delete' %}">
+                                        <i class="fa fa-trash"></i>
                                     </a>
                                     {% endif %}
                                 </td>
@@ -122,9 +121,7 @@
                         <ul class="pagination justify-content-center">
                             {% if bank_transfers.has_previous %}
                                 <li>
-                                    <a class="page-link tab-bank-transfer-other" href="#bank-transfers" data-href="{% url 'financial:bank_transfers_list' %}?page={{ bank_transfers.previous_page_number }}" 
-                                        >
-                                        {% comment %} <span aria-hiden="true">&laquo;</span> {% endcomment %}
+                                    <a class="page-link" href="{% url 'financial:bank_transfers_list' %}?page={{ bank_transfers.previous_page_number }}">
                                         <i class="fa fa-arrow-left text-bold"></i>
                                     </a>
                                 </li>
@@ -136,9 +133,7 @@
                             </li>
                             {% if bank_transfers.has_next %}
                                 <li class="page-item">
-                                    <a class="page-link tab-bank-transfer-other" href="#bank-transfers" data-href="{% url 'financial:bank_transfers_list' %}?page={{ bank_transfers.next_page_number }}" 
-                                        >
-                                        {% comment %} <span aria-hidden="true">&laquo;</span> {% endcomment %}
+                                    <a class="page-link" href="{% url 'financial:bank_transfers_list' %}?page={{ bank_transfers.next_page_number }}">
                                         <i class="fa fa-arrow-right text-bold"></i>
                                     </a>
                                 </li>
@@ -150,10 +145,9 @@
             </div>
         </div>
     </div>
-{% comment %} {% endblock %} {% endcomment %}
+{% endblock %}
 
-
-
+{% block modals %}
 <!-- Modal -->
 {% for bank_transfer in bank_transfers %}
 <div class="modal fade" id="bank-transfer-details-{{ bank_transfer.pk }}" tabindex="-1" role="dialog" aria-labelledby="bank-transfer-center-title-{{ bank_transfer.pk }}" aria-hidden="true">
@@ -167,16 +161,31 @@
       </div>
       <div class="modal-body">
         <div>
-            <span style="font-weight: bold;">{% translate 'Administrative level' %}</span> : <span>{% if bank_transfer.administrative_level %}{{ bank_transfer.administrative_level.type }}{% else %}CVD{% endif %}</span>
+            <span style="font-weight: bold;">{% translate 'Sender' %}</span> : <span>{% if bank_transfer.sender %}{{ bank_transfer.sender.name }} ({{ bank_transfer.sender.get_account_type_display }}){% elif bank_transfer.project %}{{ bank_transfer.project.name }}{% else %}-{% endif %}</span>
         </div><br />
         <div>
-            <span style="font-weight: bold;">{% translate 'Location' %}</span> : <span>{% if bank_transfer.administrative_level %}{{ bank_transfer.administrative_level.name }}{% else %}{{ bank_transfer.cvd.name }}{% endif %}</span>
+            <span style="font-weight: bold;">{% translate 'Recipient' %}</span> : <span>{% if bank_transfer.recipient %}{{ bank_transfer.recipient.name }} ({{ bank_transfer.recipient.get_account_type_display }}){% else %}-{% endif %}</span>
         </div><br />
         <div>
             <span style="font-weight: bold;">{% translate 'Amount Transfer' %}</span> : <span>{{ bank_transfer.amount_transferred|separate_with_space }}</span>
         </div><br />
         <div>
-            <span style="font-weight: bold;">{% translate 'Project' %}</span> : <span>{{ bank_transfer.project.name }}</span>
+            <span style="font-weight: bold;">{% translate 'Project' %}</span> : <span>{{ bank_transfer.project.name|default_if_none:'-' }}</span>
+        </div><br />
+        <div>
+            <span style="font-weight: bold;">{% translate 'Credit/Grant' %}</span> : <span>{{ bank_transfer.funding.label|default_if_none:'-' }}</span>
+        </div><br />
+        <div>
+            <span style="font-weight: bold;">{% translate 'Level' %}</span> : <span>{{ bank_transfer.get_level_display|default_if_none:'-' }}</span>
+        </div><br />
+        <div>
+            <span style="font-weight: bold;">{% translate 'Payment method' %}</span> : <span>{{ bank_transfer.get_payment_method_display }}</span>
+        </div><br />
+        <div>
+            <span style="font-weight: bold;">{% translate 'Direction' %}</span> : <span>{{ bank_transfer.get_direction_display }}</span>
+        </div><br />
+        <div>
+            <span style="font-weight: bold;">{% translate 'Status' %}</span> : <span class="badge {{ bank_transfer.status|financial_status_badge }}">{{ bank_transfer.get_status_display }}</span>
         </div><br />
         <div>
             <span style="font-weight: bold;">{% translate 'Transfer date' %}</span> : <span>{{ bank_transfer.transfer_date }}</span>
@@ -187,7 +196,7 @@
         <div>
             <span style="font-weight: bold;">{% translate 'Description' %}</span> : <span>{% if bank_transfer.description %}{{ bank_transfer.description }}{% else %}-{% endif %}</span>
         </div>
-        
+
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">{% translate 'Close' %}</button>
@@ -197,14 +206,45 @@
 </div>
 {% endfor %}
 <!-- End Modal -->
+{% endblock %}
 
-
-
-{% comment %} {% block javascript %}
-    {{ block.super }} {% endcomment %}
+{% block javascript %}
+    {{ block.super }}
 
     <!-- DataTables export files -->
     {% include 'layouts/datatable-js.html' %}
+
+    <script type="text/javascript">
+        function confirmStatusChange(select) {
+            var label = select.options[select.selectedIndex].text;
+            var message = '{% translate "Confirm the status change for this bank transfer to: __STATUS__?" %}'.replace('__STATUS__', label);
+            if (confirm(message)) {
+                select.form.submit();
+            } else {
+                select.value = select.getAttribute('data-previous-value');
+            }
+        }
+
+        function toggleAllTransferCheckboxes(source) {
+            document.querySelectorAll('input[name="selected_transfers"]').forEach(function (checkbox) {
+                checkbox.checked = source.checked;
+            });
+        }
+
+        function confirmBulkStatusChange() {
+            var checked = document.querySelectorAll('input[name="selected_transfers"]:checked');
+            if (checked.length === 0) {
+                alert('{% translate "Please select at least one bank transfer." %}');
+                return false;
+            }
+            var select = document.getElementById('bulk-status-select');
+            var label = select.options[select.selectedIndex].text;
+            var message = '{% translate "Confirm the status change to: __STATUS__ for __COUNT__ bank transfer(s)?" %}'
+                .replace('__STATUS__', label)
+                .replace('__COUNT__', checked.length);
+            return confirm(message);
+        }
+    </script>
 
     <script type="text/javascript">
         $(document).ready(function () {
@@ -221,12 +261,6 @@
                 pageLength: 10,
                 order: []
             });
-        
-            $('a.tab-bank-transfer-other').on('click', function () {
-                var elt = $(this).attr('href').replace('#', '');
-                loadPage($(this).attr('data-href'), $(`#${elt}-data`), $(`#${elt}-spin`));
-            });
-
         });
     </script>
-{% comment %} {% endblock %} {% endcomment %}
+{% endblock %}

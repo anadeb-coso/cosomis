@@ -124,6 +124,30 @@ class AccountantPermissionRequiredMixin(UserPassesTestMixin):
         return super(AccountantPermissionRequiredMixin, self).dispatch(request, *args, **kwargs)
     
 
+class FinancialPermissionRequiredMixin(UserPassesTestMixin):
+    """Gates the destructive financial actions (deleting a fund request, a bank
+    transfer, a disbursement, an allocation, a fund request validation round) -
+    deliberately stricter than AccountantPermissionRequiredMixin (which also lets
+    Evaluator/Admin through): only the Financial group and superusers may delete."""
+
+    permission_required = None
+
+    def test_func(self):
+        return True if(self.request.user.is_authenticated and (
+            self.request.user.groups.filter(name="Financial").exists()
+            or
+            bool(self.request.user.is_superuser)
+        )) else False
+
+    def handle_no_permission(self):
+        if self.request.user.is_authenticated:
+            return page_not_found(self.request, _('Page not found').__str__())
+        return super().handle_no_permission()
+
+    def dispatch(self, request, *args, **kwargs):
+        return super(FinancialPermissionRequiredMixin, self).dispatch(request, *args, **kwargs)
+
+
 class RegionalCoordinatorPermissionRequiredMixin(UserPassesTestMixin):
     permission_required = None
 

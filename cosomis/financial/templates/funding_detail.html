@@ -1,0 +1,150 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n custom_tags %}
+
+{% block content %}
+{% include 'components/financial_menu.html' with active_menu='funding' %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ funding.label }} <span class="badge {{ funding.funding_type|financial_status_badge }}">{{ funding.get_funding_type_display }}</span></h3>
+                    <div class="card-tools">
+                        <a class="btn btn-outline-primary btn-sm" href="{% url 'financial:funding_export' %}"><i class="fas fa-file-excel"></i> {% translate 'Export' %}</a>
+                        <a class="btn btn-secondary btn-sm" href="{% url 'financial:funding_list' %}">{% translate 'Back to list' %}</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3"><strong>{% translate 'IDA Project' %}</strong><br>{{ funding.project.name }}</div>
+                        <div class="col-md-3"><strong>{% translate 'IDA identification number' %}</strong><br>{{ funding.identification_number }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Initial amount' %}</strong><br>{{ funding.initial_amount|separate_with_space }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Amount currently available' %}</strong><br><span class="{% if funding.available_balance < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ funding.available_balance|separate_with_space }}</span></div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-12"><strong>{% translate 'Observations' %}</strong><br>{{ funding.notes|default_if_none:'-' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Components' %}</h3></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead><tr><th>{% translate 'Category' %}</th><th>{% translate 'Label' %}</th><th>{% translate 'Effective amount' %}</th><th>{% translate 'Target(s)' %}</th></tr></thead>
+                        <tbody>
+                        {% for component in components %}
+                            <tr>
+                                <td>{{ component.category.name|default_if_none:'-' }}</td>
+                                <td><a href="{% url 'financial:component_detail' component.pk %}">{{ component.name }}</a></td>
+                                <td>{{ component.effective_amount|separate_with_space }}</td>
+                                <td>{{ component.target|default_if_none:'-' }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="4" class="text-center">{% translate 'No data' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    <h5>{% translate 'Sub-components' %}</h5>
+                    <table class="table table-striped table-sm">
+                        <thead><tr><th>{% translate 'Component' %}</th><th>{% translate 'Label' %}</th><th>{% translate 'Effective amount' %}</th></tr></thead>
+                        <tbody>
+                        {% for component in sub_components %}
+                            <tr>
+                                <td>{{ component.parent.name }}</td>
+                                <td><a href="{% url 'financial:component_detail' component.parent.pk %}">{{ component.name }}</a></td>
+                                <td>{{ component.effective_amount|separate_with_space }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="3" class="text-center">{% translate 'No data' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Activities' %}</h3></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead><tr><th>{% translate 'Label' %}</th><th>{% translate 'Component' %}</th><th>{% translate 'Amount' %}</th><th>{% translate 'Justified amount' %}</th><th>{% translate 'Balance to justify' %}</th></tr></thead>
+                        <tbody>
+                        {% for activity in activities %}
+                            <tr>
+                                <td>{{ activity.name }}</td>
+                                <td>{{ activity.component.name }}</td>
+                                <td>{{ activity.amount|separate_with_space }}</td>
+                                <td>{{ activity.justified_amount|separate_with_space }}</td>
+                                <td class="{% if activity.balance_to_justify < 0 %}text-danger{% else %}text-success{% endif %}">{{ activity.balance_to_justify|separate_with_space }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="5" class="text-center">{% translate 'No data' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Fund requests' %}</h3></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead><tr><th>{% translate 'Request date' %}</th><th>{% translate 'Amount requested' %}</th><th>{% translate 'Amount validated' %}</th><th>{% translate 'Status' %}</th></tr></thead>
+                        <tbody>
+                        {% for req in disbursement_requests %}
+                            <tr>
+                                <td><a href="{% url 'financial:disbursement_request_detail' req.pk %}">{{ req.requested_date }}</a></td>
+                                <td>{{ req.amount_requested|separate_with_space }}</td>
+                                <td>{% if req.amount_validated is not None %}{{ req.amount_validated|separate_with_space }}{% else %}-{% endif %}</td>
+                                <td><span class="badge {{ req.status|financial_status_badge }}">{{ req.get_status_display }}</span></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="4" class="text-center">{% translate 'No data' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Disbursement' %}</h3></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead><tr><th>{% translate 'Disbursement date' %}</th><th>{% translate 'Amount disbursed' %}</th><th>{% translate 'Justification status' %}</th></tr></thead>
+                        <tbody>
+                        {% for disb in disbursements %}
+                            <tr>
+                                <td><a href="{% url 'financial:disbursement_detail' disb.pk %}">{{ disb.disbursement_date }}</a></td>
+                                <td>{{ disb.amount_disbursed|separate_with_space }}</td>
+                                <td><span class="badge {{ disb.justification_status|financial_status_badge }}">{{ disb.get_justification_status_display }}</span></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="3" class="text-center">{% translate 'No data' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Supporting documents' %}</h3></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead><tr><th>{% translate 'Document reference' %}</th><th>{% translate 'Document type' %}</th><th>{% translate 'Document date' %}</th><th>{% translate 'Total amount justified' %}</th></tr></thead>
+                        <tbody>
+                        {% for doc in supporting_documents %}
+                            <tr>
+                                <td><a href="{% url 'financial:supporting_document_detail' doc.pk %}">{{ doc.reference }}</a></td>
+                                <td>{{ doc.get_document_type_display }}</td>
+                                <td>{{ doc.document_date }}</td>
+                                <td>{{ doc.total_justified_amount|separate_with_space }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="4" class="text-center">{% translate 'No data' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

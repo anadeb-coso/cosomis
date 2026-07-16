@@ -1,0 +1,336 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n custom_tags %}
+
+{% block content %}
+{% include 'components/financial_menu.html' with active_menu='dashboard' %}
+<div class="row">
+    <div class="col-12">
+
+        <div class="card card-outline card-primary">
+            <div class="card-body">
+                <form method="get" class="form-row align-items-end" id="financial-dashboard-filters">
+                    <div class="col-md-4 form-group mb-2">
+                        <label class="small font-weight-bold text-muted mb-1">{% translate 'Project' %}</label>
+                        <select name="project" class="form-control select2-dashboard">
+                            <option value="">{% translate 'All' %}</option>
+                            {% for project in projects %}
+                                <option value="{{ project.pk }}" {% if selected_project == project.pk|stringformat:'s' %}selected{% endif %}>{{ project.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 form-group mb-2">
+                        <label class="small font-weight-bold text-muted mb-1">{% translate 'Funding' %}</label>
+                        <select name="funding" class="form-control select2-dashboard">
+                            <option value="">{% translate 'All' %}</option>
+                            {% for funding in fundings %}
+                                <option value="{{ funding.pk }}" {% if selected_funding == funding.pk|stringformat:'s' %}selected{% endif %}>{{ funding.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 form-group mb-2">
+                        <label class="small font-weight-bold text-muted mb-1">{% translate 'Period (year)' %}</label>
+                        <input type="number" name="year" class="form-control" placeholder="{% translate 'Period (year)' %}" value="{{ selected_year|default_if_none:'' }}">
+                    </div>
+                    <div class="col-md-1 form-group mb-2">
+                        <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-filter"></i></button>
+                    </div>
+                </form>
+                <a class="btn btn-outline-success btn-sm" href="{% url 'financial:financial_dashboard_export' %}?{{ request.GET.urlencode }}">
+                    <i class="fas fa-file-excel"></i> {% translate 'Export the fiduciary situation report' %}
+                </a>
+            </div>
+        </div>
+
+        <!-- KPI stat boxes: fund requests / disbursements -->
+        <div class="row">
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                    <div class="inner">
+                        <h3>{{ fund_requests.total_requested|separate_with_space }}</h3>
+                        <p>{% translate 'Total amount requested' %}</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-file-invoice-dollar"></i></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                    <div class="inner">
+                        <h3>{{ fund_requests.total_validated|separate_with_space }}</h3>
+                        <p>{% translate 'Total amount validated' %} ({{ fund_requests.validation_rate|floatformat:0 }}%)</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-check-circle"></i></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                    <div class="inner">
+                        <h3>{{ disbursements.total_disbursed|separate_with_space }}</h3>
+                        <p>{% translate 'Total amount disbursed' %}</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-money-bill-wave"></i></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box {% if disbursements.justification_gap > 0 %}bg-danger{% else %}bg-secondary{% endif %}">
+                    <div class="inner">
+                        <h3>{{ disbursements.justification_gap|separate_with_space }}</h3>
+                        <p>{% translate 'Justification gap' %}</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI stat boxes: availability (project account vs selected funding) -->
+        <div class="row">
+            <div class="col-lg-6 col-12">
+                <div class="small-box {% if available_balance_project < 0 %}bg-danger{% else %}bg-primary{% endif %}">
+                    <div class="inner">
+                        <h3>{{ available_balance_project|separate_with_space }}</h3>
+                        <p>{% translate 'Amount currently available on the project account' %}</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-university"></i></div>
+                </div>
+            </div>
+            <div class="col-lg-6 col-12">
+                <div class="small-box {% if available_balance_funding == None %}bg-secondary{% elif available_balance_funding < 0 %}bg-danger{% else %}bg-primary{% endif %}">
+                    <div class="inner">
+                        <h3>{% if available_balance_funding != None %}{{ available_balance_funding|separate_with_space }}{% else %}&mdash;{% endif %}</h3>
+                        <p>{% translate 'Amount currently available for the selected funding' %}</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-hand-holding-usd"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row">
+            <div class="col-lg-5 col-12">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">{% translate 'Fund requests' %}</h3></div>
+                    <div class="card-body">
+                        <canvas id="chart-fund-requests" style="min-height: 220px;"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-12">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">{% translate 'Bank transfers' %}</h3></div>
+                    <div class="card-body">
+                        <canvas id="chart-transfer-status" style="min-height: 220px;"></canvas>
+                    </div>
+                    <div class="card-footer text-center">
+                        <strong>{{ bank_transfers.count }}</strong> {% translate 'Number of transfers' %} &middot;
+                        <strong>{{ bank_transfers.total_transferred|separate_with_space }}</strong> {% translate 'Total amount transferred' %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-12">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">{% translate 'Balances per actor' %}</h3></div>
+                    <div class="card-body">
+                        <canvas id="chart-balances-by-type" style="min-height: 220px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Per IDA Project breakdown -->
+        <div class="row">
+            <div class="col-lg-5 col-12">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">{% translate 'Available balance per IDA Project' %}</h3></div>
+                    <div class="card-body">
+                        <canvas id="chart-project-breakdown" style="min-height: 220px;"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-7 col-12">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">{% translate 'IDA Project' %}</h3></div>
+                    <div class="card-body table-responsive">
+                        <table id="table-project-breakdown" class="table table-sm table-striped">
+                            <thead>
+                            <tr>
+                                <th>{% translate 'IDA Project' %}</th>
+                                <th>{% translate 'Total amount' %}</th>
+                                <th>{% translate 'Number of requests' %}</th>
+                                <th>{% translate 'Total amount requested' %}</th>
+                                <th>{% translate 'Total amount validated' %}</th>
+                                <th>{% translate 'Total amount disbursed' %}</th>
+                                <th>{% translate 'Amount currently available' %}</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for row in project_breakdown %}
+                                <tr>
+                                    <td>{{ row.project.name }}</td>
+                                    <td>{{ row.total_amount|separate_with_space }}</td>
+                                    <td>{{ row.count }}</td>
+                                    <td>{{ row.total_requested|separate_with_space }}</td>
+                                    <td>{{ row.total_validated|separate_with_space }}</td>
+                                    <td>{{ row.total_disbursed|separate_with_space }}</td>
+                                    <td class="{% if row.available_balance < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ row.available_balance|separate_with_space }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Per Credit/Grant breakdown -->
+        <div class="row">
+            <div class="col-lg-5 col-12">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">{% translate 'Available balance per Funding' %}</h3></div>
+                    <div class="card-body">
+                        <canvas id="chart-funding-breakdown" style="min-height: 220px;"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-7 col-12">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">{% translate 'Funding' %}</h3></div>
+                    <div class="card-body table-responsive">
+                        <table id="table-funding-breakdown" class="table table-sm table-striped">
+                            <thead>
+                            <tr>
+                                <th>{% translate 'Funding' %}</th>
+                                <th>{% translate 'Type' %}</th>
+                                <th>{% translate 'Initial amount' %}</th>
+                                <th>{% translate 'Total amount requested' %}</th>
+                                <th>{% translate 'Total amount validated' %}</th>
+                                <th>{% translate 'Total amount disbursed' %}</th>
+                                <th>{% translate 'Amount currently available' %}</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for row in funding_breakdown %}
+                                <tr>
+                                    <td>{{ row.funding.label }}</td>
+                                    <td><span class="badge {{ row.funding.funding_type|financial_status_badge }}">{{ row.funding.get_funding_type_display }}</span></td>
+                                    <td>{{ row.funding.initial_amount|separate_with_space }}</td>
+                                    <td>{{ row.total_requested|separate_with_space }}</td>
+                                    <td>{{ row.total_validated|separate_with_space }}</td>
+                                    <td>{{ row.total_disbursed|separate_with_space }}</td>
+                                    <td class="{% if row.available_balance < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ row.available_balance|separate_with_space }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balances per actor - full breakdown table (§ "Soldes des comptes") -->
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">{% translate 'Balances per actor' %}</h3></div>
+            <div class="card-body table-responsive">
+                <table id="table-dashboard-account-balances" class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th>{% translate 'Name' %}</th>
+                        <th>{% translate 'Account type' %}</th>
+                        <th>{% translate 'Total received' %}</th>
+                        <th>{% translate 'Received (executed)' %}</th>
+                        <th>{% translate 'Total sent' %}</th>
+                        <th>{% translate 'Sent (executed)' %}</th>
+                        <th>{% translate 'Returned to sender' %}</th>
+                        <th>{% translate 'Amount currently available' %}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for row in account_balances %}
+                        <tr>
+                            <td>{{ row.account.name }}</td>
+                            <td><span class="badge {{ row.account.account_type|account_type_badge }}">{{ row.account.get_account_type_display }}</span></td>
+                            <td>{{ row.total_received|separate_with_space }}</td>
+                            <td>{{ row.received_executed|separate_with_space }}</td>
+                            <td>{{ row.total_sent|separate_with_space }}</td>
+                            <td>{{ row.sent_executed|separate_with_space }}</td>
+                            <td>{{ row.returned_to_sender|separate_with_space }}</td>
+                            <td class="{% if row.available_balance < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ row.available_balance|separate_with_space }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+
+<!-- DataTables export files -->
+{% include 'layouts/datatable-js.html' %}
+<script src="{% static 'AdminLTE/plugins/chart.js/Chart.min.js' %}"></script>
+<script>
+$(document).ready(function () {
+    {% get_current_language as lang %}
+
+    const dtOptions = {
+        dom: 'Blfrtip',
+        language: { url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}') },
+        buttons: ['copy', 'excel', 'pdf', 'colvis'],
+        pageLength: 10,
+    };
+
+    $('#table-dashboard-account-balances').DataTable($.extend({}, dtOptions, { order: [[7, 'asc']] }));
+    $('#table-project-breakdown').DataTable($.extend({}, dtOptions, { order: [[6, 'asc']], paging: false, info: false }));
+    $('#table-funding-breakdown').DataTable($.extend({}, dtOptions, { order: [[6, 'asc']], paging: false, info: false }));
+
+    $('.select2-dashboard').select2({
+        width: '100%',
+    });
+
+    Chart.defaults.global.defaultFontFamily = "'Source Sans Pro', sans-serif";
+
+    function renderBarChart(canvasId, chartData, horizontal) {
+        new Chart(document.getElementById(canvasId), {
+            type: horizontal ? 'horizontalBar' : 'bar',
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    data: chartData.data,
+                    backgroundColor: chartData.colors,
+                }],
+            },
+            options: {
+                maintainAspectRatio: false,
+                legend: { display: false },
+                scales: horizontal
+                    ? { xAxes: [{ ticks: { beginAtZero: true } }] }
+                    : { yAxes: [{ ticks: { beginAtZero: true } }] },
+            },
+        });
+    }
+
+    renderBarChart('chart-fund-requests', {{ chart_fund_requests|safe }}, false);
+    renderBarChart('chart-balances-by-type', {{ chart_balances_by_type|safe }}, true);
+    renderBarChart('chart-project-breakdown', {{ chart_project_breakdown|safe }}, true);
+    renderBarChart('chart-funding-breakdown', {{ chart_funding_breakdown|safe }}, true);
+
+    const transferStatusData = {{ chart_bank_transfers_status|safe }};
+    new Chart(document.getElementById('chart-transfer-status'), {
+        type: 'doughnut',
+        data: {
+            labels: transferStatusData.labels,
+            datasets: [{
+                data: transferStatusData.data,
+                backgroundColor: transferStatusData.colors,
+            }],
+        },
+        options: {
+            maintainAspectRatio: false,
+            legend: { position: 'bottom' },
+        },
+    });
+});
+</script>
+{% endblock %}

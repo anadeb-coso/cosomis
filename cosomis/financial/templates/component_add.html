@@ -1,0 +1,96 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n bootstrap4 %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="col-md-12">
+                        <div class="btn-group pull-left">
+                            <a href="javascript:close_window();"><i class="fas fa-times text-danger"></i></a>
+                            <a href="{% url 'financial:component_list' %}" class="btn btn-secondary btn-sm">{% translate 'Back to list' %}</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row justify-content-center">
+                        <div class="col-9">
+                            <form method="POST">
+                                {% csrf_token %}
+                                {% if category_id %}<input type="hidden" name="category_id" value="{{ category_id }}">{% endif %}
+                                {% if parent_id %}<input type="hidden" name="parent_id" value="{{ parent_id }}">{% endif %}
+                                {% if form_mixin.errors %}
+                                    {% for field in form_mixin %}
+                                        {% for error in field.errors %}
+                                            <div class="alert alert-danger"><strong>{{ error|escape }}</strong></div>
+                                        {% endfor %}
+                                    {% endfor %}
+                                    {% for error in form_mixin.non_field_errors %}
+                                        <div class="alert alert-danger"><strong>{{ error|escape }}</strong></div>
+                                    {% endfor %}
+                                {% endif %}
+                                {% for field in form %}
+                                    {% bootstrap_field field %}
+                                    {% if field.errors %}
+                                        <div class="alert alert-danger alert-sm form_alert">{{ field.errors }}</div>
+                                    {% endif %}
+                                    <div class="clearfix"></div>
+                                {% endfor %}
+                                <button type="submit" class="btn btn-primary float-right">{% translate 'Submit' %}</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% if not parent_id %}
+        {{ category_meta|json_script:"category-meta" }}
+        {{ funding_meta|json_script:"funding-meta" }}
+    {% endif %}
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    {% if not parent_id %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var categoryMetaEl = document.getElementById('category-meta');
+            var fundingMetaEl = document.getElementById('funding-meta');
+            var $category = $('#id_category');
+            var $funding = $('#id_funding');
+
+            if (!categoryMetaEl || !fundingMetaEl || !$category.length || !$funding.length) {
+                return;
+            }
+
+            var categoryMeta = JSON.parse(categoryMetaEl.textContent);
+            var fundingMeta = JSON.parse(fundingMetaEl.textContent);
+            var allFundingOptions = $funding.find('option').clone();
+
+            function onCategoryChange() {
+                var categoryId = $category.val();
+                var meta = categoryId ? categoryMeta[categoryId] : null;
+                var projectId = meta ? String(meta.project_id) : null;
+                var allowedIds = categoryId ? Object.keys(fundingMeta).filter(function (fid) {
+                    return String(fundingMeta[fid].project_id) === projectId;
+                }) : null;
+
+                var currentVal = $funding.val();
+                $funding.empty();
+                allFundingOptions.each(function () {
+                    var val = $(this).val();
+                    if (val === '' || allowedIds === null || allowedIds.indexOf(val) !== -1) {
+                        $funding.append($(this).clone());
+                    }
+                });
+                $funding.val(allowedIds === null || allowedIds.indexOf(currentVal) !== -1 ? currentVal : '');
+                $funding.trigger('change.select2');
+            }
+
+            $category.on('change', onCategoryChange);
+        });
+    </script>
+    {% endif %}
+{% endblock %}

@@ -1,1 +1,84 @@
-Details
+{% extends 'layouts/base.html' %}
+{% load static i18n custom_tags %}
+
+{% block content %}
+{% include 'components/financial_menu.html' with active_menu='disbursements' %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ disbursement }} <span class="badge {{ disbursement.justification_status|financial_status_badge }}">{{ disbursement.get_justification_status_display }}</span></h3>
+                    <div class="card-tools">
+                        {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                        <a class="btn btn-primary btn-sm" href="{% url 'financial:disbursement_update' disbursement.pk %}">{% translate 'Edit' %}</a>
+                        {% endif %}
+                        {% if user.is_superuser or user|has_group:"Financial" %}
+                        <a class="btn btn-danger btn-sm" href="{% url 'financial:disbursement_delete' disbursement.pk %}">{% translate 'Delete' %}</a>
+                        {% endif %}
+                        <a class="btn btn-secondary btn-sm" href="{% url 'financial:disbursements_list' %}">{% translate 'Back to list' %}</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3"><strong>{% translate 'Project' %}</strong><br>{{ disbursement.project.name|default_if_none:'-' }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Request' %}</strong><br><a href="{% url 'financial:disbursement_request_detail' disbursement.disbursement_request_id %}">{{ disbursement.disbursement_request }}</a></div>
+                        <div class="col-md-3"><strong>{% translate 'Disbursement date' %}</strong><br>{{ disbursement.disbursement_date }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Amount disbursed' %}</strong><br>{{ disbursement.amount_disbursed|separate_with_space }}</div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-4"><strong>{% translate 'Total amount justified' %}</strong><br>{{ disbursement.justified_amount|separate_with_space }}</div>
+                        <div class="col-md-4"><strong>{% translate 'Justification gap' %}</strong><br><span class="{% if disbursement.justification_gap > 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ disbursement.justification_gap|separate_with_space }}</span></div>
+                        <div class="col-md-4"><strong>{% translate 'Justification status' %}</strong><br><span class="badge {{ disbursement.justification_status|financial_status_badge }}">{{ disbursement.get_justification_status_display }}</span></div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6"><strong>{% translate 'Description' %}</strong><br>{{ disbursement.description|default_if_none:'-' }}</div>
+                        <div class="col-md-6"><strong>{% translate 'Observations' %}</strong><br>{{ disbursement.notes|default_if_none:'-' }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Supporting documents' %}</h3></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead><tr><th>{% translate 'Document reference' %}</th><th>{% translate 'Document type' %}</th><th>{% translate 'Document date' %}</th><th>{% translate 'Total amount justified' %}</th></tr></thead>
+                        <tbody>
+                        {% for doc in supporting_documents %}
+                            <tr>
+                                <td><a href="{% url 'financial:supporting_document_detail' doc.pk %}">{{ doc.reference }}</a></td>
+                                <td>{{ doc.get_document_type_display }}</td>
+                                <td>{{ doc.document_date }}</td>
+                                <td>{{ doc.total_justified_amount|separate_with_space }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="4" class="text-center">{% translate 'No data' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Bank transfers' %}</h3></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead><tr><th>{% translate 'Sender' %}</th><th>{% translate 'Recipient' %}</th><th>{% translate 'Amount Transfer' %}</th><th>{% translate 'Transfer date' %}</th><th>{% translate 'Status' %}</th></tr></thead>
+                        <tbody>
+                        {% for transfer in bank_transfers %}
+                            <tr>
+                                <td>{% if transfer.sender %}{{ transfer.sender.name }}{% else %}-{% endif %}</td>
+                                <td>{% if transfer.recipient %}{{ transfer.recipient.name }}{% else %}-{% endif %}</td>
+                                <td>{{ transfer.amount_transferred|separate_with_space }}</td>
+                                <td>{{ transfer.transfer_date }}</td>
+                                <td><span class="badge {{ transfer.status|financial_status_badge }}">{{ transfer.get_status_display }}</span></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="5" class="text-center">{% translate 'No data' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
