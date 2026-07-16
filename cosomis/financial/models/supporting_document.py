@@ -2,10 +2,10 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from cosomis.models_base import BaseModel, ExternalIdMixin
+from cosomis.models_base import BaseModel, ExternalIdMixin, SoftDeleteMixin
 
 
-class SupportingDocument(ExternalIdMixin, BaseModel):
+class SupportingDocument(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     class DocumentType(models.TextChoices):
         INVOICE = 'INVOICE', _('Invoice')
         RECEIPT = 'RECEIPT', _('Receipt')
@@ -28,6 +28,7 @@ class SupportingDocument(ExternalIdMixin, BaseModel):
         db_table = 'financial_supporting_document'
         verbose_name = _("Supporting document")
         verbose_name_plural = _("Supporting documents")
+        base_manager_name = 'objects'
 
     def __str__(self):
         return self.reference

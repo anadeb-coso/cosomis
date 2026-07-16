@@ -2,10 +2,10 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from cosomis.models_base import BaseModel, ExternalIdMixin
+from cosomis.models_base import BaseModel, ExternalIdMixin, SoftDeleteMixin
 
 
-class Account(ExternalIdMixin, BaseModel):
+class Account(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     class AccountType(models.TextChoices):
         PROJECT = 'PROJECT', _('Project')
         REGIONAL_OFFICE = 'REGIONAL_OFFICE', _('Regional office')
@@ -37,6 +37,7 @@ class Account(ExternalIdMixin, BaseModel):
         verbose_name = _("Account")
         verbose_name_plural = _("Accounts")
         ordering = ['name']
+        base_manager_name = 'objects'
 
     def __str__(self):
         return f"{self.get_account_type_display()}: {self.name} ({self.account_number})"

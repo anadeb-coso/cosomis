@@ -381,3 +381,101 @@ def querystring_replace(context, **kwargs):
         else:
             query[key] = value
     return query.urlencode()
+
+
+def _history_parse_date(value):
+    """data_created_date/data_updated_date are stored as plain
+    datetime.isoformat() strings (users_history() in cosomis/models_base.py) -
+    parse them back so the template can use Django's |date filter directly."""
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return value
+
+
+def _history_user_label(entry):
+    if entry.get('last_name') or entry.get('first_name'):
+        return f"{entry.get('first_name') or ''} {entry.get('last_name') or ''}".strip()
+    if entry.get('username'):
+        return entry['username']
+    if entry.get('name'):
+        return entry['name']
+    return gettext_lazy("System").__str__()
+
+
+def _history_resolve_display(instance, field, value):
+    """A changed FK field's diff only holds a raw pk (that's all model_to_dict()
+    keeps) - resolve it back to the related object's __str__() for display,
+    falling back to the raw value if the field/object can't be resolved
+    (unrelated field, or the related row no longer exists)."""
+    if value in (None, ''):
+        return gettext_lazy("(empty)").__str__()
+    try:
+        field_obj = instance._meta.get_field(field)
+    except Exception:
+        field_obj = None
+    if field_obj is not None and field_obj.is_relation and field_obj.related_model is not None:
+        related_model = field_obj.related_model
+        manager = getattr(related_model, 'all_objects', related_model.objects)
+        try:
+            related = manager.filter(pk=value).first()
+        except Exception:
+            related = None
+        if related is not None:
+            return str(related)
+    return value
+
+
+@register.filter
+def history_entries(users_involved, instance=None):
+    """Turns BaseModel.users_involved (the raw list of user_json dicts appended
+    by users_history() on every save() - see cosomis/models_base.py) into
+    display-ready entries for the "History" panel at the bottom of financial
+    detail pages: date, action (created/updated/deleted), who, and a
+    human-readable list of what changed. Most recent first.
+
+    A "deleted" entry is just the diff where `is_deleted` flips to True (see
+    SoftDeleteMixin.soft_delete()) - detected here rather than stored as a
+    separate action so it reuses the exact same history mechanism as any other
+    field edit, with no extra bookkeeping."""
+    if not users_involved:
+        return []
+
+    field_labels = {}
+    if instance is not None:
+        for f in instance._meta.fields:
+            if f.name != 'is_deleted':
+                field_labels[f.name] = str(f.verbose_name)
+
+    entries = []
+    for entry in users_involved:
+        changed = entry.get('data_changed')
+        user_label = _history_user_label(entry)
+        if changed is not None:
+            is_deletion = 'is_deleted' in changed and str(changed['is_deleted'][1]) == 'True'
+            changes = [
+                {
+                    'label': field_labels.get(field, field),
+                    'old': _history_resolve_display(instance, field, old) if instance is not None else old,
+                    'new': _history_resolve_display(instance, field, new) if instance is not None else new,
+                }
+                for field, (old, new) in changed.items()
+                if field != 'is_deleted'
+            ]
+            entries.append({
+                'date': _history_parse_date(entry.get('data_updated_date')),
+                'action': 'deleted' if is_deletion else 'updated',
+                'user_label': user_label,
+                'changes': changes,
+            })
+        elif entry.get('data_created_date'):
+            entries.append({
+                'date': _history_parse_date(entry.get('data_created_date')),
+                'action': 'created',
+                'user_label': user_label,
+                'changes': [],
+            })
+    entries.reverse()
+    return entries

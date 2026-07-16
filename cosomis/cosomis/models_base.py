@@ -17,12 +17,44 @@ class ExternalIdMixin(models.Model):
         abstract = True
 
 
+class SoftDeleteManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+
+class SoftDeleteMixin(models.Model):
+    """Replaces a real DB delete with an `is_deleted` flag, so "deleting" an object
+    never destroys its BaseModel.users_involved history - the deletion itself just
+    becomes one more diffed save() entry in that same history (see
+    `BaseModel.users_history`), and the row + its history stay queryable via
+    `all_objects` even once soft-deleted.
+
+    `objects` (the default manager) excludes soft-deleted rows everywhere in the
+    app (list pages, dropdowns, dashboards, exports, related-object lookups -
+    `Meta.base_manager_name` below makes this the base manager too, so reverse-FK
+    access like `parent.child_set.all()` is filtered the same way)."""
+
+    is_deleted = models.BooleanField(default=False, verbose_name=_("Deleted"))
+
+    objects = SoftDeleteManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        abstract = True
+        base_manager_name = 'objects'
+
+    def soft_delete(self, user=None):
+        self.is_deleted = True
+        self.save(user=user)
+
+
 # Create your models here.
 class BaseModel(models.Model):
     created_date = models.DateTimeField(auto_now_add = True, blank=True, null=True)
     updated_date = models.DateTimeField(auto_now = True, blank=True, null=True)
     create_by_user = models.JSONField(blank=True, null=True)
     update_by_user = models.JSONField(blank=True, null=True)
+    delete_by_user = models.JSONField(blank=True, null=True)
     users_involved = models.JSONField(blank=True, null=True)
 
     class Meta:
@@ -91,6 +123,9 @@ class BaseModel(models.Model):
             users_involved.append(user_json)
 
             self.users_involved = format_value(users_involved)
+
+            if 'is_deleted' in self_json and self_json['is_deleted']:
+                self.delete_by_user = user_json
             
             super().save(force_insert, force_update, using, update_fields)
         else:

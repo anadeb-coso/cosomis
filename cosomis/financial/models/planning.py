@@ -1,10 +1,10 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from cosomis.models_base import BaseModel, ExternalIdMixin
+from cosomis.models_base import BaseModel, ExternalIdMixin, SoftDeleteMixin
 
 
-class AnnualWorkPlan(ExternalIdMixin, BaseModel):
+class AnnualWorkPlan(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     project = models.ForeignKey('subprojects.Project', on_delete=models.CASCADE, verbose_name=_("IDA Project"))
     period = models.IntegerField(verbose_name=_("Period (year)"))
     name = models.CharField(max_length=255, verbose_name=_("Label"))
@@ -15,6 +15,7 @@ class AnnualWorkPlan(ExternalIdMixin, BaseModel):
         db_table = 'financial_annual_work_plan'
         verbose_name = _("Annual work plan")
         verbose_name_plural = _("Annual work plans")
+        base_manager_name = 'objects'
 
     def __str__(self):
         return f'{self.name} ({self.period})'
@@ -32,7 +33,7 @@ class AnnualWorkPlan(ExternalIdMixin, BaseModel):
         return (self.budgeted_amount or 0) - self.justified_amount
 
 
-class Activity(ExternalIdMixin, BaseModel):
+class Activity(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     component = models.ForeignKey('subprojects.Component', on_delete=models.CASCADE, verbose_name=_("Component / Sub-component"))
     annual_work_plan = models.ForeignKey(AnnualWorkPlan, on_delete=models.CASCADE, verbose_name=_("Annual work plan"))
     name = models.CharField(max_length=255, verbose_name=_("Label"))
@@ -44,6 +45,7 @@ class Activity(ExternalIdMixin, BaseModel):
         db_table = 'financial_activity'
         verbose_name = _("Activity")
         verbose_name_plural = _("Activities")
+        base_manager_name = 'objects'
 
     def __str__(self):
         return self.name

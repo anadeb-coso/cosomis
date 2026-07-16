@@ -1,8 +1,23 @@
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.http import Http404
 from django.shortcuts import redirect
 from django.urls import reverse
 from urllib.parse import urlencode
+
+
+class SoftDeleteViewMixin:
+    """Swaps a generic DeleteView's real DB delete for a soft delete
+    (`is_deleted=True`, see `cosomis.models_base.SoftDeleteMixin`), so the
+    object's BaseModel.users_involved history survives past its "deletion" -
+    the deletion itself just becomes one more diffed save() entry in that same
+    history. DeleteView routes POST through form_valid() (self.object is set by
+    post() before form_valid() runs), so this overrides form_valid() rather
+    than delete()."""
+
+    def form_valid(self, form):
+        success_url = self.get_success_url()
+        self.object.soft_delete(user=self.request.user)
+        return HttpResponseRedirect(success_url)
 
 
 class PageMixin(object):

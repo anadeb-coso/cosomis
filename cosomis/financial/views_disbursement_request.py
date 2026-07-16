@@ -2,7 +2,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views import generic
-from cosomis.mixins import PageMixin
+from cosomis.mixins import PageMixin, SoftDeleteViewMixin
 from django.utils.translation import gettext_lazy as _
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -20,7 +20,7 @@ from financial.aggregations import funding_cascade_meta
 # Create your views here.
 
 
-def _sync_request_status(disbursement_request):
+def _sync_request_status(disbursement_request, user=None):
     """Recompute DisbursementRequest.status from the current total of its
     DisbursementRequestValidation rows - called after a round is added, edited or
     deleted, so the status never drifts from the actual validation history.
@@ -36,7 +36,7 @@ def _sync_request_status(disbursement_request):
         new_status = DisbursementRequest.Status.PARTIALLY_VALIDATED
     if new_status != disbursement_request.status:
         disbursement_request.status = new_status
-        disbursement_request.save()
+        disbursement_request.save(user=user)
 
 
 def _filtered_disbursement_requests(get):
@@ -86,7 +86,8 @@ class DisbursementRequestCreateView(PageMixin, LoginRequiredMixin, AccountantPer
     def post(self, request, *args, **kwargs):
         form = DisbursementRequestFormCreate(request.POST)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:financials')
         self.form_mixin = form
         return super(DisbursementRequestCreateView, self).get(request, *args, **kwargs)
@@ -119,7 +120,8 @@ class DisbursementRequestUpdateView(PageMixin, LoginRequiredMixin, AccountantPer
     def post(self, request, *args, **kwargs):
         form = DisbursementRequestForm(request.POST, instance=self.get_object())
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:financials')
         self.form_mixin = form
         return super(DisbursementRequestUpdateView, self).get(request, *args, **kwargs)
@@ -214,13 +216,13 @@ class DisbursementRequestValidationCreateView(PageMixin, LoginRequiredMixin, Acc
                 if prospective_total >= (disbursement_request.amount_requested or 0)
                 else DisbursementRequest.Status.PARTIALLY_VALIDATED
             )
-            validation.save()
+            validation.save(user=request.user)
 
             if not disbursement_request.first_response_date:
                 disbursement_request.first_response_date = validation.validation_date
             disbursement_request.comment_linked_to_reply = validation.comment
-            disbursement_request.save()
-            _sync_request_status(disbursement_request)
+            disbursement_request.save(user=request.user)
+            _sync_request_status(disbursement_request, user=request.user)
             return redirect('financial:disbursement_request_detail', pk=disbursement_request.pk)
         self.form_mixin = form
         return self.get(request, *args, **kwargs)
@@ -246,14 +248,15 @@ class DisbursementRequestValidationUpdateView(PageMixin, LoginRequiredMixin, Acc
         instance = self.get_object()
         form = DisbursementRequestValidationForm(data=request.POST, instance=instance)
         if form.is_valid():
-            validation = form.save()
-            _sync_request_status(validation.disbursement_request)
+            validation = form.save(commit=False)
+            validation.save(user=request.user)
+            _sync_request_status(validation.disbursement_request, user=request.user)
             return redirect('financial:disbursement_request_detail', pk=validation.disbursement_request_id)
         self.form_mixin = form
         return self.get(request, *args, **kwargs)
 
 
-class DisbursementRequestValidationDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, generic.DeleteView):
+class DisbursementRequestValidationDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, SoftDeleteViewMixin, generic.DeleteView):
     """Only the Financial group and superusers may delete a validation round."""
 
     model = DisbursementRequestValidation
@@ -274,11 +277,11 @@ class DisbursementRequestValidationDeleteView(PageMixin, LoginRequiredMixin, Fin
         # the deletion) - a delete() override never runs for a POST submission.
         disbursement_request = self.object.disbursement_request
         response = super().form_valid(form)
-        _sync_request_status(disbursement_request)
+        _sync_request_status(disbursement_request, user=self.request.user)
         return response
 
 
-class DisbursementRequestDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, generic.DeleteView):
+class DisbursementRequestDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, SoftDeleteViewMixin, generic.DeleteView):
     """Only the Financial group and superusers may delete a fund request."""
 
     model = DisbursementRequest

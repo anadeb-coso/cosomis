@@ -4,7 +4,7 @@ from django.http import Http404
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.views import generic
-from cosomis.mixins import PageMixin
+from cosomis.mixins import PageMixin, SoftDeleteViewMixin
 from django.utils.translation import gettext_lazy as _
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -86,7 +86,8 @@ class AdministrativeLevelAllocationCreateView(PageMixin, LoginRequiredMixin, Acc
     def post(self, request, *args, **kwargs):
         form = AdministrativeLevelAllocationForm(self.request.GET.get("type"), request.POST)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:financials')
         self.form_mixin = form
         return super(AdministrativeLevelAllocationCreateView, self).get(request, *args, **kwargs)
@@ -119,7 +120,8 @@ class AdministrativeLevelAllocationUpdateView(PageMixin, LoginRequiredMixin, Acc
     def post(self, request, *args, **kwargs):
         form = AdministrativeLevelAllocationForm(self.request.GET.get("type"), request.POST, instance=self.get_object())
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:financials')
         self.form_mixin = form
         return super(AdministrativeLevelAllocationForm, self).get(request, *args, **kwargs)
@@ -175,7 +177,7 @@ class AdministrativeLevelAllocationExportView(PageMixin, LoginRequiredMixin, gen
         return export_allocation(_filtered_allocations(request.GET))
 
 
-class AdministrativeLevelAllocationDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, generic.DeleteView):
+class AdministrativeLevelAllocationDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, SoftDeleteViewMixin, generic.DeleteView):
     """Only the Financial group and superusers may delete an allocation."""
 
     model = AdministrativeLevelAllocation

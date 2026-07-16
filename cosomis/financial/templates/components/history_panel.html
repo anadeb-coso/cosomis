@@ -1,0 +1,42 @@
+{% load i18n custom_tags %}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">{% translate 'History' %}</h3>
+    </div>
+    <div class="card-body table-responsive">
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr>
+                    <th>{% translate 'Date' %}</th>
+                    <th>{% translate 'Action' %}</th>
+                    <th>{% translate 'User' %}</th>
+                    <th>{% translate 'Changes' %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in target.users_involved|history_entries:target %}
+                    <tr>
+                        <td>{{ entry.date|date:'d/m/Y H:i' }}</td>
+                        <td>
+                            {% if entry.action == 'created' %}
+                                <span class="badge badge-success">{% translate 'Created' %}</span>
+                            {% elif entry.action == 'deleted' %}
+                                <span class="badge badge-danger">{% translate 'Deleted' %}</span>
+                            {% else %}
+                                <span class="badge badge-info">{% translate 'Updated' %}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ entry.user_label }}</td>
+                        <td>
+                            {% for change in entry.changes %}
+                                <div>{{ change.label }}: {{ change.old }} &rarr; {{ change.new }}</div>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4" class="text-center">{% translate 'No history' %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

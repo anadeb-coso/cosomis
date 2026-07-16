@@ -6,7 +6,7 @@ from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 from django.views import generic
 
-from cosomis.mixins import PageMixin
+from cosomis.mixins import PageMixin, SoftDeleteViewMixin
 from usermanager.permissions import AccountantPermissionRequiredMixin, FinancialPermissionRequiredMixin
 
 from subprojects.models import CategoryIDA, Component
@@ -61,7 +61,8 @@ class CategoryCreateView(PageMixin, LoginRequiredMixin, AccountantPermissionRequ
     def post(self, request, *args, **kwargs):
         form = CategoryIDAForm(request.POST)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:category_list')
         self.form_mixin = form
         return super().get(request, *args, **kwargs)
@@ -84,13 +85,14 @@ class CategoryUpdateView(PageMixin, LoginRequiredMixin, AccountantPermissionRequ
     def post(self, request, *args, **kwargs):
         form = CategoryIDAForm(request.POST, instance=self.get_object())
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:category_list')
         self.form_mixin = form
         return super().get(request, *args, **kwargs)
 
 
-class CategoryDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, generic.DeleteView):
+class CategoryDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, SoftDeleteViewMixin, generic.DeleteView):
     """Only the Financial group and superusers may delete a category."""
 
     model = CategoryIDA

@@ -2,7 +2,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views import generic
-from cosomis.mixins import PageMixin
+from cosomis.mixins import PageMixin, SoftDeleteViewMixin
 from django.utils.translation import gettext_lazy as _
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -68,7 +68,8 @@ class DisbursementCreateView(PageMixin, LoginRequiredMixin, AccountantPermission
     def post(self, request, *args, **kwargs):
         form = DisbursementForm(request.POST)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:financials')
         self.form_mixin = form
         return super(DisbursementCreateView, self).get(request, *args, **kwargs)
@@ -100,7 +101,8 @@ class DisbursementUpdateView(PageMixin, LoginRequiredMixin, AccountantPermission
     def post(self, request, *args, **kwargs):
         form = DisbursementForm(request.POST, instance=self.get_object())
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:financials')
         self.form_mixin = form
         return super(DisbursementUpdateView, self).get(request, *args, **kwargs)
@@ -143,7 +145,7 @@ class DisbursementExportView(PageMixin, LoginRequiredMixin, generic.View):
         return export_disbursement(_filtered_disbursements(request.GET))
 
 
-class DisbursementDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, generic.DeleteView):
+class DisbursementDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, SoftDeleteViewMixin, generic.DeleteView):
     """Only the Financial group and superusers may delete a disbursement."""
 
     model = Disbursement

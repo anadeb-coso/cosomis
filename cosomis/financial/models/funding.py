@@ -2,10 +2,10 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from cosomis.customers_fields import CustomerFloatRangeField
-from cosomis.models_base import BaseModel, ExternalIdMixin
+from cosomis.models_base import BaseModel, ExternalIdMixin, SoftDeleteMixin
 
 
-class Funding(ExternalIdMixin, BaseModel):
+class Funding(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     class FundingType(models.TextChoices):
         CREDIT = 'CREDIT', _('Credit')
         GRANT = 'GRANT', _('Grant')
@@ -23,6 +23,7 @@ class Funding(ExternalIdMixin, BaseModel):
         verbose_name = _("Funding")
         verbose_name_plural = _("Fundings")
         ordering = ['label']
+        base_manager_name = 'objects'
 
     def __str__(self):
         return f'{self.label} ({self.identification_number})'

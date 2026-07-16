@@ -45,7 +45,7 @@
                                 <td>{{ sub.effective_amount|separate_with_space }}</td>
                                 <td>{{ sub.target|default_if_none:'-' }}</td>
                                 <td>
-                                    {% if user.is_superuser %}
+                                    {% if user.is_superuser or user|has_group:"Financial" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
                                     <a href="{% url 'financial:component_update' sub.pk %}" style="font-size: 9px !important;" target="_blank" class="btn btn-primary btn-xs" title="{% translate 'Edit' %}"><i class="fa fa-edit"></i></a>
                                     {% endif %}
                                 </td>
@@ -79,6 +79,8 @@
                     </table>
                 </div>
             </div>
+
+            {% include 'components/history_panel.html' with target=component %}
         </div>
     </div>
 {% endblock %}

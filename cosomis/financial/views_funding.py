@@ -6,7 +6,7 @@ from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 from django.views import generic
 
-from cosomis.mixins import PageMixin
+from cosomis.mixins import PageMixin, SoftDeleteViewMixin
 from usermanager.permissions import AccountantPermissionRequiredMixin, FinancialPermissionRequiredMixin
 
 from financial.models.funding import Funding
@@ -67,7 +67,8 @@ class FundingCreateView(PageMixin, LoginRequiredMixin, AccountantPermissionRequi
     def post(self, request, *args, **kwargs):
         form = FundingForm(request.POST)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:funding_list')
         self.form_mixin = form
         return super().get(request, *args, **kwargs)
@@ -90,13 +91,14 @@ class FundingUpdateView(PageMixin, LoginRequiredMixin, AccountantPermissionRequi
     def post(self, request, *args, **kwargs):
         form = FundingForm(request.POST, instance=self.get_object())
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:funding_list')
         self.form_mixin = form
         return super().get(request, *args, **kwargs)
 
 
-class FundingDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, generic.DeleteView):
+class FundingDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, SoftDeleteViewMixin, generic.DeleteView):
     """Only the Financial group and superusers may delete a funding."""
 
     model = Funding

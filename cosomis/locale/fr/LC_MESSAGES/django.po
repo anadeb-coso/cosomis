@@ -4116,3 +4116,43 @@ msgstr "Confirmer le changement de statut en : __STATUS__ pour __COUNT__ viremen
 #: .\cosomis\models_base.py
 msgid "External ID"
 msgstr "ID externe"
+
+#: .\cosomis\models_base.py
+msgid "Deleted"
+msgstr "Supprimé"
+
+#: .\financial\templates\components\history_panel.html
+msgid "History"
+msgstr "Historique"
+
+#: .\financial\templates\components\history_panel.html
+msgid "Date"
+msgstr "Date"
+
+#: .\financial\templates\components\history_panel.html
+msgid "User"
+msgstr "Utilisateur"
+
+#: .\financial\templates\components\history_panel.html
+msgid "Changes"
+msgstr "Modifications"
+
+#: .\financial\templates\components\history_panel.html
+msgid "Created"
+msgstr "Créé"
+
+#: .\financial\templates\components\history_panel.html
+msgid "Updated"
+msgstr "Modifié"
+
+#: .\financial\templates\components\history_panel.html
+msgid "No history"
+msgstr "Aucun historique"
+
+#: .\subprojects\templatetags\custom_tags.py
+msgid "System"
+msgstr "Système"
+
+#: .\subprojects\templatetags\custom_tags.py
+msgid "(empty)"
+msgstr "(vide)"

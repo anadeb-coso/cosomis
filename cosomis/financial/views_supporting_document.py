@@ -6,7 +6,7 @@ from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 from django.views import generic
 
-from cosomis.mixins import PageMixin
+from cosomis.mixins import PageMixin, SoftDeleteViewMixin
 from usermanager.permissions import AccountantPermissionRequiredMixin, FinancialPermissionRequiredMixin
 
 from financial.models.supporting_document import SupportingDocument
@@ -128,7 +128,8 @@ class SupportingDocumentCreateView(PageMixin, LoginRequiredMixin, AccountantPerm
             document.disbursement_id = disbursement_id
         formset = SupportingDocumentActivityFormSet(request.POST, instance=document, form_kwargs={'project': project})
         if form.is_valid() and formset.is_valid():
-            form.save()
+            form.save(commit=False)
+            document.save(user=request.user)
             formset.save()
             return redirect('financial:supporting_document_detail', pk=document.pk)
         self.form_mixin = form
@@ -166,7 +167,8 @@ class SupportingDocumentUpdateView(PageMixin, LoginRequiredMixin, AccountantPerm
         form = SupportingDocumentForm(mode=mode, data=request.POST, files=request.FILES, instance=instance)
         formset = SupportingDocumentActivityFormSet(request.POST, instance=instance, form_kwargs={'project': project})
         if form.is_valid() and formset.is_valid():
-            form.save()
+            form.save(commit=False)
+            instance.save(user=request.user)
             formset.save()
             return redirect('financial:supporting_document_detail', pk=instance.pk)
         self.form_mixin = form
@@ -174,7 +176,7 @@ class SupportingDocumentUpdateView(PageMixin, LoginRequiredMixin, AccountantPerm
         return self.get(request, *args, **kwargs)
 
 
-class SupportingDocumentDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, generic.DeleteView):
+class SupportingDocumentDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, SoftDeleteViewMixin, generic.DeleteView):
     """Only the Financial group and superusers may delete a supporting document."""
 
     model = SupportingDocument

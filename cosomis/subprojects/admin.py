@@ -9,14 +9,14 @@ from administrativelevels.functions_adl import (
     get_multiple_administrative_hierarchies,
     get_multiple_administrative_hierarchies_ids
 )
-from cosomis import FORM_FIELDS_TO_EXCLUDE
+from cosomis import FORM_FIELDS_TO_EXCLUDE, FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 from django.db import connection
 
 
 class ProjectForm(forms.ModelForm):
     class Meta:
         model = Project
-        exclude = FORM_FIELDS_TO_EXCLUDE
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

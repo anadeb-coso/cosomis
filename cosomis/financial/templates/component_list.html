@@ -57,7 +57,7 @@
                                 <td class="font-weight-bold">{{ component.effective_amount|separate_with_space }}</td>
                                 <td>
                                     <a href="{% url 'financial:component_detail' component.pk %}" style="font-size: 9px !important;" class="btn btn-primary btn-xs" title="{% translate 'View details' %}"><i class="fa fa-eye"></i></a>
-                                    {% if user.is_superuser %}
+                                    {% if user.is_superuser or user|has_group:"Financial" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
                                     <a href="{% url 'financial:component_update' component.pk %}" style="font-size: 9px !important;" class="btn btn-primary btn-xs" title="{% translate 'Edit' %}"><i class="fa fa-edit"></i></a>
                                     {% endif %}
                                 </td>

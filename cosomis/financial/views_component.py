@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from django.views import generic
 
 from cosomis.mixins import PageMixin
-from usermanager.permissions import SuperAdminPermissionRequiredMixin
+from usermanager.permissions import SuperAdminPermissionRequiredMixin, ComponentEditPermissionRequiredMixin
 
 from subprojects.models import Component
 from financial.models.planning import Activity
@@ -98,7 +98,7 @@ class ComponentCreateView(PageMixin, LoginRequiredMixin, SuperAdminPermissionReq
             else:
                 component.parent = None
                 component.project = component.category.project if component.category_id else None
-            component.save()
+            component.save(user=request.user)
             if parent_id:
                 return redirect('financial:component_detail', pk=parent_id)
             return redirect('financial:component_list')
@@ -106,8 +106,10 @@ class ComponentCreateView(PageMixin, LoginRequiredMixin, SuperAdminPermissionReq
         return self.get(request, *args, **kwargs)
 
 
-class ComponentUpdateView(PageMixin, LoginRequiredMixin, SuperAdminPermissionRequiredMixin, generic.UpdateView):
-    """Only superusers may edit a component/sub-component."""
+class ComponentUpdateView(PageMixin, LoginRequiredMixin, ComponentEditPermissionRequiredMixin, generic.UpdateView):
+    """Financial/Evaluator/Accountant users and superusers may edit a
+    component/sub-component's category, funding, description, own amount and
+    target(s) - renaming it (the `name` field) stays superuser-only."""
 
     model = Component
     template_name = 'component_add.html'
@@ -127,7 +129,8 @@ class ComponentUpdateView(PageMixin, LoginRequiredMixin, SuperAdminPermissionReq
         category_id = instance.category_id
         parent_id = instance.parent_id
         context['form'] = self.form_mixin if getattr(self, 'form_mixin', None) else ComponentForm(
-            category_id=category_id, parent_id=parent_id, instance=instance
+            category_id=category_id, parent_id=parent_id, instance=instance,
+            restrict_name=not self.request.user.is_superuser,
         )
         context['category_id'] = category_id
         context['parent_id'] = parent_id
@@ -140,7 +143,10 @@ class ComponentUpdateView(PageMixin, LoginRequiredMixin, SuperAdminPermissionReq
         instance = self.get_object()
         parent_id = instance.parent_id
         category_id = instance.category_id
-        form = ComponentForm(category_id=category_id, parent_id=parent_id, data=request.POST, instance=instance)
+        form = ComponentForm(
+            category_id=category_id, parent_id=parent_id, data=request.POST, instance=instance,
+            restrict_name=not request.user.is_superuser,
+        )
         if form.is_valid():
             component = form.save(commit=False)
             if parent_id:
@@ -149,7 +155,7 @@ class ComponentUpdateView(PageMixin, LoginRequiredMixin, SuperAdminPermissionReq
             else:
                 component.parent = None
                 component.project = component.category.project if component.category_id else None
-            component.save()
+            component.save(user=request.user)
             if parent_id:
                 return redirect('financial:component_detail', pk=parent_id)
             return redirect('financial:component_detail', pk=component.pk)

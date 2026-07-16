@@ -1,11 +1,13 @@
 from django.urls import path
 
-from . import views, views_steps, views_files
+from . import views, views_steps, views_files, views_diagnostic
 
 app_name = 'subprojects'
 
 urlpatterns = [
     path('get-subprojects-by-user/', views.RestGetSubprojectsByUser.as_view(), name="get_subprojects_by_user"),
+    path('get-subprojects-diagnostic-summary-by-user/', views_diagnostic.RestGetSubprojectsDiagnosticSummaryByUser.as_view(), name="get_subprojects_diagnostic_summary_by_user"),
+    path('get-subprojects-diagnostic-list-by-user/', views_diagnostic.RestGetSubprojectsDiagnosticListByUser.as_view(), name="get_subprojects_diagnostic_list_by_user"),
     path('get-subprojects-simple-by-user/', views.RestGetSubprojectsByUserSimple.as_view(), name="get_subprojects_simple_by_user"),
     path('get-subproject-by-user/<int:pk>/', views.RestGetSubprojectByUser.as_view(), name="get_subproject_by_user"),
     path('save-subproject-geolocation/<int:pk>/', views.SaveSubprojectsGeoLocation.as_view(), name="save_subproject_geolocation"),

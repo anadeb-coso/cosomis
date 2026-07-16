@@ -2,7 +2,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from cosomis.models_base import BaseModel, ExternalIdMixin
+from cosomis.models_base import BaseModel, ExternalIdMixin, SoftDeleteMixin
 from cosomis.customers_fields import CustomerFloatRangeField
 from financial.models.allocation import AdministrativeLevelAllocation
 from financial.models.account import Account
@@ -10,7 +10,7 @@ from financial.models.funding import Funding
 from financial.models.supporting_document import SupportingDocument
 
 
-class BankTransfer(ExternalIdMixin, BaseModel):
+class BankTransfer(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     class Level(models.TextChoices):
         LEVEL_1_PROJECT = 'LEVEL_1_PROJECT', _('Level 1 - Project')
         LEVEL_2_REGIONAL_OFFICE = 'LEVEL_2_REGIONAL_OFFICE', _('Level 2 - Regional office')
@@ -72,6 +72,7 @@ class BankTransfer(ExternalIdMixin, BaseModel):
     class Meta(object):
         app_label = 'financial'
         db_table = 'financial_bank_transfer'
+        base_manager_name = 'objects'
 
     @property
     def year(self):
@@ -116,7 +117,7 @@ class BankTransfer(ExternalIdMixin, BaseModel):
         super().clean()
 
 
-class DisbursementRequest(ExternalIdMixin, BaseModel):
+class DisbursementRequest(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     class Status(models.TextChoices):
         PENDING = 'PENDING', _('Pending')
         FULLY_VALIDATED = 'FULLY_VALIDATED', _('Fully validated')
@@ -138,6 +139,7 @@ class DisbursementRequest(ExternalIdMixin, BaseModel):
     class Meta(object):
         app_label = 'financial'
         db_table = 'financial_disbursement_request'
+        base_manager_name = 'objects'
 
     def __str__(self):
         return f'{self.project}/{self.requested_date.strftime("%d-%m-%Y")}/{self.amount_requested}'
@@ -161,7 +163,7 @@ class DisbursementRequest(ExternalIdMixin, BaseModel):
         return self.amount_validated - self.total_disbursed
 
 
-class DisbursementRequestValidation(ExternalIdMixin, BaseModel):
+class DisbursementRequestValidation(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     """History of validation rounds for a fund request: a request can be validated
     partially, then later receive the rest of what was originally requested in a
     separate round - each round is logged here so that history isn't lost.
@@ -183,12 +185,13 @@ class DisbursementRequestValidation(ExternalIdMixin, BaseModel):
         ordering = ['validation_date']
         verbose_name = _("Fund request validation")
         verbose_name_plural = _("Fund request validations")
+        base_manager_name = 'objects'
 
     def __str__(self):
         return f'{self.disbursement_request}/{self.validation_date.strftime("%d-%m-%Y")}/{self.amount_validated}'
 
 
-class Disbursement(ExternalIdMixin, BaseModel):
+class Disbursement(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     class JustificationStatus(models.TextChoices):
         NOT_JUSTIFIED = 'NOT_JUSTIFIED', _('Not justified')
         PARTIALLY_JUSTIFIED = 'PARTIALLY_JUSTIFIED', _('Partially justified')
@@ -205,6 +208,7 @@ class Disbursement(ExternalIdMixin, BaseModel):
     class Meta(object):
         app_label = 'financial'
         db_table = 'financial_disbursement'
+        base_manager_name = 'objects'
 
     def __str__(self):
         return f'{self.disbursement_request.project}/{self.disbursement_date.strftime("%d-%m-%Y")}/{self.amount_disbursed}' + (

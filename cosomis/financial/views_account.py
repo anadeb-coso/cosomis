@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from django.core.paginator import Paginator
 from django.db.models import Q
 
-from cosomis.mixins import PageMixin
+from cosomis.mixins import PageMixin, SoftDeleteViewMixin
 from usermanager.permissions import AccountantPermissionRequiredMixin, FinancialPermissionRequiredMixin
 from financial.models.account import Account
 from financial.models.financial import BankTransfer
@@ -73,7 +73,8 @@ class AccountCreateView(PageMixin, LoginRequiredMixin, AccountantPermissionRequi
     def post(self, request, *args, **kwargs):
         form = AccountForm(request.POST)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:account_list')
         self.form_mixin = form
         return super().get(request, *args, **kwargs)
@@ -96,14 +97,16 @@ class AccountUpdateView(PageMixin, LoginRequiredMixin, AccountantPermissionRequi
     def post(self, request, *args, **kwargs):
         form = AccountForm(request.POST, instance=self.get_object())
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:account_list')
         self.form_mixin = form
         return super().get(request, *args, **kwargs)
 
 
-class AccountDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, generic.DeleteView):
-    """Only the Financial group and superusers may delete an account."""
+class AccountDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, SoftDeleteViewMixin, generic.DeleteView):
+    """Only the Financial group and superusers may delete an account (soft delete
+    - see SoftDeleteViewMixin)."""
 
     model = Account
     template_name = 'components/confirm_delete.html'

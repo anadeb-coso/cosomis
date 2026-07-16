@@ -6,7 +6,7 @@ from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 from django.views import generic
 
-from cosomis.mixins import PageMixin
+from cosomis.mixins import PageMixin, SoftDeleteViewMixin
 from usermanager.permissions import AccountantPermissionRequiredMixin, FinancialPermissionRequiredMixin
 
 from financial.models.planning import AnnualWorkPlan, Activity
@@ -65,7 +65,8 @@ class AnnualWorkPlanCreateView(PageMixin, LoginRequiredMixin, AccountantPermissi
     def post(self, request, *args, **kwargs):
         form = AnnualWorkPlanForm(request.POST)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:annual_work_plan_list')
         self.form_mixin = form
         return super().get(request, *args, **kwargs)
@@ -88,13 +89,14 @@ class AnnualWorkPlanUpdateView(PageMixin, LoginRequiredMixin, AccountantPermissi
     def post(self, request, *args, **kwargs):
         form = AnnualWorkPlanForm(request.POST, instance=self.get_object())
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:annual_work_plan_detail', pk=self.get_object().pk)
         self.form_mixin = form
         return super().get(request, *args, **kwargs)
 
 
-class AnnualWorkPlanDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, generic.DeleteView):
+class AnnualWorkPlanDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, SoftDeleteViewMixin, generic.DeleteView):
     """Only the Financial group and superusers may delete an annual work plan."""
 
     model = AnnualWorkPlan
@@ -150,7 +152,7 @@ class ActivityCreateView(PageMixin, LoginRequiredMixin, AccountantPermissionRequ
         if form.is_valid():
             activity = form.save(commit=False)
             activity.annual_work_plan = plan
-            activity.save()
+            activity.save(user=request.user)
             return redirect('financial:annual_work_plan_detail', pk=plan.pk)
         self.form_mixin = form
         return self.get(request, *args, **kwargs)
@@ -178,13 +180,13 @@ class ActivityUpdateView(PageMixin, LoginRequiredMixin, AccountantPermissionRequ
         if form.is_valid():
             activity = form.save(commit=False)
             activity.annual_work_plan = instance.annual_work_plan
-            activity.save()
+            activity.save(user=request.user)
             return redirect('financial:annual_work_plan_detail', pk=instance.annual_work_plan.pk)
         self.form_mixin = form
         return self.get(request, *args, **kwargs)
 
 
-class ActivityDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, generic.DeleteView):
+class ActivityDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, SoftDeleteViewMixin, generic.DeleteView):
     """Only the Financial group and superusers may delete an activity."""
 
     model = Activity

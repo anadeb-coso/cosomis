@@ -12,7 +12,7 @@ from administrativelevels.models import AdministrativeLevel, CVD
 from subprojects import SUB_PROJECT_TYPE_DESIGNATION
 from cosomis.customers_fields import *
 from cosomis.types import _QS
-from cosomis.models_base import BaseModel, ExternalIdMixin
+from cosomis.models_base import BaseModel, ExternalIdMixin, SoftDeleteMixin
 from administrativelevels.functions_adl import get_cascade_villages_ids_by_administrative_level_id
 from cosomis.constants import IMAGE_EXTENSIONS, STRUCTURE_IN_PROGRESS_STATUS, STRUCTURE_IN_PROGRESS_RANKING_LIST
 
@@ -762,7 +762,7 @@ class VillageMeeting(BaseModel):
         return self.description
 
 
-class CategoryIDA(ExternalIdMixin, BaseModel):
+class CategoryIDA(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     project = models.ForeignKey('Project', null=True, blank=True, on_delete=models.CASCADE, verbose_name=_("IDA Project"))
     name = models.CharField(max_length=255, verbose_name=_("Name"))
     description = models.TextField(null=True, blank=True, verbose_name=_("Description"))
@@ -773,6 +773,7 @@ class CategoryIDA(ExternalIdMixin, BaseModel):
         db_table = 'subprojects_category_ida'
         verbose_name = _("IDA category")
         verbose_name_plural = _("IDA categories")
+        base_manager_name = 'objects'
 
     def __str__(self):
         return self.name

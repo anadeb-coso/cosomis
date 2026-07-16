@@ -55,7 +55,8 @@ class ProjectIDACreateView(PageMixin, LoginRequiredMixin, SuperAdminPermissionRe
     def post(self, request, *args, **kwargs):
         form = ProjectForm(request.POST)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:project_ida_list')
         self.form_mixin = form
         return super().get(request, *args, **kwargs)
@@ -80,7 +81,8 @@ class ProjectIDAUpdateView(PageMixin, LoginRequiredMixin, SuperAdminPermissionRe
     def post(self, request, *args, **kwargs):
         form = ProjectForm(request.POST, instance=self.get_object())
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:project_ida_list')
         self.form_mixin = form
         return super().get(request, *args, **kwargs)

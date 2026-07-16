@@ -3,11 +3,11 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models import Sum, Q
 
 from cosomis.customers_fields import CustomerFloatRangeField
-from cosomis.models_base import BaseModel
+from cosomis.models_base import BaseModel, SoftDeleteMixin
 
 
 
-class AdministrativeLevelAllocation(BaseModel):
+class AdministrativeLevelAllocation(SoftDeleteMixin, BaseModel):
     administrative_level = models.ForeignKey('administrativelevels.AdministrativeLevel', on_delete=models.CASCADE, verbose_name=_("Administrative level"), null=True, blank=True)
     cvd = models.ForeignKey('administrativelevels.CVD', on_delete=models.CASCADE, verbose_name=_("CVD"), null=True, blank=True)
     project = models.ForeignKey('subprojects.Project', on_delete=models.CASCADE, verbose_name=_("Project"))
@@ -24,7 +24,8 @@ class AdministrativeLevelAllocation(BaseModel):
     class Meta(object):
         app_label = 'financial'
         db_table = 'financial_administrativeLevel_allocation'
-    
+        base_manager_name = 'objects'
+
     def __str__(self) -> str:
         _str = ""
         if self.administrative_level:

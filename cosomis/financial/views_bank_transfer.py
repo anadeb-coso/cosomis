@@ -2,7 +2,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views import generic
-from cosomis.mixins import PageMixin
+from cosomis.mixins import PageMixin, SoftDeleteViewMixin
 from django.utils.translation import gettext_lazy as _
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -86,7 +86,8 @@ class BankTransferCreateView(PageMixin, LoginRequiredMixin, AccountantPermission
     def post(self, request, *args, **kwargs):
         form = BankTransferForm(request.POST)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:bank_transfers_list')
         self.form_mixin = form
         return super(BankTransferCreateView, self).get(request, *args, **kwargs)
@@ -120,7 +121,8 @@ class BankTransferUpdateView(PageMixin, LoginRequiredMixin, AccountantPermission
     def post(self, request, *args, **kwargs):
         form = BankTransferForm(request.POST, instance=self.get_object())
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.save(user=request.user)
             return redirect('financial:bank_transfers_list')
         self.form_mixin = form
         return super(BankTransferUpdateView, self).get(request, *args, **kwargs)
@@ -175,7 +177,7 @@ class BankTransferDetailView(PageMixin, LoginRequiredMixin, generic.DetailView):
     ]
 
 
-class BankTransferDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, generic.DeleteView):
+class BankTransferDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, SoftDeleteViewMixin, generic.DeleteView):
     """Only the Financial group and superusers may delete a bank transfer."""
 
     model = BankTransfer
@@ -198,7 +200,7 @@ class BankTransferStatusUpdateView(LoginRequiredMixin, AccountantPermissionRequi
         status = request.POST.get('status')
         if status in BankTransfer.Status.values:
             bank_transfer.status = status
-            bank_transfer.save()
+            bank_transfer.save(user=request.user)
         referer = request.META.get('HTTP_REFERER')
         return redirect(referer or 'financial:bank_transfers_list')
 
@@ -212,6 +214,11 @@ class BankTransferBulkStatusUpdateView(LoginRequiredMixin, AccountantPermissionR
         status = request.POST.get('status')
         ids = request.POST.getlist('selected_transfers')
         if status in BankTransfer.Status.values and ids:
-            BankTransfer.objects.filter(pk__in=ids).update(status=status)
+            # Saved one by one (rather than a single queryset .update()) so each
+            # transfer's BaseModel.users_involved history records the change -
+            # .update() writes SQL directly and never calls save().
+            for bank_transfer in BankTransfer.objects.filter(pk__in=ids):
+                bank_transfer.status = status
+                bank_transfer.save(user=request.user)
         referer = request.META.get('HTTP_REFERER')
         return redirect(referer or 'financial:bank_transfers_list')

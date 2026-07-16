@@ -7,7 +7,7 @@ from administrativelevels.serializers import (
 )
 from usermanager.api.auth.login import CheckUserSerializer
 from cosomis.serializers_base import BaseModelSerializerCustomer
-from cosomis.__init__ import FORM_FIELDS_TO_EXCLUDE
+from cosomis.__init__ import FORM_FIELDS_TO_EXCLUDE, FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 from cosomis.constants import STRUCTURE_COMPLETED_ALL_STATUS, STRUCTURE_IN_PROGRESS_ALL_STATUS
 from usermanager.serializers import UserSerializer
 
@@ -88,7 +88,7 @@ class ComponentSerializer(BaseModelSerializerCustomer):
 		"""docstring for Meta"""
 		model = Component
 		# fields = '__all__'
-		exclude = FORM_FIELDS_TO_EXCLUDE
+		exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 
 class FinancierSerializer(BaseModelSerializerCustomer):
 	class Meta:
@@ -104,7 +104,7 @@ class ProjectSerializer(BaseModelSerializerCustomer):
 		"""docstring for Meta"""
 		model = Project
 		# fields = '__all__'
-		exclude = FORM_FIELDS_TO_EXCLUDE
+		exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 
 class ProjectSerializerSimple(BaseModelSerializerCustomer):
 	financiers = FinancierSerializer(many=True)

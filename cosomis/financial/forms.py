@@ -10,7 +10,7 @@ from financial.models.funding import Funding
 from financial.models.planning import AnnualWorkPlan, Activity
 from financial.models.supporting_document import SupportingDocument, SupportingDocumentActivity
 from subprojects.models import Project, CategoryIDA, Component
-from cosomis import FORM_FIELDS_TO_EXCLUDE
+from cosomis import FORM_FIELDS_TO_EXCLUDE, FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 
 
 class AdministrativeLevelAllocationForm(forms.ModelForm):
@@ -127,7 +127,7 @@ class BankTransferForm(forms.ModelForm):
     class Meta:
         model = BankTransfer
         # fields = '__all__'
-        exclude  = FORM_FIELDS_TO_EXCLUDE # specify the fields to be hid
+        exclude  = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID # specify the fields to be hid
 
 
 class DisbursementRequestForm(forms.ModelForm):
@@ -150,7 +150,7 @@ class DisbursementRequestForm(forms.ModelForm):
     class Meta:
         model = DisbursementRequest
         # fields = '__all__'
-        exclude  = FORM_FIELDS_TO_EXCLUDE # specify the fields to be hid
+        exclude  = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID # specify the fields to be hid
 
 class DisbursementRequestFormCreate(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -159,7 +159,7 @@ class DisbursementRequestFormCreate(forms.ModelForm):
     class Meta:
         model = DisbursementRequest
         # fields = '__all__'
-        exclude  = ['first_response_date', 'comment_linked_to_reply', 'status'] + FORM_FIELDS_TO_EXCLUDE # specify the fields to be hid
+        exclude  = ['first_response_date', 'comment_linked_to_reply', 'status'] + FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID # specify the fields to be hid
 
 
 
@@ -181,7 +181,7 @@ class DisbursementForm(forms.ModelForm):
     class Meta:
         model = Disbursement
         # fields = '__all__'
-        exclude  = FORM_FIELDS_TO_EXCLUDE # specify the fields to be hid
+        exclude  = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID # specify the fields to be hid
 
 
 class AccountForm(forms.ModelForm):
@@ -199,7 +199,7 @@ class AccountForm(forms.ModelForm):
 
     class Meta:
         model = Account
-        exclude = FORM_FIELDS_TO_EXCLUDE
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 
 
 class ProjectForm(forms.ModelForm):
@@ -213,7 +213,7 @@ class ProjectForm(forms.ModelForm):
 
     class Meta:
         model = Project
-        exclude = ['financiers', 'administrative_levels'] + FORM_FIELDS_TO_EXCLUDE
+        exclude = ['financiers', 'administrative_levels'] + FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 
 
 class FundingForm(forms.ModelForm):
@@ -223,7 +223,7 @@ class FundingForm(forms.ModelForm):
 
     class Meta:
         model = Funding
-        exclude = FORM_FIELDS_TO_EXCLUDE
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 
 
 class CategoryIDAForm(forms.ModelForm):
@@ -233,17 +233,25 @@ class CategoryIDAForm(forms.ModelForm):
 
     class Meta:
         model = CategoryIDA
-        exclude = FORM_FIELDS_TO_EXCLUDE
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 
 
 class ComponentForm(forms.ModelForm):
     """Handles both a top-level Composante (category set, parent=None) and a
     Sous-composante (parent set to another Component) - which one depends on
-    whether category_id or parent_id is passed in."""
+    whether category_id or parent_id is passed in.
 
-    def __init__(self, category_id=None, parent_id=None, *args, **kwargs):
+    `restrict_name=True` disables the `name` field: Financial/Evaluator/Accountant
+    users may edit category/funding/description/amount/target, but renaming a
+    component stays a superuser-only action (ComponentUpdateView sets this from
+    the requesting user)."""
+
+    def __init__(self, category_id=None, parent_id=None, restrict_name=False, *args, **kwargs):
         super(ComponentForm, self).__init__(*args, **kwargs)
         instance = kwargs.get('instance')
+
+        if restrict_name:
+            self.fields['name'].disabled = True
 
         parent = None
         if parent_id:
@@ -280,7 +288,7 @@ class ComponentForm(forms.ModelForm):
 
     class Meta:
         model = Component
-        exclude = FORM_FIELDS_TO_EXCLUDE
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 
 
 class AnnualWorkPlanForm(forms.ModelForm):
@@ -290,7 +298,7 @@ class AnnualWorkPlanForm(forms.ModelForm):
 
     class Meta:
         model = AnnualWorkPlan
-        exclude = FORM_FIELDS_TO_EXCLUDE
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 
 
 class ActivityForm(forms.ModelForm):
@@ -311,7 +319,7 @@ class ActivityForm(forms.ModelForm):
 
     class Meta:
         model = Activity
-        exclude = FORM_FIELDS_TO_EXCLUDE
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 
 
 class SupportingDocumentForm(forms.ModelForm):
@@ -334,7 +342,7 @@ class SupportingDocumentForm(forms.ModelForm):
 
     class Meta:
         model = SupportingDocument
-        exclude = FORM_FIELDS_TO_EXCLUDE
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 
 
 class SupportingDocumentActivityForm(forms.ModelForm):
