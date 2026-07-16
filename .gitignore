@@ -17,3 +17,7 @@ cosomis/cosomis/*.env
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+
+# Claude AI
+context/
+CLAUDE.md

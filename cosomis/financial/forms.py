@@ -10,7 +10,7 @@ from financial.models.funding import Funding
 from financial.models.planning import AnnualWorkPlan, Activity
 from financial.models.supporting_document import SupportingDocument, SupportingDocumentActivity
 from subprojects.models import Project, CategoryIDA, Component
-from cosomis import FORM_FIELDS_TO_EXCLUDE, FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
+from cosomis import FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID, FORM_FIELDS_TO_EXCLUDE_WITH_DELETED, FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED
 
 
 class AdministrativeLevelAllocationForm(forms.ModelForm):
@@ -57,7 +57,7 @@ class AdministrativeLevelAllocationForm(forms.ModelForm):
     class Meta:
         model = AdministrativeLevelAllocation
         # fields = '__all__'
-        exclude  = FORM_FIELDS_TO_EXCLUDE # specify the fields to be hid
+        exclude  = FORM_FIELDS_TO_EXCLUDE_WITH_DELETED # specify the fields to be hid
 
 
     def clean(self):
@@ -127,7 +127,7 @@ class BankTransferForm(forms.ModelForm):
     class Meta:
         model = BankTransfer
         # fields = '__all__'
-        exclude  = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID # specify the fields to be hid
+        exclude  = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED # specify the fields to be hid
 
 
 class DisbursementRequestForm(forms.ModelForm):
@@ -150,7 +150,7 @@ class DisbursementRequestForm(forms.ModelForm):
     class Meta:
         model = DisbursementRequest
         # fields = '__all__'
-        exclude  = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID # specify the fields to be hid
+        exclude  = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED # specify the fields to be hid
 
 class DisbursementRequestFormCreate(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -159,7 +159,7 @@ class DisbursementRequestFormCreate(forms.ModelForm):
     class Meta:
         model = DisbursementRequest
         # fields = '__all__'
-        exclude  = ['first_response_date', 'comment_linked_to_reply', 'status'] + FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID # specify the fields to be hid
+        exclude  = ['first_response_date', 'comment_linked_to_reply', 'status'] + FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED # specify the fields to be hid
 
 
 
@@ -181,7 +181,7 @@ class DisbursementForm(forms.ModelForm):
     class Meta:
         model = Disbursement
         # fields = '__all__'
-        exclude  = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID # specify the fields to be hid
+        exclude  = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED # specify the fields to be hid
 
 
 class AccountForm(forms.ModelForm):
@@ -199,7 +199,7 @@ class AccountForm(forms.ModelForm):
 
     class Meta:
         model = Account
-        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED
 
 
 class ProjectForm(forms.ModelForm):
@@ -223,7 +223,7 @@ class FundingForm(forms.ModelForm):
 
     class Meta:
         model = Funding
-        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED
 
 
 class CategoryIDAForm(forms.ModelForm):
@@ -233,7 +233,7 @@ class CategoryIDAForm(forms.ModelForm):
 
     class Meta:
         model = CategoryIDA
-        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED
 
 
 class ComponentForm(forms.ModelForm):
@@ -298,7 +298,7 @@ class AnnualWorkPlanForm(forms.ModelForm):
 
     class Meta:
         model = AnnualWorkPlan
-        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED
 
 
 class ActivityForm(forms.ModelForm):
@@ -319,7 +319,7 @@ class ActivityForm(forms.ModelForm):
 
     class Meta:
         model = Activity
-        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED
 
 
 class SupportingDocumentForm(forms.ModelForm):
@@ -342,7 +342,7 @@ class SupportingDocumentForm(forms.ModelForm):
 
     class Meta:
         model = SupportingDocument
-        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED
 
 
 class SupportingDocumentActivityForm(forms.ModelForm):
