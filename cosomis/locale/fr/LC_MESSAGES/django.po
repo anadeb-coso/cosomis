@@ -4156,3 +4156,31 @@ msgstr "Système"
 #: .\subprojects\templatetags\custom_tags.py
 msgid "(empty)"
 msgstr "(vide)"
+
+#: .\financial\templates\bank_list.html
+msgid "Banks"
+msgstr "Banques"
+
+#: .\financial\views_bank.py
+msgid "Register a bank"
+msgstr "Enregistrer une banque"
+
+#: .\financial\views_bank.py
+msgid "Update bank"
+msgstr "Modifier la banque"
+
+#: .\financial\views_bank.py
+msgid "Delete bank"
+msgstr "Supprimer la banque"
+
+#: .\financial\templates\bank_detail.html
+msgid "Number of accounts"
+msgstr "Nombre de comptes"
+
+#: .\financial\templates\bank_detail.html
+msgid "Key indicators"
+msgstr "Indicateurs clés"
+
+#: .\financial\templates\components\confirm_delete.html
+msgid "The following related records will also be deleted:"
+msgstr "Les enregistrements liés suivants seront également supprimés :"

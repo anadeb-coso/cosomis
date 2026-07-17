@@ -21,7 +21,8 @@
                         <div class="col-md-3"><strong>{% translate 'Contact' %}</strong><br>{{ account.contact|default_if_none:'-' }}</div>
                     </div>
                     <div class="row mt-2">
-                        <div class="col-md-12"><strong>{% translate 'Observations' %}</strong><br>{{ account.notes|default_if_none:'-' }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Bank' %}</strong><br>{{ account.bank|default_if_none:'-' }}</div>
+                        <div class="col-md-9"><strong>{% translate 'Observations' %}</strong><br>{{ account.notes|default_if_none:'-' }}</div>
                     </div>
                 </div>
             </div>

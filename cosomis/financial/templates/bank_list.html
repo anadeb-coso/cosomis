@@ -1,0 +1,77 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n custom_tags %}
+
+{% block content %}
+{% include 'components/financial_menu.html' with active_menu='banks' %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="col-md-12">
+                        <div class="btn-group pull-left">
+                            {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                            <a class="btn btn-primary" href="{% url 'financial:bank_create' %}">
+                                {% translate 'Register a bank' %}
+                            </a>
+                            {% endif %}
+                            <a class="btn btn-outline-primary" href="{% url 'financial:bank_export' %}?{{ request.GET.urlencode }}">
+                                <i class="fas fa-file-excel"></i> {% translate 'Export' %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body table-responsive">
+                    <table id="table-banks" class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>{% translate 'Name' %}</th>
+                            <th>{% translate 'Abbreviation' %}</th>
+                            <th>{% translate 'Number of accounts' %}</th>
+                            <th>{% translate 'Description' %}</th>
+                            <th width="14%">{% translate 'Action' %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for bank in banks %}
+                            <tr>
+                                <td><a href="{% url 'financial:bank_detail' bank.pk %}">{{ bank.name }}</a></td>
+                                <td>{{ bank.abbreviation }}</td>
+                                <td>{{ bank.accounts_count }}</td>
+                                <td>{{ bank.description|default_if_none:'-'|truncatechars:60 }}</td>
+                                <td>
+                                    <a href="{% url 'financial:bank_detail' bank.pk %}" style="font-size: 9px !important;" class="btn btn-primary btn-xs" title="{% translate 'View details' %}"><i class="fa fa-eye"></i></a>
+                                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                                    <a href="{% url 'financial:bank_update' bank.pk %}" style="font-size: 9px !important;" class="btn btn-primary btn-xs" title="{% translate 'Edit' %}"><i class="fa fa-edit"></i></a>
+                                    {% endif %}
+                                    {% if user.is_superuser or user|has_group:"Financial" %}
+                                    <a href="{% url 'financial:bank_delete' bank.pk %}" style="font-size: 9px !important;" class="btn btn-danger btn-xs" title="{% translate 'Delete' %}"><i class="fa fa-trash"></i></a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    {% include 'layouts/datatable-js.html' %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            {% get_current_language as lang %}
+            $('#table-banks').DataTable({
+                retrieve: true,
+                language: { url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}') },
+                dom: 'Blfrtip',
+                buttons: [ 'copy', 'excel', 'pdf', 'colvis' ],
+                lengthMenu: [10, 20, 50, 100],
+                pageLength: 10,
+                order: []
+            });
+        });
+    </script>
+{% endblock %}

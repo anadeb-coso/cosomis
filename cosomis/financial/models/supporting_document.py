@@ -53,7 +53,7 @@ class SupportingDocument(ExternalIdMixin, SoftDeleteMixin, BaseModel):
         return sum((line.allocated_amount or 0) for line in self.supportingdocumentactivity_set.all())
 
 
-class SupportingDocumentActivity(ExternalIdMixin, BaseModel):
+class SupportingDocumentActivity(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     supporting_document = models.ForeignKey(SupportingDocument, on_delete=models.CASCADE, verbose_name=_("Supporting document"))
     activity = models.ForeignKey('financial.Activity', on_delete=models.CASCADE, verbose_name=_("Activity"))
     allocated_amount = models.FloatField(verbose_name=_("Allocated amount"))
@@ -64,6 +64,7 @@ class SupportingDocumentActivity(ExternalIdMixin, BaseModel):
         db_table = 'financial_supporting_document_activity'
         verbose_name = _("Supporting document / Activity allocation")
         verbose_name_plural = _("Supporting document / Activity allocations")
+        base_manager_name = 'objects'
 
     def __str__(self):
         return f'{self.supporting_document} / {self.activity} / {self.allocated_amount}'

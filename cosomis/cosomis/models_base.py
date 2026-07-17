@@ -46,6 +46,45 @@ class SoftDeleteMixin(models.Model):
     def soft_delete(self, user=None):
         self.is_deleted = True
         self.save(user=user)
+        for child in list(self._cascade_related_objects()):
+            child.soft_delete(user=user)
+
+    def cascade_preview(self):
+        """Read-only counterpart of soft_delete()'s cascade walk: every related
+        object that deleting this one would also soft-delete, recursively -
+        used to list the full deletion footprint on the delete confirmation
+        page before anything is actually touched."""
+        collected = []
+        for child in self._cascade_related_objects():
+            collected.append(child)
+            collected.extend(child.cascade_preview())
+        return collected
+
+    def _cascade_related_objects(self):
+        """Yields the direct children a real on_delete=models.CASCADE delete
+        would remove - restricted to related models that are themselves
+        soft-deletable (only those can carry an is_deleted flag). Introspected
+        from the FK metadata, so any new CASCADE relationship between two
+        SoftDeleteMixin models (e.g. DisbursementRequest ->
+        DisbursementRequestValidation/Disbursement -> SupportingDocument) is
+        covered automatically, with no per-model list to maintain."""
+        for related in self._meta.related_objects:
+            if related.on_delete is not models.CASCADE:
+                continue
+            related_model = related.related_model
+            if not (isinstance(related_model, type) and issubclass(related_model, SoftDeleteMixin)):
+                continue
+            manager = getattr(self, related.get_accessor_name(), None)
+            if manager is None or not hasattr(manager, 'all'):
+                continue
+            yield from manager.all()
+
+    def delete(self, using=None, keep_parents=False):
+        """Any direct .delete() call (formsets, admin actions, future code)
+        becomes a soft delete too, so nothing can bypass the history-preserving
+        path by calling delete() instead of soft_delete(). Prefer soft_delete()
+        directly when a user is available, so the action is attributed."""
+        self.soft_delete()
 
 
 # Create your models here.

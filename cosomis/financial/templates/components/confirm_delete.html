@@ -1,5 +1,5 @@
 {% extends 'layouts/base.html' %}
-{% load i18n %}
+{% load i18n custom_tags %}
 
 {% block content %}
     <div class="row">
@@ -10,6 +10,25 @@
                 </div>
                 <div class="card-body">
                     <p>{% blocktranslate %}Are you sure you want to delete "{{ object }}"? This action cannot be undone.{% endblocktranslate %}</p>
+
+                    {% if cascade_objects %}
+                        <div class="alert alert-warning">
+                            <strong>{% translate 'The following related records will also be deleted:' %}</strong>
+                            <ul class="mb-0">
+                                {% for label, items in cascade_objects|group_by_model %}
+                                    <li>
+                                        {{ label }} ({{ items|length }})
+                                        <ul>
+                                            {% for item in items %}
+                                                <li>{{ item }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
                     <form method="POST">
                         {% csrf_token %}
                         <a href="{{ cancel_url }}" class="btn btn-secondary">{% translate 'Cancel' %}</a>

@@ -19,7 +19,15 @@
         <li class="nav-item"><a class="nav-link {% if active_menu == 'supporting_document' %}active{% endif %}" href="{% url 'financial:supporting_document_list' %}"><i class="fas fa-paperclip mr-1"></i> {% translate "Supporting documents" %}</a></li>
         <li class="nav-item"><a class="nav-link {% if active_menu == 'bank_transfers' %}active{% endif %}" href="{% url 'financial:bank_transfers_list' %}"><i class="fas fa-exchange-alt mr-1"></i> {% translate "Bank transfers" %}</a></li>
         <li class="nav-item"><a class="nav-link {% if active_menu == 'allocations' %}active{% endif %}" href="{% url 'financial:allocations_list' %}"><i class="fas fa-sitemap mr-1"></i> {% translate "Allocations" %}</a></li>
-        <li class="nav-item"><a class="nav-link {% if active_menu == 'accounts' %}active{% endif %}" href="{% url 'financial:account_list' %}"><i class="fas fa-users-cog mr-1"></i> {% translate "Accounts" %}</a></li>
-        <li class="nav-item"><a class="nav-link {% if active_menu == 'account_balances' %}active{% endif %}" href="{% url 'financial:account_balances_list' %}"><i class="fas fa-wallet mr-1"></i> {% translate "Account balances" %}</a></li>
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle {% if active_menu in 'accounts,account_balances,banks' %}active{% endif %}" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+                <i class="fas fa-users-cog mr-1"></i> {% translate "Accounts" %}
+            </a>
+            <div class="dropdown-menu">
+                <a class="dropdown-item {% if active_menu == 'accounts' %}active{% endif %}" href="{% url 'financial:account_list' %}">{% translate "Accounts" %}</a>
+                <a class="dropdown-item {% if active_menu == 'account_balances' %}active{% endif %}" href="{% url 'financial:account_balances_list' %}">{% translate "Account balances" %}</a>
+                <a class="dropdown-item {% if active_menu == 'banks' %}active{% endif %}" href="{% url 'financial:bank_list' %}">{% translate "Banks" %}</a>
+            </div>
+        </li>
     </ul>
 </div>

@@ -27,6 +27,7 @@ class Account(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     )
     account_number = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Account number"))
     contact = models.CharField(max_length=255, null=True, blank=True, verbose_name=_("Contact"))
+    bank = models.ForeignKey('financial.Bank', on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Bank"))
     administrative_level = models.ForeignKey('administrativelevels.AdministrativeLevel', on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Administrative level"))
     cvd = models.ForeignKey('administrativelevels.CVD', on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("CVD"))
     notes = models.TextField(null=True, blank=True, verbose_name=_("Observations"))

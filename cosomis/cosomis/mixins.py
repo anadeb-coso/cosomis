@@ -14,6 +14,11 @@ class SoftDeleteViewMixin:
     post() before form_valid() runs), so this overrides form_valid() rather
     than delete()."""
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['cascade_objects'] = self.object.cascade_preview() if hasattr(self.object, 'cascade_preview') else []
+        return context
+
     def form_valid(self, form):
         success_url = self.get_success_url()
         self.object.soft_delete(user=self.request.user)

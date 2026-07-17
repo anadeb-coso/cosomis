@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from .models.allocation import AdministrativeLevelAllocation
 from administrativelevels.models import AdministrativeLevel, CVD
 from financial.models.account import Account
+from financial.models.bank import Bank
 from financial.models.financial import BankTransfer, DisbursementRequest, DisbursementRequestValidation, Disbursement
 from financial.models.funding import Funding
 from financial.models.planning import AnnualWorkPlan, Activity
@@ -184,6 +185,12 @@ class DisbursementForm(forms.ModelForm):
         exclude  = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED # specify the fields to be hid
 
 
+class BankForm(forms.ModelForm):
+    class Meta:
+        model = Bank
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_DELETED
+
+
 class AccountForm(forms.ModelForm):
     """A sub-account's `parent` may only be a main account (Account.clean() enforces
     this) - the dropdown is pre-scoped to main accounts so invalid choices aren't
@@ -196,6 +203,7 @@ class AccountForm(forms.ModelForm):
         if instance and instance.pk:
             qs = qs.exclude(pk=instance.pk)
         self.fields['parent'].queryset = qs
+        self.fields['bank'].queryset = Bank.objects.all().order_by('name')
 
     class Meta:
         model = Account

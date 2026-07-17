@@ -3,7 +3,7 @@ from django.conf.urls import include
 
 from financial import (
     views, views_bank_transfer, views_disbursement_request,
-    views_disbursement, views_account, views_dashboard,
+    views_disbursement, views_account, views_bank, views_dashboard,
     views_funding, views_category, views_component, views_project,
     views_ptba, views_supporting_document,
 )
@@ -55,6 +55,14 @@ urlpatterns = [
     path('account/export/', views_account.AccountExportView.as_view(), name='account_export'),
 
     path('account-balances', views_account.AccountBalancesListView.as_view(), name='account_balances_list'),
+
+    path('banks', views_bank.BankListView.as_view(), name='bank_list'),
+    path('bank/create/', views_bank.BankCreateView.as_view(), name='bank_create'),
+    path('bank/update/<int:pk>/', views_bank.BankUpdateView.as_view(), name='bank_update'),
+    path('bank/delete/<int:pk>/', views_bank.BankDeleteView.as_view(), name='bank_delete'),
+    path('bank/detail/<int:pk>/', views_bank.BankDetailView.as_view(), name='bank_detail'),
+    path('bank/export/', views_bank.BankExportView.as_view(), name='bank_export'),
+
     path('dashboard', views_dashboard.FinancialDashboardView.as_view(), name='financial_dashboard'),
     path('dashboard/export/', views_dashboard.FinancialDashboardExportView.as_view(), name='financial_dashboard_export'),
 

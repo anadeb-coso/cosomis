@@ -257,6 +257,23 @@ def export_account(queryset):
     return workbook_response(wb, 'comptes.xlsx')
 
 
+def build_bank_sheet(workbook, queryset):
+    ws = _new_sheet(workbook, 'Banques', [
+        'Nom', 'Abréviation', 'Nombre de comptes', 'Description',
+    ])
+    for bank in queryset:
+        ws.append([
+            bank.name, bank.abbreviation, bank.accounts_count, bank.description,
+        ])
+    return ws
+
+
+def export_bank(queryset):
+    wb = Workbook()
+    build_bank_sheet(wb, queryset)
+    return workbook_response(wb, 'banques.xlsx')
+
+
 def export_disbursement_request(queryset):
     from financial.models.financial import DisbursementRequestValidation
 
