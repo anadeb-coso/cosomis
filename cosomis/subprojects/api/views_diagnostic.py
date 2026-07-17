@@ -15,7 +15,11 @@ from cosomis.constants import (
     STRUCTURE_IN_PROGRESS_STATUS,
     STRUCTURE_COMPLETED_STATUS,
     COMPLETED_RANKING,
-    STRUCTURE_COMPLETED_ALL_STATUS
+    STRUCTURE_COMPLETED_ALL_STATUS,
+    ABANDONED_LIST,
+    INTERRUPTED_LIST,
+    CONTRACT_TERMINATED_LIST,
+    NOT_APPROVED_BY_CORA_LIST
 )
 
 
@@ -139,6 +143,11 @@ def _anomalies(base_qs):
         subprojectfile__validated=False
     ).distinct().count()
 
+    abandoned_count = qualifying_qs.filter(current_status_of_the_site__in=ABANDONED_LIST)
+    interrupted_count = qualifying_qs.filter(current_status_of_the_site__in=INTERRUPTED_LIST)
+    contracts_currently_terminated_count = qualifying_qs.filter(current_level_of_physical_realization_of_the_work_wording__in=CONTRACT_TERMINATED_LIST)
+    unapproved_infrastructure_count = qualifying_qs.filter(current_level_of_physical_realization_of_the_work_wording__in=NOT_APPROVED_BY_CORA_LIST)
+
     return {
         "completed_missing_images_count": completed_missing_images_count,
         "completed_missing_geoloc_count": completed_missing_geoloc_count,
@@ -146,6 +155,10 @@ def _anomalies(base_qs):
         "in_progress_missing_geoloc_count": in_progress_missing_geoloc_count,
         "invalidated_files_infrastructures_count": invalidated_files_infrastructures_count,
         "stalled_in_progress_count": stalled_in_progress_count,
+        "abandoned_count": abandoned_count,
+        "interrupted_count": interrupted_count,
+        "contracts_currently_terminated_count": contracts_currently_terminated_count,
+        "unapproved_infrastructure_count": unapproved_infrastructure_count,
     }
 
 
@@ -259,6 +272,18 @@ class RestGetSubprojectsDiagnosticListByUser(APIView):
             qs = qs.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS)
             ids = [sp.id for sp in qs if sp.is_delayed_update]
             qs = Subproject.objects.filter(pk__in=ids)
+
+        elif filter_type == "abandoned":
+            qs = qs.filter(current_status_of_the_site__in=ABANDONED_LIST)
+        
+        elif filter_type == "interrupted":
+            qs = qs.filter(current_status_of_the_site__in=INTERRUPTED_LIST)
+        
+        elif filter_type == "contracts_currently_terminated":
+            qs = qs.filter(current_level_of_physical_realization_of_the_work_wording__in=CONTRACT_TERMINATED_LIST)
+        
+        elif filter_type == "unapproved_infrastructure":
+            qs = qs.filter(current_level_of_physical_realization_of_the_work_wording__in=NOT_APPROVED_BY_CORA_LIST)
 
         paginator = CustomPagination()
         paginated_data = paginator.paginate_queryset(qs.order_by("id").distinct(), request)
