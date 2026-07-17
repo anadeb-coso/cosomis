@@ -479,3 +479,19 @@ def history_entries(users_involved, instance=None):
             })
     entries.reverse()
     return entries
+
+
+@register.filter
+def group_by_model(objects):
+    """Groups a flat list of model instances by their model's verbose_name_plural
+    - used by confirm_delete.html to show a cascade-delete preview as
+    "Disbursements (3): ..." per model instead of one flat undifferentiated list."""
+    groups = {}
+    order = []
+    for obj in objects:
+        label = str(obj._meta.verbose_name_plural)
+        if label not in groups:
+            groups[label] = []
+            order.append(label)
+        groups[label].append(obj)
+    return [(label, groups[label]) for label in order]
