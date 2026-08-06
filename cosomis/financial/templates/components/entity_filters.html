@@ -124,17 +124,6 @@
                 </select>
             </div>
             {% endif %}
-            {% if show_status_filter %}
-            <div class="col-md-2 form-group mb-2">
-                <label class="small font-weight-bold text-muted mb-1">{% translate 'Status' %}</label>
-                <select name="status" class="form-control">
-                    <option value="">{% translate 'All' %}</option>
-                    {% for value, label in filter_statuses %}
-                        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            {% endif %}
             {% if show_direction_filter %}
             <div class="col-md-2 form-group mb-2">
                 <label class="small font-weight-bold text-muted mb-1">{% translate 'Direction' %}</label>

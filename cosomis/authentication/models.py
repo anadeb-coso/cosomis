@@ -20,6 +20,8 @@ class Facilitator(models.Model):
     training_mode = models.BooleanField(default=False, verbose_name=_('test mode'))
     administrative_levels = models.JSONField(null=True, blank=True)
     administrative_levels_ids = models.JSONField(null=True, blank=True)
+    stabilization_administrative_ids = models.JSONField(null=True, blank=True)
+    additional_administrative_ids = models.JSONField(null=True, blank=True)
     
     facilitator_type = models.CharField(max_length=100, default='community_facilitator')
 

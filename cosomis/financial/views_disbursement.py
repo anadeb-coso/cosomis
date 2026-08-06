@@ -178,5 +178,5 @@ class DisbursementDetailView(PageMixin, LoginRequiredMixin, generic.DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['supporting_documents'] = SupportingDocument.objects.filter(disbursement=self.object)
-        ctx['bank_transfers'] = BankTransfer.objects.filter(disbursement=self.object).order_by('-transfer_date')
+        ctx['bank_transfers'] = BankTransfer.objects.filter(disbursements=self.object).order_by('-transfer_date')
         return ctx

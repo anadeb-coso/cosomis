@@ -84,24 +84,9 @@ def delete_administrative_levels_who_are_not_attribute_to_facilitator():
     print()
     print("Done !")
 
-def delete_administrative_levels_who_are_not_id_in_sql_db():
-    nsc = NoSQLClient()
-    adm_db = nsc.get_db("administrative_levels")
-    docs = adm_db.all_docs(include_docs=True)['rows']
-    count = 0
-    for _doc in docs:
-        doc = _doc.get('doc')
-        if doc.get('type') == 'administrative_level' and doc.get('administrative_id') and doc.get('administrative_id') != "1":
-            try:
-                AdministrativeLevel.objects.get(id=int(doc.get('administrative_id')))
-            except AdministrativeLevel.DoesNotExist:
-                administrative_level = adm_db[doc.get('_id')]
-                print(administrative_level)
-                administrative_level.delete()
-                count += 1
-    print(count)
-
-
+# `delete_administrative_levels_who_are_not_id_in_sql_db` (utilitaire manuel, jamais câblé à
+# une URL/cron) supprimé : il lisait la base CouchDB `administrative_levels`, retirée du
+# périmètre applicatif (MIS/MySQL `mis` reste la seule source de vérité pour ce référentiel).
 
 def attribute_project_to_subprojects(subprojects, project):
     print("Start attribute_project_to_subprojects!")

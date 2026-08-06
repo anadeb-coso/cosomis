@@ -4,6 +4,7 @@ from subprojects.models import Project, Financier
 from datetime import datetime
 
 from cosomis.constants import SUB_PROJECT_STATUS_COLOR, TYPES_OF_SUB_PROJECT_COLOR
+from cosomis.functions import parse_date
 
 register = template.Library()
 
@@ -38,8 +39,10 @@ def get_initials(string):
 
 @register.filter(expects_localtime=True)
 def string_to_date(date_time, date_format="%Y-%m-%dT%H:%M:%S.%fZ"):
-    if date_time:
+    if date_time and type(date_time) == str:
         return datetime.strptime(date_time, date_format)
+    
+    return date_time
     
 @register.filter(name="replace")
 def replace(v: str, s: str):
@@ -315,7 +318,11 @@ def format_id(value: str):
 
 @register.simple_tag
 def get_days_until_today(date_time):
-    date = datetime.strptime(date_time, '%Y-%m-%dT%H:%M:%S.%fZ')
+    if type(date_time) == str:
+        date = parse_date(date_time) # datetime.strptime(date_time, '%Y-%m-%dT%H:%M:%S.%fZ')
+    else:
+        date = date_time
+
     delta = datetime.now() - date
     return delta.days
 

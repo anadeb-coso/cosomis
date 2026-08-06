@@ -59,15 +59,15 @@
             var categoryMetaEl = document.getElementById('category-meta');
             var fundingMetaEl = document.getElementById('funding-meta');
             var $category = $('#id_category');
-            var $funding = $('#id_funding');
+            var $fundings = $('#id_fundings');
 
-            if (!categoryMetaEl || !fundingMetaEl || !$category.length || !$funding.length) {
+            if (!categoryMetaEl || !fundingMetaEl || !$category.length || !$fundings.length) {
                 return;
             }
 
             var categoryMeta = JSON.parse(categoryMetaEl.textContent);
             var fundingMeta = JSON.parse(fundingMetaEl.textContent);
-            var allFundingOptions = $funding.find('option').clone();
+            var allFundingOptions = $fundings.find('option').clone();
 
             function onCategoryChange() {
                 var categoryId = $category.val();
@@ -77,16 +77,19 @@
                     return String(fundingMeta[fid].project_id) === projectId;
                 }) : null;
 
-                var currentVal = $funding.val();
-                $funding.empty();
+                var currentVals = $fundings.val() || [];
+                $fundings.empty();
                 allFundingOptions.each(function () {
                     var val = $(this).val();
-                    if (val === '' || allowedIds === null || allowedIds.indexOf(val) !== -1) {
-                        $funding.append($(this).clone());
+                    if (allowedIds === null || allowedIds.indexOf(val) !== -1) {
+                        $fundings.append($(this).clone());
                     }
                 });
-                $funding.val(allowedIds === null || allowedIds.indexOf(currentVal) !== -1 ? currentVal : '');
-                $funding.trigger('change.select2');
+                var keptVals = allowedIds === null ? currentVals : currentVals.filter(function (v) {
+                    return allowedIds.indexOf(v) !== -1;
+                });
+                $fundings.val(keptVals);
+                $fundings.trigger('change.select2');
             }
 
             $category.on('change', onCategoryChange);

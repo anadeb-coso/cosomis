@@ -34,13 +34,9 @@
                         <div class="col-md-3"><strong>{% translate 'Amount currently available' %}</strong><br><span class="{% if indicators.available_balance < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ indicators.available_balance|separate_with_space }}</span></div>
                     </div>
                     <div class="row mt-2">
-                        <div class="col-md-3"><strong>{% translate 'Total received' %}</strong><br>{{ indicators.total_received|separate_with_space }}</div>
-                        <div class="col-md-3"><strong>{% translate 'Received (executed)' %}</strong><br>{{ indicators.received_executed|separate_with_space }}</div>
-                        <div class="col-md-3"><strong>{% translate 'Total sent' %}</strong><br>{{ indicators.total_sent|separate_with_space }}</div>
-                        <div class="col-md-3"><strong>{% translate 'Sent (executed)' %}</strong><br>{{ indicators.sent_executed|separate_with_space }}</div>
-                    </div>
-                    <div class="row mt-2">
-                        <div class="col-md-3"><strong>{% translate 'Returned to sender' %}</strong><br>{{ indicators.returned_to_sender|separate_with_space }}</div>
+                        <div class="col-md-4"><strong>{% translate 'Total received' %}</strong><br>{{ indicators.total_received|separate_with_space }}</div>
+                        <div class="col-md-4"><strong>{% translate 'Total sent' %}</strong><br>{{ indicators.total_sent|separate_with_space }}</div>
+                        <div class="col-md-4"><strong>{% translate 'Returned to sender' %}</strong><br>{{ indicators.returned_to_sender|separate_with_space }}</div>
                     </div>
                 </div>
             </div>

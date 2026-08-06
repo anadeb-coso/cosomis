@@ -1,7 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 from django.views import generic
@@ -9,9 +9,9 @@ from django.views import generic
 from cosomis.mixins import PageMixin, SoftDeleteViewMixin
 from usermanager.permissions import AccountantPermissionRequiredMixin, FinancialPermissionRequiredMixin
 
-from financial.models.supporting_document import SupportingDocument
+from financial.models.supporting_document import SupportingDocument, SupportingDocumentActivity, SupportingDocumentActivityFile
 from financial.models.financial import Disbursement, DisbursementRequest
-from financial.forms import SupportingDocumentForm, SupportingDocumentActivityFormSet
+from financial.forms import SupportingDocumentForm, SupportingDocumentActivityFormSet, SupportingDocumentActivityFileForm
 from financial.exports import export_supporting_document
 from financial.list_filters import build_filter_context
 
@@ -201,10 +201,61 @@ class SupportingDocumentDetailView(PageMixin, LoginRequiredMixin, generic.Detail
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['lines'] = self.object.supportingdocumentactivity_set.all()
+        lines = list(self.object.supportingdocumentactivity_set.all())
+        for line in lines:
+            line.files = line.supportingdocumentactivityfile_set.all()
+        ctx['lines'] = lines
         return ctx
 
 
 class SupportingDocumentExportView(PageMixin, LoginRequiredMixin, generic.View):
     def get(self, request, *args, **kwargs):
         return export_supporting_document(_filtered_supporting_documents(request.GET))
+
+
+class SupportingDocumentActivityFileCreateView(PageMixin, LoginRequiredMixin, AccountantPermissionRequiredMixin, generic.CreateView):
+    """Attach one more file to a Justificatif-Activité line (§ Fichiers justif.
+    Activités) - a line can carry several files, so this is always reached from
+    the parent SupportingDocument's detail page, never a standalone list."""
+
+    model = SupportingDocumentActivityFile
+    template_name = 'supporting_document_activity_file_add.html'
+    context_object_name = 'file'
+    title = _('Add a file')
+    active_level1 = 'financial'
+    form_class = SupportingDocumentActivityFileForm
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        line = get_object_or_404(SupportingDocumentActivity, pk=self.kwargs['supporting_document_activity_pk'])
+        context['line'] = line
+        context['form'] = self.form_mixin if getattr(self, 'form_mixin', None) else SupportingDocumentActivityFileForm()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        line = get_object_or_404(SupportingDocumentActivity, pk=self.kwargs['supporting_document_activity_pk'])
+        form = SupportingDocumentActivityFileForm(data=request.POST, files=request.FILES)
+        if form.is_valid():
+            file_obj = form.save(commit=False)
+            file_obj.supporting_document_activity = line
+            file_obj.save(user=request.user)
+            return redirect('financial:supporting_document_detail', pk=line.supporting_document_id)
+        self.form_mixin = form
+        return self.get(request, *args, **kwargs)
+
+
+class SupportingDocumentActivityFileDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionRequiredMixin, SoftDeleteViewMixin, generic.DeleteView):
+    """Only the Financial group and superusers may delete a supporting document activity file."""
+
+    model = SupportingDocumentActivityFile
+    template_name = 'components/confirm_delete.html'
+    title = _('Delete file')
+    active_level1 = 'financial'
+
+    def get_success_url(self):
+        return reverse_lazy('financial:supporting_document_detail', kwargs={'pk': self.object.supporting_document_activity.supporting_document_id})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['cancel_url'] = self.get_success_url()
+        return context

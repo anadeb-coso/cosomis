@@ -4,6 +4,7 @@ import gzip
 import zlib
 import unicodedata
 import re
+from datetime import datetime
 
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -125,3 +126,19 @@ def normaliser_chaine(chaine):
 
 def comparer_chaines(str1, str2):
     return normaliser_chaine(str1) == normaliser_chaine(str2)
+
+
+
+def parse_date(date_time):
+    formats = [
+        "%Y-%m-%dT%H:%M:%S.%fZ",
+        "%Y-%m-%dT%H:%M:%SZ",
+    ]
+
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_time, fmt)
+        except ValueError:
+            pass
+
+    raise ValueError(f"Format de date inconnu : {date_time}")

@@ -32,14 +32,12 @@ class Bank(SoftDeleteMixin, BaseModel):
             'main_accounts_count': sum(1 for a in accounts if a.account_category == a.AccountCategory.MAIN_ACCOUNT),
             'sub_accounts_count': sum(1 for a in accounts if a.account_category == a.AccountCategory.SUB_ACCOUNT),
             'total_received': 0,
-            'received_executed': 0,
             'total_sent': 0,
-            'sent_executed': 0,
             'returned_to_sender': 0,
             'available_balance': 0,
         }
         for account in accounts:
             breakdown = account.balance_breakdown(year=year)
-            for key in ('total_received', 'received_executed', 'total_sent', 'sent_executed', 'returned_to_sender', 'available_balance'):
+            for key in ('total_received', 'total_sent', 'returned_to_sender', 'available_balance'):
                 totals[key] += breakdown[key] or 0
         return totals

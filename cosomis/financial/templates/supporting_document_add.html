@@ -52,7 +52,7 @@
                                         <th>{% translate 'Delete' %}</th>
                                     </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody id="activity-lines-body">
                                     {% for line_form in formset %}
                                         <tr>
                                             {% for hidden in line_form.hidden_fields %}{{ hidden }}{% endfor %}
@@ -64,6 +64,24 @@
                                     {% endfor %}
                                     </tbody>
                                 </table>
+                                <button type="button" id="add-activity-line" class="btn btn-outline-primary btn-sm mb-3">
+                                    <i class="fas fa-plus"></i> {% translate 'Add another activity line' %}
+                                </button>
+                                {% comment %}
+                                A <script type="text/template"> is inert to the browser/jQuery - unlike a
+                                hidden <div>, its <select> is never picked up by the global
+                                $("select").select2() init in base.html, so a cloned row never carries a
+                                stale, non-functional select2 widget alongside the freshly-initialized one.
+                                {% endcomment %}
+                                <script type="text/template" id="activity-line-empty-template">
+                                        <tr>
+                                            {% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                            <td>{{ formset.empty_form.activity }}{{ formset.empty_form.activity.errors }}</td>
+                                            <td>{{ formset.empty_form.allocated_amount }}{{ formset.empty_form.allocated_amount.errors }}</td>
+                                            <td>{{ formset.empty_form.notes }}</td>
+                                            <td></td>
+                                        </tr>
+                                </script>
 
                                 <button type="submit" class="btn btn-primary float-right">{% translate 'Submit' %}</button>
                             </form>
@@ -73,4 +91,21 @@
             </div>
         </div>
     </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#add-activity-line').on('click', function () {
+                var $totalForms = $('#id_supportingdocumentactivity_set-TOTAL_FORMS');
+                var index = parseInt($totalForms.val(), 10);
+                var rawHtml = document.getElementById('activity-line-empty-template').innerHTML.replace(/__prefix__/g, index);
+                var $newRow = $(rawHtml);
+                $('#activity-lines-body').append($newRow);
+                $totalForms.val(index + 1);
+                $newRow.find('select').select2();
+            });
+        });
+    </script>
 {% endblock %}

@@ -76,7 +76,6 @@ def build_filter_context(request, *, projects=False, fundings=False, categories=
     ctx['show_sender_filter'] = bank_transfers
     ctx['show_recipient_filter'] = bank_transfers
     ctx['show_level_filter'] = bank_transfers
-    ctx['show_status_filter'] = bank_transfers
     ctx['show_direction_filter'] = bank_transfers
     ctx['show_payment_method_filter'] = bank_transfers
     if bank_transfers:
@@ -85,8 +84,6 @@ def build_filter_context(request, *, projects=False, fundings=False, categories=
         ctx['selected_recipient'] = get.get('recipient')
         ctx['filter_levels'] = BankTransfer.Level.choices
         ctx['selected_level'] = get.get('level')
-        ctx['filter_statuses'] = BankTransfer.Status.choices
-        ctx['selected_status'] = get.get('status')
         ctx['filter_directions'] = BankTransfer.Direction.choices
         ctx['selected_direction'] = get.get('direction')
         ctx['filter_payment_methods'] = BankTransfer.PaymentMethod.choices

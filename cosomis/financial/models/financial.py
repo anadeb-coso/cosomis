@@ -20,15 +20,11 @@ class BankTransfer(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     class PaymentMethod(models.TextChoices):
         BANK_TRANSFER = 'BANK_TRANSFER', _('Bank transfer')
         CHEQUE = 'CHEQUE', _('Cheque')
+        CASH = 'CASH', _('Cash')
 
     class Direction(models.TextChoices):
         FORWARD = 'FORWARD', _('Sender to recipient')
         RETURN = 'RETURN', _('Recipient to sender (return)')
-
-    class Status(models.TextChoices):
-        PENDING = 'PENDING', _('Pending')
-        EXECUTED = 'EXECUTED', _('Executed')
-        CANCELLED = 'CANCELLED', _('Cancelled')
 
     # Level -> (expected sender account_type, allowed recipient account_types)
     TRANSFER_RULES = {
@@ -52,9 +48,7 @@ class BankTransfer(ExternalIdMixin, SoftDeleteMixin, BaseModel):
         ),
     }
 
-    project = models.ForeignKey('subprojects.Project', on_delete=models.CASCADE, null=True, blank=True, verbose_name=_("Project"))
-    funding = models.ForeignKey(Funding, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Credit/Grant"))
-    disbursement = models.ForeignKey('financial.Disbursement', on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Related disbursement"))
+    disbursements = models.ManyToManyField('financial.Disbursement', blank=True, verbose_name=_("Related disbursements"))
     sender = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Sender"), related_name='sent_bank_transfers')
     recipient = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Recipient"), related_name='received_bank_transfers')
     level = models.CharField(max_length=30, choices=Level.choices, null=True, blank=True, verbose_name=_("Level"))
@@ -64,7 +58,6 @@ class BankTransfer(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     transfer_date = models.DateField(verbose_name=_("Transfer date"), null=True)
     motif = models.CharField(max_length=255, verbose_name=_("Motif"), null=True, blank=True)
     payment_method = models.CharField(max_length=20, choices=PaymentMethod.choices, default=PaymentMethod.BANK_TRANSFER, verbose_name=_("Payment method"))
-    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING, verbose_name=_("Status"))
     supporting_documents = models.ManyToManyField(SupportingDocument, blank=True, verbose_name=_("Supporting documents"))
     description = models.TextField(verbose_name=_("Description"), null=True, blank=True)
     linked_to_allocation = models.ForeignKey(AdministrativeLevelAllocation, on_delete=models.SET_NULL, verbose_name=_("Linked to allocation"), null=True, blank=True)
@@ -77,6 +70,22 @@ class BankTransfer(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     @property
     def year(self):
         return self.transfer_date.year if self.transfer_date else None
+
+    @property
+    def first_disbursement(self):
+        return self.disbursements.order_by('pk').first() if self.pk else None
+
+    @property
+    def project(self):
+        """Deduced from the first linked disbursement (§ Virements-Décaissements) -
+        never stored directly, so it can never drift from the actual links."""
+        disbursement = self.first_disbursement
+        return disbursement.project if disbursement else None
+
+    @property
+    def funding(self):
+        disbursement = self.first_disbursement
+        return disbursement.funding if disbursement else None
 
     def clean(self):
         if self.sender_id and self.recipient_id:
@@ -203,7 +212,6 @@ class Disbursement(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     disbursement_date = models.DateField(verbose_name=_("Disbursement date"))
     description = models.TextField(verbose_name=_("Description"), null=True, blank=True)
     notes = models.TextField(verbose_name=_("Observations"), null=True, blank=True)
-    justification_status = models.CharField(max_length=20, choices=JustificationStatus.choices, default=JustificationStatus.NOT_JUSTIFIED, verbose_name=_("Justification status"))
 
     class Meta(object):
         app_label = 'financial'
@@ -234,3 +242,19 @@ class Disbursement(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     @property
     def justification_gap(self):
         return (self.amount_disbursed or 0) - self.justified_amount
+
+    @property
+    def justification_status(self):
+        """Auto-computed from justified_amount vs. amount_disbursed - never
+        stored directly, so it can never drift from the actual supporting
+        documents (mirrors how DisbursementRequest.amount_validated works)."""
+        justified = self.justified_amount
+        if not justified:
+            return self.JustificationStatus.NOT_JUSTIFIED
+        if justified >= (self.amount_disbursed or 0):
+            return self.JustificationStatus.FULLY_JUSTIFIED
+        return self.JustificationStatus.PARTIALLY_JUSTIFIED
+
+    @property
+    def get_justification_status_display(self):
+        return self.justification_status.label

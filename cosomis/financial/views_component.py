@@ -11,7 +11,7 @@ from usermanager.permissions import SuperAdminPermissionRequiredMixin, Component
 from subprojects.models import Component
 from financial.models.planning import Activity
 from financial.forms import ComponentForm
-from financial.aggregations import activity_financial_summary, component_descendant_ids, category_cascade_meta, funding_cascade_meta
+from financial.aggregations import activity_financial_summary, component_descendant_ids, category_cascade_meta, funding_cascade_meta, component_financial_breakdown
 from financial.exports import export_component
 from financial.list_filters import apply_entity_filters, build_filter_context
 
@@ -21,7 +21,7 @@ def _filtered_components(get):
     search = get.get('search', None)
     if search:
         qs = qs.filter(Q(name__icontains=search) | Q(project__name__icontains=search) | Q(category__name__icontains=search))
-    qs = apply_entity_filters(qs, get, project='project_id', funding='funding_id', category='category_id')
+    qs = apply_entity_filters(qs, get, project='project_id', funding='fundings', category='category_id')
     parent_id = get.get('parent')
     if parent_id:
         qs = qs.filter(parent_id=parent_id)
@@ -93,12 +93,12 @@ class ComponentCreateView(PageMixin, LoginRequiredMixin, SuperAdminPermissionReq
             if parent_id:
                 parent = get_object_or_404(Component, pk=parent_id)
                 component.parent = parent
-                component.category = parent.category
                 component.project = parent.project
             else:
                 component.parent = None
                 component.project = component.category.project if component.category_id else None
             component.save(user=request.user)
+            form.save_m2m()
             if parent_id:
                 return redirect('financial:component_detail', pk=parent_id)
             return redirect('financial:component_list')
@@ -150,12 +150,12 @@ class ComponentUpdateView(PageMixin, LoginRequiredMixin, ComponentEditPermission
         if form.is_valid():
             component = form.save(commit=False)
             if parent_id:
-                component.category = component.parent.category
                 component.project = component.parent.project
             else:
                 component.parent = None
                 component.project = component.category.project if component.category_id else None
             component.save(user=request.user)
+            form.save_m2m()
             if parent_id:
                 return redirect('financial:component_detail', pk=parent_id)
             return redirect('financial:component_detail', pk=component.pk)
@@ -174,7 +174,10 @@ class ComponentDetailView(PageMixin, LoginRequiredMixin, generic.DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         component = self.object
-        ctx['sub_components'] = component.component_set.all()
+        sub_components = list(component.component_set.all())
+        for sub in sub_components:
+            sub.planning = component_financial_breakdown(sub)
+        ctx['sub_components'] = sub_components
         # Descendants at any depth (a Sous-composante can itself have Sous-composantes)
         # so the activities/summary below aren't limited to direct children.
         descendant_ids = component_descendant_ids(component)

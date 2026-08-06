@@ -34,9 +34,8 @@
                         <tr>
                             <th>{% translate 'Related disbursement' %}</th>
                             <th>{% translate 'Related fund request' %}</th>
-                            <th>{% translate 'Document type' %}</th>
-                            <th>{% translate 'Document reference' %}</th>
-                            <th>{% translate 'Document date' %}</th>
+                            <th>{% translate 'DRF reference' %}</th>
+                            <th>{% translate 'DRF date' %}</th>
                             <th>{% translate 'Total amount justified' %}</th>
                             <th width="14%">{% translate 'Action' %}</th>
                         </tr>
@@ -46,7 +45,6 @@
                             <tr>
                                 <td>{% if doc.disbursement %}{{ doc.disbursement }}{% else %}-{% endif %}</td>
                                 <td>{% if doc.disbursement_request %}{{ doc.disbursement_request }}{% else %}-{% endif %}</td>
-                                <td>{{ doc.get_document_type_display }}</td>
                                 <td>{{ doc.reference }}</td>
                                 <td>{{ doc.document_date }}</td>
                                 <td class="font-weight-bold">{{ doc.total_justified_amount|separate_with_space }}</td>

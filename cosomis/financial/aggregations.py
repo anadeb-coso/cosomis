@@ -66,37 +66,6 @@ def funding_cascade_meta():
     }
 
 
-def allocation_cascade_meta():
-    """Maps each AdministrativeLevelAllocation id to its owning project id - lets
-    the BankTransfer add/edit form narrow the linked_to_allocation select once a
-    project is chosen (see bank_transfer_add.html's JS)."""
-    from financial.models.allocation import AdministrativeLevelAllocation
-
-    return {
-        str(allocation.pk): {'project_id': allocation.project_id}
-        for allocation in AdministrativeLevelAllocation.objects.all()
-    }
-
-
-def bank_transfer_cascade_meta():
-    """Client-side cascade data for the BankTransfer add/edit form (§2.13): picking
-    a disbursement, project or funding must narrow the other two selects down to
-    only the values actually linked to it - see bank_transfer_add.html's JS."""
-    from financial.models.financial import Disbursement
-
-    disbursement_meta = {}
-    for disbursement in Disbursement.objects.select_related(
-        'disbursement_request__project', 'disbursement_request__funding'
-    ):
-        project = disbursement.project
-        funding = disbursement.funding
-        disbursement_meta[str(disbursement.pk)] = {
-            'project_id': project.pk if project else None,
-            'funding_id': funding.pk if funding else None,
-        }
-    return disbursement_meta, funding_cascade_meta()
-
-
 def component_descendant_ids(component):
     """All descendant Component ids at any depth - a Sous-composante can itself have
     its own Sous-composantes, so a single component_set.all() only reaches one level."""
@@ -105,6 +74,22 @@ def component_descendant_ids(component):
         ids.append(child.pk)
         ids.extend(component_descendant_ids(child))
     return ids
+
+
+def component_financial_breakdown(component):
+    """Per-row PTBA-planning breakdown for a single Composante/Sous-composante
+    (Composantes/Sous-composantes tables on the Project IDA / Category / Funding /
+    Component detail pages) - includes the component's own activities plus every
+    descendant's, mirroring how Component.effective_amount itself cascades."""
+    component_ids = [component.pk] + component_descendant_ids(component)
+    summary = activity_financial_summary(component_ids)
+    effective = component.effective_amount or 0
+    return {
+        'planned_amount': summary['budgeted_amount'],
+        'available_vs_plan': effective - summary['budgeted_amount'],
+        'justified_amount': summary['justified_amount'],
+        'available_vs_justified': effective - summary['justified_amount'],
+    }
 
 
 def activity_financial_summary(component_ids):

@@ -19,28 +19,12 @@
                                 <i class="fas fa-file-excel"></i> {% translate 'Export' %}
                             </a>
                         </div>
-                        {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
-                        <form id="bulk-status-form" method="post" action="{% url 'financial:bank_transfer_bulk_status_update' %}"
-                              class="form-inline pull-right" onsubmit="return confirmBulkStatusChange()">
-                            {% csrf_token %}
-                            <label class="mr-2 mb-0">{% translate 'Change status of selection' %}</label>
-                            <select name="status" id="bulk-status-select" class="form-control form-control-sm mr-2">
-                                {% for value, label in filter_statuses %}
-                                    <option value="{{ value }}">{{ label }}</option>
-                                {% endfor %}
-                            </select>
-                            <button type="submit" class="btn btn-outline-primary btn-sm">{% translate 'Apply to selected' %}</button>
-                        </form>
-                        {% endif %}
                     </div>
                 </div>
                 <div class="card-body table-responsive">
                     <table id="table-bank-transfers" class="table table-striped">
                         <thead>
                         <tr>
-                            {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
-                            <th><input type="checkbox" id="select-all-transfers" onclick="toggleAllTransferCheckboxes(this)"></th>
-                            {% endif %}
                             <th>{% translate 'Sender' %}</th>
                             <th>{% translate 'Recipient' %}</th>
                             <th>{% translate 'Amount Transfer' %}</th>
@@ -48,7 +32,6 @@
                             <th>{% translate 'Credit/Grant' %}</th>
                             <th>{% translate 'Level' %}</th>
                             <th>{% translate 'Payment method' %}</th>
-                            <th>{% translate 'Status' %}</th>
                             <th>{% translate 'Date' %}</th>
                             <th width="10%">{% translate 'Action' %}</th>
                         </tr>
@@ -56,14 +39,9 @@
                         <tbody>
                         {% for bank_transfer in bank_transfers %}
                             <tr>
-                                {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
-                                <td><input type="checkbox" name="selected_transfers" value="{{ bank_transfer.pk }}" form="bulk-status-form"></td>
-                                {% endif %}
                                 <td>
                                     {% if bank_transfer.sender %}
                                         <span class="badge {{ bank_transfer.sender.account_type|account_type_badge }}">{{ bank_transfer.sender.get_account_type_display }}</span> {{ bank_transfer.sender.name }}
-                                    {% elif bank_transfer.project %}
-                                        {{ bank_transfer.project.name }}
                                     {% else %}-{% endif %}
                                 </td>
                                 <td>
@@ -76,20 +54,6 @@
                                 <td>{{ bank_transfer.funding.label|default_if_none:'-' }}</td>
                                 <td>{{ bank_transfer.get_level_display|default_if_none:'-' }}</td>
                                 <td>{{ bank_transfer.get_payment_method_display }}</td>
-                                <td>
-                                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
-                                    <form method="post" action="{% url 'financial:bank_transfer_status_update' bank_transfer.pk %}" class="mb-0">
-                                        {% csrf_token %}
-                                        <select name="status" class="form-control form-control-sm badge {{ bank_transfer.status|financial_status_badge }}" data-previous-value="{{ bank_transfer.status }}" onchange="confirmStatusChange(this)" style="min-width: 110px;">
-                                            {% for value, label in filter_statuses %}
-                                                <option value="{{ value }}" {% if bank_transfer.status == value %}selected{% endif %}>{{ label }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </form>
-                                    {% else %}
-                                        <span class="badge {{ bank_transfer.status|financial_status_badge }}">{{ bank_transfer.get_status_display }}</span>
-                                    {% endif %}
-                                </td>
                                 <td>{{ bank_transfer.transfer_date }}</td>
                                 <td>
                                     <a href="#" data-toggle="modal" data-target="#bank-transfer-details-{{ bank_transfer.pk }}"
@@ -161,7 +125,7 @@
       </div>
       <div class="modal-body">
         <div>
-            <span style="font-weight: bold;">{% translate 'Sender' %}</span> : <span>{% if bank_transfer.sender %}{{ bank_transfer.sender.name }} ({{ bank_transfer.sender.get_account_type_display }}){% elif bank_transfer.project %}{{ bank_transfer.project.name }}{% else %}-{% endif %}</span>
+            <span style="font-weight: bold;">{% translate 'Sender' %}</span> : <span>{% if bank_transfer.sender %}{{ bank_transfer.sender.name }} ({{ bank_transfer.sender.get_account_type_display }}){% else %}-{% endif %}</span>
         </div><br />
         <div>
             <span style="font-weight: bold;">{% translate 'Recipient' %}</span> : <span>{% if bank_transfer.recipient %}{{ bank_transfer.recipient.name }} ({{ bank_transfer.recipient.get_account_type_display }}){% else %}-{% endif %}</span>
@@ -176,6 +140,9 @@
             <span style="font-weight: bold;">{% translate 'Credit/Grant' %}</span> : <span>{{ bank_transfer.funding.label|default_if_none:'-' }}</span>
         </div><br />
         <div>
+            <span style="font-weight: bold;">{% translate 'Related disbursements' %}</span> : <span>{% for disb in bank_transfer.disbursements.all %}{{ disb }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</span>
+        </div><br />
+        <div>
             <span style="font-weight: bold;">{% translate 'Level' %}</span> : <span>{{ bank_transfer.get_level_display|default_if_none:'-' }}</span>
         </div><br />
         <div>
@@ -183,9 +150,6 @@
         </div><br />
         <div>
             <span style="font-weight: bold;">{% translate 'Direction' %}</span> : <span>{{ bank_transfer.get_direction_display }}</span>
-        </div><br />
-        <div>
-            <span style="font-weight: bold;">{% translate 'Status' %}</span> : <span class="badge {{ bank_transfer.status|financial_status_badge }}">{{ bank_transfer.get_status_display }}</span>
         </div><br />
         <div>
             <span style="font-weight: bold;">{% translate 'Transfer date' %}</span> : <span>{{ bank_transfer.transfer_date }}</span>
@@ -214,38 +178,6 @@
 
     <!-- DataTables export files -->
     {% include 'layouts/datatable-js.html' %}
-
-    <script type="text/javascript">
-        function confirmStatusChange(select) {
-            var label = select.options[select.selectedIndex].text;
-            var message = '{% translate "Confirm the status change for this bank transfer to: __STATUS__?" %}'.replace('__STATUS__', label);
-            if (confirm(message)) {
-                select.form.submit();
-            } else {
-                select.value = select.getAttribute('data-previous-value');
-            }
-        }
-
-        function toggleAllTransferCheckboxes(source) {
-            document.querySelectorAll('input[name="selected_transfers"]').forEach(function (checkbox) {
-                checkbox.checked = source.checked;
-            });
-        }
-
-        function confirmBulkStatusChange() {
-            var checked = document.querySelectorAll('input[name="selected_transfers"]:checked');
-            if (checked.length === 0) {
-                alert('{% translate "Please select at least one bank transfer." %}');
-                return false;
-            }
-            var select = document.getElementById('bulk-status-select');
-            var label = select.options[select.selectedIndex].text;
-            var message = '{% translate "Confirm the status change to: __STATUS__ for __COUNT__ bank transfer(s)?" %}'
-                .replace('__STATUS__', label)
-                .replace('__COUNT__', checked.length);
-            return confirm(message);
-        }
-    </script>
 
     <script type="text/javascript">
         $(document).ready(function () {

@@ -801,7 +801,7 @@ class CategoryIDA(ExternalIdMixin, SoftDeleteMixin, BaseModel):
 class Component(ExternalIdMixin, BaseModel):
     category = models.ForeignKey('CategoryIDA', null=True, blank=True, on_delete=models.SET_NULL, verbose_name=_("IDA category"))
     project = models.ForeignKey('Project', null=True, blank=True, on_delete=models.CASCADE, verbose_name=_("IDA Project"))
-    funding = models.ForeignKey('financial.Funding', null=True, blank=True, on_delete=models.SET_NULL, verbose_name=_("Funding"))
+    fundings = models.ManyToManyField('financial.Funding', blank=True, verbose_name=_("Credits/Grants"))
     name = models.CharField(max_length=255)
     parent = models.ForeignKey('Component', null=True, blank=True, on_delete=models.CASCADE)
     description = models.TextField(null=True, blank=True)
@@ -820,6 +820,13 @@ class Component(ExternalIdMixin, BaseModel):
             (child.effective_amount or 0)
             for child in self.component_set.all()
         )
+
+    @property
+    def funding_labels(self):
+        """A Composante/Sous-composante can now be linked to several Crédits &
+        Dons (§ Composantes-CréditDon / Sous-composantes-CréditDon) - joined for
+        display wherever a single "funding" used to be shown."""
+        return ', '.join(f.label for f in self.fundings.all())
 
 
 class SubprojectFile(BaseModel):

@@ -1,5 +1,5 @@
 """
-Import the reference workbook (context/202607151446_suivi_decaissements_virements.xlsx,
+Import the reference workbook (context/202608061408_suivi_decaissements_virements.xlsx,
 see CLAUDE.md §2 and §6) into the disbursement/bank-transfer tracking models.
 
 This command was written from the column mapping documented in CLAUDE.md (the workbook
@@ -11,7 +11,13 @@ small adjustment in COLUMN_CANDIDATES/SHEET_NAMES below to match the real file.
 
 Import order matters: each sheet's rows are kept in an in-memory id_map (Excel string ID
 -> Django instance) so that later sheets can resolve the prefixed IDs (CAT-, COMP-, ...)
-used by the workbook to link sheets together.
+used by the workbook to link sheets together. A Composante/Sous-composante can now be
+linked to several Crédits & Dons (separate "Composantes-CréditDon"/"Sous-composantes-
+CréditDon" link sheets, applied to the fundings M2M after the component sheets), and a
+Virement can be linked to several Décaissements (separate "Virements-Décaissements" link
+sheet, applied to the disbursements M2M after both Décaissements and Virements) - a
+BankTransfer's project/funding are never set directly, they're computed properties
+deduced from the first linked disbursement.
 
 Upsert by `external_id`: every model touched here carries an `external_id` field (see
 cosomis.models_base.ExternalIdMixin) that stores the workbook's own `ID_xxx` value. On
@@ -22,6 +28,7 @@ this command) always has external_id=None and is therefore never matched/overwri
 """
 import re
 import unicodedata
+from collections import defaultdict
 
 import pandas as pd
 from django.core.management.base import BaseCommand, CommandError
@@ -29,9 +36,10 @@ from django.db import transaction
 
 from subprojects.models import Project, CategoryIDA, Component
 from financial.models.account import Account
+from financial.models.bank import Bank
 from financial.models.funding import Funding
 from financial.models.planning import AnnualWorkPlan, Activity
-from financial.models.supporting_document import SupportingDocument, SupportingDocumentActivity
+from financial.models.supporting_document import SupportingDocument, SupportingDocumentActivity, SupportingDocumentActivityFile
 from financial.models.financial import (
     DisbursementRequest, DisbursementRequestValidation, Disbursement, BankTransfer,
 )
@@ -96,10 +104,10 @@ ACCOUNT_TYPE_MAP = {
 }
 ACCOUNT_CATEGORY_MAP = {'compte principal': Account.AccountCategory.MAIN_ACCOUNT, 'sous-compte': Account.AccountCategory.SUB_ACCOUNT, 'sous compte': Account.AccountCategory.SUB_ACCOUNT}
 DOCUMENT_TYPE_MAP = {
-    'facture': SupportingDocument.DocumentType.INVOICE, 'recu': SupportingDocument.DocumentType.RECEIPT,
-    'contrat': SupportingDocument.DocumentType.CONTRACT, 'proces-verbal': SupportingDocument.DocumentType.MINUTES,
-    'proces verbal': SupportingDocument.DocumentType.MINUTES, 'pv': SupportingDocument.DocumentType.MINUTES,
-    'bon de commande': SupportingDocument.DocumentType.PURCHASE_ORDER, 'autre': SupportingDocument.DocumentType.OTHER,
+    'facture': SupportingDocumentActivityFile.DocumentType.INVOICE, 'recu': SupportingDocumentActivityFile.DocumentType.RECEIPT,
+    'contrat': SupportingDocumentActivityFile.DocumentType.CONTRACT, 'proces-verbal': SupportingDocumentActivityFile.DocumentType.MINUTES,
+    'proces verbal': SupportingDocumentActivityFile.DocumentType.MINUTES, 'pv': SupportingDocumentActivityFile.DocumentType.MINUTES,
+    'bon de commande': SupportingDocumentActivityFile.DocumentType.PURCHASE_ORDER, 'autre': SupportingDocumentActivityFile.DocumentType.OTHER,
 }
 DISBURSEMENT_REQUEST_STATUS_MAP = {
     'en attente': DisbursementRequest.Status.PENDING,
@@ -111,20 +119,18 @@ VALIDATION_STATUS_AFTER_MAP = {
     'validee integralement': DisbursementRequest.Status.FULLY_VALIDATED,
     'validee partiellement': DisbursementRequest.Status.PARTIALLY_VALIDATED,
 }
-JUSTIFICATION_STATUS_MAP = {
-    'non justifie': Disbursement.JustificationStatus.NOT_JUSTIFIED,
-    'partiellement justifie': Disbursement.JustificationStatus.PARTIALLY_JUSTIFIED,
-    'entierement justifie': Disbursement.JustificationStatus.FULLY_JUSTIFIED, 'justifie': Disbursement.JustificationStatus.FULLY_JUSTIFIED,
-}
 LEVEL_MAP = {
     '1': BankTransfer.Level.LEVEL_1_PROJECT, 'niveau 1': BankTransfer.Level.LEVEL_1_PROJECT,
     '2': BankTransfer.Level.LEVEL_2_REGIONAL_OFFICE, 'niveau 2': BankTransfer.Level.LEVEL_2_REGIONAL_OFFICE,
     '3': BankTransfer.Level.LEVEL_3_TOWN_HALL, 'niveau 3': BankTransfer.Level.LEVEL_3_TOWN_HALL,
     '4': BankTransfer.Level.LEVEL_4_CVD, 'niveau 4': BankTransfer.Level.LEVEL_4_CVD,
 }
-PAYMENT_METHOD_MAP = {'virement': BankTransfer.PaymentMethod.BANK_TRANSFER, 'virement bancaire': BankTransfer.PaymentMethod.BANK_TRANSFER, 'cheque': BankTransfer.PaymentMethod.CHEQUE}
+PAYMENT_METHOD_MAP = {
+    'virement': BankTransfer.PaymentMethod.BANK_TRANSFER, 'virement bancaire': BankTransfer.PaymentMethod.BANK_TRANSFER,
+    'cheque': BankTransfer.PaymentMethod.CHEQUE,
+    'espece': BankTransfer.PaymentMethod.CASH, 'especes': BankTransfer.PaymentMethod.CASH,
+}
 DIRECTION_MAP = {'aller': BankTransfer.Direction.FORWARD, 'emetteur vers beneficiaire': BankTransfer.Direction.FORWARD, 'normal (emetteur vers beneficiaire)': BankTransfer.Direction.FORWARD, 'retour': BankTransfer.Direction.RETURN, 'retour (beneficiaire vers emetteur)': BankTransfer.Direction.RETURN}
-TRANSFER_STATUS_MAP = {'en attente': BankTransfer.Status.PENDING, 'execute': BankTransfer.Status.EXECUTED, 'exécuté': BankTransfer.Status.EXECUTED, 'annule': BankTransfer.Status.CANCELLED}
 
 
 def map_choice(value, mapping, default=None):
@@ -179,6 +185,7 @@ class Command(BaseCommand):
             'project': {}, 'funding': {}, 'category': {}, 'component': {},
             'annual_work_plan': {}, 'activity': {}, 'account': {},
             'disbursement_request': {}, 'disbursement': {}, 'supporting_document': {},
+            'supporting_document_activity': {}, 'bank_transfer': {},
         }
 
         def find_sheet(*name_candidates):
@@ -195,10 +202,6 @@ class Command(BaseCommand):
                 return id_maps['project'][project_ref]
             return fallback_project
 
-        def resolve_funding(row):
-            funding_ref = to_str(get_value(row, 'ID_CréditDon', 'ID_Credit_Don'))
-            return id_maps['funding'].get(funding_ref)
-
         with transaction.atomic():
             sp = transaction.savepoint()
 
@@ -206,7 +209,9 @@ class Command(BaseCommand):
             report['Crédits & Dons'] = self._import_fundings(find_sheet('Crédits & Dons', 'Credits & Dons'), id_maps, resolve_project)
             report['Catégories'] = self._import_categories(find_sheet('Catégories', 'Categories'), id_maps, resolve_project)
             report['Composantes'] = self._import_components(find_sheet('Composantes'), id_maps, category_level=True)
+            report['Composantes-CréditDon'] = self._import_component_funding_links(find_sheet('Composantes-CréditDon', 'Composantes-CreditDon'), id_maps, 'ID_Composante')
             report['Sous-composantes'] = self._import_components(find_sheet('Sous-composantes', 'Sous composantes'), id_maps, category_level=False)
+            report['Sous-composantes-CréditDon'] = self._import_component_funding_links(find_sheet('Sous-composantes-CréditDon', 'Sous-composantes-CreditDon'), id_maps, 'ID_SousComposante')
             report['PTBA'] = self._import_annual_work_plans(find_sheet('PTBA'), id_maps, resolve_project)
             report['Activités'] = self._import_activities(find_sheet('Activités', 'Activites'), id_maps)
             report['Acteurs & Comptes'] = self._import_accounts(find_sheet('Acteurs & Comptes', 'Acteurs et Comptes'), id_maps)
@@ -215,7 +220,9 @@ class Command(BaseCommand):
             report['Décaissements'] = self._import_disbursements(find_sheet('Décaissements', 'Decaissements'), id_maps)
             report['Justificatifs'] = self._import_supporting_documents(find_sheet('Justificatifs'), id_maps)
             report['Justificatifs-Activités'] = self._import_supporting_document_activities(find_sheet('Justificatifs-Activités', 'Justificatifs Activites'), id_maps)
-            report['Virements'] = self._import_bank_transfers(find_sheet('Virements'), id_maps, resolve_project, resolve_funding)
+            report['Fichiers justif. Activités'] = self._import_supporting_document_activity_files(find_sheet('Fichiers justif. Activités', 'Fichiers justif Activites'), id_maps)
+            report['Virements'] = self._import_bank_transfers(find_sheet('Virements'), id_maps)
+            report['Virements-Décaissements'] = self._import_bank_transfer_disbursements(find_sheet('Virements-Décaissements', 'Virements-Decaissements'), id_maps)
 
             if dry_run:
                 transaction.savepoint_rollback(sp)
@@ -319,6 +326,8 @@ class Command(BaseCommand):
         return (created, updated, skipped)
 
     def _import_components(self, df, id_maps, category_level):
+        """A Composante/Sous-composante's Crédits & Dons are no longer read here -
+        see _import_component_funding_links() for the separate link sheets."""
         if df is None:
             return (0, 0, 0)
         created, updated, skipped = 0, 0, 0
@@ -330,12 +339,8 @@ class Command(BaseCommand):
                 skipped += 1
                 continue
 
-            funding_ref = to_str(get_value(row, 'ID_CréditDon', 'ID_Credit_Don'))
-            funding = id_maps['funding'].get(funding_ref)
-
             defaults = dict(
                 name=name,
-                funding=funding,
                 amount=to_float(get_value(row, 'Montant alloué', 'Montant')),
                 target=to_str(get_value(row, 'Cible(s)', 'Cibles')),
             )
@@ -349,7 +354,12 @@ class Command(BaseCommand):
                 if not parent:
                     skipped += 1
                     continue
-                defaults.update(parent=parent, project=parent.project, category=parent.category)
+                # A Sous-composante's IDA category is independent of its parent's -
+                # it may differ, so read its own column, falling back to the parent's
+                # category only when the sheet leaves it blank.
+                category_ref = to_str(get_value(row, 'ID_Catégorie', 'ID_Categorie'))
+                category = id_maps['category'].get(category_ref) if category_ref else parent.category
+                defaults.update(parent=parent, project=parent.project, category=category)
 
             component, was_created = upsert(Component, ref, defaults)
             if ref:
@@ -357,6 +367,29 @@ class Command(BaseCommand):
             created += int(was_created)
             updated += int(not was_created)
         return (created, updated, skipped)
+
+    def _import_component_funding_links(self, df, id_maps, component_id_col):
+        """Composantes-CréditDon / Sous-composantes-CréditDon (ID_Lien, ID_Composante
+        or ID_SousComposante, ID_CréditDon): a component can now be linked to several
+        Crédits & Dons - each component's fundings M2M is fully replaced by whatever
+        this sheet lists for it (idempotent on re-import)."""
+        if df is None:
+            return (0, 0, 0)
+        applied, skipped = 0, 0
+        pending = defaultdict(set)
+        for _, row in df.iterrows():
+            component_ref = to_str(get_value(row, component_id_col))
+            funding_ref = to_str(get_value(row, 'ID_CréditDon', 'ID_Credit_Don'))
+            component = id_maps['component'].get(component_ref)
+            funding = id_maps['funding'].get(funding_ref)
+            if not component or not funding:
+                skipped += 1
+                continue
+            pending[component.pk].add(funding.pk)
+            applied += 1
+        for component_pk, funding_pks in pending.items():
+            Component.objects.get(pk=component_pk).fundings.set(funding_pks)
+        return (applied, 0, skipped)
 
     def _import_annual_work_plans(self, df, id_maps, resolve_project):
         if df is None:
@@ -421,6 +454,7 @@ class Command(BaseCommand):
             if not name:
                 skipped += 1
                 continue
+            bank_name = to_str(get_value(row, 'Banque', 'Nom de la banque'))
             defaults = dict(
                 name=name,
                 account_type=map_choice(get_value(row, "Type d'acteur", 'Type'), ACCOUNT_TYPE_MAP, Account.AccountType.SERVICE_PROVIDER),
@@ -428,6 +462,7 @@ class Command(BaseCommand):
                 account_number=to_str(get_value(row, 'N° de compte', 'Numero de compte')),
                 contact=to_str(get_value(row, 'Contact')),
                 notes=to_str(get_value(row, 'Statut / Observations', 'Statut', 'Observations')),
+                bank=Bank.objects.filter(name=bank_name).first() if bank_name else None,
             )
             account, was_created = upsert(Account, ref, defaults)
             if ref:
@@ -455,6 +490,8 @@ class Command(BaseCommand):
                 funding_type=map_choice(get_value(row, 'Type (Crédit/Don)', 'Type'), FUNDING_TYPE_MAP),
                 requested_date=requested_date,
                 amount_requested=amount_requested,
+                # Montant demandé (USD): USD amount, distinct from the (local currency)
+                # amount_requested column above.
                 amount_requested_in_dollars=to_float(get_value(row, 'Montant demandé (USD)', 'Montant demande (USD)')) or 0,
                 motif=to_str(get_value(row, 'Motif')),
                 description=to_str(get_value(row, 'Description', 'Objet', 'Justification')),
@@ -524,6 +561,9 @@ class Command(BaseCommand):
         return (created, updated, skipped)
 
     def _import_disbursements(self, df, id_maps):
+        """Statut de justification is auto-computed (Disbursement.justification_status
+        is now a property) - the sheet's own column is informational only and never
+        read here."""
         if df is None:
             return (0, 0, 0)
         created, updated, skipped = 0, 0, 0
@@ -543,7 +583,6 @@ class Command(BaseCommand):
                 disbursement_date=disbursement_date,
                 description=to_str(get_value(row, 'Motif / Objet de la dépense', 'Motif', 'Objet de la dépense')),
                 notes=to_str(get_value(row, 'Observations')),
-                justification_status=map_choice(get_value(row, 'Statut de justification'), JUSTIFICATION_STATUS_MAP, Disbursement.JustificationStatus.NOT_JUSTIFIED),
             )
             disbursement, was_created = upsert(Disbursement, ref, defaults)
             if ref:
@@ -553,6 +592,9 @@ class Command(BaseCommand):
         return (created, updated, skipped)
 
     def _import_supporting_documents(self, df, id_maps):
+        """Type de pièce / Lien-Emplacement du fichier moved to the per-activity-line
+        "Fichiers justif. Activités" sheet (see _import_supporting_document_activity_files) -
+        neither is read here anymore."""
         if df is None:
             return (0, 0, 0)
         created, updated, skipped = 0, 0, 0
@@ -560,16 +602,14 @@ class Command(BaseCommand):
             ref = to_str(get_value(row, 'ID_Justificatif'))
             disbursement_ref = to_str(get_value(row, 'ID_Décaissement lié', 'ID_Decaissement'))
             disbursement = id_maps['disbursement'].get(disbursement_ref)
-            document_date = to_date(get_value(row, 'Date de la pièce', 'Date de la piece'))
+            document_date = to_date(get_value(row, 'Date de la DRF', 'Date de la pièce', 'Date de la piece'))
             if not disbursement or not document_date:
                 skipped += 1
                 continue
             defaults = dict(
                 disbursement=disbursement,
-                document_type=map_choice(get_value(row, 'Type de pièce', 'Type de piece'), DOCUMENT_TYPE_MAP, SupportingDocument.DocumentType.OTHER),
-                reference=to_str(get_value(row, 'Référence de la pièce', 'Reference')) or '',
+                reference=to_str(get_value(row, 'Référence de la DRF', 'Référence de la pièce', 'Reference')) or '',
                 document_date=document_date,
-                file_name=to_str(get_value(row, 'Lien / Emplacement du fichier', 'Lien', 'Emplacement du fichier')),
                 notes=to_str(get_value(row, 'Observations')),
             )
             document, was_created = upsert(SupportingDocument, ref, defaults)
@@ -599,12 +639,44 @@ class Command(BaseCommand):
                 allocated_amount=allocated_amount,
                 notes=to_str(get_value(row, 'Observations')),
             )
-            _line, was_created = upsert(SupportingDocumentActivity, ref, defaults)
+            line, was_created = upsert(SupportingDocumentActivity, ref, defaults)
+            if ref:
+                id_maps['supporting_document_activity'][ref] = line
             created += int(was_created)
             updated += int(not was_created)
         return (created, updated, skipped)
 
-    def _import_bank_transfers(self, df, id_maps, resolve_project, resolve_funding):
+    def _import_supporting_document_activity_files(self, df, id_maps):
+        """Fichiers justif. Activités (ID_Fichier, ID_JustifActivité liée, Type de
+        pièce, Lien / Emplacement du fichier) - a Justificatif-Activité line can
+        carry several files."""
+        if df is None:
+            return (0, 0, 0)
+        created, updated, skipped = 0, 0, 0
+        for _, row in df.iterrows():
+            ref = to_str(get_value(row, 'ID_Fichier'))
+            line_ref = to_str(get_value(row, 'ID_JustifActivité liée', 'ID_Ligne'))
+            line = id_maps['supporting_document_activity'].get(line_ref)
+            file_name = to_str(get_value(row, 'Lien / Emplacement du fichier', 'Lien', 'Emplacement du fichier'))
+            if not line or not file_name:
+                skipped += 1
+                continue
+            defaults = dict(
+                supporting_document_activity=line,
+                document_type=map_choice(get_value(row, 'Type de pièce', 'Type de piece'), DOCUMENT_TYPE_MAP, SupportingDocumentActivityFile.DocumentType.OTHER),
+                file_name=file_name,
+            )
+            _file, was_created = upsert(SupportingDocumentActivityFile, ref, defaults)
+            created += int(was_created)
+            updated += int(not was_created)
+        return (created, updated, skipped)
+
+    def _import_bank_transfers(self, df, id_maps):
+        """ID_ProjetIDA/ID_CréditDon and Décaissement lié are no longer read here:
+        project/funding are computed properties deduced from the first linked
+        disbursement, and the disbursement link itself is now a M2M applied via
+        the separate "Virements-Décaissements" sheet (see
+        _import_bank_transfer_disbursements)."""
         if df is None:
             return (0, 0, 0)
         created, updated, skipped = 0, 0, 0
@@ -618,10 +690,7 @@ class Command(BaseCommand):
             if amount is None:
                 skipped += 1
                 continue
-            disbursement_ref = to_str(get_value(row, 'Décaissement lié', 'Decaissement lie'))
             defaults = dict(
-                project=resolve_project(row),
-                funding=resolve_funding(row),
                 sender=sender,
                 recipient=recipient,
                 level=map_choice(get_value(row, 'Niveau'), LEVEL_MAP),
@@ -630,11 +699,11 @@ class Command(BaseCommand):
                 motif=to_str(get_value(row, 'Motif / Référence', 'Motif', 'Référence')),
                 payment_method=map_choice(get_value(row, 'Mode de paiement'), PAYMENT_METHOD_MAP, BankTransfer.PaymentMethod.BANK_TRANSFER),
                 direction=map_choice(get_value(row, 'Sens du virement'), DIRECTION_MAP, BankTransfer.Direction.FORWARD),
-                status=map_choice(get_value(row, 'Statut'), TRANSFER_STATUS_MAP, BankTransfer.Status.PENDING),
-                disbursement=id_maps['disbursement'].get(disbursement_ref),
                 description=to_str(get_value(row, 'Observations')),
             )
             transfer, was_created = upsert(BankTransfer, ref, defaults)
+            if ref:
+                id_maps['bank_transfer'][ref] = transfer
 
             document_refs = split_refs(get_value(row, 'Pièces justificatives'))
             documents = [id_maps['supporting_document'][r] for r in document_refs if r in id_maps['supporting_document']]
@@ -644,3 +713,26 @@ class Command(BaseCommand):
             created += int(was_created)
             updated += int(not was_created)
         return (created, updated, skipped)
+
+    def _import_bank_transfer_disbursements(self, df, id_maps):
+        """Virements-Décaissements (ID_Lien, ID_Virement, ID_Décaissement,
+        Observations): a transfer can now be linked to several disbursements -
+        each transfer's disbursements M2M is fully replaced by whatever this sheet
+        lists for it (idempotent on re-import)."""
+        if df is None:
+            return (0, 0, 0)
+        applied, skipped = 0, 0
+        pending = defaultdict(set)
+        for _, row in df.iterrows():
+            transfer_ref = to_str(get_value(row, 'ID_Virement'))
+            disbursement_ref = to_str(get_value(row, 'ID_Décaissement', 'ID_Decaissement'))
+            transfer = id_maps['bank_transfer'].get(transfer_ref)
+            disbursement = id_maps['disbursement'].get(disbursement_ref)
+            if not transfer or not disbursement:
+                skipped += 1
+                continue
+            pending[transfer.pk].add(disbursement.pk)
+            applied += 1
+        for transfer_pk, disbursement_pks in pending.items():
+            BankTransfer.objects.get(pk=transfer_pk).disbursements.set(disbursement_pks)
+        return (applied, 0, skipped)

@@ -69,7 +69,7 @@ class DisbursementAggregationTestCase(TestCase):
         activity = Activity.objects.create(component=component, annual_work_plan=plan, name='Act', amount=1000)
 
         document = SupportingDocument.objects.create(
-            disbursement=self.disbursement, document_type=SupportingDocument.DocumentType.INVOICE,
+            disbursement=self.disbursement,
             reference='FACT-1', document_date='2026-02-05',
         )
         SupportingDocumentActivity.objects.create(supporting_document=document, activity=activity, allocated_amount=150)
@@ -86,7 +86,6 @@ class BankTransferRulesTestCase(TestCase):
     """§2.13 transfer rules: enforce the 4-level sender/recipient hierarchy in clean()."""
 
     def setUp(self):
-        self.project = Project.objects.create(name='Test Project', description='desc')
         self.account_project = Account.objects.create(name='Project account', account_type=Account.AccountType.PROJECT, account_category=Account.AccountCategory.MAIN_ACCOUNT)
         self.account_regional = Account.objects.create(name='Regional office', account_type=Account.AccountType.REGIONAL_OFFICE, account_category=Account.AccountCategory.MAIN_ACCOUNT)
         self.account_town_hall = Account.objects.create(name='Town hall', account_type=Account.AccountType.TOWN_HALL, account_category=Account.AccountCategory.MAIN_ACCOUNT)
@@ -95,7 +94,7 @@ class BankTransferRulesTestCase(TestCase):
 
     def _transfer(self, sender, recipient, direction=BankTransfer.Direction.FORWARD, level=None):
         return BankTransfer(
-            project=self.project, sender=sender, recipient=recipient, level=level,
+            sender=sender, recipient=recipient, level=level,
             direction=direction, amount_transferred=100, transfer_date='2026-01-01',
         )
 
@@ -137,7 +136,7 @@ class BankTransferRulesTestCase(TestCase):
     def test_no_validation_when_sender_or_recipient_missing(self):
         """A transfer with no sender/recipient Account set (neither leg known yet) is not validated."""
         transfer = BankTransfer(
-            project=self.project, sender=None, recipient=None,
+            sender=None, recipient=None,
             amount_transferred=100, transfer_date='2026-01-01',
         )
         transfer.clean()  # should not raise
@@ -145,43 +144,65 @@ class BankTransferRulesTestCase(TestCase):
 
 class AccountBalanceTestCase(TestCase):
     def setUp(self):
-        self.project = Project.objects.create(name='Test Project', description='desc')
         self.sender = Account.objects.create(name='Project account', account_type=Account.AccountType.PROJECT, account_category=Account.AccountCategory.MAIN_ACCOUNT)
         self.recipient = Account.objects.create(name='CVD account', account_type=Account.AccountType.CVD, account_category=Account.AccountCategory.MAIN_ACCOUNT)
 
-    def test_balance_counts_only_executed_transfers(self):
+    def test_balance_sums_all_transfers(self):
+        """No more pending/executed/cancelled distinction (BankTransfer has no
+        status field anymore) - every transfer counts towards the balance."""
         BankTransfer.objects.create(
-            project=self.project, sender=self.sender, recipient=self.recipient,
-            amount_transferred=500, transfer_date='2026-01-01', status=BankTransfer.Status.EXECUTED,
+            sender=self.sender, recipient=self.recipient,
+            amount_transferred=500, transfer_date='2026-01-01',
         )
         BankTransfer.objects.create(
-            project=self.project, sender=self.sender, recipient=self.recipient,
-            amount_transferred=999, transfer_date='2026-01-02', status=BankTransfer.Status.PENDING,
+            sender=self.sender, recipient=self.recipient,
+            amount_transferred=300, transfer_date='2026-01-02',
         )
-        self.assertEqual(self.recipient.available_balance(), 500)
-        self.assertEqual(self.sender.available_balance(), -500)
+        self.assertEqual(self.recipient.available_balance(), 800)
 
     def test_return_transfer_credited_back_to_original_sender(self):
         BankTransfer.objects.create(
-            project=self.project, sender=self.sender, recipient=self.recipient,
-            amount_transferred=500, transfer_date='2026-01-01', status=BankTransfer.Status.EXECUTED,
+            sender=self.sender, recipient=self.recipient,
+            amount_transferred=500, transfer_date='2026-01-01',
             direction=BankTransfer.Direction.FORWARD,
         )
         BankTransfer.objects.create(
-            project=self.project, sender=self.recipient, recipient=self.sender,
-            amount_transferred=200, transfer_date='2026-02-01', status=BankTransfer.Status.EXECUTED,
+            sender=self.recipient, recipient=self.sender,
+            amount_transferred=200, transfer_date='2026-02-01',
             direction=BankTransfer.Direction.RETURN,
         )
         self.assertEqual(self.recipient.available_balance(), 300)
 
     def test_balance_filtered_by_year(self):
         BankTransfer.objects.create(
-            project=self.project, sender=self.sender, recipient=self.recipient,
-            amount_transferred=500, transfer_date='2025-06-01', status=BankTransfer.Status.EXECUTED,
+            sender=self.sender, recipient=self.recipient,
+            amount_transferred=500, transfer_date='2025-06-01',
         )
         BankTransfer.objects.create(
-            project=self.project, sender=self.sender, recipient=self.recipient,
-            amount_transferred=300, transfer_date='2026-06-01', status=BankTransfer.Status.EXECUTED,
+            sender=self.sender, recipient=self.recipient,
+            amount_transferred=300, transfer_date='2026-06-01',
         )
         self.assertEqual(self.recipient.available_balance(year=2026), 300)
         self.assertEqual(self.recipient.available_balance(), 800)
+
+    def test_project_account_total_received_is_total_disbursed(self):
+        """A PROJECT-type account's "total received" is the sum of amounts
+        disbursed project-wide, not incoming bank transfers (§ Soldes des
+        comptes)."""
+        project = Project.objects.create(name='Balance Test Project', description='desc')
+        request = DisbursementRequest.objects.create(
+            project=project, amount_requested=1000, amount_requested_in_dollars=1000,
+            requested_date='2026-01-01',
+        )
+        Disbursement.objects.create(
+            disbursement_request=request, amount_disbursed=400, amount_disbursed_in_dollars=400,
+            disbursement_date='2026-02-01',
+        )
+        BankTransfer.objects.create(
+            sender=self.sender, recipient=self.recipient,
+            amount_transferred=150, transfer_date='2026-02-05',
+        )
+        breakdown = self.sender.balance_breakdown()
+        self.assertEqual(breakdown['total_received'], 400)
+        self.assertEqual(breakdown['total_sent'], 150)
+        self.assertEqual(breakdown['available_balance'], 250)

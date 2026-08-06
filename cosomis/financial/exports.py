@@ -65,7 +65,7 @@ def build_category_sheet(workbook, queryset):
 
 def build_component_sheet(workbook, queryset, sheet_title='Composantes'):
     ws = _new_sheet(workbook, sheet_title, [
-        'ID_Composante', 'ID_ProjetIDA', 'ID_Catégorie', 'Libellé', 'ID_CréditDon', 'Montant alloué', 'Cible(s)', 'Montant effectif (auto)',
+        'ID_Composante', 'ID_ProjetIDA', 'ID_Catégorie', 'Libellé', 'Montant alloué', 'Cible(s)', 'Montant effectif (auto)',
     ])
     for component in queryset:
         ws.append([
@@ -73,11 +73,23 @@ def build_component_sheet(workbook, queryset, sheet_title='Composantes'):
             component.project.name if component.project_id else '',
             component.category.name if component.category_id else '',
             component.name,
-            component.funding.label if component.funding_id else '',
             component.amount,
             component.target,
             component.effective_amount,
         ])
+    return ws
+
+
+def build_component_funding_sheet(workbook, queryset, component_id_col, sheet_title):
+    """Composantes-CréditDon / Sous-composantes-CréditDon: a component can be linked
+    to several Crédits & Dons, so its funding is a M2M shown as one row per link
+    rather than a column on the Composantes/Sous-composantes sheet itself."""
+    ws = _new_sheet(workbook, sheet_title, ['ID_Lien', component_id_col, 'ID_CréditDon'])
+    idx = 1
+    for component in queryset:
+        for funding in component.fundings.all():
+            ws.append([idx, component.external_id or component.name, funding.external_id or funding.label])
+            idx += 1
     return ws
 
 
@@ -108,17 +120,21 @@ def build_activity_sheet(workbook, queryset):
 
 def build_supporting_document_sheet(workbook, queryset):
     ws = _new_sheet(workbook, 'Justificatifs', [
-        'ID_Justificatif', 'ID_Décaissement lié', 'ID_Demande liée', 'Type de pièce', 'Référence de la pièce',
-        'Date de la pièce', 'Montant total justifié (auto)', 'Lien / Emplacement du fichier', 'Observations',
+        'ID_Justificatif', 'ID_Décaissement lié', 'ID_Demande liée', 'Référence de la DRF',
+        'Date de la DRF', 'Montant total justifié (auto)', 'Observations',
     ])
     for doc in queryset:
         ws.append([
             doc.external_id or '',
             str(doc.disbursement) if doc.disbursement_id else '',
             str(doc.disbursement_request) if doc.disbursement_request_id else '',
-            doc.get_document_type_display(), doc.reference, doc.document_date,
-            doc.total_justified_amount, doc.file_name or (doc.file.name if doc.file else ''), doc.notes,
+            doc.reference, doc.document_date,
+            doc.total_justified_amount, doc.notes,
         ])
+    for col_idx in range(1, len(ws[1]) + 1):
+        if ws.cell(row=1, column=col_idx).value == 'Date de la DRF':
+            for row_idx in range(2, ws.max_row + 1):
+                ws.cell(row=row_idx, column=col_idx).number_format = 'YYYY-MM-DD'
     return ws
 
 
@@ -126,6 +142,20 @@ def build_supporting_document_activity_sheet(workbook, queryset):
     ws = _new_sheet(workbook, 'Justificatifs-Activités', ['ID_Ligne', 'ID_Justificatif', 'ID_Activité', 'Montant imputé', 'Observations'])
     for line in queryset:
         ws.append([line.external_id or '', str(line.supporting_document), str(line.activity), line.allocated_amount, line.notes])
+    return ws
+
+
+def build_supporting_document_activity_file_sheet(workbook, queryset):
+    """Fichiers justif. Activités: a Justificatif-Activité line can carry several
+    files, each with its own document type - moved off SupportingDocument itself."""
+    ws = _new_sheet(workbook, 'Fichiers justif. Activités', [
+        'ID_Fichier', 'ID_JustifActivité liée', 'Type de pièce', 'Lien / Emplacement du fichier',
+    ])
+    for file in queryset:
+        ws.append([
+            file.external_id or '', str(file.supporting_document_activity),
+            file.get_document_type_display(), file.file_name or (file.file.name if file.file else ''),
+        ])
     return ws
 
 
@@ -169,7 +199,7 @@ def build_disbursement_sheet(workbook, queryset):
     for disb in queryset:
         ws.append([
             disb.external_id or '', str(disb.disbursement_request), disb.amount_disbursed, disb.disbursement_date,
-            disb.description, disb.justified_amount, disb.justification_gap, disb.get_justification_status_display(), disb.notes,
+            disb.description, disb.justified_amount, disb.justification_gap, str(disb.get_justification_status_display), disb.notes,
         ])
     return ws
 
@@ -190,20 +220,33 @@ def build_account_sheet(workbook, queryset):
 def build_bank_transfer_sheet(workbook, queryset):
     ws = _new_sheet(workbook, 'Virements', [
         'ID_Virement', 'Émetteur', 'Bénéficiaire', 'Niveau', 'Montant', 'Date du virement', 'Motif / Référence',
-        'Mode de paiement', 'Sens du virement', 'Statut', 'ID_ProjetIDA', 'ID_CréditDon',
-        'Pièces justificatives', 'Décaissement lié', 'Observations', 'Année (auto)',
+        'Mode de paiement', 'Sens du virement', 'ID_ProjetIDA (auto)', 'ID_CréditDon (auto)',
+        'Pièces justificatives', 'Observations', 'Année (auto)',
     ])
     for transfer in queryset:
+        project = transfer.project
+        funding = transfer.funding
         ws.append([
             transfer.external_id or '', transfer.sender.name if transfer.sender_id else '', transfer.recipient.name if transfer.recipient_id else '',
             transfer.get_level_display() if transfer.level else '', transfer.amount_transferred, transfer.transfer_date, transfer.motif,
-            transfer.get_payment_method_display(), transfer.get_direction_display(), transfer.get_status_display(),
-            transfer.project.external_id or transfer.project.name if transfer.project_id else '',
-            transfer.funding.external_id or transfer.funding.label if transfer.funding_id else '',
+            transfer.get_payment_method_display(), transfer.get_direction_display(),
+            (project.external_id or project.name) if project else '',
+            (funding.external_id or funding.label) if funding else '',
             ', '.join(str(doc) for doc in transfer.supporting_documents.all()),
-            str(transfer.disbursement) if transfer.disbursement_id else '',
             transfer.description, transfer.year,
         ])
+    return ws
+
+
+def build_bank_transfer_disbursement_sheet(workbook, queryset):
+    """Virements-Décaissements: a transfer can be linked to several disbursements,
+    each shown as one row rather than a single 'Décaissement lié' column."""
+    ws = _new_sheet(workbook, 'Virements-Décaissements', ['ID_Lien', 'ID_Virement', 'ID_Décaissement', 'Observations'])
+    idx = 1
+    for transfer in queryset:
+        for disbursement in transfer.disbursements.all():
+            ws.append([idx, transfer.external_id or str(transfer.pk), disbursement.external_id or str(disbursement.pk), ''])
+            idx += 1
     return ws
 
 
@@ -230,6 +273,8 @@ def export_category(queryset):
 def export_component(queryset):
     wb = Workbook()
     build_component_sheet(wb, queryset)
+    build_component_funding_sheet(wb, queryset.filter(parent__isnull=True), 'ID_Composante', 'Composantes-CréditDon')
+    build_component_funding_sheet(wb, queryset.filter(parent__isnull=False), 'ID_SousComposante', 'Sous-composantes-CréditDon')
     return workbook_response(wb, 'composantes.xlsx')
 
 
@@ -243,11 +288,13 @@ def export_annual_work_plan(queryset):
 
 
 def export_supporting_document(queryset):
-    from financial.models.supporting_document import SupportingDocumentActivity
+    from financial.models.supporting_document import SupportingDocumentActivity, SupportingDocumentActivityFile
 
     wb = Workbook()
     build_supporting_document_sheet(wb, queryset)
-    build_supporting_document_activity_sheet(wb, SupportingDocumentActivity.objects.filter(supporting_document__in=queryset))
+    lines = SupportingDocumentActivity.objects.filter(supporting_document__in=queryset)
+    build_supporting_document_activity_sheet(wb, lines)
+    build_supporting_document_activity_file_sheet(wb, SupportingDocumentActivityFile.objects.filter(supporting_document_activity__in=lines))
     return workbook_response(wb, 'justificatifs.xlsx')
 
 
@@ -292,6 +339,7 @@ def export_disbursement(queryset):
 def export_bank_transfer(queryset):
     wb = Workbook()
     build_bank_transfer_sheet(wb, queryset)
+    build_bank_transfer_disbursement_sheet(wb, queryset)
     return workbook_response(wb, 'virements.xlsx')
 
 
@@ -324,7 +372,7 @@ def export_project_ida_detail(project):
     from financial.models.funding import Funding
     from financial.models.planning import AnnualWorkPlan, Activity
     from financial.models.financial import DisbursementRequest, DisbursementRequestValidation, Disbursement, BankTransfer
-    from financial.models.supporting_document import SupportingDocument, SupportingDocumentActivity
+    from financial.models.supporting_document import SupportingDocument, SupportingDocumentActivity, SupportingDocumentActivityFile
     from subprojects.models import CategoryIDA, Component
 
     wb = Workbook()
@@ -333,21 +381,30 @@ def export_project_ida_detail(project):
     build_funding_sheet(wb, fundings)
     build_category_sheet(wb, CategoryIDA.objects.filter(project=project))
     components = Component.objects.filter(project=project)
-    build_component_sheet(wb, components.filter(parent__isnull=True), 'Composantes')
-    build_component_sheet(wb, components.filter(parent__isnull=False), 'Sous-composantes')
+    top_components = components.filter(parent__isnull=True)
+    sub_components = components.filter(parent__isnull=False)
+    build_component_sheet(wb, top_components, 'Composantes')
+    build_component_sheet(wb, sub_components, 'Sous-composantes')
+    build_component_funding_sheet(wb, top_components, 'ID_Composante', 'Composantes-CréditDon')
+    build_component_funding_sheet(wb, sub_components, 'ID_SousComposante', 'Sous-composantes-CréditDon')
     plans = AnnualWorkPlan.objects.filter(project=project)
     build_annual_work_plan_sheet(wb, plans)
     build_activity_sheet(wb, Activity.objects.filter(annual_work_plan__in=plans))
     requests_qs = DisbursementRequest.objects.filter(project=project)
     build_disbursement_request_sheet(wb, requests_qs)
     build_disbursement_request_validation_sheet(wb, DisbursementRequestValidation.objects.filter(disbursement_request__in=requests_qs))
-    build_disbursement_sheet(wb, Disbursement.objects.filter(disbursement_request__project=project))
+    disbursements_qs = Disbursement.objects.filter(disbursement_request__project=project)
+    build_disbursement_sheet(wb, disbursements_qs)
     documents_qs = SupportingDocument.objects.filter(
         Q(disbursement__disbursement_request__project=project) | Q(disbursement_request__project=project)
     ).distinct()
+    lines_qs = SupportingDocumentActivity.objects.filter(supporting_document__in=documents_qs)
     build_supporting_document_sheet(wb, documents_qs)
-    build_supporting_document_activity_sheet(wb, SupportingDocumentActivity.objects.filter(supporting_document__in=documents_qs))
-    build_bank_transfer_sheet(wb, BankTransfer.objects.filter(project=project))
+    build_supporting_document_activity_sheet(wb, lines_qs)
+    build_supporting_document_activity_file_sheet(wb, SupportingDocumentActivityFile.objects.filter(supporting_document_activity__in=lines_qs))
+    transfers_qs = BankTransfer.objects.filter(disbursements__in=disbursements_qs).distinct()
+    build_bank_transfer_sheet(wb, transfers_qs)
+    build_bank_transfer_disbursement_sheet(wb, transfers_qs)
     return workbook_response(wb, f'projet_ida_{project.pk}.xlsx')
 
 
@@ -378,6 +435,7 @@ def export_dashboard_report(ctx):
     if ctx.get('selected_year'):
         transfers_qs = transfers_qs.filter(transfer_date__year=ctx['selected_year'])
     build_bank_transfer_sheet(wb, transfers_qs)
+    build_bank_transfer_disbursement_sheet(wb, transfers_qs)
 
     summary_ws = _new_sheet(wb, 'Tableau de bord', ['Indicateur', 'Valeur'])
     summary_rows = [
@@ -394,9 +452,6 @@ def export_dashboard_report(ctx):
         ('Écart à justifier', ctx['disbursements']['justification_gap']),
         ('Nombre de virements', ctx['bank_transfers']['count']),
         ('Total viré', ctx['bank_transfers']['total_transferred']),
-        ('Virements exécutés', ctx['bank_transfers']['executed']),
-        ('Virements en attente', ctx['bank_transfers']['pending']),
-        ('Virements annulés', ctx['bank_transfers']['cancelled']),
     ]
     for row in summary_rows:
         summary_ws.append(row)

@@ -42,9 +42,7 @@
                             <th>{% translate 'Account number' %}</th>
                             <th>{% translate 'Contact' %}</th>
                             <th>{% translate 'Total received' %}</th>
-                            <th>{% translate 'Received (executed)' %}</th>
                             <th>{% translate 'Total sent' %}</th>
-                            <th>{% translate 'Sent (executed)' %}</th>
                             <th>{% translate 'Returned to sender' %}</th>
                             <th>{% translate 'Amount currently available' %}</th>
                         </tr>
@@ -58,9 +56,7 @@
                                 <td>{{ row.account.account_number|default_if_none:'-' }}</td>
                                 <td>{{ row.account.contact|default_if_none:'-' }}</td>
                                 <td>{{ row.total_received|separate_with_space }}</td>
-                                <td>{{ row.received_executed|separate_with_space }}</td>
                                 <td>{{ row.total_sent|separate_with_space }}</td>
-                                <td>{{ row.sent_executed|separate_with_space }}</td>
                                 <td>{{ row.returned_to_sender|separate_with_space }}</td>
                                 <td class="{% if row.available_balance < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ row.available_balance|separate_with_space }}</td>
                             </tr>
@@ -86,7 +82,7 @@ $(document).ready(function () {
         language: { url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}') },
         buttons: ['copy', 'excel', 'pdf', 'colvis'],
         pageLength: 25,
-        order: [[10, 'asc']],
+        order: [[8, 'asc']],
     });
 });
 </script>

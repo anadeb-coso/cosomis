@@ -9,7 +9,7 @@ from financial.models.bank import Bank
 from financial.models.financial import BankTransfer, DisbursementRequest, DisbursementRequestValidation, Disbursement
 from financial.models.funding import Funding
 from financial.models.planning import AnnualWorkPlan, Activity
-from financial.models.supporting_document import SupportingDocument, SupportingDocumentActivity
+from financial.models.supporting_document import SupportingDocument, SupportingDocumentActivity, SupportingDocumentActivityFile
 from subprojects.models import Project, CategoryIDA, Component
 from cosomis import FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID, FORM_FIELDS_TO_EXCLUDE_WITH_DELETED, FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED
 
@@ -115,15 +115,19 @@ class BankTransferForm(forms.ModelForm):
     """Sender/recipient are Account references (§2.13) - the transfer-level
     hierarchy (§2.13 "Transfer rules") is enforced by BankTransfer.clean(),
     triggered by ModelForm.is_valid(), so no extra form-level validation
-    is needed here."""
+    is needed here.
+
+    A transfer can be linked to several disbursements (§ Virements-Décaissements);
+    `project`/`funding` are computed properties deduced from the first linked
+    disbursement (see BankTransfer.project/.funding), never chosen here."""
 
     def __init__(self, *args, **kwargs):
         super(BankTransferForm, self).__init__(*args, **kwargs)
         self.fields['sender'].queryset = Account.objects.all().order_by('name')
         self.fields['recipient'].queryset = Account.objects.all().order_by('name')
         self.fields['sender'].help_text = _bank_transfer_rules_help_text()
-        self.fields['project'].queryset = Project.objects.all().order_by('name')
-        self.fields['funding'].queryset = Funding.objects.all().order_by('label')
+        self.fields['disbursements'].queryset = Disbursement.objects.all().order_by('-disbursement_date')
+        self.fields['linked_to_allocation'].queryset = AdministrativeLevelAllocation.objects.all().order_by('-allocation_date')
 
     class Meta:
         model = BankTransfer
@@ -277,11 +281,16 @@ class ComponentForm(forms.ModelForm):
             project = instance.project
 
         if parent:
-            # Sous-composante: category/project are derived from the parent, not user-chosen.
-            del self.fields['category']
+            # Sous-composante: project is derived from the parent, not user-chosen, but
+            # its IDA category is independent and may differ from the parent's own category.
             del self.fields['project']
             del self.fields['parent']
-            self.fields['funding'].queryset = (
+            self.fields['category'].queryset = (
+                CategoryIDA.objects.filter(project=project).order_by('name') if project else CategoryIDA.objects.none()
+            )
+            if not (instance and instance.pk):
+                self.fields['category'].initial = parent.category_id
+            self.fields['fundings'].queryset = (
                 Funding.objects.filter(project=project).order_by('label') if project else Funding.objects.none()
             )
         else:
@@ -292,11 +301,45 @@ class ComponentForm(forms.ModelForm):
             # Funding <-> Category is cascaded client-side (see component_add.html) -
             # the category the user is about to pick isn't known yet at render time,
             # so show every funding and let JS narrow it down once one is selected.
-            self.fields['funding'].queryset = Funding.objects.all().order_by('label')
+            self.fields['fundings'].queryset = Funding.objects.all().order_by('label')
 
     class Meta:
         model = Component
         exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
+
+
+class CategoryComponentForm(forms.ModelForm):
+    """One row of the Composantes/Sous-composantes formset embedded in the IDA
+    category add/edit page - `category` itself is set by the inline formset
+    (fk_name='category'), `project` is derived server-side from the category, so
+    neither is exposed here. `parent` lets a row register as a Sous-composante of
+    an already-existing component of this same category (a brand new sibling row
+    can't be picked as a parent - it doesn't have a pk yet)."""
+
+    def __init__(self, project=None, category_pk=None, *args, **kwargs):
+        super(CategoryComponentForm, self).__init__(*args, **kwargs)
+        self.fields['parent'].queryset = (
+            Component.objects.filter(category_id=category_pk).order_by('name') if category_pk else Component.objects.none()
+        )
+        self.fields['parent'].required = False
+        self.fields['fundings'].queryset = (
+            Funding.objects.filter(project=project).order_by('label') if project else Funding.objects.none()
+        )
+
+    class Meta:
+        model = Component
+        fields = ['name', 'parent', 'amount', 'target', 'description', 'fundings']
+
+
+CategoryComponentFormSet = forms.inlineformset_factory(
+    CategoryIDA,
+    Component,
+    form=CategoryComponentForm,
+    fk_name='category',
+    fields=['name', 'parent', 'amount', 'target', 'description', 'fundings'],
+    extra=1,
+    can_delete=True,
+)
 
 
 class AnnualWorkPlanForm(forms.ModelForm):
@@ -328,6 +371,45 @@ class ActivityForm(forms.ModelForm):
     class Meta:
         model = Activity
         exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED
+        widgets = {
+            'name': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'target': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+
+class PTBAActivityForm(forms.ModelForm):
+    """One row of the Activités formset embedded directly in the PTBA detail page
+    - `annual_work_plan` is set by the inline formset (fk_name='annual_work_plan'),
+    never user-chosen. `name`/`target` are small Textareas (a line break should
+    stay possible), `amount` is a plain text input - the space-grouped thousands
+    display is purely a JS presentation layer (see the sheet/detail templates),
+    the field itself still expects a plain number on submit."""
+
+    def __init__(self, project=None, *args, **kwargs):
+        super(PTBAActivityForm, self).__init__(*args, **kwargs)
+        self.fields['component'].queryset = (
+            Component.objects.filter(project=project).order_by('name') if project else Component.objects.none()
+        )
+
+    class Meta:
+        model = Activity
+        fields = ['component', 'name', 'amount', 'target']
+        widgets = {
+            'name': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'amount': forms.TextInput(attrs={'class': 'form-control amount-field', 'inputmode': 'decimal'}),
+            'target': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+
+PTBAActivityFormSet = forms.inlineformset_factory(
+    AnnualWorkPlan,
+    Activity,
+    form=PTBAActivityForm,
+    fk_name='annual_work_plan',
+    fields=['component', 'name', 'amount', 'target'],
+    extra=1,
+    can_delete=True,
+)
 
 
 class SupportingDocumentForm(forms.ModelForm):
@@ -374,3 +456,13 @@ SupportingDocumentActivityFormSet = forms.inlineformset_factory(
     extra=1,
     can_delete=True,
 )
+
+
+class SupportingDocumentActivityFileForm(forms.ModelForm):
+    """`supporting_document_activity` is fixed from the URL (see
+    SupportingDocumentActivityFileCreateView), not user-chosen - a line can carry
+    several files (§ Fichiers justif. Activités)."""
+
+    class Meta:
+        model = SupportingDocumentActivityFile
+        fields = ['document_type', 'file', 'file_name']

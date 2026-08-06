@@ -15,6 +15,7 @@ from financial.models.supporting_document import SupportingDocument
 from financial.forms import FundingForm
 from subprojects.models import Component
 from financial.models.planning import Activity
+from financial.aggregations import component_financial_breakdown
 from financial.exports import export_funding
 from financial.list_filters import apply_entity_filters, build_filter_context
 
@@ -125,10 +126,12 @@ class FundingDetailView(PageMixin, LoginRequiredMixin, generic.DetailView):
         ctx = super().get_context_data(**kwargs)
         funding = self.object
 
-        components = Component.objects.filter(funding=funding)
+        components = list(Component.objects.filter(fundings=funding))
+        for component in components:
+            component.planning = component_financial_breakdown(component)
         ctx['components'] = [c for c in components if c.parent_id is None]
         ctx['sub_components'] = [c for c in components if c.parent_id is not None]
-        ctx['activities'] = Activity.objects.filter(component__funding=funding)
+        ctx['activities'] = Activity.objects.filter(component__fundings=funding)
 
         requests_qs = DisbursementRequest.objects.filter(funding=funding)
         ctx['disbursement_requests'] = requests_qs

@@ -30,7 +30,7 @@
                 <div class="card-header"><h3 class="card-title">{% translate 'Components' %}</h3></div>
                 <div class="card-body table-responsive">
                     <table class="table table-striped table-sm">
-                        <thead><tr><th>{% translate 'Category' %}</th><th>{% translate 'Label' %}</th><th>{% translate 'Effective amount' %}</th><th>{% translate 'Target(s)' %}</th></tr></thead>
+                        <thead><tr><th>{% translate 'Category' %}</th><th>{% translate 'Label' %}</th><th>{% translate 'Effective amount' %}</th><th>{% translate 'Target(s)' %}</th><th>{% translate 'Planned amount (PTBA)' %}</th><th>{% translate 'Available amount (vs. plan)' %}</th><th>{% translate 'Justified amount' %}</th><th>{% translate 'Available amount (vs. justified)' %}</th></tr></thead>
                         <tbody>
                         {% for component in components %}
                             <tr>
@@ -38,24 +38,32 @@
                                 <td><a href="{% url 'financial:component_detail' component.pk %}">{{ component.name }}</a></td>
                                 <td>{{ component.effective_amount|separate_with_space }}</td>
                                 <td>{{ component.target|default_if_none:'-' }}</td>
+                                <td>{{ component.planning.planned_amount|separate_with_space }}</td>
+                                <td class="{% if component.planning.available_vs_plan < 0 %}text-danger{% else %}text-success{% endif %}">{{ component.planning.available_vs_plan|separate_with_space }}</td>
+                                <td>{{ component.planning.justified_amount|separate_with_space }}</td>
+                                <td class="{% if component.planning.available_vs_justified < 0 %}text-danger{% else %}text-success{% endif %}">{{ component.planning.available_vs_justified|separate_with_space }}</td>
                             </tr>
                         {% empty %}
-                            <tr><td colspan="4" class="text-center">{% translate 'No data' %}</td></tr>
+                            <tr><td colspan="8" class="text-center">{% translate 'No data' %}</td></tr>
                         {% endfor %}
                         </tbody>
                     </table>
                     <h5>{% translate 'Sub-components' %}</h5>
                     <table class="table table-striped table-sm">
-                        <thead><tr><th>{% translate 'Component' %}</th><th>{% translate 'Label' %}</th><th>{% translate 'Effective amount' %}</th></tr></thead>
+                        <thead><tr><th>{% translate 'Component' %}</th><th>{% translate 'Label' %}</th><th>{% translate 'Effective amount' %}</th><th>{% translate 'Planned amount (PTBA)' %}</th><th>{% translate 'Available amount (vs. plan)' %}</th><th>{% translate 'Justified amount' %}</th><th>{% translate 'Available amount (vs. justified)' %}</th></tr></thead>
                         <tbody>
                         {% for component in sub_components %}
                             <tr>
                                 <td>{{ component.parent.name }}</td>
                                 <td><a href="{% url 'financial:component_detail' component.parent.pk %}">{{ component.name }}</a></td>
                                 <td>{{ component.effective_amount|separate_with_space }}</td>
+                                <td>{{ component.planning.planned_amount|separate_with_space }}</td>
+                                <td class="{% if component.planning.available_vs_plan < 0 %}text-danger{% else %}text-success{% endif %}">{{ component.planning.available_vs_plan|separate_with_space }}</td>
+                                <td>{{ component.planning.justified_amount|separate_with_space }}</td>
+                                <td class="{% if component.planning.available_vs_justified < 0 %}text-danger{% else %}text-success{% endif %}">{{ component.planning.available_vs_justified|separate_with_space }}</td>
                             </tr>
                         {% empty %}
-                            <tr><td colspan="3" class="text-center">{% translate 'No data' %}</td></tr>
+                            <tr><td colspan="7" class="text-center">{% translate 'No data' %}</td></tr>
                         {% endfor %}
                         </tbody>
                     </table>
@@ -129,17 +137,16 @@
                 <div class="card-header"><h3 class="card-title">{% translate 'Supporting documents' %}</h3></div>
                 <div class="card-body table-responsive">
                     <table class="table table-striped table-sm">
-                        <thead><tr><th>{% translate 'Document reference' %}</th><th>{% translate 'Document type' %}</th><th>{% translate 'Document date' %}</th><th>{% translate 'Total amount justified' %}</th></tr></thead>
+                        <thead><tr><th>{% translate 'DRF reference' %}</th><th>{% translate 'DRF date' %}</th><th>{% translate 'Total amount justified' %}</th></tr></thead>
                         <tbody>
                         {% for doc in supporting_documents %}
                             <tr>
                                 <td><a href="{% url 'financial:supporting_document_detail' doc.pk %}">{{ doc.reference }}</a></td>
-                                <td>{{ doc.get_document_type_display }}</td>
                                 <td>{{ doc.document_date }}</td>
                                 <td>{{ doc.total_justified_amount|separate_with_space }}</td>
                             </tr>
                         {% empty %}
-                            <tr><td colspan="4" class="text-center">{% translate 'No data' %}</td></tr>
+                            <tr><td colspan="3" class="text-center">{% translate 'No data' %}</td></tr>
                         {% endfor %}
                         </tbody>
                     </table>

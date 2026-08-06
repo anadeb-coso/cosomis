@@ -4184,3 +4184,123 @@ msgstr "Indicateurs clés"
 #: .\financial\templates\components\confirm_delete.html
 msgid "The following related records will also be deleted:"
 msgstr "Les enregistrements liés suivants seront également supprimés :"
+
+#: .\financial\models\financial.py
+msgid "Cash"
+msgstr "Espèce"
+
+#: .\subprojects\models.py
+msgid "Credits/Grants"
+msgstr "Crédits & Dons"
+
+#: .\financial\models\supporting_document.py
+msgid "DRF reference"
+msgstr "Référence de la DRF"
+
+#: .\financial\models\supporting_document.py
+msgid "DRF date"
+msgstr "Date de la DRF"
+
+#: .\financial\models\financial.py
+msgid "Related disbursements"
+msgstr "Décaissements liés"
+
+#: .\financial\models\supporting_document.py
+msgid "Supporting document activity file"
+msgstr "Fichier justificatif d'activité"
+
+#: .\financial\models\supporting_document.py
+msgid "Supporting document activity files"
+msgstr "Fichiers justificatifs d'activité"
+
+#: .\financial\templates\supporting_document_add.html
+msgid "Add another activity line"
+msgstr "Ajouter une autre ligne d'activité"
+
+#: .\financial\templates\supporting_document_detail.html
+msgid "Add a file"
+msgstr "Ajouter un fichier"
+
+#: .\financial\templates\supporting_document_detail.html
+msgid "Files"
+msgstr "Fichiers"
+
+#: .\financial\views_supporting_document.py
+msgid "Delete file"
+msgstr "Supprimer le fichier"
+
+#: .\financial\templates\financial_dashboard.html
+msgid "Remaining amount to disburse for the request"
+msgstr "Montant restant à décaisser de la demande"
+
+#: .\financial\views_dashboard.py
+msgid "Requested"
+msgstr "Demandé"
+
+#: .\financial\views_dashboard.py
+msgid "Disbursed"
+msgstr "Décaissé"
+
+#: .\financial\views_dashboard.py
+msgid "Planned"
+msgstr "Planifié"
+
+#: .\financial\views_dashboard.py
+msgid "Planned amount"
+msgstr "Montant planifié"
+
+#: .\financial\templates\project_ida_detail.html
+msgid "Amount available on the main account"
+msgstr "Montant disponible sur le compte principal"
+
+#: .\financial\templates\project_ida_detail.html
+msgid "Planned amount (PTBA)"
+msgstr "Montant total planifié (PTBA)"
+
+#: .\financial\templates\project_ida_detail.html
+msgid "Available amount (vs. plan)"
+msgstr "Montant total disponible (par rapport au planning)"
+
+#: .\financial\templates\project_ida_detail.html
+msgid "Available amount (vs. justified)"
+msgstr "Montant total disponible (par rapport au montant justifié)"
+
+#: .\financial\templates\category_add.html
+msgid "Parent (leave blank for a Composante)"
+msgstr "Parent (laisser vide pour une Composante)"
+
+#: .\financial\templates\category_add.html
+msgid "Add another component"
+msgstr "Ajouter un autre composante"
+
+#: .\financial\templates\annual_work_plan_detail.html
+msgid "Import"
+msgstr "Importer"
+
+#: .\financial\templates\annual_work_plan_detail.html
+msgid "Import activities"
+msgstr "Importer des activités"
+
+#: .\financial\templates\annual_work_plan_detail.html
+msgid "Excel file (.xlsx) with columns: Composante, Libellé, Montant, Cible(s)."
+msgstr "Fichier Excel (.xlsx) avec les colonnes : Composante, Libellé, Montant, Cible(s)."
+
+#: .\financial\views_ptba.py
+msgid "No file was uploaded."
+msgstr "Aucun fichier n'a été envoyé."
+
+#: .\financial\views_ptba.py
+msgid "Import complete: %(created)s created, %(updated)s updated, %(skipped)s skipped."
+msgstr "Import terminé : %(created)s créé(s), %(updated)s mis à jour, %(skipped)s ignoré(s)."
+
+#: .\financial\templates\annual_work_plan_sheet.html
+msgid "Activities sheet"
+msgstr "Feuille des activités"
+
+#: .\financial\templates\annual_work_plan_sheet.html
+msgid "Back to PTBA"
+msgstr "Retour au PTBA"
+
+#: .\financial\views_ptba.py
+msgid "Activities saved."
+msgstr "Activités enregistrées."

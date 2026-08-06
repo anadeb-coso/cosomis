@@ -1,6 +1,35 @@
 {% extends 'layouts/base.html' %}
 {% load static i18n custom_tags %}
 
+{% block extracss %}
+    {{ block.super }}
+    <style>
+        /* select2's default rendering truncates long option labels with an
+           ellipsis - the Component select needs its full text visible so the
+           chosen composante/sous-composante is unambiguous. */
+        #activity-lines-body .select2-container,
+        #activity-line-empty-template .select2-container { width: 100% !important; min-width: 220px; }
+        #activity-lines-body .select2-selection__rendered,
+        #activity-line-empty-template .select2-selection__rendered {
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            word-break: break-word;
+        }
+        #activity-lines-body .select2-selection--single,
+        #activity-line-empty-template .select2-selection--single {
+            height: auto !important;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+        }
+        #activity-lines-body .select2-selection--single .select2-selection__arrow,
+        #activity-line-empty-template .select2-selection--single .select2-selection__arrow {
+            height: 100% !important;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
 {% include 'components/financial_menu.html' with active_menu='ptba' %}
     <div class="row">
@@ -9,6 +38,7 @@
                 <div class="card-header">
                     <h3 class="card-title">{{ annual_work_plan.name }} ({{ annual_work_plan.period }})</h3>
                     <div class="card-tools">
+                        <a class="btn btn-success btn-sm" href="{% url 'financial:annual_work_plan_activity_sheet' annual_work_plan.pk %}"><i class="fas fa-table"></i> {% translate 'Activities sheet' %}</a>
                         <a class="btn btn-outline-primary btn-sm" href="{% url 'financial:annual_work_plan_export' %}"><i class="fas fa-file-excel"></i> {% translate 'Export' %}</a>
                         <a class="btn btn-secondary btn-sm" href="{% url 'financial:annual_work_plan_list' %}">{% translate 'Back to list' %}</a>
                     </div>
@@ -26,13 +56,73 @@
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">{% translate 'Activities' %}</h3>
+                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
                     <div class="card-tools">
-                        {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
-                        <a class="btn btn-success btn-sm" target="_blank" href="{% url 'financial:activity_create' annual_work_plan.pk %}"><i class="fas fa-plus"></i> {% translate 'Add an activity' %}</a>
-                        {% endif %}
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-toggle="modal" data-target="#activity-import-modal"><i class="fas fa-file-upload"></i> {% translate 'Import' %}</button>
                     </div>
+                    {% endif %}
                 </div>
                 <div class="card-body table-responsive">
+                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                    <form method="POST" action="{% url 'financial:annual_work_plan_detail' annual_work_plan.pk %}" id="activity-formset-form">
+                        {% csrf_token %}
+                        {{ formset.management_form }}
+                        {% if formset.non_form_errors %}
+                            <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+                        {% endif %}
+                        <table class="table table-striped table-sm">
+                            <thead>
+                            <tr>
+                                <th>{% translate 'Label' %}</th>
+                                <th>{% translate 'Component' %}</th>
+                                <th>{% translate 'Amount' %}</th>
+                                <th>{% translate 'Target(s)' %}</th>
+                                <th>{% translate 'Justified amount' %}</th>
+                                <th>{% translate 'Balance to justify' %}</th>
+                                <th>{% translate 'Delete' %}</th>
+                            </tr>
+                            </thead>
+                            <tbody id="activity-lines-body">
+                            {% for line_form in formset %}
+                                <tr>
+                                    {% for hidden in line_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                    <td>{{ line_form.name }}{{ line_form.name.errors }}</td>
+                                    <td>{{ line_form.component }}{{ line_form.component.errors }}</td>
+                                    <td>{{ line_form.amount }}{{ line_form.amount.errors }}</td>
+                                    <td>{{ line_form.target }}{{ line_form.target.errors }}</td>
+                                    <td>{% if line_form.instance.pk %}{{ line_form.instance.justified_amount|separate_with_space }}{% else %}-{% endif %}</td>
+                                    <td class="{% if line_form.instance.pk and line_form.instance.balance_to_justify < 0 %}text-danger{% elif line_form.instance.pk %}text-success{% endif %}">{% if line_form.instance.pk %}{{ line_form.instance.balance_to_justify|separate_with_space }}{% else %}-{% endif %}</td>
+                                    <td>{% if line_form.instance.pk %}{{ line_form.DELETE }}{% endif %}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="7" class="text-center">{% translate 'No data' %}</td></tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                        <button type="button" id="add-activity-line" class="btn btn-outline-primary btn-sm mb-3">
+                            <i class="fas fa-plus"></i> {% translate 'Add another activity line' %}
+                        </button>
+                        {% comment %}
+                        A <script type="text/template"> is inert to the browser/jQuery - unlike a hidden
+                        <div>, its <select> is never picked up by the global $("select").select2() init
+                        in base.html, so a cloned row never carries a stale, non-functional select2 widget
+                        alongside the freshly-initialized one.
+                        {% endcomment %}
+                        <script type="text/template" id="activity-line-empty-template">
+                                <tr>
+                                    {% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                    <td>{{ formset.empty_form.name }}{{ formset.empty_form.name.errors }}</td>
+                                    <td>{{ formset.empty_form.component }}{{ formset.empty_form.component.errors }}</td>
+                                    <td>{{ formset.empty_form.amount }}{{ formset.empty_form.amount.errors }}</td>
+                                    <td>{{ formset.empty_form.target }}{{ formset.empty_form.target.errors }}</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td></td>
+                                </tr>
+                        </script>
+                        <button type="submit" class="btn btn-primary float-right">{% translate 'Submit' %}</button>
+                    </form>
+                    {% else %}
                     <table class="table table-striped table-sm">
                         <thead>
                         <tr>
@@ -42,7 +132,6 @@
                             <th>{% translate 'Target(s)' %}</th>
                             <th>{% translate 'Justified amount' %}</th>
                             <th>{% translate 'Balance to justify' %}</th>
-                            <th width="12%">{% translate 'Action' %}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -54,24 +143,77 @@
                                 <td>{{ activity.target|default_if_none:'-' }}</td>
                                 <td>{{ activity.justified_amount|separate_with_space }}</td>
                                 <td class="{% if activity.balance_to_justify < 0 %}text-danger{% else %}text-success{% endif %}">{{ activity.balance_to_justify|separate_with_space }}</td>
-                                <td>
-                                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
-                                    <a href="{% url 'financial:activity_update' activity.pk %}" style="font-size: 9px !important;" target="_blank" class="btn btn-primary btn-xs" title="{% translate 'Edit' %}"><i class="fa fa-edit"></i></a>
-                                    {% endif %}
-                                    {% if user.is_superuser or user|has_group:"Financial" %}
-                                    <a href="{% url 'financial:activity_delete' activity.pk %}" style="font-size: 9px !important;" class="btn btn-danger btn-xs" title="{% translate 'Delete' %}"><i class="fa fa-trash"></i></a>
-                                    {% endif %}
-                                </td>
                             </tr>
                         {% empty %}
-                            <tr><td colspan="7" class="text-center">{% translate 'No data' %}</td></tr>
+                            <tr><td colspan="6" class="text-center">{% translate 'No data' %}</td></tr>
                         {% endfor %}
                         </tbody>
                     </table>
+                    {% endif %}
                 </div>
             </div>
 
             {% include 'components/history_panel.html' with target=annual_work_plan %}
         </div>
     </div>
+
+    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+    <div class="modal fade" id="activity-import-modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form method="POST" action="{% url 'financial:annual_work_plan_activity_import' annual_work_plan.pk %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title">{% translate 'Import activities' %}</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>{% translate 'Excel file (.xlsx) with columns: Composante, Libellé, Montant, Cible(s).' %}</p>
+                        <input type="file" name="file" accept=".xlsx" class="form-control" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">{% translate 'Cancel' %}</button>
+                        <button type="submit" class="btn btn-primary">{% translate 'Import' %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            function formatAmount(raw) {
+                if (!raw) { return raw; }
+                var cleaned = String(raw).replace(/\s/g, '');
+                var parts = cleaned.split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+                return parts.join('.');
+            }
+
+            function unformatAmount(raw) {
+                return raw ? String(raw).replace(/[\s ]/g, '') : raw;
+            }
+
+            $('.amount-field').each(function () { $(this).val(formatAmount($(this).val())); });
+            $('#activity-lines-body').on('focus', '.amount-field', function () { $(this).val(unformatAmount($(this).val())); });
+            $('#activity-lines-body').on('blur', '.amount-field', function () { $(this).val(formatAmount($(this).val())); });
+            $('#activity-formset-form').on('submit', function () {
+                $(this).find('.amount-field').each(function () { $(this).val(unformatAmount($(this).val())); });
+            });
+
+            $('#add-activity-line').on('click', function () {
+                var $totalForms = $('#id_activity_set-TOTAL_FORMS');
+                var index = parseInt($totalForms.val(), 10);
+                var rawHtml = document.getElementById('activity-line-empty-template').innerHTML.replace(/__prefix__/g, index);
+                var $newRow = $(rawHtml);
+                $('#activity-lines-body').append($newRow);
+                $totalForms.val(index + 1);
+                $newRow.find('select').select2();
+            });
+        });
+    </script>
 {% endblock %}

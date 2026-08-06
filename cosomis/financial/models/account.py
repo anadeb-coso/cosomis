@@ -54,13 +54,15 @@ class Account(ExternalIdMixin, SoftDeleteMixin, BaseModel):
         super().clean()
 
     def balance_breakdown(self, year=None):
-        """Full breakdown behind §2.14 "Soldes des comptes": total received, received
-        (executed only), total sent, sent (executed only), and returned to sender -
-        matching the reference workbook's "Soldes des comptes" sheet columns exactly.
+        """Full breakdown behind §2.14 "Soldes des comptes", matching the reference
+        workbook's "Soldes des comptes" sheet columns exactly: total received,
+        total sent, returned to sender, and available balance.
 
-        "Total" = every non-cancelled transfer (pending + executed) - i.e. what's
-        booked/in the pipeline. "(executed)" = only settled transfers, which is what
-        `available_balance` is computed from.
+        For a PROJECT-type account, "total received" is the total amount
+        disbursed for the project (there's no bank transfer *into* the project
+        account in this workbook - money flows out from there) rather than
+        incoming bank transfers. For every other actor type, "total received"
+        is the sum of bank transfers received.
 
         `direction` only labels *why* a transfer happened (forward disbursement vs.
         contract-cancellation return) - the actual money movement is always
@@ -68,44 +70,38 @@ class Account(ExternalIdMixin, SoftDeleteMixin, BaseModel):
         received/sent: a RETURN transfer is an outflow for its `sender` and an
         inflow for its `recipient`, exactly like a FORWARD one. `returned_to_sender`
         isolates the RETURN-direction outflows specifically (the amount this
-        account has given back to whoever originally sent it funds)."""
+        account has given back to whoever originally sent it funds).
+
+        `available_balance` = total received - total sent (simplified - there is
+        no more pending/executed/cancelled distinction now that BankTransfer has
+        no status field)."""
         from django.db.models import Sum
-        from financial.models.financial import BankTransfer, DisbursementRequest, DisbursementRequestValidation
+        from financial.models.financial import BankTransfer, Disbursement
 
-        executed = BankTransfer.Status.EXECUTED
-        cancelled = BankTransfer.Status.CANCELLED
-
-        received_qs = BankTransfer.objects.filter(recipient=self).exclude(status=cancelled)
-        sent_qs = BankTransfer.objects.filter(sender=self).exclude(status=cancelled)
-        returned_qs = BankTransfer.objects.filter(sender=self, direction=BankTransfer.Direction.RETURN, status=executed)
+        sent_qs = BankTransfer.objects.filter(sender=self)
+        returned_qs = BankTransfer.objects.filter(sender=self, direction=BankTransfer.Direction.RETURN)
         if year:
-            received_qs = received_qs.filter(transfer_date__year=year)
             sent_qs = sent_qs.filter(transfer_date__year=year)
             returned_qs = returned_qs.filter(transfer_date__year=year)
-
-        total_received = received_qs.aggregate(total=Sum('amount_transferred'))['total'] or 0
-        received_executed = received_qs.filter(status=executed).aggregate(total=Sum('amount_transferred'))['total'] or 0
         total_sent = sent_qs.aggregate(total=Sum('amount_transferred'))['total'] or 0
-        sent_executed = sent_qs.filter(status=executed).aggregate(total=Sum('amount_transferred'))['total'] or 0
         returned_to_sender = returned_qs.aggregate(total=Sum('amount_transferred'))['total'] or 0
 
-        available_balance = received_executed - sent_executed
-
         if self.account_type == self.AccountType.PROJECT:
-            requests_qs = DisbursementRequest.objects.all()
+            disbursements_qs = Disbursement.objects.all()
             if year:
-                requests_qs = requests_qs.filter(requested_date__year=year)
-            available_balance += DisbursementRequestValidation.objects.filter(
-                disbursement_request__in=requests_qs
-            ).aggregate(total=Sum('amount_validated'))['total'] or 0
+                disbursements_qs = disbursements_qs.filter(disbursement_date__year=year)
+            total_received = disbursements_qs.aggregate(total=Sum('amount_disbursed'))['total'] or 0
+        else:
+            received_qs = BankTransfer.objects.filter(recipient=self)
+            if year:
+                received_qs = received_qs.filter(transfer_date__year=year)
+            total_received = received_qs.aggregate(total=Sum('amount_transferred'))['total'] or 0
 
         return {
             'total_received': total_received,
-            'received_executed': received_executed,
             'total_sent': total_sent,
-            'sent_executed': sent_executed,
             'returned_to_sender': returned_to_sender,
-            'available_balance': available_balance,
+            'available_balance': total_received - total_sent,
         }
 
     def available_balance(self, year=None):
@@ -113,9 +109,9 @@ class Account(ExternalIdMixin, SoftDeleteMixin, BaseModel):
 
     def allocation_summary(self, year=None):
         """Amount still owed to this account based on its administrative-level/CVD
-        allocation (§2.14) vs. what's already been transferred to it (executed bank
-        transfers) - None if this account isn't linked to an administrative level
-        or a CVD (allocations are never made directly to other actor types)."""
+        allocation (§2.14) vs. what's already been transferred to it - None if
+        this account isn't linked to an administrative level or a CVD
+        (allocations are never made directly to other actor types)."""
         from django.db.models import Sum
         from financial.models.allocation import AdministrativeLevelAllocation
 
@@ -130,7 +126,7 @@ class Account(ExternalIdMixin, SoftDeleteMixin, BaseModel):
             allocation_qs = allocation_qs.filter(allocation_date__year=year)
 
         allocated_amount = allocation_qs.aggregate(total=Sum('amount'))['total'] or 0
-        transferred_amount = self.balance_breakdown(year=year)['received_executed']
+        transferred_amount = self.balance_breakdown(year=year)['total_received']
         return {
             'allocated_amount': allocated_amount,
             'transferred_amount': transferred_amount,

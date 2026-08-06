@@ -15,7 +15,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row justify-content-center">
-                        <div class="col-9">
+                        <div class="col-10">
                             <form method="POST">
                                 {% csrf_token %}
                                 {% if form_mixin.errors %}
@@ -35,6 +35,61 @@
                                     {% endif %}
                                     <div class="clearfix"></div>
                                 {% endfor %}
+
+                                <hr>
+                                <h5>{% translate 'Components' %} / {% translate 'Sub-components' %}</h5>
+                                {{ formset.management_form }}
+                                {% if formset.non_form_errors %}
+                                    <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+                                {% endif %}
+                                <div class="table-responsive">
+                                <table class="table table-sm" id="component-lines-table">
+                                    <thead>
+                                    <tr>
+                                        <th>{% translate 'Label' %}</th>
+                                        <th>{% translate 'Parent (leave blank for a Composante)' %}</th>
+                                        <th>{% translate 'Own amount' %}</th>
+                                        <th>{% translate 'Target(s)' %}</th>
+                                        <th>{% translate 'Credits/Grants' %}</th>
+                                        <th>{% translate 'Delete' %}</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="component-lines-body">
+                                    {% for line_form in formset %}
+                                        <tr>
+                                            {% for hidden in line_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                            <td>{{ line_form.name }}{{ line_form.name.errors }}</td>
+                                            <td>{{ line_form.parent }}{{ line_form.parent.errors }}</td>
+                                            <td>{{ line_form.amount }}{{ line_form.amount.errors }}</td>
+                                            <td>{{ line_form.target }}{{ line_form.target.errors }}</td>
+                                            <td class="component-fundings-cell">{{ line_form.fundings }}{{ line_form.fundings.errors }}</td>
+                                            <td>{% if line_form.instance.pk %}{{ line_form.DELETE }}{% endif %}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                                </div>
+                                <button type="button" id="add-component-line" class="btn btn-outline-primary btn-sm mb-3">
+                                    <i class="fas fa-plus"></i> {% translate 'Add another component' %}
+                                </button>
+                                {% comment %}
+                                A <script type="text/template"> is inert to the browser/jQuery - unlike a
+                                hidden <div>, its <select> elements are never picked up by the global
+                                $("select").select2() init in base.html, so a cloned row never carries a
+                                stale, non-functional select2 widget alongside the freshly-initialized one.
+                                {% endcomment %}
+                                <script type="text/template" id="component-line-empty-template">
+                                        <tr>
+                                            {% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                            <td>{{ formset.empty_form.name }}{{ formset.empty_form.name.errors }}</td>
+                                            <td>{{ formset.empty_form.parent }}{{ formset.empty_form.parent.errors }}</td>
+                                            <td>{{ formset.empty_form.amount }}{{ formset.empty_form.amount.errors }}</td>
+                                            <td>{{ formset.empty_form.target }}{{ formset.empty_form.target.errors }}</td>
+                                            <td class="component-fundings-cell">{{ formset.empty_form.fundings }}{{ formset.empty_form.fundings.errors }}</td>
+                                            <td></td>
+                                        </tr>
+                                </script>
+
                                 <button type="submit" class="btn btn-primary float-right">{% translate 'Submit' %}</button>
                             </form>
                         </div>
@@ -43,4 +98,50 @@
             </div>
         </div>
     </div>
+    {{ funding_meta|json_script:"funding-meta" }}
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var fundingMetaEl = document.getElementById('funding-meta');
+            var fundingMeta = fundingMetaEl ? JSON.parse(fundingMetaEl.textContent) : {};
+            var $project = $('#id_project');
+
+            function filterFundingsSelect($select) {
+                var projectId = $project.val();
+                var currentVals = $select.val() || [];
+                $select.find('option').each(function () {
+                    var meta = fundingMeta[$(this).val()];
+                    var allowed = !projectId || (meta && String(meta.project_id) === String(projectId));
+                    $(this).toggle(allowed);
+                    if (!allowed && currentVals.indexOf($(this).val()) !== -1) {
+                        $(this).prop('selected', false);
+                    }
+                });
+                $select.trigger('change.select2');
+            }
+
+            function filterAllFundingsSelects() {
+                $('.component-fundings-cell select').each(function () {
+                    filterFundingsSelect($(this));
+                });
+            }
+
+            $project.on('change', filterAllFundingsSelects);
+            filterAllFundingsSelects();
+
+            $('#add-component-line').on('click', function () {
+                var $totalForms = $('#id_component_set-TOTAL_FORMS');
+                var index = parseInt($totalForms.val(), 10);
+                var rawHtml = document.getElementById('component-line-empty-template').innerHTML.replace(/__prefix__/g, index);
+                var $newRow = $(rawHtml);
+                $('#component-lines-body').append($newRow);
+                $totalForms.val(index + 1);
+                $newRow.find('select').select2();
+                filterFundingsSelect($newRow.find('.component-fundings-cell select'));
+            });
+        });
+    </script>
 {% endblock %}

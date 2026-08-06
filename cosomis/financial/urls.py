@@ -27,9 +27,7 @@ urlpatterns = [
     path('bank-transfer/detail/<int:pk>/', views_bank_transfer.BankTransferDetailView.as_view(), name='bank_transfer_detail'), #The path of the detail of bank transfer
     path('bank-transfer/delete/<int:pk>/', views_bank_transfer.BankTransferDeleteView.as_view(), name='bank_transfer_delete'),
     path('bank-transfer/export/', views_bank_transfer.BankTransferExportView.as_view(), name='bank_transfer_export'),
-    path('bank-transfer/status/<int:pk>/', views_bank_transfer.BankTransferStatusUpdateView.as_view(), name='bank_transfer_status_update'),
-    path('bank-transfers/status/bulk/', views_bank_transfer.BankTransferBulkStatusUpdateView.as_view(), name='bank_transfer_bulk_status_update'),
-    
+
     path('disbursement-requests', views_disbursement_request.DisbursementRequestsListView.as_view(), name='disbursement_requests_list'),
     path('disbursement-request/create/', views_disbursement_request.DisbursementRequestCreateView.as_view(), name='disbursement_request_create'), 
     path('disbursement-request/update/<int:pk>/', views_disbursement_request.DisbursementRequestUpdateView.as_view(), name='disbursement_request_update'), 
@@ -98,7 +96,9 @@ urlpatterns = [
     path('ptba/update/<int:pk>/', views_ptba.AnnualWorkPlanUpdateView.as_view(), name='annual_work_plan_update'),
     path('ptba/delete/<int:pk>/', views_ptba.AnnualWorkPlanDeleteView.as_view(), name='annual_work_plan_delete'),
     path('ptba/detail/<int:pk>/', views_ptba.AnnualWorkPlanDetailView.as_view(), name='annual_work_plan_detail'),
+    path('ptba/<int:pk>/sheet/', views_ptba.AnnualWorkPlanActivitySheetView.as_view(), name='annual_work_plan_activity_sheet'),
     path('ptba/export/', views_ptba.AnnualWorkPlanExportView.as_view(), name='annual_work_plan_export'),
+    path('ptba/<int:pk>/activities/import/', views_ptba.AnnualWorkPlanActivityImportView.as_view(), name='annual_work_plan_activity_import'),
     path('ptba/<int:annual_work_plan_pk>/activity/create/', views_ptba.ActivityCreateView.as_view(), name='activity_create'),
     path('activity/update/<int:pk>/', views_ptba.ActivityUpdateView.as_view(), name='activity_update'),
     path('activity/delete/<int:pk>/', views_ptba.ActivityDeleteView.as_view(), name='activity_delete'),
@@ -109,4 +109,6 @@ urlpatterns = [
     path('supporting-document/delete/<int:pk>/', views_supporting_document.SupportingDocumentDeleteView.as_view(), name='supporting_document_delete'),
     path('supporting-document/detail/<int:pk>/', views_supporting_document.SupportingDocumentDetailView.as_view(), name='supporting_document_detail'),
     path('supporting-document/export/', views_supporting_document.SupportingDocumentExportView.as_view(), name='supporting_document_export'),
+    path('supporting-document-activity/<int:supporting_document_activity_pk>/file/create/', views_supporting_document.SupportingDocumentActivityFileCreateView.as_view(), name='supporting_document_activity_file_create'),
+    path('supporting-document-activity-file/delete/<int:pk>/', views_supporting_document.SupportingDocumentActivityFileDeleteView.as_view(), name='supporting_document_activity_file_delete'),
 ]

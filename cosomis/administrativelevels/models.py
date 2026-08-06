@@ -1,12 +1,10 @@
 from email.policy import default
 from django.db import models
-from cdd_client import CddClient
-from django.db.models.signals import post_save, post_delete
 from django.utils.translation import gettext_lazy as _
+from django.db.models import Q
 
 from financial.models.bank import Bank
 from cosomis.models_base import BaseModel, CustomQuerySet
-from no_sql_client import NoSQLClient
 from authentication.models import Facilitator
 
     
@@ -59,20 +57,71 @@ class AdministrativeLevel(BaseModel):
         """Method to get the list of the all subprojects"""
         return self.subproject_set.get_queryset().filter(subproject_type_designation="Subproject").get_actifs()
     
+    # def get_facilitator(self, projects_ids, is_stabilized=True, is_technical_facilitator=False):
+    #     """Anciennement : interrogeait la vue CouchDB `eadls`/_design/adl_village_filter/by_village_id
+    #     pour trouver le(s) facilitateur(s) "stabilisés" (validés côté terrain) gérant ce
+    #     village, en filtrant sur `representative.groups` ("CommunityFacilitator" /
+    #     "TechnicalFacilitator") et `representative.is_active`.
+
+    #     La base CouchDB `eadls` a été migrée vers Postgres côté GRM (`issue.models.Adl`), et
+    #     la nouvelle API inter-services GRM (`grm_client.py`) n'expose qu'une recherche de
+    #     facilitateur PAR EMAIL — pas de recherche inverse par village : impossible de
+    #     reproduire directement cette requête (option "b" envisagée, écartée faute
+    #     d'endpoint).
+
+    #     Solution retenue (option "a") : MIS possède déjà, dans sa propre base MySQL, la table
+    #     `AssignAdministrativeLevelToFacilitator` (via `assignadministrativeleveltofacilitator_set`)
+    #     qui est la source de vérité de l'affectation facilitateur <-> village. On l'utilise donc
+    #     pour retrouver le(s) facilitateur(s) "stabilisés" de ce village, en filtrant sur
+    #     `Facilitator.facilitator_type` ('technical_facilitator' / 'community_facilitator',
+    #     mêmes valeurs que côté CDD) pour reproduire la distinction Community/Technical
+    #     qu'apportait auparavant `representative.groups`.
+
+    #     Les appelants (`subprojects/models.py::get_facilitator`/`get_technical_facilitator`,
+    #     `subprojects/templatetags/custom_tags.py::get_facilitator_with_ids`) ne lisent que
+    #     `facilitator.name` / `.email` / `.phone`, déjà portés par le modèle Django
+    #     `Facilitator` (base `cdd`) résolu ci-dessous : aucun aller-retour vers l'API GRM
+    #     (`grm_client.get_facilitator_by_email`) n'est donc nécessaire ici, celle-ci n'apporterait
+    #     que des champs (ex. `representative.photo`) qu'aucun appelant n'utilise.
+    #     """
+    #     wanted_facilitator_type = 'technical_facilitator' if is_technical_facilitator else 'community_facilitator'
+    #     assigns = self.assignadministrativeleveltofacilitator_set.get_queryset().filter(
+    #         project_id__in=projects_ids, activated=True
+    #     ).order_by('-activated', '-created_date')
+
+    #     facilitator = None
+    #     if is_stabilized:
+    #         for assign in assigns:
+    #             candidate = assign.facilitator
+    #             if candidate and candidate.is_active and candidate.facilitator_type == wanted_facilitator_type:
+    #                 facilitator = candidate
+    #                 break
+
+    #     if facilitator:
+    #         return facilitator
+    #     elif is_technical_facilitator:
+    #         return None
+
+    #     for assign in assigns:
+    #         return assign.facilitator
+    #     return None
     def get_facilitator(self, projects_ids, is_stabilized=True, is_technical_facilitator=False):
+        
         facilitator = None
         if is_stabilized:
-            nsc = NoSQLClient()
-            eadls = nsc.get_db('eadls')
-            facilitators_stabilized = eadls.get_view_result(
-                "_design/adl_village_filter", "by_village_id", 
-                keys=[self.id], 
-                include_docs=True
-            )
-            if facilitators_stabilized:
-                for elt in [row["doc"] for row in facilitators_stabilized[:] if any(g for g in (["TechnicalFacilitator"] if is_technical_facilitator else ["CommunityFacilitator"]) if g in row["doc"]["representative"]["groups"]) and row["doc"]["representative"]["is_active"] == True]:
-                    facilitator = Facilitator.objects.using('cdd').filter(email=elt["representative"]["email"]).first()
-        
+            if is_technical_facilitator:
+                facilitator = Facilitator.objects.using('cdd').filter(facilitator_type='technical_facilitator', active=True).filter(
+                    Q(stabilization_administrative_ids__contains=[self.id])
+                    #   | 
+                    # Q(additional_administrative_ids__contains=[self.id])
+                ).first()
+            else:
+                facilitator = Facilitator.objects.using('cdd').filter(facilitator_type='community_facilitator', active=True).filter(
+                    Q(stabilization_administrative_ids__contains=[self.id])
+                    #   | 
+                    # Q(additional_administrative_ids__contains=[self.id])
+                ).first()
+
         if facilitator:
             return facilitator
         elif is_technical_facilitator:
@@ -204,22 +253,9 @@ class CVD(BaseModel):
         return self.get_name()
     
 
-def update_or_create_amd_couch(sender, instance, **kwargs):
-    print("test", instance.id, kwargs['created'])
-    client = CddClient()
-    if kwargs['created']:
-        couch_object_id = client.create_administrative_level(instance)
-        to_update = AdministrativeLevel.objects.filter(id=instance.id)
-        to_update.update(no_sql_db_id=couch_object_id)
-    else:
-        client.update_administrative_level(instance)
-
-def delete_amd_couch(sender, instance, **kwargs):
-    client = CddClient()
-    client.delete_administrative_level(instance)
-
-
-
-post_save.connect(update_or_create_amd_couch, sender=AdministrativeLevel)
-post_delete.connect(delete_amd_couch, sender=AdministrativeLevel) # POST-DELETE method to delete the administrativelevel in the couchdb
+# Anciens hooks `post_save`/`post_delete` -> CouchDB `administrative_levels` retirés : cette
+# base CouchDB était un simple miroir en écriture (via `CddClient` dans `cdd_client.py`), plus
+# lu par rien depuis que GRM lit désormais MIS (base `mis`) directement pour ses besoins
+# d'administrative levels. `cdd_client.py` est conservé (import à faire au cas par cas) mais
+# n'est plus branché automatiquement sur le cycle de vie de `AdministrativeLevel`.
 

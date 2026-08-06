@@ -7,6 +7,9 @@ from subprojects.models import Subproject, Project, SubprojectFile
 from django.db.models import Q, Prefetch, Count
 from django.utils.translation import gettext_lazy as _
 from cosomis.constants import STRUCTURE_NOT_START_STATUS, STRUCTURE_IN_PROGRESS_ALL_STATUS, STRUCTURE_COMPLETED_STATUS, STRUCTURE_COMPLETED_ALL_STATUS, STRUCTURE_IN_PROGRESS_STATUS
+from authentication.models import Facilitator
+from administrativelevels.models import AdministrativeLevel
+
 
 def insufficient_subprojects_status_to_excel(request):
     
@@ -33,6 +36,10 @@ def insufficient_subprojects_status_to_excel(request):
 
     project_name = request.GET.get("project_name", None)
     project  = Project.objects.filter(name=project_name).first()
+
+    subprojects = Subproject.objects.exclude(
+        component__id__in=[3,4,5] #COMPOSANTE 1.2, COMPOSANTE 1.2a, COMPOSANTE 1.2b
+    )
     
     file_query = Q()
     for elt in STRUCTURE_COMPLETED_ALL_STATUS:
@@ -45,7 +52,7 @@ def insufficient_subprojects_status_to_excel(request):
         file_query_for_subproject |= Q(subprojectfile__name__icontains=elt)
         file_query_for_subproject |= Q(subprojectfile__description__icontains=elt)
     
-    subprojects = Subproject.objects.filter(
+    subprojects = subprojects.filter(
         current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS
     ).get_actifs().order_by("id").prefetch_related(
         Prefetch('subprojectfile_set', queryset=SubprojectFile.objects.filter(
@@ -66,7 +73,7 @@ def insufficient_subprojects_status_to_excel(request):
         ), to_attr='photos')
     ).distinct()
     
-    subprojects_completed_lt_3_images = Subproject.objects.filter(
+    subprojects_completed_lt_3_images = subprojects.filter(
         current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS
     ).get_actifs().annotate(
         photo_count=Count(
@@ -84,7 +91,7 @@ def insufficient_subprojects_status_to_excel(request):
             distinct=True
         )
     ).filter(photo_count__lt=3)
-    subprojects_completed_gte_3_images = Subproject.objects.filter(
+    subprojects_completed_gte_3_images = subprojects.filter(
         current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS
     ).get_actifs().annotate(
         photo_count=Count(
@@ -111,7 +118,7 @@ def insufficient_subprojects_status_to_excel(request):
         file_query_in_progress |= Q(subprojectfile__description__icontains=elt)
 
     subprojects_in_progress = (
-        Subproject.objects
+        subprojects
         .filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS)
         .get_actifs()
         .annotate(
@@ -129,15 +136,15 @@ def insufficient_subprojects_status_to_excel(request):
     
     row_data = [
         # Total
-        Subproject.objects.get_actifs().count(),
+        subprojects.get_actifs().count(),
 
         # Nombre d'ouvrages achevés
-        Subproject.objects.filter(
+        subprojects.filter(
             current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS
         ).get_actifs().count(),
 
         # Nombre d'ouvrages en cours
-        Subproject.objects.filter(
+        subprojects.filter(
             current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS
         ).get_actifs().count(),
 
@@ -204,7 +211,7 @@ def insufficient_subprojects_status_to_excel(request):
     columns3 = ["Région", "Préfecture", "Commune", "Canton", "Village", "Type ouvrage", "Intitulé", "Composante"]
     ws3.append(columns3)
 
-    subprojects_completed_without_coords = Subproject.objects.filter(
+    subprojects_completed_without_coords = subprojects.filter(
         current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS
     ).filter(
         Q(latitude__isnull=True) | Q(latitude=0) | Q(latitude=0.0) | Q(longitude__isnull=True) | Q(longitude=0) | Q(longitude=0.0)
@@ -239,6 +246,64 @@ def insufficient_subprojects_status_to_excel(request):
         ws3.column_dimensions[get_column_letter(col)].width = 25
 
     # ================================== End - No Coords ===================================
+
+
+    # ================================== Par FT ===================================
+
+    ws4 = wb.create_sheet(title="Situation par FT")
+    columns4 = ["FT", "Nombre de Cantons (de stabilisation + additionnel)", "Nombre d'ouvrages achevés", "Nombre d'ouvrages achevés sans 3 images achevées",  "Pourcentage d'ouvrages achevés sans 3 images achevées", "Nombre d'ouvrages achevés sans coords", "Pourcentage d'ouvrages achevés sans coords", "Pourcentage global"]
+    ws4.append(columns4)
+    f_subprojects_completed__count = None
+    f_subprojects_completed_lt_3_images__count = None
+    f_subprojects_completed_without_coords__count = None
+    for f in Facilitator.objects.using('cdd').filter(facilitator_type='technical_facilitator', active=True):
+        _ids = list(set(
+            (f.stabilization_administrative_ids or [])# + (f.additional_administrative_ids or [])
+        ))
+
+        f_subprojects_completed_lt_3_images__count = subprojects_completed_lt_3_images.filter(
+            Q(location_subproject_realized__id__in=_ids) | 
+            Q(location_subproject_realized__parent__id__in=_ids) | 
+            Q(canton__id__in=_ids)
+        ).count()
+        f_subprojects_completed__count = subprojects.filter(
+            current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS
+        ).filter(
+            Q(location_subproject_realized__id__in=_ids) | 
+            Q(location_subproject_realized__parent__id__in=_ids) | 
+            Q(canton__id__in=_ids)
+        ).get_actifs().count()
+
+        _cantons__count = len(set(list(AdministrativeLevel.objects.filter(
+            id__in=_ids
+        ).values_list('parent_id', flat=True))))
+
+        _percent_completed_3_images = (f_subprojects_completed__count-f_subprojects_completed_lt_3_images__count)/f_subprojects_completed__count if f_subprojects_completed__count else 0
+
+        f_subprojects_completed_without_coords__count = subprojects_completed_without_coords.filter(
+            Q(location_subproject_realized__id__in=_ids) | 
+            Q(location_subproject_realized__parent__id__in=_ids) | 
+            Q(canton__id__in=_ids)
+        ).count()
+        
+        _percent_completed_coords = (f_subprojects_completed__count-f_subprojects_completed_without_coords__count)/f_subprojects_completed__count if f_subprojects_completed__count else 0
+
+        _percent_completed = (((f_subprojects_completed__count-f_subprojects_completed_lt_3_images__count)+(f_subprojects_completed__count-f_subprojects_completed_without_coords__count))/2)/f_subprojects_completed__count if f_subprojects_completed__count else 0
+
+
+        ws4.append([
+            f.name,
+            _cantons__count,
+            f_subprojects_completed__count,
+            f_subprojects_completed_lt_3_images__count, float("%.2f" % ((_percent_completed_3_images if _percent_completed_3_images else 0)*100)),
+            f_subprojects_completed_without_coords__count, float("%.2f" % ((_percent_completed_coords if _percent_completed_coords else 0)*100)),
+            float("%.2f" % ((_percent_completed if _percent_completed else 0)*100))
+        ])
+
+    for col in range(1, len(columns4) + 1):
+        ws4.column_dimensions[get_column_letter(col)].width = 25
+
+    # ================================== End - Par FT ===================================
 
 
     wb.save(response)

@@ -5,7 +5,7 @@ from django.views import generic
 from cosomis.mixins import PageMixin, SoftDeleteViewMixin
 from django.utils.translation import gettext_lazy as _
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Sum
 
 
 from financial.models.financial import Disbursement, DisbursementRequest, DisbursementRequestValidation
@@ -249,8 +249,18 @@ class DisbursementRequestValidationUpdateView(PageMixin, LoginRequiredMixin, Acc
         form = DisbursementRequestValidationForm(data=request.POST, instance=instance)
         if form.is_valid():
             validation = form.save(commit=False)
+            disbursement_request = validation.disbursement_request
+            total_other_rounds = disbursement_request.validations.exclude(pk=validation.pk).aggregate(
+                total=Sum('amount_validated')
+            )['total'] or 0
+            prospective_total = total_other_rounds + validation.amount_validated
+            validation.status_after = (
+                DisbursementRequest.Status.FULLY_VALIDATED
+                if prospective_total >= (disbursement_request.amount_requested or 0)
+                else DisbursementRequest.Status.PARTIALLY_VALIDATED
+            )
             validation.save(user=request.user)
-            _sync_request_status(validation.disbursement_request, user=request.user)
+            _sync_request_status(disbursement_request, user=request.user)
             return redirect('financial:disbursement_request_detail', pk=validation.disbursement_request_id)
         self.form_mixin = form
         return self.get(request, *args, **kwargs)

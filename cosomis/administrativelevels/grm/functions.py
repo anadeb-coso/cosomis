@@ -1,56 +1,30 @@
 from administrativelevels.models import AdministrativeLevel
+import grm_client
 
-def get_choices(query_result, empty_choice=True):
-    choices = [(i['id'], i['name']) for i in query_result]
+# NB : `get_administrative_region_choices` et `get_administrative_regions_by_level`
+# (anciens helpers CouchDB `administrative_levels`, zéro appelant) ont été supprimés lors de
+# la migration vers l'API inter-services GRM.
+
+
+def get_choices(query_result, empty_choice=True, id_field='id'):
+    choices = [(i[id_field], i['name']) for i in query_result]
     if empty_choice:
         choices = [('', '')] + choices
     return choices
 
-def get_administrative_region_choices(adl_db, empty_choice=True):
-    country_id = adl_db.get_query_result(
-        {
-            "type": 'administrative_level',
-            "parent_id": None,
-        }
-    )[:][0]['administrative_id']
-    query_result = adl_db.get_query_result(
-        {
-            "type": 'administrative_level',
-            "parent_id": country_id,
-        }
-    )
-    choices = list()
-    for i in query_result:
-        choices.append((i['administrative_id'], f"{i['name']}"))
-    if empty_choice:
-        choices = [('', '')] + choices
-    return choices
 
-def get_administrative_regions_by_level(adl_db, level=None):
-    filters = {"type": 'administrative_level'}
-    if level:
-        filters['administrative_level'] = level
-    else:
-        filters['parent_id'] = None
-    parent_id = adl_db.get_query_result(filters)[:][0]['administrative_id']
-    data = adl_db.get_query_result(
-        {
-            "type": 'administrative_level',
-            "parent_id": parent_id,
-        }
-    )
-    data = [doc for doc in data]
-    return data
+def get_issue_category_choices(empty_choice=True):
+    """Remplace la requête Mango CouchDB `grm` `{"type": "issue_category"}` : passe désormais
+    par l'API inter-services GRM (`grm_client.get_issue_categories`). Les dicts renvoyés
+    portent `legacy_id` (ancien id CouchDB numérique conservé côté Postgres GRM comme clé de
+    référence) plutôt que `id`, d'où le `id_field='legacy_id'`."""
+    return get_choices(grm_client.get_issue_categories(), empty_choice, id_field='legacy_id')
 
 
-def get_issue_category_choices(grm_db, empty_choice=True):
-    query_result = grm_db.get_query_result({"type": 'issue_category'})
-    return get_choices(query_result, empty_choice)
-
-
-def get_issue_status_choices(grm_db, empty_choice=True):
-    query_result = grm_db.get_query_result({"type": 'issue_status'})
-    return get_choices(query_result, empty_choice)
+def get_issue_status_choices(empty_choice=True):
+    """Remplace la requête Mango CouchDB `grm` `{"type": "issue_status"}`, voir
+    `get_issue_category_choices` ci-dessus."""
+    return get_choices(grm_client.get_issue_statuses(), empty_choice, id_field='legacy_id')
 
 
 def get_administrative_level_descendants_using_mis(adl_db, parent_id, ids, user=None):

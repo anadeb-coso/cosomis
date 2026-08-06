@@ -193,6 +193,15 @@ DIAGNOSTIC_MAP_ISO_CODE = env('DIAGNOSTIC_MAP_ISO_CODE')
 
 
 # CouchDB
+# NB : `NO_SQL_USER`/`NO_SQL_PASS`/`NO_SQL_URL`/`COUCHDB_DATABASE_ADMINISTRATIVE_LEVEL` sont
+# conservés : le client `NoSQLClient`/`cloudant` reste utilisé ailleurs dans le code (ex.
+# `cosomis/utils.py`, `cosomis/utils_generate_cvd.py`, `administrativelevels/views_components.py`,
+# `subprojects/management/commands/sync_*`, `cdd_client.py`) pour des bases CouchDB par
+# facilitateur sans rapport avec `eadls`/`grm`/`grm_attachments`/`adb`.
+# `COUCHDB_DATABASE` (eadls), `COUCHDB_GRM_DATABASE` (grm), `COUCHDB_ATTACHMENT_DATABASE` (adb)
+# et `COUCHDB_GRM_ATTACHMENT_DATABASE` (grm_attachments) ont eux été retirés : plus aucun
+# appelant depuis la migration de `eadls`/`grm` vers l'API inter-services GRM
+# (`grm_client.py`) ; `adb`/`grm_attachments` n'avaient déjà plus aucun appelant.
 
 NO_SQL_USER = env('NO_SQL_USER')
 
@@ -200,15 +209,7 @@ NO_SQL_PASS = env('NO_SQL_PASS')
 
 NO_SQL_URL = env('NO_SQL_URL')
 
-COUCHDB_DATABASE = env('COUCHDB_DATABASE')
-
 COUCHDB_DATABASE_ADMINISTRATIVE_LEVEL = env('COUCHDB_DATABASE_ADMINISTRATIVE_LEVEL')
-
-COUCHDB_ATTACHMENT_DATABASE = env('COUCHDB_ATTACHMENT_DATABASE')
-
-COUCHDB_GRM_DATABASE = env('COUCHDB_GRM_DATABASE')
-
-COUCHDB_GRM_ATTACHMENT_DATABASE = env('COUCHDB_GRM_ATTACHMENT_DATABASE')
 
 
 # S3
@@ -241,7 +242,7 @@ REST_AUTH_REGISTER_SERIALIZERS = {
 }
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=3650),  # 10 ans (365 jours × 10)
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=3650),  # 10 ans aussi si besoin
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=3650),  # 10 ans
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
     'UPDATE_LAST_LOGIN': False,
@@ -263,6 +264,12 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50 MB, adjust as needed
 CDD_URL_BASE = env('CDD_URL_BASE')
 MIS_URL_BASE = env('MIS_URL_BASE')
 GRM_URL_BASE = env('GRM_URL_BASE')
+
+# Secret partagé pour l'API inter-services GRM (mêmes endpoints/valeur que l'intégration
+# GRM -> CDD existante : GRM authentication/functions.py::update_user_adl_on_cdd_app,
+# CDD authentication/api/facilitators/update-user-adls/). Étendu ici pour permettre à MIS
+# d'appeler les endpoints GRM /api/service/... (grm_client.py).
+GRM_SECRET_KEY_GENRATE = env('GRM_SECRET_KEY_GENRATE')
 
 CSRF_TRUSTED_ORIGINS = [
     CDD_URL_BASE, MIS_URL_BASE, GRM_URL_BASE,

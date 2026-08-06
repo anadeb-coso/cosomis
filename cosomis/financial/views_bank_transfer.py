@@ -1,5 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views import generic
 from cosomis.mixins import PageMixin, SoftDeleteViewMixin
@@ -16,7 +16,6 @@ from usermanager.permissions import (
 from financial.forms import BankTransferForm
 from financial.list_filters import apply_entity_filters, build_filter_context
 from financial.exports import export_bank_transfer
-from financial.aggregations import bank_transfer_cascade_meta, allocation_cascade_meta
 # Create your views here.
 
 
@@ -28,13 +27,14 @@ def _filtered_bank_transfers(get):
         qs = qs.filter(
             Q(sender__name__icontains=search_upper) |
             Q(recipient__name__icontains=search_upper) |
-            Q(project__name__icontains=search_upper) |
             Q(transfer_date__icontains=search_upper) |
             Q(description__icontains=search_upper) |
             Q(motif__icontains=search_upper) |
             Q(amount_transferred__icontains=search_upper)
         )
-    qs = apply_entity_filters(qs, get, project='project_id')
+    project_id = get.get('project')
+    if project_id:
+        qs = qs.filter(disbursements__disbursement_request__project_id=project_id).distinct()
     sender_id = get.get('sender')
     if sender_id:
         qs = qs.filter(sender_id=sender_id)
@@ -44,9 +44,6 @@ def _filtered_bank_transfers(get):
     level = get.get('level')
     if level:
         qs = qs.filter(level=level)
-    status = get.get('status')
-    if status:
-        qs = qs.filter(status=status)
     direction = get.get('direction')
     if direction:
         qs = qs.filter(direction=direction)
@@ -79,8 +76,6 @@ class BankTransferCreateView(PageMixin, LoginRequiredMixin, AccountantPermission
             context['form'] = self.form_mixin
         else:
             context['form'] = BankTransferForm()
-        context['disbursement_meta'], context['funding_meta'] = bank_transfer_cascade_meta()
-        context['allocation_meta'] = allocation_cascade_meta()
         return context
 
     def post(self, request, *args, **kwargs):
@@ -88,6 +83,7 @@ class BankTransferCreateView(PageMixin, LoginRequiredMixin, AccountantPermission
         if form.is_valid():
             obj = form.save(commit=False)
             obj.save(user=request.user)
+            form.save_m2m()
             return redirect('financial:bank_transfers_list')
         self.form_mixin = form
         return super(BankTransferCreateView, self).get(request, *args, **kwargs)
@@ -113,8 +109,6 @@ class BankTransferUpdateView(PageMixin, LoginRequiredMixin, AccountantPermission
             context['form'] = self.form_mixin
         else:
             context['form'] = BankTransferForm(instance=self.get_object())
-        context['disbursement_meta'], context['funding_meta'] = bank_transfer_cascade_meta()
-        context['allocation_meta'] = allocation_cascade_meta()
         return context
 
 
@@ -123,6 +117,7 @@ class BankTransferUpdateView(PageMixin, LoginRequiredMixin, AccountantPermission
         if form.is_valid():
             obj = form.save(commit=False)
             obj.save(user=request.user)
+            form.save_m2m()
             return redirect('financial:bank_transfers_list')
         self.form_mixin = form
         return super(BankTransferUpdateView, self).get(request, *args, **kwargs)
@@ -190,35 +185,3 @@ class BankTransferDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissionR
         context = super().get_context_data(**kwargs)
         context['cancel_url'] = reverse_lazy('financial:bank_transfers_list')
         return context
-
-
-class BankTransferStatusUpdateView(LoginRequiredMixin, AccountantPermissionRequiredMixin, generic.View):
-    """Quick inline status change from the transfers list, without opening the full edit form."""
-
-    def post(self, request, *args, **kwargs):
-        bank_transfer = get_object_or_404(BankTransfer, pk=kwargs['pk'])
-        status = request.POST.get('status')
-        if status in BankTransfer.Status.values:
-            bank_transfer.status = status
-            bank_transfer.save(user=request.user)
-        referer = request.META.get('HTTP_REFERER')
-        return redirect(referer or 'financial:bank_transfers_list')
-
-
-class BankTransferBulkStatusUpdateView(LoginRequiredMixin, AccountantPermissionRequiredMixin, generic.View):
-    """Change the status of every checked transfer from the transfers list in one
-    go - the confirmation itself happens client-side (see bank_transfer_list.html)
-    before this endpoint is ever hit."""
-
-    def post(self, request, *args, **kwargs):
-        status = request.POST.get('status')
-        ids = request.POST.getlist('selected_transfers')
-        if status in BankTransfer.Status.values and ids:
-            # Saved one by one (rather than a single queryset .update()) so each
-            # transfer's BaseModel.users_involved history records the change -
-            # .update() writes SQL directly and never calls save().
-            for bank_transfer in BankTransfer.objects.filter(pk__in=ids):
-                bank_transfer.status = status
-                bank_transfer.save(user=request.user)
-        referer = request.META.get('HTTP_REFERER')
-        return redirect(referer or 'financial:bank_transfers_list')

@@ -3,7 +3,7 @@ import json
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import generic
 from django.utils.translation import gettext_lazy as _
-from django.db.models import Sum, Count
+from django.db.models import Sum
 
 from cosomis.mixins import PageMixin
 from subprojects.models import Project
@@ -16,7 +16,6 @@ from financial.exports import export_dashboard_report
 
 # Fixed categorical hue order (never cycled/reassigned) - see CLAUDE.md dataviz conventions.
 CATEGORICAL_PALETTE = ['#2a78d6', '#1baf7a', '#eda100', '#008300', '#4a3aa7', '#e34948', '#e87ba4', '#eb6834']
-STATUS_COLORS = {'good': '#0ca30c', 'warning': '#fab219', 'serious': '#ec835a', 'critical': '#d03b3b'}
 
 
 class FinancialDashboardView(PageMixin, LoginRequiredMixin, generic.TemplateView):
@@ -93,15 +92,9 @@ class FinancialDashboardView(PageMixin, LoginRequiredMixin, generic.TemplateView
         if year:
             transfers_qs = transfers_qs.filter(transfer_date__year=year)
 
-        transfers_by_status = dict(
-            transfers_qs.values_list('status').annotate(total=Count('id'))
-        )
         ctx['bank_transfers'] = {
             'count': transfers_qs.count(),
             'total_transferred': transfers_qs.aggregate(total=Sum('amount_transferred'))['total'] or 0,
-            'executed': transfers_by_status.get(BankTransfer.Status.EXECUTED, 0),
-            'pending': transfers_by_status.get(BankTransfer.Status.PENDING, 0),
-            'cancelled': transfers_by_status.get(BankTransfer.Status.CANCELLED, 0),
         }
 
         # -- §"Soldes des comptes": full breakdown per actor (Antennes, Mairies, CVD,
@@ -162,18 +155,6 @@ class FinancialDashboardView(PageMixin, LoginRequiredMixin, generic.TemplateView
             'labels': [str(_('Requested')), str(_('Validated')), str(_('Disbursed'))],
             'data': [ctx['fund_requests']['total_requested'], ctx['fund_requests']['total_validated'], total_disbursed],
             'colors': CATEGORICAL_PALETTE[:3],
-        })
-
-        transfer_status_labels = [str(_('Pending')), str(_('Executed')), str(_('Cancelled'))]
-        transfer_status_data = [
-            ctx['bank_transfers']['pending'],
-            ctx['bank_transfers']['executed'],
-            ctx['bank_transfers']['cancelled'],
-        ]
-        ctx['chart_bank_transfers_status'] = json.dumps({
-            'labels': transfer_status_labels,
-            'data': transfer_status_data,
-            'colors': [STATUS_COLORS['warning'], STATUS_COLORS['good'], STATUS_COLORS['critical']],
         })
 
         balances_by_type = {}

@@ -9,12 +9,28 @@ from django.views import generic
 from cosomis.mixins import PageMixin, SoftDeleteViewMixin
 from usermanager.permissions import AccountantPermissionRequiredMixin, FinancialPermissionRequiredMixin
 
-from subprojects.models import CategoryIDA, Component
+from subprojects.models import Project, CategoryIDA, Component
 from financial.models.planning import Activity
-from financial.forms import CategoryIDAForm
-from financial.aggregations import activity_financial_summary
+from financial.forms import CategoryIDAForm, CategoryComponentFormSet
+from financial.aggregations import activity_financial_summary, funding_cascade_meta, component_financial_breakdown
 from financial.exports import export_category
 from financial.list_filters import apply_entity_filters, build_filter_context
+
+
+def _component_formset_kwargs(category, post_data=None):
+    """Resolves the project/category the embedded Composantes/Sous-composantes
+    formset should scope its `fundings`/`parent` choices to - reads the submitted
+    `project` value first (the CategoryIDAForm may be changing it in this very
+    POST), falling back to the persisted instance for a GET render."""
+    project_id = None
+    if post_data:
+        project_id = post_data.get('project')
+    if not project_id and category and category.pk:
+        project_id = category.project_id
+    return {
+        'project': Project.objects.filter(pk=project_id).first() if project_id else None,
+        'category_pk': category.pk if category and category.pk else None,
+    }
 
 
 def _filtered_categories(get):
@@ -55,16 +71,32 @@ class CategoryCreateView(PageMixin, LoginRequiredMixin, AccountantPermissionRequ
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['form'] = self.form_mixin if getattr(self, 'form_mixin', None) else CategoryIDAForm()
+        if getattr(self, 'form_mixin', None):
+            context['form'] = self.form_mixin
+            context['formset'] = self.formset_mixin
+        else:
+            context['form'] = CategoryIDAForm()
+            context['formset'] = CategoryComponentFormSet(instance=CategoryIDA(), form_kwargs=_component_formset_kwargs(None))
+        context['funding_meta'] = funding_cascade_meta()
         return context
 
     def post(self, request, *args, **kwargs):
         form = CategoryIDAForm(request.POST)
-        if form.is_valid():
-            obj = form.save(commit=False)
-            obj.save(user=request.user)
+        category = form.instance
+        formset = CategoryComponentFormSet(request.POST, instance=category, form_kwargs=_component_formset_kwargs(category, request.POST))
+        if form.is_valid() and formset.is_valid():
+            form.save(commit=False)
+            category.save(user=request.user)
+            components = formset.save(commit=False)
+            for component in components:
+                component.project = category.project
+                component.save(user=request.user)
+            for obj in formset.deleted_objects:
+                obj.delete()
+            formset.save_m2m()
             return redirect('financial:category_list')
         self.form_mixin = form
+        self.formset_mixin = formset
         return super().get(request, *args, **kwargs)
 
 
@@ -79,16 +111,33 @@ class CategoryUpdateView(PageMixin, LoginRequiredMixin, AccountantPermissionRequ
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['form'] = self.form_mixin if getattr(self, 'form_mixin', None) else CategoryIDAForm(instance=self.get_object())
+        instance = self.get_object()
+        if getattr(self, 'form_mixin', None):
+            context['form'] = self.form_mixin
+            context['formset'] = self.formset_mixin
+        else:
+            context['form'] = CategoryIDAForm(instance=instance)
+            context['formset'] = CategoryComponentFormSet(instance=instance, form_kwargs=_component_formset_kwargs(instance))
+        context['funding_meta'] = funding_cascade_meta()
         return context
 
     def post(self, request, *args, **kwargs):
-        form = CategoryIDAForm(request.POST, instance=self.get_object())
-        if form.is_valid():
-            obj = form.save(commit=False)
-            obj.save(user=request.user)
+        instance = self.get_object()
+        form = CategoryIDAForm(request.POST, instance=instance)
+        formset = CategoryComponentFormSet(request.POST, instance=instance, form_kwargs=_component_formset_kwargs(instance, request.POST))
+        if form.is_valid() and formset.is_valid():
+            form.save(commit=False)
+            instance.save(user=request.user)
+            components = formset.save(commit=False)
+            for component in components:
+                component.project = instance.project
+                component.save(user=request.user)
+            for obj in formset.deleted_objects:
+                obj.delete()
+            formset.save_m2m()
             return redirect('financial:category_list')
         self.form_mixin = form
+        self.formset_mixin = formset
         return super().get(request, *args, **kwargs)
 
 
@@ -118,7 +167,9 @@ class CategoryDetailView(PageMixin, LoginRequiredMixin, generic.DetailView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         category = self.object
-        components = Component.objects.filter(category=category)
+        components = list(Component.objects.filter(category=category))
+        for component in components:
+            component.planning = component_financial_breakdown(component)
         top_level = [c for c in components if c.parent_id is None]
         sub_level = [c for c in components if c.parent_id is not None]
         ctx['components'] = top_level

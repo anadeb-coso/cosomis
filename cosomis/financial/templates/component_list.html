@@ -51,7 +51,7 @@
                                 <td>{{ component.category.name|default_if_none:'-' }}</td>
                                 <td>{% if component.parent %}<a href="{% url 'financial:component_detail' component.parent.pk %}">{{ component.parent.name }}</a>{% else %}-{% endif %}</td>
                                 <td><a href="{% url 'financial:component_detail' component.pk %}">{{ component.name }}</a></td>
-                                <td>{{ component.funding.label|default_if_none:'-' }}</td>
+                                <td>{{ component.funding_labels|default:'-' }}</td>
                                 <td>{% if component.amount is not None %}{{ component.amount|separate_with_space }}{% else %}-{% endif %}</td>
                                 <td>{{ component.target|default_if_none:'-' }}</td>
                                 <td class="font-weight-bold">{{ component.effective_amount|separate_with_space }}</td>

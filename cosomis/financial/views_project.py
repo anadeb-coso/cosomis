@@ -14,7 +14,7 @@ from financial.models.planning import AnnualWorkPlan, Activity
 from financial.models.financial import DisbursementRequest, Disbursement
 from financial.models.supporting_document import SupportingDocument
 from financial.forms import ProjectForm
-from financial.aggregations import requests_indicators, activity_financial_summary
+from financial.aggregations import requests_indicators, activity_financial_summary, component_financial_breakdown
 from financial.exports import export_project_ida, export_project_ida_detail
 
 
@@ -111,7 +111,9 @@ class ProjectIDADetailView(PageMixin, LoginRequiredMixin, generic.DetailView):
             category.summary = activity_financial_summary(component_ids)
         ctx['categories'] = categories
 
-        components = Component.objects.filter(project=project)
+        components = list(Component.objects.filter(project=project))
+        for component in components:
+            component.planning = component_financial_breakdown(component)
         ctx['components'] = [c for c in components if c.parent_id is None]
         ctx['sub_components'] = [c for c in components if c.parent_id is not None]
 

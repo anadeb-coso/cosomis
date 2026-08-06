@@ -46,6 +46,9 @@
                                 <td>
                                     <a href="{% url 'financial:annual_work_plan_detail' plan.pk %}" style="font-size: 9px !important;" class="btn btn-primary btn-xs" title="{% translate 'View details' %}"><i class="fa fa-eye"></i></a>
                                     {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                                    <a href="{% url 'financial:annual_work_plan_activity_sheet' plan.pk %}" style="font-size: 9px !important;" class="btn btn-success btn-xs" title="{% translate 'Activities sheet' %}"><i class="fas fa-table"></i></a>
+                                    {% endif %}
+                                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
                                     <a href="{% url 'financial:annual_work_plan_update' plan.pk %}" style="font-size: 9px !important;" class="btn btn-primary btn-xs" title="{% translate 'Edit' %}"><i class="fa fa-edit"></i></a>
                                     {% endif %}
                                     {% if user.is_superuser or user|has_group:"Financial" %}

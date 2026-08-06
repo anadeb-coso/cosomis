@@ -143,10 +143,10 @@ def _anomalies(base_qs):
         subprojectfile__validated=False
     ).distinct().count()
 
-    abandoned_count = qualifying_qs.filter(current_status_of_the_site__in=ABANDONED_LIST)
-    interrupted_count = qualifying_qs.filter(current_status_of_the_site__in=INTERRUPTED_LIST)
-    contracts_currently_terminated_count = qualifying_qs.filter(current_level_of_physical_realization_of_the_work_wording__in=CONTRACT_TERMINATED_LIST)
-    unapproved_infrastructure_count = qualifying_qs.filter(current_level_of_physical_realization_of_the_work_wording__in=NOT_APPROVED_BY_CORA_LIST)
+    abandoned_count = qualifying_qs.filter(current_status_of_the_site__in=ABANDONED_LIST).count()
+    interrupted_count = qualifying_qs.filter(current_status_of_the_site__in=INTERRUPTED_LIST).count()
+    contracts_currently_terminated_count = qualifying_qs.filter(current_level_of_physical_realization_of_the_work_wording__in=CONTRACT_TERMINATED_LIST).count()
+    unapproved_infrastructure_count = qualifying_qs.filter(current_level_of_physical_realization_of_the_work_wording__in=NOT_APPROVED_BY_CORA_LIST).count()
 
     return {
         "completed_missing_images_count": completed_missing_images_count,

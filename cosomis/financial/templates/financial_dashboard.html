@@ -87,7 +87,7 @@
                 <div class="small-box {% if available_balance_project < 0 %}bg-danger{% else %}bg-primary{% endif %}">
                     <div class="inner">
                         <h3>{{ available_balance_project|separate_with_space }}</h3>
-                        <p>{% translate 'Amount currently available on the project account' %}</p>
+                        <p>{% translate 'Remaining amount to disburse for the request' %}</p>
                     </div>
                     <div class="icon"><i class="fas fa-university"></i></div>
                 </div>
@@ -116,12 +116,11 @@
             <div class="col-lg-3 col-12">
                 <div class="card">
                     <div class="card-header"><h3 class="card-title">{% translate 'Bank transfers' %}</h3></div>
-                    <div class="card-body">
-                        <canvas id="chart-transfer-status" style="min-height: 220px;"></canvas>
-                    </div>
-                    <div class="card-footer text-center">
-                        <strong>{{ bank_transfers.count }}</strong> {% translate 'Number of transfers' %} &middot;
-                        <strong>{{ bank_transfers.total_transferred|separate_with_space }}</strong> {% translate 'Total amount transferred' %}
+                    <div class="card-body d-flex flex-column justify-content-center align-items-center" style="min-height: 220px;">
+                        <h2 class="mb-0">{{ bank_transfers.count }}</h2>
+                        <p class="text-muted">{% translate 'Number of transfers' %}</p>
+                        <h4 class="mb-0">{{ bank_transfers.total_transferred|separate_with_space }}</h4>
+                        <p class="text-muted mb-0">{% translate 'Total amount transferred' %}</p>
                     </div>
                 </div>
             </div>
@@ -235,9 +234,7 @@
                         <th>{% translate 'Name' %}</th>
                         <th>{% translate 'Account type' %}</th>
                         <th>{% translate 'Total received' %}</th>
-                        <th>{% translate 'Received (executed)' %}</th>
                         <th>{% translate 'Total sent' %}</th>
-                        <th>{% translate 'Sent (executed)' %}</th>
                         <th>{% translate 'Returned to sender' %}</th>
                         <th>{% translate 'Amount currently available' %}</th>
                     </tr>
@@ -248,9 +245,7 @@
                             <td>{{ row.account.name }}</td>
                             <td><span class="badge {{ row.account.account_type|account_type_badge }}">{{ row.account.get_account_type_display }}</span></td>
                             <td>{{ row.total_received|separate_with_space }}</td>
-                            <td>{{ row.received_executed|separate_with_space }}</td>
                             <td>{{ row.total_sent|separate_with_space }}</td>
-                            <td>{{ row.sent_executed|separate_with_space }}</td>
                             <td>{{ row.returned_to_sender|separate_with_space }}</td>
                             <td class="{% if row.available_balance < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ row.available_balance|separate_with_space }}</td>
                         </tr>
@@ -281,7 +276,7 @@ $(document).ready(function () {
         pageLength: 10,
     };
 
-    $('#table-dashboard-account-balances').DataTable($.extend({}, dtOptions, { order: [[7, 'asc']] }));
+    $('#table-dashboard-account-balances').DataTable($.extend({}, dtOptions, { order: [[5, 'asc']] }));
     $('#table-project-breakdown').DataTable($.extend({}, dtOptions, { order: [[6, 'asc']], paging: false, info: false }));
     $('#table-funding-breakdown').DataTable($.extend({}, dtOptions, { order: [[6, 'asc']], paging: false, info: false }));
 
@@ -315,22 +310,6 @@ $(document).ready(function () {
     renderBarChart('chart-balances-by-type', {{ chart_balances_by_type|safe }}, true);
     renderBarChart('chart-project-breakdown', {{ chart_project_breakdown|safe }}, true);
     renderBarChart('chart-funding-breakdown', {{ chart_funding_breakdown|safe }}, true);
-
-    const transferStatusData = {{ chart_bank_transfers_status|safe }};
-    new Chart(document.getElementById('chart-transfer-status'), {
-        type: 'doughnut',
-        data: {
-            labels: transferStatusData.labels,
-            datasets: [{
-                data: transferStatusData.data,
-                backgroundColor: transferStatusData.colors,
-            }],
-        },
-        options: {
-            maintainAspectRatio: false,
-            legend: { position: 'bottom' },
-        },
-    });
 });
 </script>
 {% endblock %}
