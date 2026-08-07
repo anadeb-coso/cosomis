@@ -153,6 +153,14 @@ class DisbursementRequest(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     def __str__(self):
         return f'{self.project}/{self.requested_date.strftime("%d-%m-%Y")}/{self.amount_requested}'
 
+    def save(self, *args, **kwargs):
+        # funding_type always mirrors the chosen funding's own type - never a
+        # separate user choice, so it can never drift from it regardless of
+        # whether the write came from a form, the import command, or the shell.
+        if self.funding_id:
+            self.funding_type = self.funding.funding_type
+        super().save(*args, **kwargs)
+
     @property
     def year(self):
         return self.requested_date.year if self.requested_date else None

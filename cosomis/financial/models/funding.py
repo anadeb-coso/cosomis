@@ -10,8 +10,15 @@ class Funding(ExternalIdMixin, SoftDeleteMixin, BaseModel):
         CREDIT = 'CREDIT', _('Credit')
         GRANT = 'GRANT', _('Grant')
 
+    class Financier(models.TextChoices):
+        WORLD_BANK = 'WORLD_BANK', _('World Bank')
+        UN = 'UN', _('UN')
+        STATE = 'STATE', _('State')
+        OTHER = 'OTHER', _('Other')
+
     project = models.ForeignKey('subprojects.Project', on_delete=models.CASCADE, verbose_name=_("IDA Project"))
     funding_type = models.CharField(max_length=10, choices=FundingType.choices, verbose_name=_("Type"))
+    financier = models.CharField(max_length=20, choices=Financier.choices, null=True, blank=True, verbose_name=_("Financier"))
     identification_number = models.CharField(max_length=100, verbose_name=_("IDA identification number"))
     label = models.CharField(max_length=255, verbose_name=_("Label"))
     initial_amount = CustomerFloatRangeField(verbose_name=_("Initial amount"), min_value=0)

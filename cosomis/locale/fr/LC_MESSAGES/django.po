@@ -4308,3 +4308,135 @@ msgstr "Activités enregistrées."
 #: .\financial\models\planning.py
 msgid "Code"
 msgstr "Code"
+
+#: .\financial\models\funding.py
+msgid "Financier"
+msgstr "Financier"
+
+#: .\financial\models\funding.py
+msgid "World Bank"
+msgstr "BM"
+
+#: .\financial\models\funding.py
+msgid "UN"
+msgstr "ONU"
+
+#: .\financial\models\funding.py
+msgid "State"
+msgstr "État"
+
+#: .\financial\models\planning.py
+msgid "Tag"
+msgstr "Tag"
+
+#: .\financial\models\planning.py
+msgid "Tags"
+msgstr "Tags"
+
+#: .\financial\models\planning.py
+msgid "Parent activity"
+msgstr "Activité parente"
+
+#: .\financial\models\planning.py
+msgid "A parent activity's amount is the cumulative total of its child activities."
+msgstr "Le montant d'une activité parente est le cumul de ses activités filles."
+
+#: .\financial\models\planning.py
+msgid "Projected budget"
+msgstr "Budget prévisionnel"
+
+#: .\financial\models\planning.py
+msgid "Results"
+msgstr "Résultats"
+
+#: .\financial\models\planning.py
+msgid "Unit"
+msgstr "Unité"
+
+#: .\financial\models\planning.py
+msgid "Target value"
+msgstr "Valeur cible"
+
+#: .\financial\models\planning.py
+msgid "Responsible structures"
+msgstr "Structures responsables"
+
+#: .\financial\models\planning.py
+msgid "Involved structures"
+msgstr "Structures impliquées"
+
+#: .\financial\models\planning.py
+msgid "Jan."
+msgstr "Janv."
+
+#: .\financial\models\planning.py
+msgid "Feb."
+msgstr "Févr."
+
+#: .\financial\models\planning.py
+msgid "Mar."
+msgstr "Mars"
+
+#: .\financial\models\planning.py
+msgid "Apr."
+msgstr "Avr."
+
+#: .\financial\models\planning.py
+msgid "May"
+msgstr "Mai"
+
+#: .\financial\models\planning.py
+msgid "Jun."
+msgstr "Juin"
+
+#: .\financial\models\planning.py
+msgid "Jul."
+msgstr "Juil."
+
+#: .\financial\models\planning.py
+msgid "Aug."
+msgstr "Août"
+
+#: .\financial\models\planning.py
+msgid "Sep."
+msgstr "Sept."
+
+#: .\financial\models\planning.py
+msgid "Oct."
+msgstr "Oct."
+
+#: .\financial\models\planning.py
+msgid "Nov."
+msgstr "Nov."
+
+#: .\financial\models\planning.py
+msgid "Dec."
+msgstr "Déc."
+
+#: .\financial\models\planning.py
+msgid "An activity cannot be its own parent."
+msgstr "Une activité ne peut pas être sa propre parente."
+
+#: .\financial\models\planning.py
+msgid "A parent activity must belong to the same annual work plan."
+msgstr "Une activité parente doit appartenir au même plan de travail annuel."
+
+#: .\financial\models\planning.py
+msgid "Activity / Funding allocation"
+msgstr "Répartition Activité / Crédit-Don"
+
+#: .\financial\models\planning.py
+msgid "Activity / Funding allocations"
+msgstr "Répartitions Activité / Crédit-Don"
+
+#: .\financial\templates\annual_work_plan_detail.html
+msgid "Edit full details"
+msgstr "Modifier tous les détails"
+
+#: .\financial\templates\activity_add.html
+msgid "Realization period"
+msgstr "Période de réalisation"
+
+#: .\financial\templates\annual_work_plan_detail.html
+msgid "Excel file (.xlsx) with columns: Composante, Code, Libellé, Montant, Statut, Cible(s)."
+msgstr "Fichier Excel (.xlsx) avec les colonnes : Composante, Code, Libellé, Montant, Statut, Cible(s)."

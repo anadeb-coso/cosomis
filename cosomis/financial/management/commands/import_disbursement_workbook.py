@@ -38,7 +38,7 @@ from subprojects.models import Project, CategoryIDA, Component
 from financial.models.account import Account
 from financial.models.bank import Bank
 from financial.models.funding import Funding
-from financial.models.planning import AnnualWorkPlan, Activity
+from financial.models.planning import AnnualWorkPlan, Activity, ActivityFunding, Tag
 from financial.models.supporting_document import SupportingDocument, SupportingDocumentActivity, SupportingDocumentActivityFile
 from financial.models.financial import (
     DisbursementRequest, DisbursementRequestValidation, Disbursement, BankTransfer,
@@ -92,7 +92,55 @@ def split_refs(value):
     return [part.strip() for part in re.split(r'[,;/]', text) if part.strip()]
 
 
+def parse_bullet_list(value):
+    """'Structures Responsables'/'Structures Impliquées' style cell: several
+    names, one per line, each prefixed with "- " (see Activités sheet)."""
+    text = to_str(value)
+    if not text:
+        return []
+    names = []
+    for line in text.splitlines():
+        line = line.strip()
+        if line.startswith('-'):
+            line = line[1:].strip()
+        if line:
+            names.append(line)
+    return names
+
+
+def is_month_checked(value):
+    """A realization-period month cell is "checked" if it holds any mark at all
+    (an X, a checkmark, 1...) - pandas only ever sees cell values, never fill
+    color, so the workbook's "cellule en orange" convention can't be detected
+    here; only an actual mark in the cell can be."""
+    text = to_str(value)
+    if not text:
+        return False
+    return normalize(text) not in ('non', 'no', '0', 'false', 'non coche')
+
+
 FUNDING_TYPE_MAP = {'credit': Funding.FundingType.CREDIT, 'don': Funding.FundingType.GRANT, 'grant': Funding.FundingType.GRANT}
+FINANCIER_MAP = {
+    'bm': Funding.Financier.WORLD_BANK, 'banque mondiale': Funding.Financier.WORLD_BANK, 'world bank': Funding.Financier.WORLD_BANK,
+    'onu': Funding.Financier.UN, 'un': Funding.Financier.UN,
+    'etat': Funding.Financier.STATE, 'state': Funding.Financier.STATE,
+    'autre': Funding.Financier.OTHER, 'other': Funding.Financier.OTHER,
+}
+ACTIVITY_STATUS_MAP = {
+    'non demarree': Activity.Status.NOT_STARTED,
+    'en cours': Activity.Status.IN_PROGRESS,
+    'interrompue': Activity.Status.INTERRUPTED,
+    'abandonnee': Activity.Status.ABANDONED,
+    'achevee': Activity.Status.COMPLETED,
+}
+#: (model field, *candidate column headers) - calendar order, matching the
+#: workbook's 12 "Période de réalisation" columns.
+MONTH_COLUMNS = [
+    ('month_jan', 'Janv.', 'Janvier'), ('month_feb', 'Févr.', 'Fevrier'), ('month_mar', 'Mars'),
+    ('month_apr', 'Avr.', 'Avril'), ('month_may', 'Mai'), ('month_jun', 'Juin'),
+    ('month_jul', 'Juil.', 'Juillet'), ('month_aug', 'Août', 'Aout'), ('month_sep', 'Sept.', 'Septembre'),
+    ('month_oct', 'Oct.', 'Octobre'), ('month_nov', 'Nov.', 'Novembre'), ('month_dec', 'Déc.', 'Decembre'),
+]
 ACCOUNT_TYPE_MAP = {
     'projet': Account.AccountType.PROJECT, 'project': Account.AccountType.PROJECT,
     'antenne regionale': Account.AccountType.REGIONAL_OFFICE, 'bureau regional': Account.AccountType.REGIONAL_OFFICE,
@@ -214,6 +262,7 @@ class Command(BaseCommand):
             report['Sous-composantes-CréditDon'] = self._import_component_funding_links(find_sheet('Sous-composantes-CréditDon', 'Sous-composantes-CreditDon'), id_maps, 'ID_SousComposante')
             report['PTBA'] = self._import_annual_work_plans(find_sheet('PTBA'), id_maps, resolve_project)
             report['Activités'] = self._import_activities(find_sheet('Activités', 'Activites'), id_maps)
+            report['Activités-CréditDon'] = self._import_activity_fundings(find_sheet('Activités-CréditDon', 'Activites-CreditDon'), id_maps)
             report['Acteurs & Comptes'] = self._import_accounts(find_sheet('Acteurs & Comptes', 'Acteurs et Comptes'), id_maps)
             report['Demandes de fonds'] = self._import_disbursement_requests(find_sheet('Demandes de fonds'), id_maps, resolve_project)
             report['Validations des demandes'] = self._import_disbursement_request_validations(find_sheet('Validations des demandes'), id_maps)
@@ -290,6 +339,7 @@ class Command(BaseCommand):
             defaults = dict(
                 project=project,
                 funding_type=map_choice(get_value(row, 'Type'), FUNDING_TYPE_MAP, Funding.FundingType.CREDIT),
+                financier=map_choice(get_value(row, 'Financier'), FINANCIER_MAP),
                 identification_number=to_str(get_value(row, "N° d'identification IDA", 'Identification IDA')) or '',
                 label=label,
                 initial_amount=to_float(get_value(row, 'Montant initial')) or 0,
@@ -417,9 +467,17 @@ class Command(BaseCommand):
         return (created, updated, skipped)
 
     def _import_activities(self, df, id_maps):
+        """ID_Activité_Parent is resolved in a second pass, once every activity in
+        the sheet has already been created/updated and is available in
+        id_maps['activity'] - the workbook doesn't guarantee a parent row appears
+        before its children. A parent activity's own "Montant propre" is left as
+        given (the cumulative "Montant (auto)" is computed on the fly by
+        Activity.effective_amount, never stored)."""
         if df is None:
             return (0, 0, 0)
         created, updated, skipped = 0, 0, 0
+        parent_refs = {}
+        tags_by_activity = {}
         for _, row in df.iterrows():
             ref = to_str(get_value(row, 'ID_Activité', 'ID_Activite'))
             component_ref = to_str(get_value(row, 'ID_Composante', 'ID_SousComposante'))
@@ -433,13 +491,73 @@ class Command(BaseCommand):
             defaults = dict(
                 component=component,
                 annual_work_plan=plan,
+                code=to_str(get_value(row, 'Code')),
                 name=name,
-                amount=to_float(get_value(row, 'Montant')) or 0,
+                status=map_choice(get_value(row, 'Statut'), ACTIVITY_STATUS_MAP, Activity.Status.NOT_STARTED),
+                amount=to_float(get_value(row, 'Montant propre', 'Montant')),
+                budget_previsionnel=to_float(get_value(row, 'Budget prévisionnel', 'Budget previsionnel')),
                 target=to_str(get_value(row, 'Cible(s)', 'Cibles')),
+                resultats=to_str(get_value(row, 'Résultats', 'Resultats')),
+                indicateurs=to_str(get_value(row, 'Indicateurs')),
+                unite=to_str(get_value(row, 'Unité', 'Unite')),
+                valeur_cible=to_str(get_value(row, 'Valeur cible')),
             )
+            for field_name, *candidates in MONTH_COLUMNS:
+                defaults[field_name] = is_month_checked(get_value(row, *candidates))
+
             activity, was_created = upsert(Activity, ref, defaults)
             if ref:
                 id_maps['activity'][ref] = activity
+
+            parent_ref = to_str(get_value(row, 'ID_Activité_Parent', 'ID_Activite_Parent'))
+            if parent_ref:
+                parent_refs[activity] = parent_ref
+
+            tag_names = {
+                'structures_responsables': parse_bullet_list(get_value(row, 'Structures Responsables')),
+                'structures_impliquees': parse_bullet_list(get_value(row, 'Structures Impliquées', 'Structures Impliquees')),
+            }
+            if any(tag_names.values()):
+                tags_by_activity[activity] = tag_names
+
+            created += int(was_created)
+            updated += int(not was_created)
+
+        for activity, parent_ref in parent_refs.items():
+            parent = id_maps['activity'].get(parent_ref)
+            if parent and parent.pk != activity.pk:
+                activity.parent = parent
+                activity.save()
+
+        for activity, tag_names in tags_by_activity.items():
+            for field_name, names in tag_names.items():
+                if not names:
+                    continue
+                tags = [Tag.objects.get_or_create(name=name)[0] for name in names]
+                getattr(activity, field_name).set(tags)
+
+        return (created, updated, skipped)
+
+    def _import_activity_fundings(self, df, id_maps):
+        """Activités ↔ Crédits & Dons (ID_Lien, ID_Activité, ID_CréditDon,
+        Montant): how much of an activity's cost is imputed to a given Credit/
+        Grant - an activity may be financed by 0, 1 or several of its project's
+        fundings, each with its own amount."""
+        if df is None:
+            return (0, 0, 0)
+        created, updated, skipped = 0, 0, 0
+        for _, row in df.iterrows():
+            ref = to_str(get_value(row, 'ID_Lien'))
+            activity_ref = to_str(get_value(row, 'ID_Activité', 'ID_Activite'))
+            funding_ref = to_str(get_value(row, 'ID_CréditDon', 'ID_Credit_Don'))
+            activity = id_maps['activity'].get(activity_ref)
+            funding = id_maps['funding'].get(funding_ref)
+            amount = to_float(get_value(row, 'Montant'))
+            if not activity or not funding or amount is None:
+                skipped += 1
+                continue
+            defaults = dict(activity=activity, funding=funding, amount=amount)
+            _link, was_created = upsert(ActivityFunding, ref, defaults)
             created += int(was_created)
             updated += int(not was_created)
         return (created, updated, skipped)

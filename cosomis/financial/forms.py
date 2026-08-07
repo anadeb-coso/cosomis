@@ -8,7 +8,7 @@ from financial.models.account import Account
 from financial.models.bank import Bank
 from financial.models.financial import BankTransfer, DisbursementRequest, DisbursementRequestValidation, Disbursement
 from financial.models.funding import Funding
-from financial.models.planning import AnnualWorkPlan, Activity
+from financial.models.planning import AnnualWorkPlan, Activity, Tag, ActivityFunding
 from financial.models.supporting_document import SupportingDocument, SupportingDocumentActivity, SupportingDocumentActivityFile
 from subprojects.models import Project, CategoryIDA, Component
 from cosomis import FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID, FORM_FIELDS_TO_EXCLUDE_WITH_DELETED, FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED
@@ -155,16 +155,19 @@ class DisbursementRequestForm(forms.ModelForm):
     class Meta:
         model = DisbursementRequest
         # fields = '__all__'
-        exclude  = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED # specify the fields to be hid
+        exclude  = ['funding_type'] + FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED # specify the fields to be hid
 
 class DisbursementRequestFormCreate(forms.ModelForm):
+    """funding_type is never user-chosen - DisbursementRequest.save() derives it
+    automatically from whichever funding is selected."""
+
     def __init__(self, *args, **kwargs):
         super(DisbursementRequestFormCreate, self).__init__(*args, **kwargs)
 
     class Meta:
         model = DisbursementRequest
         # fields = '__all__'
-        exclude  = ['first_response_date', 'comment_linked_to_reply', 'status'] + FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED # specify the fields to be hid
+        exclude  = ['first_response_date', 'comment_linked_to_reply', 'status', 'funding_type'] + FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED # specify the fields to be hid
 
 
 
@@ -352,9 +355,55 @@ class AnnualWorkPlanForm(forms.ModelForm):
         exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED
 
 
+class TagsWidget(forms.SelectMultiple):
+    """Renders as a <select multiple>, pre-populated with every existing Tag -
+    the page's JS (see activity_add.html) turns it into a select2 "tags"
+    control so the user can either pick an existing tag or type a brand new
+    name on the fly. A newly typed entry arrives in POST data prefixed
+    "__new__:" (set by that same JS's createTag callback), so TagsField.clean()
+    below can tell "new tag to create" apart from "existing tag's pk" without
+    guessing from whether the value merely looks numeric."""
+
+    def __init__(self, attrs=None):
+        default_attrs = {'class': 'form-control tags-select2'}
+        if attrs:
+            default_attrs.update(attrs)
+        super().__init__(attrs=default_attrs)
+
+
+class TagsField(forms.ModelMultipleChoiceField):
+    """Same as ModelMultipleChoiceField(queryset=Tag.objects.all()), except a
+    submitted "__new__:<name>" value (a tag typed that doesn't exist yet) is
+    created on the fly and used instead of being rejected as an invalid choice -
+    the "create this tag" behaviour described for Structures Responsables/
+    Impliquées."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('required', False)
+        kwargs.setdefault('widget', TagsWidget)
+        kwargs.setdefault('queryset', Tag.objects.all())
+        super().__init__(*args, **kwargs)
+
+    def clean(self, value):
+        value = value or []
+        existing_pks = [v for v in value if not str(v).startswith('__new__:')]
+        new_names = [str(v)[len('__new__:'):].strip() for v in value if str(v).startswith('__new__:')]
+        tags = list(super().clean(existing_pks)) if existing_pks else []
+        for name in new_names:
+            if not name:
+                continue
+            tag, _created = Tag.objects.get_or_create(name=name)
+            if tag not in tags:
+                tags.append(tag)
+        return tags
+
+
 class ActivityForm(forms.ModelForm):
     """Activities are always managed from a PTBA's detail page - annual_work_plan
     is fixed from the URL, never user-chosen."""
+
+    structures_responsables = TagsField(label=_("Responsible structures"))
+    structures_impliquees = TagsField(label=_("Involved structures"))
 
     def __init__(self, annual_work_plan=None, *args, **kwargs):
         super(ActivityForm, self).__init__(*args, **kwargs)
@@ -367,6 +416,11 @@ class ActivityForm(forms.ModelForm):
             Component.objects.filter(project=annual_work_plan.project).order_by('name')
             if annual_work_plan else Component.objects.none()
         )
+        parent_qs = Activity.objects.filter(annual_work_plan=annual_work_plan) if annual_work_plan else Activity.objects.none()
+        if instance and instance.pk:
+            parent_qs = parent_qs.exclude(pk=instance.pk)
+        self.fields['parent'].queryset = parent_qs.order_by('name')
+        self.fields['parent'].required = False
 
     class Meta:
         model = Activity
@@ -375,31 +429,61 @@ class ActivityForm(forms.ModelForm):
             'code': forms.TextInput(attrs={'class': 'form-control', 'style': 'max-width: 100px;'}),
             'name': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'target': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'resultats': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'indicateurs': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'unite': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'valeur_cible': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
+
+
+#: Every real Activity field except `annual_work_plan` (set by the inline
+#: formset itself, fk_name='annual_work_plan') - the PTBA detail page and the
+#: activities sheet both show every field, not just a quick-entry subset.
+PTBA_ACTIVITY_FIELDS = [
+    'component', 'parent', 'code', 'name', 'status', 'amount', 'budget_previsionnel', 'target',
+    'resultats', 'indicateurs', 'unite', 'valeur_cible', 'structures_responsables', 'structures_impliquees',
+    'month_jan', 'month_feb', 'month_mar', 'month_apr', 'month_may', 'month_jun',
+    'month_jul', 'month_aug', 'month_sep', 'month_oct', 'month_nov', 'month_dec',
+]
 
 
 class PTBAActivityForm(forms.ModelForm):
     """One row of the Activités formset embedded directly in the PTBA detail page
-    - `annual_work_plan` is set by the inline formset (fk_name='annual_work_plan'),
-    never user-chosen. `name`/`target` are small Textareas (a line break should
-    stay possible), `amount` is a plain text input - the space-grouped thousands
+    and the dedicated activities sheet - `annual_work_plan` is set by the inline
+    formset (fk_name='annual_work_plan'), never user-chosen. Text fields are
+    small Textareas (a line break should stay possible), `amount`/
+    `budget_previsionnel` are plain text inputs - the space-grouped thousands
     display is purely a JS presentation layer (see the sheet/detail templates),
-    the field itself still expects a plain number on submit."""
+    the fields themselves still expect a plain number on submit."""
 
-    def __init__(self, project=None, *args, **kwargs):
+    structures_responsables = TagsField(label=_("Responsible structures"))
+    structures_impliquees = TagsField(label=_("Involved structures"))
+
+    def __init__(self, project=None, annual_work_plan=None, *args, **kwargs):
         super(PTBAActivityForm, self).__init__(*args, **kwargs)
+        instance = kwargs.get('instance')
         self.fields['component'].queryset = (
             Component.objects.filter(project=project).order_by('name') if project else Component.objects.none()
         )
+        parent_qs = Activity.objects.filter(annual_work_plan=annual_work_plan) if annual_work_plan else Activity.objects.none()
+        if instance and instance.pk:
+            parent_qs = parent_qs.exclude(pk=instance.pk)
+        self.fields['parent'].queryset = parent_qs.order_by('name')
+        self.fields['parent'].required = False
 
     class Meta:
         model = Activity
-        fields = ['component', 'code', 'name', 'amount', 'target']
+        fields = PTBA_ACTIVITY_FIELDS
         widgets = {
-            'code': forms.TextInput(attrs={'class': 'form-control', 'style': 'max-width: 100px;'}),
+            'code': forms.TextInput(attrs={'class': 'form-control', 'style': 'max-width: 90px;'}),
             'name': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'amount': forms.TextInput(attrs={'class': 'form-control amount-field', 'inputmode': 'decimal'}),
+            'budget_previsionnel': forms.TextInput(attrs={'class': 'form-control amount-field', 'inputmode': 'decimal'}),
             'target': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'resultats': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'indicateurs': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'unite': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'valeur_cible': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
 
@@ -408,7 +492,7 @@ PTBAActivityFormSet = forms.inlineformset_factory(
     Activity,
     form=PTBAActivityForm,
     fk_name='annual_work_plan',
-    fields=['component', 'code', 'name', 'amount', 'target'],
+    fields=PTBA_ACTIVITY_FIELDS,
     extra=1,
     can_delete=True,
 )

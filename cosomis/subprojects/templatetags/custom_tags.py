@@ -352,6 +352,10 @@ FINANCIAL_STATUS_BADGE_CLASSES = {
     'GRANT': 'badge-info',
     'BANK_TRANSFER': 'badge-info',
     'CHEQUE': 'badge-dark',
+    'NOT_STARTED': 'badge-secondary',
+    'IN_PROGRESS': 'badge-info',
+    'INTERRUPTED': 'badge-warning',
+    'COMPLETED': 'badge-success',
 }
 
 ACCOUNT_TYPE_BADGE_CLASSES = {
@@ -486,6 +490,17 @@ def history_entries(users_involved, instance=None):
             })
     entries.reverse()
     return entries
+
+
+@register.filter
+def get_item(dictionary, key):
+    """Dynamic dict lookup - Django's template dot-lookup can't do
+    `dict.{{ variable }}`, only a literal key, so a per-Funding matrix cell
+    (keyed by a Funding pk that varies per column) needs this instead of
+    `form.funding_amounts.<key>`."""
+    if not dictionary:
+        return None
+    return dictionary.get(key)
 
 
 @register.filter

@@ -126,7 +126,9 @@ def activity_financial_summary(component_ids):
     from financial.models.planning import Activity
 
     activities_qs = Activity.objects.filter(component_id__in=list(component_ids))
-    budgeted = activities_qs.aggregate(total=Sum('amount'))['total'] or 0
+    # Only top-level activities: a parent's effective_amount already cumulates
+    # its children's, so summing every row would double-count them.
+    budgeted = sum((activity.effective_amount or 0) for activity in activities_qs.filter(parent__isnull=True))
     justified = sum((activity.justified_amount or 0) for activity in activities_qs)
     return {
         'activity_count': activities_qs.count(),

@@ -6,10 +6,10 @@
     {% include 'components/tabs_style.html' %}
     <style>
         /* select2's default rendering truncates long option labels with an
-           ellipsis - the Component select needs its full text visible so the
-           chosen composante/sous-composante is unambiguous. */
+           ellipsis - the Component/Parent/Status/Tags selects need their full
+           text visible so the chosen value is unambiguous. */
         #activity-lines-body .select2-container,
-        #activity-line-empty-template .select2-container { width: 100% !important; min-width: 220px; }
+        #activity-line-empty-template .select2-container { width: 100% !important; min-width: 180px; }
         #activity-lines-body .select2-selection__rendered,
         #activity-line-empty-template .select2-selection__rendered {
             white-space: normal !important;
@@ -18,7 +18,9 @@
             word-break: break-word;
         }
         #activity-lines-body .select2-selection--single,
-        #activity-line-empty-template .select2-selection--single {
+        #activity-line-empty-template .select2-selection--single,
+        #activity-lines-body .select2-selection--multiple,
+        #activity-line-empty-template .select2-selection--multiple {
             height: auto !important;
             min-height: 36px;
             display: flex;
@@ -28,6 +30,18 @@
         #activity-line-empty-template .select2-selection--single .select2-selection__arrow {
             height: 100% !important;
         }
+        /* The table shows every Activity field - it is expected to be wider than
+           the viewport; #ptba-tab-activities scrolls horizontally instead of
+           squeezing columns down to unreadable widths. */
+        #ptba-activities-table { width: max-content; min-width: 100%; }
+        #ptba-activities-table th, #ptba-activities-table td { vertical-align: middle; }
+        #ptba-activities-table td.col-text { min-width: 160px; }
+        #ptba-activities-table td.col-amount { min-width: 110px; }
+        #ptba-activities-table td.col-narrow { min-width: 70px; }
+        #ptba-activities-table td.col-month { min-width: 46px; text-align: center; }
+        #ptba-activities-table th.col-month { min-width: 46px; text-align: center; font-size: 10px; }
+        #ptba-activities-table td.col-select { min-width: 170px; }
+        #ptba-activities-table td.col-tags { min-width: 200px; }
     </style>
 {% endblock %}
 
@@ -77,16 +91,42 @@
                             <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
                         {% endif %}
                         {% include 'components/table_quick_filter.html' with target='ptba-activities-table' %}
+                        <div class="table-responsive">
                         <table class="table table-striped table-sm" id="ptba-activities-table">
                             <thead>
                             <tr>
                                 <th>{% translate 'Code' %}</th>
                                 <th>{% translate 'Label' %}</th>
                                 <th>{% translate 'Component' %}</th>
+                                <th>{% translate 'Parent activity' %}</th>
+                                <th>{% translate 'Status' %}</th>
                                 <th>{% translate 'Amount' %}</th>
+                                {% for funding in project_fundings %}
+                                    <th>{{ funding.label }}</th>
+                                {% endfor %}
+                                <th>{% translate 'Projected budget' %}</th>
                                 <th>{% translate 'Target(s)' %}</th>
+                                <th>{% translate 'Results' %}</th>
+                                <th>{% translate 'Indicators' %}</th>
+                                <th>{% translate 'Unit' %}</th>
+                                <th>{% translate 'Target value' %}</th>
+                                <th>{% translate 'Responsible structures' %}</th>
+                                <th>{% translate 'Involved structures' %}</th>
+                                <th class="col-month">{% translate 'Jan.' %}</th>
+                                <th class="col-month">{% translate 'Feb.' %}</th>
+                                <th class="col-month">{% translate 'Mar.' %}</th>
+                                <th class="col-month">{% translate 'Apr.' %}</th>
+                                <th class="col-month">{% translate 'May' %}</th>
+                                <th class="col-month">{% translate 'Jun.' %}</th>
+                                <th class="col-month">{% translate 'Jul.' %}</th>
+                                <th class="col-month">{% translate 'Aug.' %}</th>
+                                <th class="col-month">{% translate 'Sep.' %}</th>
+                                <th class="col-month">{% translate 'Oct.' %}</th>
+                                <th class="col-month">{% translate 'Nov.' %}</th>
+                                <th class="col-month">{% translate 'Dec.' %}</th>
                                 <th>{% translate 'Justified amount' %}</th>
                                 <th>{% translate 'Balance to justify' %}</th>
+                                <th></th>
                                 <th>{% translate 'Delete' %}</th>
                             </tr>
                             </thead>
@@ -94,20 +134,46 @@
                             {% for line_form in formset %}
                                 <tr>
                                     {% for hidden in line_form.hidden_fields %}{{ hidden }}{% endfor %}
-                                    <td>{{ line_form.code }}{{ line_form.code.errors }}</td>
-                                    <td>{{ line_form.name }}{{ line_form.name.errors }}</td>
-                                    <td>{{ line_form.component }}{{ line_form.component.errors }}</td>
-                                    <td>{{ line_form.amount }}{{ line_form.amount.errors }}</td>
-                                    <td>{{ line_form.target }}{{ line_form.target.errors }}</td>
+                                    <td class="col-narrow">{{ line_form.code }}{{ line_form.code.errors }}</td>
+                                    <td class="col-text">{{ line_form.name }}{{ line_form.name.errors }}</td>
+                                    <td class="col-select">{{ line_form.component }}{{ line_form.component.errors }}</td>
+                                    <td class="col-select">{{ line_form.parent }}{{ line_form.parent.errors }}</td>
+                                    <td class="col-select">{{ line_form.status }}{{ line_form.status.errors }}</td>
+                                    <td class="col-amount">{{ line_form.amount }}{{ line_form.amount.errors }}</td>
+                                    {% for funding in project_fundings %}
+                                        <td class="col-amount"><input type="text" inputmode="decimal" class="form-control amount-field" name="{{ line_form.prefix }}-funding_{{ funding.pk }}" value="{{ line_form.funding_amounts|get_item:funding.pk|default_if_none:'' }}"></td>
+                                    {% endfor %}
+                                    <td class="col-amount">{{ line_form.budget_previsionnel }}{{ line_form.budget_previsionnel.errors }}</td>
+                                    <td class="col-text">{{ line_form.target }}{{ line_form.target.errors }}</td>
+                                    <td class="col-text">{{ line_form.resultats }}{{ line_form.resultats.errors }}</td>
+                                    <td class="col-text">{{ line_form.indicateurs }}{{ line_form.indicateurs.errors }}</td>
+                                    <td class="col-text">{{ line_form.unite }}{{ line_form.unite.errors }}</td>
+                                    <td class="col-text">{{ line_form.valeur_cible }}{{ line_form.valeur_cible.errors }}</td>
+                                    <td class="col-tags">{{ line_form.structures_responsables }}{{ line_form.structures_responsables.errors }}</td>
+                                    <td class="col-tags">{{ line_form.structures_impliquees }}{{ line_form.structures_impliquees.errors }}</td>
+                                    <td class="col-month">{{ line_form.month_jan }}</td>
+                                    <td class="col-month">{{ line_form.month_feb }}</td>
+                                    <td class="col-month">{{ line_form.month_mar }}</td>
+                                    <td class="col-month">{{ line_form.month_apr }}</td>
+                                    <td class="col-month">{{ line_form.month_may }}</td>
+                                    <td class="col-month">{{ line_form.month_jun }}</td>
+                                    <td class="col-month">{{ line_form.month_jul }}</td>
+                                    <td class="col-month">{{ line_form.month_aug }}</td>
+                                    <td class="col-month">{{ line_form.month_sep }}</td>
+                                    <td class="col-month">{{ line_form.month_oct }}</td>
+                                    <td class="col-month">{{ line_form.month_nov }}</td>
+                                    <td class="col-month">{{ line_form.month_dec }}</td>
                                     <td>{% if line_form.instance.pk %}{{ line_form.instance.justified_amount|separate_with_space }}{% else %}-{% endif %}</td>
                                     <td class="{% if line_form.instance.pk and line_form.instance.balance_to_justify < 0 %}text-danger{% elif line_form.instance.pk %}text-success{% endif %}">{% if line_form.instance.pk %}{{ line_form.instance.balance_to_justify|separate_with_space }}{% else %}-{% endif %}</td>
+                                    <td>{% if line_form.instance.pk %}<a href="{% url 'financial:activity_update' line_form.instance.pk %}" class="btn btn-outline-primary btn-xs" title="{% translate 'Edit full details' %}"><i class="fas fa-ellipsis-h"></i></a>{% endif %}</td>
                                     <td>{% if line_form.instance.pk %}{{ line_form.DELETE }}{% endif %}</td>
                                 </tr>
                             {% empty %}
-                                <tr><td colspan="8" class="text-center">{% translate 'No data' %}</td></tr>
+                                <tr><td colspan="30" class="text-center">{% translate 'No data' %}</td></tr>
                             {% endfor %}
                             </tbody>
                         </table>
+                        </div>
                         <button type="button" id="add-activity-line" class="btn btn-outline-primary btn-sm mb-3">
                             <i class="fas fa-plus"></i> {% translate 'Add another activity line' %}
                         </button>
@@ -120,13 +186,38 @@
                         <script type="text/template" id="activity-line-empty-template">
                                 <tr>
                                     {% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
-                                    <td>{{ formset.empty_form.code }}{{ formset.empty_form.code.errors }}</td>
-                                    <td>{{ formset.empty_form.name }}{{ formset.empty_form.name.errors }}</td>
-                                    <td>{{ formset.empty_form.component }}{{ formset.empty_form.component.errors }}</td>
-                                    <td>{{ formset.empty_form.amount }}{{ formset.empty_form.amount.errors }}</td>
-                                    <td>{{ formset.empty_form.target }}{{ formset.empty_form.target.errors }}</td>
+                                    <td class="col-narrow">{{ formset.empty_form.code }}{{ formset.empty_form.code.errors }}</td>
+                                    <td class="col-text">{{ formset.empty_form.name }}{{ formset.empty_form.name.errors }}</td>
+                                    <td class="col-select">{{ formset.empty_form.component }}{{ formset.empty_form.component.errors }}</td>
+                                    <td class="col-select">{{ formset.empty_form.parent }}{{ formset.empty_form.parent.errors }}</td>
+                                    <td class="col-select">{{ formset.empty_form.status }}{{ formset.empty_form.status.errors }}</td>
+                                    <td class="col-amount">{{ formset.empty_form.amount }}{{ formset.empty_form.amount.errors }}</td>
+                                    {% for funding in project_fundings %}
+                                        <td class="col-amount"><input type="text" inputmode="decimal" class="form-control amount-field" name="__prefix__-funding_{{ funding.pk }}" value=""></td>
+                                    {% endfor %}
+                                    <td class="col-amount">{{ formset.empty_form.budget_previsionnel }}{{ formset.empty_form.budget_previsionnel.errors }}</td>
+                                    <td class="col-text">{{ formset.empty_form.target }}{{ formset.empty_form.target.errors }}</td>
+                                    <td class="col-text">{{ formset.empty_form.resultats }}{{ formset.empty_form.resultats.errors }}</td>
+                                    <td class="col-text">{{ formset.empty_form.indicateurs }}{{ formset.empty_form.indicateurs.errors }}</td>
+                                    <td class="col-text">{{ formset.empty_form.unite }}{{ formset.empty_form.unite.errors }}</td>
+                                    <td class="col-text">{{ formset.empty_form.valeur_cible }}{{ formset.empty_form.valeur_cible.errors }}</td>
+                                    <td class="col-tags">{{ formset.empty_form.structures_responsables }}{{ formset.empty_form.structures_responsables.errors }}</td>
+                                    <td class="col-tags">{{ formset.empty_form.structures_impliquees }}{{ formset.empty_form.structures_impliquees.errors }}</td>
+                                    <td class="col-month">{{ formset.empty_form.month_jan }}</td>
+                                    <td class="col-month">{{ formset.empty_form.month_feb }}</td>
+                                    <td class="col-month">{{ formset.empty_form.month_mar }}</td>
+                                    <td class="col-month">{{ formset.empty_form.month_apr }}</td>
+                                    <td class="col-month">{{ formset.empty_form.month_may }}</td>
+                                    <td class="col-month">{{ formset.empty_form.month_jun }}</td>
+                                    <td class="col-month">{{ formset.empty_form.month_jul }}</td>
+                                    <td class="col-month">{{ formset.empty_form.month_aug }}</td>
+                                    <td class="col-month">{{ formset.empty_form.month_sep }}</td>
+                                    <td class="col-month">{{ formset.empty_form.month_oct }}</td>
+                                    <td class="col-month">{{ formset.empty_form.month_nov }}</td>
+                                    <td class="col-month">{{ formset.empty_form.month_dec }}</td>
                                     <td>-</td>
                                     <td>-</td>
+                                    <td></td>
                                     <td></td>
                                 </tr>
                         </script>
@@ -134,14 +225,39 @@
                     </form>
                     {% else %}
                     {% include 'components/table_quick_filter.html' with target='ptba-activities-table' %}
+                    <div class="table-responsive">
                     <table class="table table-striped table-sm" id="ptba-activities-table">
                         <thead>
                         <tr>
                             <th>{% translate 'Code' %}</th>
                             <th>{% translate 'Label' %}</th>
                             <th>{% translate 'Component' %}</th>
+                            <th>{% translate 'Parent activity' %}</th>
+                            <th>{% translate 'Status' %}</th>
                             <th>{% translate 'Amount' %}</th>
+                            {% for funding in project_fundings %}
+                                <th>{{ funding.label }}</th>
+                            {% endfor %}
+                            <th>{% translate 'Projected budget' %}</th>
                             <th>{% translate 'Target(s)' %}</th>
+                            <th>{% translate 'Results' %}</th>
+                            <th>{% translate 'Indicators' %}</th>
+                            <th>{% translate 'Unit' %}</th>
+                            <th>{% translate 'Target value' %}</th>
+                            <th>{% translate 'Responsible structures' %}</th>
+                            <th>{% translate 'Involved structures' %}</th>
+                            <th class="col-month">{% translate 'Jan.' %}</th>
+                            <th class="col-month">{% translate 'Feb.' %}</th>
+                            <th class="col-month">{% translate 'Mar.' %}</th>
+                            <th class="col-month">{% translate 'Apr.' %}</th>
+                            <th class="col-month">{% translate 'May' %}</th>
+                            <th class="col-month">{% translate 'Jun.' %}</th>
+                            <th class="col-month">{% translate 'Jul.' %}</th>
+                            <th class="col-month">{% translate 'Aug.' %}</th>
+                            <th class="col-month">{% translate 'Sep.' %}</th>
+                            <th class="col-month">{% translate 'Oct.' %}</th>
+                            <th class="col-month">{% translate 'Nov.' %}</th>
+                            <th class="col-month">{% translate 'Dec.' %}</th>
                             <th>{% translate 'Justified amount' %}</th>
                             <th>{% translate 'Balance to justify' %}</th>
                         </tr>
@@ -152,16 +268,41 @@
                                 <td>{{ activity.code|default_if_none:'-' }}</td>
                                 <td>{{ activity.name }}</td>
                                 <td>{{ activity.component.name }}</td>
-                                <td>{{ activity.amount|separate_with_space }}</td>
+                                <td>{{ activity.parent.name|default:'-' }}</td>
+                                <td><span class="badge {{ activity.status|financial_status_badge }}">{{ activity.get_status_display }}</span></td>
+                                <td>{{ activity.effective_amount|separate_with_space }}</td>
+                                {% for funding in project_fundings %}
+                                    <td>{% with amount=activity.funding_amounts|get_item:funding.pk %}{% if amount %}{{ amount|separate_with_space }}{% else %}-{% endif %}{% endwith %}</td>
+                                {% endfor %}
+                                <td>{{ activity.budget_previsionnel|default_if_none:'-' }}</td>
                                 <td>{{ activity.target|default_if_none:'-' }}</td>
+                                <td>{{ activity.resultats|default_if_none:'-'|linebreaksbr }}</td>
+                                <td>{{ activity.indicateurs|default_if_none:'-'|linebreaksbr }}</td>
+                                <td>{{ activity.unite|default_if_none:'-' }}</td>
+                                <td>{{ activity.valeur_cible|default_if_none:'-' }}</td>
+                                <td>{% for tag in activity.structures_responsables.all %}<span class="badge badge-secondary">{{ tag.name }}</span> {% empty %}-{% endfor %}</td>
+                                <td>{% for tag in activity.structures_impliquees.all %}<span class="badge badge-secondary">{{ tag.name }}</span> {% empty %}-{% endfor %}</td>
+                                <td class="col-month">{% if activity.month_jan %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                                <td class="col-month">{% if activity.month_feb %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                                <td class="col-month">{% if activity.month_mar %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                                <td class="col-month">{% if activity.month_apr %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                                <td class="col-month">{% if activity.month_may %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                                <td class="col-month">{% if activity.month_jun %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                                <td class="col-month">{% if activity.month_jul %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                                <td class="col-month">{% if activity.month_aug %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                                <td class="col-month">{% if activity.month_sep %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                                <td class="col-month">{% if activity.month_oct %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                                <td class="col-month">{% if activity.month_nov %}<i class="fas fa-check text-success"></i>{% endif %}</td>
+                                <td class="col-month">{% if activity.month_dec %}<i class="fas fa-check text-success"></i>{% endif %}</td>
                                 <td>{{ activity.justified_amount|separate_with_space }}</td>
                                 <td class="{% if activity.balance_to_justify < 0 %}text-danger{% else %}text-success{% endif %}">{{ activity.balance_to_justify|separate_with_space }}</td>
                             </tr>
                         {% empty %}
-                            <tr><td colspan="7" class="text-center">{% translate 'No data' %}</td></tr>
+                            <tr><td colspan="28" class="text-center">{% translate 'No data' %}</td></tr>
                         {% endfor %}
                         </tbody>
                     </table>
+                    </div>
                     {% endif %}
                         </div>
 
@@ -185,7 +326,7 @@
                         <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
                     </div>
                     <div class="modal-body">
-                        <p>{% translate 'Excel file (.xlsx) with columns: Composante, Libellé, Montant, Cible(s).' %}</p>
+                        <p>{% translate 'Excel file (.xlsx) with columns: Composante, Code, Libellé, Montant, Statut, Cible(s).' %}</p>
                         <input type="file" name="file" accept=".xlsx" class="form-control" required>
                     </div>
                     <div class="modal-footer">
@@ -216,12 +357,35 @@
                 return raw ? String(raw).replace(/[\s ]/g, '') : raw;
             }
 
+            function initTagsSelect2($scope) {
+                $scope.find('.tags-select2').each(function () {
+                    var $select = $(this);
+                    if ($select.data('select2')) { $select.select2('destroy'); }
+                    $select.select2({
+                        tags: true,
+                        width: '100%',
+                        tokenSeparators: [','],
+                        createTag: function (params) {
+                            var term = $.trim(params.term);
+                            if (term === '') { return null; }
+                            var exists = $select.find('option').filter(function () {
+                                return $(this).text() === term;
+                            }).length > 0;
+                            if (exists) { return null; }
+                            return { id: '__new__:' + term, text: term, newOption: true };
+                        }
+                    });
+                });
+            }
+
             $('.amount-field').each(function () { $(this).val(formatAmount($(this).val())); });
             $('#activity-lines-body').on('focus', '.amount-field', function () { $(this).val(unformatAmount($(this).val())); });
             $('#activity-lines-body').on('blur', '.amount-field', function () { $(this).val(formatAmount($(this).val())); });
             $('#activity-formset-form').on('submit', function () {
                 $(this).find('.amount-field').each(function () { $(this).val(unformatAmount($(this).val())); });
             });
+
+            initTagsSelect2($('#activity-lines-body'));
 
             $('#add-activity-line').on('click', function () {
                 var $totalForms = $('#id_activity_set-TOTAL_FORMS');
@@ -230,7 +394,8 @@
                 var $newRow = $(rawHtml);
                 $('#activity-lines-body').append($newRow);
                 $totalForms.val(index + 1);
-                $newRow.find('select').select2();
+                $newRow.find('select:not(.tags-select2)').select2();
+                initTagsSelect2($newRow);
             });
         });
     </script>

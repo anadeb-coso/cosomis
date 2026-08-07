@@ -40,11 +40,12 @@
                             <h5>{% translate 'Credits & Grants' %}</h5>
                             {% include 'components/table_quick_filter.html' with target='project-fundings-table' %}
                             <table id="project-fundings-table" class="table table-striped table-sm">
-                                <thead><tr><th>{% translate 'Type' %}</th><th>{% translate 'Label' %}</th><th>{% translate 'Initial amount' %}</th><th>{% translate 'Amount validated' %}</th><th>{% translate 'Amount disbursed' %}</th><th>{% translate 'Amount available on the main account' %}</th></tr></thead>
+                                <thead><tr><th>{% translate 'Type' %}</th><th>{% translate 'Financier' %}</th><th>{% translate 'Label' %}</th><th>{% translate 'Initial amount' %}</th><th>{% translate 'Amount validated' %}</th><th>{% translate 'Amount disbursed' %}</th><th>{% translate 'Amount available on the main account' %}</th></tr></thead>
                                 <tbody>
                                 {% for funding in fundings %}
                                     <tr>
                                         <td><span class="badge {{ funding.funding_type|financial_status_badge }}">{{ funding.get_funding_type_display }}</span></td>
+                                        <td>{{ funding.get_financier_display|default:'-' }}</td>
                                         <td><a href="{% url 'financial:funding_detail' funding.pk %}">{{ funding.label }}</a></td>
                                         <td>{{ funding.initial_amount|separate_with_space }}</td>
                                         <td>{{ funding.indicators.total_validated|separate_with_space }}</td>
@@ -52,7 +53,7 @@
                                         <td class="{% if funding.indicators.available_balance < 0 %}text-danger{% else %}text-success{% endif %}">{{ funding.indicators.available_balance|separate_with_space }}</td>
                                     </tr>
                                 {% empty %}
-                                    <tr><td colspan="6" class="text-center">{% translate 'No data' %}</td></tr>
+                                    <tr><td colspan="7" class="text-center">{% translate 'No data' %}</td></tr>
                                 {% endfor %}
                                 </tbody>
                             </table>
@@ -133,7 +134,7 @@
                                             <td>{{ activity.code|default_if_none:'-' }}</td>
                                             <td>{{ activity.name }}</td>
                                             <td>{{ activity.component.name }}</td>
-                                            <td>{{ activity.amount|separate_with_space }}</td>
+                                            <td>{{ activity.effective_amount|separate_with_space }}</td>
                                             <td>{{ activity.justified_amount|separate_with_space }}</td>
                                             <td class="{% if activity.balance_to_justify < 0 %}text-danger{% else %}text-success{% endif %}">{{ activity.balance_to_justify|separate_with_space }}</td>
                                         </tr>

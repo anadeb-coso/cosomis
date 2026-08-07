@@ -13,7 +13,13 @@ from openpyxl.utils import get_column_letter
 
 
 def _new_sheet(workbook, title, headers):
-    if workbook.worksheets and workbook.active.max_row == 1 and workbook.active.max_column == 1 and workbook.active['A1'].value is None:
+    # Reading a cell's .value (workbook.active['A1'].value) materializes that
+    # cell in openpyxl's internal storage even though nothing was written to it -
+    # ws.append() then thinks row 1 is already occupied and starts writing at
+    # row 2, leaving a blank first row ahead of the real header row. max_row/
+    # max_column alone are enough to detect "still the pristine default sheet"
+    # without touching any cell.
+    if workbook.worksheets and workbook.active.max_row == 1 and workbook.active.max_column == 1:
         ws = workbook.active
         ws.title = title[:31]
     else:
@@ -43,12 +49,13 @@ def build_project_ida_sheet(workbook, queryset):
 
 def build_funding_sheet(workbook, queryset):
     ws = _new_sheet(workbook, 'Crédits & Dons', [
-        'ID_CréditDon', 'Type', "N° d'identification IDA", 'ID_ProjetIDA', 'Libellé / Objet', 'Montant initial', 'Observations',
+        'ID_CréditDon', 'Type', 'Financier', "N° d'identification IDA", 'ID_ProjetIDA', 'Libellé / Objet', 'Montant initial', 'Observations',
     ])
     for funding in queryset:
         ws.append([
-            funding.external_id or '', funding.get_funding_type_display(), funding.identification_number,
-            funding.project.name, funding.label, funding.initial_amount, funding.notes,
+            funding.external_id or '', funding.get_funding_type_display(),
+            funding.get_financier_display() if funding.financier else '',
+            funding.identification_number, funding.project.name, funding.label, funding.initial_amount, funding.notes,
         ])
     return ws
 
@@ -102,18 +109,51 @@ def build_annual_work_plan_sheet(workbook, queryset):
 
 def build_activity_sheet(workbook, queryset):
     ws = _new_sheet(workbook, 'Activités', [
-        'ID_Activité', 'ID_Composante', 'ID_SousComposante', 'ID_PTBA', 'Libellé', 'Montant', 'Cible(s)',
+        'ID_Activité', 'Code', 'ID_Composante', 'ID_SousComposante', 'ID_PTBA', 'ID_Activité_Parent', 'Libellé',
+        'Montant propre', 'Montant (auto)', 'Statut', 'Cible(s)', 'Budget prévisionnel', 'Résultats', 'Indicateurs',
+        'Unité', 'Valeur cible', 'Structures Responsables', 'Structures Impliquées',
+        'Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin', 'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.',
         'Montant justifié (auto)', 'Solde à justifier (auto)',
     ])
+    month_fields = ['month_jan', 'month_feb', 'month_mar', 'month_apr', 'month_may', 'month_jun',
+                     'month_jul', 'month_aug', 'month_sep', 'month_oct', 'month_nov', 'month_dec']
     for activity in queryset:
         is_sub_component = activity.component.parent_id is not None
         ws.append([
             activity.external_id or '',
+            activity.code,
             '' if is_sub_component else activity.component.name,
             activity.component.name if is_sub_component else '',
             activity.annual_work_plan.name,
+            (activity.parent.external_id or activity.parent.name) if activity.parent_id else '',
             activity.name,
-            activity.amount, activity.target, activity.justified_amount, activity.balance_to_justify,
+            activity.amount,
+            activity.effective_amount,
+            activity.get_status_display(),
+            activity.target,
+            activity.budget_previsionnel,
+            activity.resultats,
+            activity.indicateurs,
+            activity.unite,
+            activity.valeur_cible,
+            '\n'.join(f'- {tag.name}' for tag in activity.structures_responsables.all()),
+            '\n'.join(f'- {tag.name}' for tag in activity.structures_impliquees.all()),
+            *('X' if getattr(activity, field) else '' for field in month_fields),
+            activity.justified_amount, activity.balance_to_justify,
+        ])
+    return ws
+
+
+def build_activity_funding_sheet(workbook, queryset):
+    """Activités ↔ Crédits & Dons: how much of an activity's cost is imputed to
+    a given Credit/Grant - one row per (activity, funding) allocation."""
+    ws = _new_sheet(workbook, 'Activités-CréditDon', ['ID_Lien', 'ID_Activité', 'ID_CréditDon', 'Montant'])
+    for link in queryset:
+        ws.append([
+            link.external_id or '',
+            link.activity.external_id or link.activity.name,
+            link.funding.external_id or link.funding.label,
+            link.amount,
         ])
     return ws
 
@@ -279,11 +319,13 @@ def export_component(queryset):
 
 
 def export_annual_work_plan(queryset):
-    from financial.models.planning import Activity
+    from financial.models.planning import Activity, ActivityFunding
 
     wb = Workbook()
     build_annual_work_plan_sheet(wb, queryset)
-    build_activity_sheet(wb, Activity.objects.filter(annual_work_plan__in=queryset))
+    activities_qs = Activity.objects.filter(annual_work_plan__in=queryset)
+    build_activity_sheet(wb, activities_qs)
+    build_activity_funding_sheet(wb, ActivityFunding.objects.filter(activity__in=activities_qs))
     return workbook_response(wb, 'ptba.xlsx')
 
 
@@ -370,7 +412,7 @@ def export_allocation(queryset):
 def export_project_ida_detail(project):
     from django.db.models import Q
     from financial.models.funding import Funding
-    from financial.models.planning import AnnualWorkPlan, Activity
+    from financial.models.planning import AnnualWorkPlan, Activity, ActivityFunding
     from financial.models.financial import DisbursementRequest, DisbursementRequestValidation, Disbursement, BankTransfer
     from financial.models.supporting_document import SupportingDocument, SupportingDocumentActivity, SupportingDocumentActivityFile
     from subprojects.models import CategoryIDA, Component
@@ -389,7 +431,9 @@ def export_project_ida_detail(project):
     build_component_funding_sheet(wb, sub_components, 'ID_SousComposante', 'Sous-composantes-CréditDon')
     plans = AnnualWorkPlan.objects.filter(project=project)
     build_annual_work_plan_sheet(wb, plans)
-    build_activity_sheet(wb, Activity.objects.filter(annual_work_plan__in=plans))
+    activities_qs = Activity.objects.filter(annual_work_plan__in=plans)
+    build_activity_sheet(wb, activities_qs)
+    build_activity_funding_sheet(wb, ActivityFunding.objects.filter(activity__in=activities_qs))
     requests_qs = DisbursementRequest.objects.filter(project=project)
     build_disbursement_request_sheet(wb, requests_qs)
     build_disbursement_request_validation_sheet(wb, DisbursementRequestValidation.objects.filter(disbursement_request__in=requests_qs))

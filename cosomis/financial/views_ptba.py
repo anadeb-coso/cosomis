@@ -12,7 +12,8 @@ from cosomis.mixins import PageMixin, SoftDeleteViewMixin
 from usermanager.permissions import AccountantPermissionRequiredMixin, FinancialPermissionRequiredMixin
 
 from subprojects.models import Component
-from financial.models.planning import AnnualWorkPlan, Activity
+from financial.models.planning import AnnualWorkPlan, Activity, ActivityFunding
+from financial.models.funding import Funding
 from financial.forms import AnnualWorkPlanForm, ActivityForm, PTBAActivityFormSet
 from financial.aggregations import activity_sort_key
 from financial.exports import export_annual_work_plan
@@ -130,11 +131,78 @@ class AnnualWorkPlanDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissio
         return context
 
 
+def _save_activity_fundings(formset, post_data, project, user):
+    """Upserts ActivityFunding rows from the per-Funding amount matrix rendered
+    alongside the PTBAActivityFormSet (one column per Funding of the PTBA's
+    project - see annual_work_plan_detail.html / annual_work_plan_sheet.html).
+    Each cell is submitted as "<form.prefix>-funding_<funding.pk>" - reusing the
+    formset's own prefixes means the empty-row JS template (which already
+    rewrites __prefix__ to the real index) needs no extra wiring for these
+    inputs. An amount left blank/zero removes the link, matching "si le montant
+    est renseigné, ce Crédit/Don est [lié] à l'activité"."""
+    from financial.management.commands.import_disbursement_workbook import to_float
+
+    fundings = list(Funding.objects.filter(project=project))
+    if not fundings:
+        return
+    for form in formset.forms:
+        if form in formset.deleted_forms:
+            continue
+        activity = form.instance
+        if not activity.pk:
+            continue
+        for funding in fundings:
+            raw = post_data.get(f'{form.prefix}-funding_{funding.pk}')
+            amount = to_float(raw) if raw not in (None, '') else None
+            existing = ActivityFunding.objects.filter(activity=activity, funding=funding).first()
+            if amount:
+                if existing:
+                    if existing.amount != amount:
+                        existing.amount = amount
+                        existing.save(user=user)
+                else:
+                    ActivityFunding(activity=activity, funding=funding, amount=amount).save(user=user)
+            elif existing:
+                existing.delete()
+
+
+def _activity_funding_amounts_map(activity_ids, project_fundings):
+    """{activity_id: {funding_id: amount}} for the given activities - the raw
+    data behind the per-Funding amount matrix (see _attach_funding_amounts()
+    and _attach_funding_amounts_readonly() below)."""
+    activity_ids = [pk for pk in activity_ids if pk]
+    if not activity_ids:
+        return {}
+    links = ActivityFunding.objects.filter(activity_id__in=activity_ids, funding__in=project_fundings)
+    amounts_by_activity = {}
+    for link in links:
+        amounts_by_activity.setdefault(link.activity_id, {})[link.funding_id] = link.amount
+    return amounts_by_activity
+
+
+def _attach_funding_amounts(forms_list, project_fundings):
+    """Pre-fills form.funding_amounts (a {funding_id: amount} dict) for every
+    form so the template can render each existing ActivityFunding value in its
+    matrix cell - empty for unsaved/extra rows, which simply have none yet."""
+    amounts_by_activity = _activity_funding_amounts_map([f.instance.pk for f in forms_list], project_fundings)
+    for form in forms_list:
+        form.funding_amounts = amounts_by_activity.get(form.instance.pk, {})
+
+
+def _attach_funding_amounts_readonly(activities, project_fundings):
+    """Same as _attach_funding_amounts(), for a plain list/queryset of Activity
+    instances (the read-only "Activities" tables on the PTBA/Project/Funding/
+    Category/Component detail pages) rather than formset forms."""
+    amounts_by_activity = _activity_funding_amounts_map([a.pk for a in activities], project_fundings)
+    for activity in activities:
+        activity.funding_amounts = amounts_by_activity.get(activity.pk, {})
+
+
 def _save_activity_formset(plan, post_data, user):
     """Validates + saves the PTBAActivityFormSet for `plan` - shared by the
     detail page's embedded table and the dedicated activities sheet page so the
     two can never drift. Returns (formset, success)."""
-    formset = PTBAActivityFormSet(post_data, instance=plan, form_kwargs={'project': plan.project})
+    formset = PTBAActivityFormSet(post_data, instance=plan, form_kwargs={'project': plan.project, 'annual_work_plan': plan})
     if not formset.is_valid():
         return formset, False
     activities = formset.save(commit=False)
@@ -142,6 +210,8 @@ def _save_activity_formset(plan, post_data, user):
         activity.save(user=user)
     for obj in formset.deleted_objects:
         obj.delete()
+    formset.save_m2m()
+    _save_activity_fundings(formset, post_data, plan.project, user)
     return formset, True
 
 
@@ -165,8 +235,13 @@ class AnnualWorkPlanDetailView(PageMixin, LoginRequiredMixin, generic.DetailView
         if getattr(self, 'formset_mixin', None):
             ctx['formset'] = self.formset_mixin
         else:
-            ctx['formset'] = PTBAActivityFormSet(instance=plan, form_kwargs={'project': plan.project})
+            ctx['formset'] = PTBAActivityFormSet(instance=plan, form_kwargs={'project': plan.project, 'annual_work_plan': plan})
         _sort_formset_forms(ctx['formset'])
+        project_fundings = list(Funding.objects.filter(project=plan.project).order_by('label'))
+        ctx['project_fundings'] = project_fundings
+        _attach_funding_amounts(ctx['formset'].forms, project_fundings)
+        ctx['formset'].empty_form.funding_amounts = {}
+        _attach_funding_amounts_readonly(ctx['activities'], project_fundings)
         return ctx
 
     def post(self, request, *args, **kwargs):
@@ -198,8 +273,12 @@ class AnnualWorkPlanActivitySheetView(PageMixin, LoginRequiredMixin, generic.Det
         if getattr(self, 'formset_mixin', None):
             ctx['formset'] = self.formset_mixin
         else:
-            ctx['formset'] = PTBAActivityFormSet(instance=plan, form_kwargs={'project': plan.project})
+            ctx['formset'] = PTBAActivityFormSet(instance=plan, form_kwargs={'project': plan.project, 'annual_work_plan': plan})
         _sort_formset_forms(ctx['formset'])
+        project_fundings = list(Funding.objects.filter(project=plan.project).order_by('label'))
+        ctx['project_fundings'] = project_fundings
+        _attach_funding_amounts(ctx['formset'].forms, project_fundings)
+        ctx['formset'].empty_form.funding_amounts = {}
         return ctx
 
     def post(self, request, *args, **kwargs):
@@ -220,9 +299,13 @@ class AnnualWorkPlanExportView(PageMixin, LoginRequiredMixin, generic.View):
 
 class AnnualWorkPlanActivityImportView(PageMixin, LoginRequiredMixin, AccountantPermissionRequiredMixin, generic.View):
     """Imports Activités for a single PTBA from a lightweight .xlsx (Composante,
-    Libellé, Montant, Cible(s) columns, matching import_disbursement_workbook.py's
-    column names) - a scoped alternative to the full multi-sheet import command,
-    for adding/updating just this plan's activities from a spreadsheet."""
+    Code, Libellé, Montant, Statut, Cible(s) columns, matching
+    import_disbursement_workbook.py's column names) - a scoped alternative to
+    the full multi-sheet import command, for adding/updating just this plan's
+    activities from a spreadsheet. Only the core fields are handled here (not
+    the richer résultats/indicateurs/structures/period-of-realization set,
+    which the full command and the "Edit full details" page both cover) -
+    keeping this upload path quick for the common case of a plain activity list."""
 
     def post(self, request, *args, **kwargs):
         plan = get_object_or_404(AnnualWorkPlan, pk=kwargs['pk'])
@@ -231,6 +314,8 @@ class AnnualWorkPlanActivityImportView(PageMixin, LoginRequiredMixin, Accountant
             messages.error(request, _("No file was uploaded."))
             return redirect('financial:annual_work_plan_detail', pk=plan.pk)
 
+        from financial.management.commands.import_disbursement_workbook import ACTIVITY_STATUS_MAP, map_choice
+
         df = pd.read_excel(uploaded)
         created, updated, skipped = 0, 0, 0
         for _row_index, row in df.iterrows():
@@ -238,7 +323,7 @@ class AnnualWorkPlanActivityImportView(PageMixin, LoginRequiredMixin, Accountant
             component_ref = to_str(get_value(row, 'ID_Composante', 'ID_SousComposante'))
             component_name = to_str(get_value(row, 'Composante', 'Sous-composante', 'Nom de la composante'))
             name = to_str(get_value(row, 'Libellé', 'Nom'))
-            amount = to_float(get_value(row, 'Montant'))
+            amount = to_float(get_value(row, 'Montant', 'Montant propre'))
 
             component = None
             if component_ref:
@@ -246,11 +331,13 @@ class AnnualWorkPlanActivityImportView(PageMixin, LoginRequiredMixin, Accountant
             if not component and component_name:
                 component = Component.objects.filter(project=plan.project, name=component_name).first()
 
-            if not component or not name or amount is None:
+            if not component or not name:
                 skipped += 1
                 continue
 
+            code = to_str(get_value(row, 'Code'))
             target = to_str(get_value(row, 'Cible(s)', 'Cibles'))
+            status = map_choice(get_value(row, 'Statut'), ACTIVITY_STATUS_MAP)
 
             # Re-uploading a corrected file should update in place rather than
             # duplicate: match by external_id if given, else by (plan, component,
@@ -261,7 +348,10 @@ class AnnualWorkPlanActivityImportView(PageMixin, LoginRequiredMixin, Accountant
             if activity:
                 activity.component = component
                 activity.amount = amount
+                activity.code = code
                 activity.target = target
+                if status:
+                    activity.status = status
                 if ref:
                     activity.external_id = ref
                 activity.save(user=request.user)
@@ -269,7 +359,8 @@ class AnnualWorkPlanActivityImportView(PageMixin, LoginRequiredMixin, Accountant
             else:
                 Activity(
                     external_id=ref, component=component, annual_work_plan=plan,
-                    name=name, amount=amount, target=target,
+                    name=name, amount=amount, code=code, target=target,
+                    status=status or Activity.Status.NOT_STARTED,
                 ).save(user=request.user)
                 created += 1
 
@@ -302,6 +393,7 @@ class ActivityCreateView(PageMixin, LoginRequiredMixin, AccountantPermissionRequ
             activity = form.save(commit=False)
             activity.annual_work_plan = plan
             activity.save(user=request.user)
+            form.save_m2m()
             return redirect('financial:annual_work_plan_detail', pk=plan.pk)
         self.form_mixin = form
         return self.get(request, *args, **kwargs)
@@ -330,6 +422,7 @@ class ActivityUpdateView(PageMixin, LoginRequiredMixin, AccountantPermissionRequ
             activity = form.save(commit=False)
             activity.annual_work_plan = instance.annual_work_plan
             activity.save(user=request.user)
+            form.save_m2m()
             return redirect('financial:annual_work_plan_detail', pk=instance.annual_work_plan.pk)
         self.form_mixin = form
         return self.get(request, *args, **kwargs)

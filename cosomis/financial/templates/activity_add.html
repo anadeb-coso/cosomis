@@ -1,6 +1,18 @@
 {% extends 'layouts/base.html' %}
 {% load static i18n bootstrap4 %}
 
+{% block extracss %}
+    {{ block.super }}
+    <style>
+        .month-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; }
+        .month-grid .month-cell {
+            border: 1px solid #ced4da; border-radius: 6px; padding: 6px 10px;
+            display: flex; align-items: center; gap: 6px; background: #f8f9fa;
+        }
+        .month-grid .month-cell label { margin: 0; font-size: 13px; }
+    </style>
+{% endblock %}
+
 {% block content %}
     <div class="row">
         <div class="col-12">
@@ -30,12 +42,27 @@
                                     {% endfor %}
                                 {% endif %}
                                 {% for field in form %}
-                                    {% bootstrap_field field %}
-                                    {% if field.errors %}
-                                        <div class="alert alert-danger alert-sm form_alert">{{ field.errors }}</div>
+                                    {% if field.name|slice:":6" != "month_" %}
+                                        {% bootstrap_field field %}
+                                        {% if field.errors %}
+                                            <div class="alert alert-danger alert-sm form_alert">{{ field.errors }}</div>
+                                        {% endif %}
+                                        <div class="clearfix"></div>
                                     {% endif %}
-                                    <div class="clearfix"></div>
                                 {% endfor %}
+
+                                <label>{% translate 'Realization period' %}</label>
+                                <div class="month-grid">
+                                    {% for field in form %}
+                                        {% if field.name|slice:":6" == "month_" %}
+                                            <div class="month-cell">
+                                                {{ field }}
+                                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+
                                 <button type="submit" class="btn btn-primary float-right">{% translate 'Submit' %}</button>
                             </form>
                         </div>
@@ -44,4 +71,30 @@
             </div>
         </div>
     </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('.tags-select2').each(function () {
+                var $select = $(this);
+                $select.select2('destroy');
+                $select.select2({
+                    tags: true,
+                    width: '100%',
+                    tokenSeparators: [','],
+                    createTag: function (params) {
+                        var term = $.trim(params.term);
+                        if (term === '') { return null; }
+                        var exists = $select.find('option').filter(function () {
+                            return $(this).text() === term;
+                        }).length > 0;
+                        if (exists) { return null; }
+                        return { id: '__new__:' + term, text: term, newOption: true };
+                    }
+                });
+            });
+        });
+    </script>
 {% endblock %}

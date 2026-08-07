@@ -21,12 +21,13 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3"><strong>{% translate 'IDA Project' %}</strong><br>{{ funding.project.name }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Financier' %}</strong><br>{{ funding.get_financier_display|default:'-' }}</div>
                         <div class="col-md-3"><strong>{% translate 'IDA identification number' %}</strong><br>{{ funding.identification_number }}</div>
                         <div class="col-md-3"><strong>{% translate 'Initial amount' %}</strong><br>{{ funding.initial_amount|separate_with_space }}</div>
-                        <div class="col-md-3"><strong>{% translate 'Amount currently available' %}</strong><br><span class="{% if funding.available_balance < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ funding.available_balance|separate_with_space }}</span></div>
                     </div>
                     <div class="row mt-2">
-                        <div class="col-md-12"><strong>{% translate 'Observations' %}</strong><br>{{ funding.notes|default_if_none:'-' }}</div>
+                        <div class="col-md-3"><strong>{% translate 'Amount currently available' %}</strong><br><span class="{% if funding.available_balance < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ funding.available_balance|separate_with_space }}</span></div>
+                        <div class="col-md-9"><strong>{% translate 'Observations' %}</strong><br>{{ funding.notes|default_if_none:'-' }}</div>
                     </div>
                 </div>
             </div>
@@ -94,7 +95,7 @@
                                         <td>{{ activity.code|default_if_none:'-' }}</td>
                                         <td>{{ activity.name }}</td>
                                         <td>{{ activity.component.name }}</td>
-                                        <td>{{ activity.amount|separate_with_space }}</td>
+                                        <td>{{ activity.effective_amount|separate_with_space }}</td>
                                         <td>{{ activity.justified_amount|separate_with_space }}</td>
                                         <td class="{% if activity.balance_to_justify < 0 %}text-danger{% else %}text-success{% endif %}">{{ activity.balance_to_justify|separate_with_space }}</td>
                                     </tr>

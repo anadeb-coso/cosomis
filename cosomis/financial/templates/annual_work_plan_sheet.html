@@ -26,10 +26,35 @@
                                 <th class="sheet-code">{% translate 'Code' %}</th>
                                 <th>{% translate 'Label' %}</th>
                                 <th>{% translate 'Component' %}</th>
+                                <th>{% translate 'Parent activity' %}</th>
+                                <th>{% translate 'Status' %}</th>
                                 <th>{% translate 'Amount' %}</th>
+                                {% for funding in project_fundings %}
+                                    <th>{{ funding.label }}</th>
+                                {% endfor %}
+                                <th>{% translate 'Projected budget' %}</th>
                                 <th>{% translate 'Target(s)' %}</th>
+                                <th>{% translate 'Results' %}</th>
+                                <th>{% translate 'Indicators' %}</th>
+                                <th>{% translate 'Unit' %}</th>
+                                <th>{% translate 'Target value' %}</th>
+                                <th class="sheet-tags">{% translate 'Responsible structures' %}</th>
+                                <th class="sheet-tags">{% translate 'Involved structures' %}</th>
+                                <th class="sheet-month">{% translate 'Jan.' %}</th>
+                                <th class="sheet-month">{% translate 'Feb.' %}</th>
+                                <th class="sheet-month">{% translate 'Mar.' %}</th>
+                                <th class="sheet-month">{% translate 'Apr.' %}</th>
+                                <th class="sheet-month">{% translate 'May' %}</th>
+                                <th class="sheet-month">{% translate 'Jun.' %}</th>
+                                <th class="sheet-month">{% translate 'Jul.' %}</th>
+                                <th class="sheet-month">{% translate 'Aug.' %}</th>
+                                <th class="sheet-month">{% translate 'Sep.' %}</th>
+                                <th class="sheet-month">{% translate 'Oct.' %}</th>
+                                <th class="sheet-month">{% translate 'Nov.' %}</th>
+                                <th class="sheet-month">{% translate 'Dec.' %}</th>
                                 <th class="sheet-justified">{% translate 'Justified amount' %}</th>
                                 <th class="sheet-balance">{% translate 'Balance to justify' %}</th>
+                                <th class="sheet-delete-col"></th>
                                 <th class="sheet-delete-col"></th>
                             </tr>
                             </thead>
@@ -41,10 +66,39 @@
                                     <td class="sheet-cell sheet-code">{{ line_form.code }}{{ line_form.code.errors }}</td>
                                     <td class="sheet-cell">{{ line_form.name }}{{ line_form.name.errors }}</td>
                                     <td class="sheet-cell">{{ line_form.component }}{{ line_form.component.errors }}</td>
+                                    <td class="sheet-cell">{{ line_form.parent }}{{ line_form.parent.errors }}</td>
+                                    <td class="sheet-cell">{{ line_form.status }}{{ line_form.status.errors }}</td>
                                     <td class="sheet-cell">{{ line_form.amount }}{{ line_form.amount.errors }}</td>
+                                    {% for funding in project_fundings %}
+                                        <td class="sheet-cell"><input type="text" inputmode="decimal" class="amount-field" name="{{ line_form.prefix }}-funding_{{ funding.pk }}" value="{{ line_form.funding_amounts|get_item:funding.pk|default_if_none:'' }}"></td>
+                                    {% endfor %}
+                                    <td class="sheet-cell">{{ line_form.budget_previsionnel }}{{ line_form.budget_previsionnel.errors }}</td>
                                     <td class="sheet-cell">{{ line_form.target }}{{ line_form.target.errors }}</td>
+                                    <td class="sheet-cell">{{ line_form.resultats }}{{ line_form.resultats.errors }}</td>
+                                    <td class="sheet-cell">{{ line_form.indicateurs }}{{ line_form.indicateurs.errors }}</td>
+                                    <td class="sheet-cell">{{ line_form.unite }}{{ line_form.unite.errors }}</td>
+                                    <td class="sheet-cell">{{ line_form.valeur_cible }}{{ line_form.valeur_cible.errors }}</td>
+                                    <td class="sheet-cell sheet-tags">{{ line_form.structures_responsables }}{{ line_form.structures_responsables.errors }}</td>
+                                    <td class="sheet-cell sheet-tags">{{ line_form.structures_impliquees }}{{ line_form.structures_impliquees.errors }}</td>
+                                    <td class="sheet-cell sheet-month">{{ line_form.month_jan }}</td>
+                                    <td class="sheet-cell sheet-month">{{ line_form.month_feb }}</td>
+                                    <td class="sheet-cell sheet-month">{{ line_form.month_mar }}</td>
+                                    <td class="sheet-cell sheet-month">{{ line_form.month_apr }}</td>
+                                    <td class="sheet-cell sheet-month">{{ line_form.month_may }}</td>
+                                    <td class="sheet-cell sheet-month">{{ line_form.month_jun }}</td>
+                                    <td class="sheet-cell sheet-month">{{ line_form.month_jul }}</td>
+                                    <td class="sheet-cell sheet-month">{{ line_form.month_aug }}</td>
+                                    <td class="sheet-cell sheet-month">{{ line_form.month_sep }}</td>
+                                    <td class="sheet-cell sheet-month">{{ line_form.month_oct }}</td>
+                                    <td class="sheet-cell sheet-month">{{ line_form.month_nov }}</td>
+                                    <td class="sheet-cell sheet-month">{{ line_form.month_dec }}</td>
                                     <td class="sheet-cell sheet-readonly sheet-justified">{% if line_form.instance.pk %}{{ line_form.instance.justified_amount|separate_with_space }}{% else %}-{% endif %}</td>
                                     <td class="sheet-cell sheet-readonly sheet-balance {% if line_form.instance.pk and line_form.instance.balance_to_justify < 0 %}text-danger{% endif %}">{% if line_form.instance.pk %}{{ line_form.instance.balance_to_justify|separate_with_space }}{% else %}-{% endif %}</td>
+                                    <td class="sheet-delete-col">
+                                        {% if line_form.instance.pk %}
+                                        <a href="{% url 'financial:activity_update' line_form.instance.pk %}" title="{% translate 'Edit full details' %}"><i class="fas fa-ellipsis-h"></i></a>
+                                        {% endif %}
+                                    </td>
                                     <td class="sheet-delete-col">
                                         {% if line_form.instance.pk %}
                                         <label class="sheet-delete-toggle" title="{% translate 'Delete' %}">
@@ -74,10 +128,35 @@
                                     <td class="sheet-cell sheet-code">{{ formset.empty_form.code }}{{ formset.empty_form.code.errors }}</td>
                                     <td class="sheet-cell">{{ formset.empty_form.name }}{{ formset.empty_form.name.errors }}</td>
                                     <td class="sheet-cell">{{ formset.empty_form.component }}{{ formset.empty_form.component.errors }}</td>
+                                    <td class="sheet-cell">{{ formset.empty_form.parent }}{{ formset.empty_form.parent.errors }}</td>
+                                    <td class="sheet-cell">{{ formset.empty_form.status }}{{ formset.empty_form.status.errors }}</td>
                                     <td class="sheet-cell">{{ formset.empty_form.amount }}{{ formset.empty_form.amount.errors }}</td>
+                                    {% for funding in project_fundings %}
+                                        <td class="sheet-cell"><input type="text" inputmode="decimal" class="amount-field" name="__prefix__-funding_{{ funding.pk }}" value=""></td>
+                                    {% endfor %}
+                                    <td class="sheet-cell">{{ formset.empty_form.budget_previsionnel }}{{ formset.empty_form.budget_previsionnel.errors }}</td>
                                     <td class="sheet-cell">{{ formset.empty_form.target }}{{ formset.empty_form.target.errors }}</td>
+                                    <td class="sheet-cell">{{ formset.empty_form.resultats }}{{ formset.empty_form.resultats.errors }}</td>
+                                    <td class="sheet-cell">{{ formset.empty_form.indicateurs }}{{ formset.empty_form.indicateurs.errors }}</td>
+                                    <td class="sheet-cell">{{ formset.empty_form.unite }}{{ formset.empty_form.unite.errors }}</td>
+                                    <td class="sheet-cell">{{ formset.empty_form.valeur_cible }}{{ formset.empty_form.valeur_cible.errors }}</td>
+                                    <td class="sheet-cell sheet-tags">{{ formset.empty_form.structures_responsables }}{{ formset.empty_form.structures_responsables.errors }}</td>
+                                    <td class="sheet-cell sheet-tags">{{ formset.empty_form.structures_impliquees }}{{ formset.empty_form.structures_impliquees.errors }}</td>
+                                    <td class="sheet-cell sheet-month">{{ formset.empty_form.month_jan }}</td>
+                                    <td class="sheet-cell sheet-month">{{ formset.empty_form.month_feb }}</td>
+                                    <td class="sheet-cell sheet-month">{{ formset.empty_form.month_mar }}</td>
+                                    <td class="sheet-cell sheet-month">{{ formset.empty_form.month_apr }}</td>
+                                    <td class="sheet-cell sheet-month">{{ formset.empty_form.month_may }}</td>
+                                    <td class="sheet-cell sheet-month">{{ formset.empty_form.month_jun }}</td>
+                                    <td class="sheet-cell sheet-month">{{ formset.empty_form.month_jul }}</td>
+                                    <td class="sheet-cell sheet-month">{{ formset.empty_form.month_aug }}</td>
+                                    <td class="sheet-cell sheet-month">{{ formset.empty_form.month_sep }}</td>
+                                    <td class="sheet-cell sheet-month">{{ formset.empty_form.month_oct }}</td>
+                                    <td class="sheet-cell sheet-month">{{ formset.empty_form.month_nov }}</td>
+                                    <td class="sheet-cell sheet-month">{{ formset.empty_form.month_dec }}</td>
                                     <td class="sheet-cell sheet-readonly sheet-justified">-</td>
                                     <td class="sheet-cell sheet-readonly sheet-balance">-</td>
+                                    <td class="sheet-delete-col"></td>
                                     <td class="sheet-delete-col"></td>
                                 </tr>
                         </script>
@@ -95,7 +174,10 @@
     {{ block.super }}
     <style>
         .sheet-scroll { overflow-x: auto; }
-        table.sheet-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        /* Every Activity field is shown - the table is expected to be wider than
+           the viewport, so it grows past 100% and the wrapper above scrolls
+           instead of squeezing columns down to unreadable widths. */
+        table.sheet-table { width: max-content; min-width: 100%; border-collapse: collapse; }
         table.sheet-table thead th {
             position: sticky; top: 0; background: #f4f6f9; border: 1px solid #dee2e6;
             padding: 6px 8px; font-size: 12px; text-transform: uppercase; color: #6c757d; z-index: 1;
@@ -104,18 +186,21 @@
             width: 36px; text-align: center; background: #f8f9fa; color: #9aa0a6;
             border: 1px solid #dee2e6; font-size: 12px; vertical-align: middle;
         }
-        table.sheet-table td.sheet-cell { border: 1px solid #dee2e6; padding: 0; vertical-align: middle; }
-        table.sheet-table th.sheet-code, table.sheet-table td.sheet-code { width: 90px; }
+        table.sheet-table td.sheet-cell { border: 1px solid #dee2e6; padding: 0; vertical-align: middle; min-width: 150px; }
+        table.sheet-table th.sheet-code, table.sheet-table td.sheet-code { width: 90px; min-width: 90px; }
+        table.sheet-table th.sheet-tags, table.sheet-table td.sheet-tags { width: 210px; min-width: 210px; }
+        table.sheet-table th.sheet-month, table.sheet-table td.sheet-month { width: 48px; min-width: 48px; text-align: center; }
         table.sheet-table td.sheet-cell input, table.sheet-table td.sheet-cell select, table.sheet-table td.sheet-cell textarea {
             width: 100%; height: 100%; border: none; border-radius: 0; padding: 6px 8px;
             background: transparent; box-shadow: none !important;
         }
+        table.sheet-table td.sheet-month input[type="checkbox"] { width: auto; height: auto; }
         table.sheet-table td.sheet-cell textarea { resize: vertical; min-height: 32px; max-height: 100px; font-family: inherit; }
         table.sheet-table td.sheet-cell input:focus, table.sheet-table td.sheet-cell select:focus, table.sheet-table td.sheet-cell textarea:focus {
             outline: 2px solid #2a78d6; outline-offset: -2px; background: #eef4fc;
         }
-        table.sheet-table td.sheet-readonly { background: #fafafa; color: #6c757d; padding: 6px 8px; border: 1px solid #dee2e6; white-space: nowrap; }
-        table.sheet-table .sheet-delete-col { width: 36px; text-align: center; border: 1px solid #dee2e6; }
+        table.sheet-table td.sheet-readonly { background: #fafafa; color: #6c757d; padding: 6px 8px; border: 1px solid #dee2e6; white-space: nowrap; min-width: 110px; }
+        table.sheet-table .sheet-delete-col { width: 36px; min-width: 36px; text-align: center; border: 1px solid #dee2e6; }
         table.sheet-table .sheet-delete-toggle { margin: 0; cursor: pointer; color: #dc3545; }
         table.sheet-table .sheet-delete-toggle input { display: none; }
         table.sheet-table tr.sheet-row-marked-deleted td.sheet-cell input,
@@ -140,12 +225,33 @@
                 if (!raw) { return raw; }
                 var cleaned = String(raw).replace(/\s/g, '');
                 var parts = cleaned.split('.');
-                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
                 return parts.join('.');
             }
 
             function unformatAmount(raw) {
-                return raw ? String(raw).replace(/[\s ]/g, '') : raw;
+                return raw ? String(raw).replace(/[\s ]/g, '') : raw;
+            }
+
+            function initTagsSelect2($scope) {
+                $scope.find('.tags-select2').each(function () {
+                    var $select = $(this);
+                    if ($select.data('select2')) { $select.select2('destroy'); }
+                    $select.select2({
+                        tags: true,
+                        width: '100%',
+                        tokenSeparators: [','],
+                        createTag: function (params) {
+                            var term = $.trim(params.term);
+                            if (term === '') { return null; }
+                            var exists = $select.find('option').filter(function () {
+                                return $(this).text() === term;
+                            }).length > 0;
+                            if (exists) { return null; }
+                            return { id: '__new__:' + term, text: term, newOption: true };
+                        }
+                    });
+                });
             }
 
             $('.amount-field').each(function () { $(this).val(formatAmount($(this).val())); });
@@ -155,6 +261,8 @@
                 $(this).find('.amount-field').each(function () { $(this).val(unformatAmount($(this).val())); });
             });
 
+            initTagsSelect2($('#sheet-body'));
+
             $('#sheet-add-row').on('click', function () {
                 var $totalForms = $('#id_activity_set-TOTAL_FORMS');
                 var index = parseInt($totalForms.val(), 10);
@@ -162,7 +270,8 @@
                 var $newRow = $(rawHtml);
                 $('#sheet-body').append($newRow);
                 $totalForms.val(index + 1);
-                $newRow.find('select').select2({ width: '100%' });
+                $newRow.find('select:not(.tags-select2)').select2({ width: '100%' });
+                initTagsSelect2($newRow);
                 renumberRows();
                 focusFirstField($newRow);
             });
@@ -179,7 +288,7 @@
 
             // Enter moves to the same column on the next row (or adds one if on the last row) -
             // only for plain inputs, so Enter still inserts a line break inside the name/target textareas.
-            $('#sheet-body').on('keydown', 'input', function (e) {
+            $('#sheet-body').on('keydown', 'input:not([type="checkbox"])', function (e) {
                 if (e.key !== 'Enter') { return; }
                 e.preventDefault();
                 var $cell = $(this).closest('td');

@@ -26,6 +26,7 @@
                         <thead>
                         <tr>
                             <th>{% translate 'Type' %}</th>
+                            <th>{% translate 'Financier' %}</th>
                             <th>{% translate 'IDA identification number' %}</th>
                             <th>{% translate 'IDA Project' %}</th>
                             <th>{% translate 'Label' %}</th>
@@ -39,6 +40,7 @@
                         {% for funding in fundings %}
                             <tr>
                                 <td><span class="badge {{ funding.funding_type|financial_status_badge }}">{{ funding.get_funding_type_display }}</span></td>
+                                <td>{{ funding.get_financier_display|default:'-' }}</td>
                                 <td>{{ funding.identification_number }}</td>
                                 <td>{{ funding.project.name }}</td>
                                 <td>{{ funding.label }}</td>
