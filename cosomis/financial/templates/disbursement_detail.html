@@ -60,7 +60,7 @@
                                         <td><a href="{% url 'financial:supporting_document_detail' doc.pk %}">{{ doc.reference }}</a></td>
                                         <td>{{ doc.document_date }}</td>
                                         <td>{{ doc.total_justified_amount|separate_with_space }}</td>
-                                        <td>{% if doc.file %}<a href="{{ doc.file.url }}" target="_blank"><i class="fas fa-file"></i> {{ doc.file_name|default:doc.file.name }}</a>{% else %}-{% endif %}</td>
+                                        <td>{% if doc.file %}<a href="{{ doc.file.url|imgAWSS3Filter }}" target="_blank"><i class="fas fa-file"></i> {{ doc.file_name|default:doc.file.name }}</a>{% else %}-{% endif %}</td>
                                     </tr>
                                 {% empty %}
                                     <tr><td colspan="4" class="text-center">{% translate 'No data' %}</td></tr>

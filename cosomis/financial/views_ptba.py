@@ -1,7 +1,10 @@
+import datetime
+
 import pandas as pd
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse_lazy
@@ -14,7 +17,7 @@ from usermanager.permissions import AccountantPermissionRequiredMixin, Financial
 from subprojects.models import Component
 from financial.models.planning import AnnualWorkPlan, Activity, ActivityFunding
 from financial.models.funding import Funding
-from financial.forms import AnnualWorkPlanForm, ActivityForm, PTBAActivityFormSet
+from financial.forms import AnnualWorkPlanForm, AnnualWorkPlanCopyForm, ActivityForm, PTBAActivityFormSet
 from financial.aggregations import activity_sort_key
 from financial.exports import export_annual_work_plan
 from financial.list_filters import apply_entity_filters, build_filter_context
@@ -131,6 +134,122 @@ class AnnualWorkPlanDeleteView(PageMixin, LoginRequiredMixin, FinancialPermissio
         return context
 
 
+_FRENCH_MONTHS = [
+    'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+    'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+]
+
+
+def _revised_plan_name(current_name, period_end):
+    """§ "Le nom du ptba initial sera modifié... en finissant par le jour
+    suivant de la periode que couvre la copie" - e.g. a copy covering up to
+    30/06/2026 renames the still-active plan "<name> 01 juillet (PTBA revu)".
+    Written directly in French: this becomes real PTBA data (an actual plan
+    name), not a UI label - like every other piece of business data in this
+    app (activity names, financier labels...), it's authored in French
+    regardless of locale."""
+    next_day = period_end + datetime.timedelta(days=1)
+    return f"{current_name} {next_day.day:02d} {_FRENCH_MONTHS[next_day.month - 1]} ({_('Revised PTBA')})"
+
+
+def _clone_annual_work_plan(plan, period_start, period_end, user):
+    """Full copy of `plan` and its activities (§ "copie intégrale d'un ptba
+    avec ses activités"). The copy is an inactive, hidden-from-selection
+    historical snapshot covering [period_start, period_end], linked back to
+    `plan` via source_annual_work_plan; each cloned activity is likewise
+    linked to the live activity it came from via source_activity (kept for
+    traceability - "copiée depuis..."), and freezes that source activity's
+    Montant justifié / Solde à justifier as they stand right now into
+    justified_amount_at_copy / balance_to_justify_at_copy (§ "fais aussi
+    Montant justifié et Solde à justifier en ce moment") - new Justificatifs
+    recorded later against the source activity must NOT retroactively change
+    this historical copy's figures. `plan` itself keeps its pk (existing FKs
+    from DisbursementRequest/SupportingDocumentActivity/etc. stay valid) and
+    stays active - it is only renamed, see _revised_plan_name(). Returns the
+    copy."""
+    copy = AnnualWorkPlan(
+        project=plan.project, period=plan.period, name=plan.name, notes=plan.notes,
+        is_active=False, period_start=period_start, period_end=period_end,
+        source_annual_work_plan=plan,
+    )
+    copy.save(user=user)
+
+    activities = list(plan.activity_set.all())
+    activity_map = {}
+    for activity in activities:
+        clone = Activity(
+            component=activity.component, annual_work_plan=copy, source_activity=activity,
+            code=activity.code, name=activity.name, status=activity.status, amount=activity.amount,
+            budget_previsionnel=activity.budget_previsionnel, target=activity.target,
+            resultats=activity.resultats, indicateurs=activity.indicateurs, unite=activity.unite,
+            valeur_cible=activity.valeur_cible,
+            justified_amount_at_copy=activity.justified_amount, balance_to_justify_at_copy=activity.balance_to_justify,
+            month_jan=activity.month_jan, month_feb=activity.month_feb, month_mar=activity.month_mar,
+            month_apr=activity.month_apr, month_may=activity.month_may, month_jun=activity.month_jun,
+            month_jul=activity.month_jul, month_aug=activity.month_aug, month_sep=activity.month_sep,
+            month_oct=activity.month_oct, month_nov=activity.month_nov, month_dec=activity.month_dec,
+        )
+        clone.save(user=user)
+        clone.structures_responsables.set(activity.structures_responsables.all())
+        clone.structures_impliquees.set(activity.structures_impliquees.all())
+        for link in activity.activityfunding_set.all():
+            ActivityFunding(activity=clone, funding=link.funding, amount=link.amount).save(user=user)
+        activity_map[activity.pk] = clone
+
+    for activity in activities:
+        if activity.parent_id and activity.parent_id in activity_map:
+            clone = activity_map[activity.pk]
+            clone.parent = activity_map[activity.parent_id]
+            clone.save(user=user)
+
+    plan.name = _revised_plan_name(plan.name, period_end)
+    plan.save(user=user)
+    return copy
+
+
+class AnnualWorkPlanCopyView(PageMixin, LoginRequiredMixin, AccountantPermissionRequiredMixin, generic.TemplateView):
+    """"Copier / réviser" a PTBA: GET shows a small form asking for the period
+    the historical copy will cover, POST performs the copy - see
+    _clone_annual_work_plan()."""
+
+    template_name = 'annual_work_plan_copy.html'
+    title = _('Copy / revise the annual work plan')
+    active_level1 = 'financial'
+
+    def get(self, request, *args, **kwargs):
+        plan = get_object_or_404(AnnualWorkPlan, pk=kwargs['pk'])
+        if not plan.is_active:
+            messages.error(request, _("An archived annual work plan cannot be copied again."))
+            return redirect('financial:annual_work_plan_detail', pk=plan.pk)
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['annual_work_plan'] = get_object_or_404(AnnualWorkPlan, pk=self.kwargs['pk'])
+        context['form'] = self.form_mixin if getattr(self, 'form_mixin', None) else AnnualWorkPlanCopyForm()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        plan = get_object_or_404(AnnualWorkPlan, pk=kwargs['pk'])
+        if not plan.is_active:
+            messages.error(request, _("An archived annual work plan cannot be copied again."))
+            return redirect('financial:annual_work_plan_detail', pk=plan.pk)
+        form = AnnualWorkPlanCopyForm(request.POST)
+        if form.is_valid():
+            with transaction.atomic():
+                _clone_annual_work_plan(plan, form.cleaned_data['period_start'], form.cleaned_data['period_end'], request.user)
+            messages.success(request, _(
+                "Historical copy created for %(start)s – %(end)s. The current plan was renamed to “%(name)s”."
+            ) % {
+                'start': form.cleaned_data['period_start'].strftime('%d/%m/%Y'),
+                'end': form.cleaned_data['period_end'].strftime('%d/%m/%Y'),
+                'name': plan.name,
+            })
+            return redirect('financial:annual_work_plan_detail', pk=plan.pk)
+        self.form_mixin = form
+        return self.get(request, *args, **kwargs)
+
+
 def _save_activity_fundings(formset, post_data, project, user):
     """Upserts ActivityFunding rows from the per-Funding amount matrix rendered
     alongside the PTBAActivityFormSet (one column per Funding of the PTBA's
@@ -242,10 +361,16 @@ class AnnualWorkPlanDetailView(PageMixin, LoginRequiredMixin, generic.DetailView
         _attach_funding_amounts(ctx['formset'].forms, project_fundings)
         ctx['formset'].empty_form.funding_amounts = {}
         _attach_funding_amounts_readonly(ctx['activities'], project_fundings)
+        # An archived (copied) plan is a frozen historical snapshot - it's
+        # always shown read-only, regardless of the viewer's permissions.
+        ctx['revisions'] = plan.revisions.all().order_by('-period_end')
         return ctx
 
     def post(self, request, *args, **kwargs):
         self.object = plan = self.get_object()
+        if not plan.is_active:
+            messages.error(request, _("An archived annual work plan is read-only."))
+            return redirect('financial:annual_work_plan_detail', pk=plan.pk)
         formset, success = _save_activity_formset(plan, request.POST, request.user)
         if success:
             return redirect('financial:annual_work_plan_detail', pk=plan.pk)
@@ -267,6 +392,13 @@ class AnnualWorkPlanActivitySheetView(PageMixin, LoginRequiredMixin, generic.Det
     active_level1 = 'financial'
     breadcrumb = [{'url': '', 'title': title}]
 
+    def get(self, request, *args, **kwargs):
+        plan = get_object_or_404(AnnualWorkPlan, pk=kwargs['pk'])
+        if not plan.is_active:
+            messages.error(request, _("An archived annual work plan is read-only - see its detail page."))
+            return redirect('financial:annual_work_plan_detail', pk=plan.pk)
+        return super().get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         plan = self.object
@@ -283,6 +415,9 @@ class AnnualWorkPlanActivitySheetView(PageMixin, LoginRequiredMixin, generic.Det
 
     def post(self, request, *args, **kwargs):
         self.object = plan = self.get_object()
+        if not plan.is_active:
+            messages.error(request, _("An archived annual work plan is read-only."))
+            return redirect('financial:annual_work_plan_detail', pk=plan.pk)
         formset, success = _save_activity_formset(plan, request.POST, request.user)
         if success:
             messages.success(request, _("Activities saved."))

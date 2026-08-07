@@ -1,6 +1,15 @@
 {% extends 'layouts/base.html' %}
 {% load static i18n bootstrap4 %}
 
+{% block extracss %}
+    {{ block.super }}
+    <style>
+        /* Same fixed width as supporting_document_activity_files_edit.html,
+           so every "Type de pièce" select renders at the same size everywhere. */
+        .document-type-select, .document-type-select + .select2-container { width: 220px !important; }
+    </style>
+{% endblock %}
+
 {% block content %}
     <div class="row">
         <div class="col-12">
@@ -19,23 +28,37 @@
                         <div class="col-9">
                             <form method="POST" enctype="multipart/form-data">
                                 {% csrf_token %}
-                                {% if form_mixin.errors %}
-                                    {% for field in form_mixin %}
-                                        {% for error in field.errors %}
-                                            <div class="alert alert-danger"><strong>{{ error|escape }}</strong></div>
-                                        {% endfor %}
-                                    {% endfor %}
-                                    {% for error in form_mixin.non_field_errors %}
-                                        <div class="alert alert-danger"><strong>{{ error|escape }}</strong></div>
-                                    {% endfor %}
-                                {% endif %}
-                                {% for field in form %}
-                                    {% bootstrap_field field %}
-                                    {% if field.errors %}
-                                        <div class="alert alert-danger alert-sm form_alert">{{ field.errors }}</div>
-                                    {% endif %}
-                                    <div class="clearfix"></div>
-                                {% endfor %}
+                                <div class="form-group">
+                                    <label for="id_files">{% translate 'Files' %}</label>
+                                    <input type="file" name="files" id="id_files" class="form-control-file" multiple required>
+                                </div>
+                                <table class="table table-sm" id="selected-files-table" style="display: none;">
+                                    <thead>
+                                        <tr>
+                                            <th>{% translate 'File' %}</th>
+                                            <th>{% translate 'Document type' %}</th>
+                                            <th>{% translate 'File display name' %}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="selected-files-body"></tbody>
+                                </table>
+                                {% comment %}
+                                A <script type="text/template"> is inert to the browser - safe to clone per
+                                selected file without the browser trying to parse/submit it on its own.
+                                {% endcomment %}
+                                <script type="text/template" id="selected-file-row-template">
+                                    <tr>
+                                        <td class="text-truncate" style="max-width: 220px;"><i class="fas fa-paperclip mr-1"></i><span class="selected-file-name"></span></td>
+                                        <td>
+                                            <select name="document_type___index__" class="form-control document-type-select">
+                                                {% for value, label in document_type_choices %}
+                                                <option value="{{ value }}">{{ label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td><input type="text" name="file_name___index__" class="form-control" placeholder="{% translate 'File display name' %}"></td>
+                                    </tr>
+                                </script>
                                 <button type="submit" class="btn btn-primary float-right">{% translate 'Submit' %}</button>
                             </form>
                         </div>
@@ -44,4 +67,33 @@
             </div>
         </div>
     </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            function stripExtension(name) {
+                var dot = name.lastIndexOf('.');
+                return dot > 0 ? name.substring(0, dot) : name;
+            }
+
+            // One row per selected file - document type and display name are
+            // both editable per file, the name defaulted to the file's own
+            // name without its extension.
+            $('#id_files').on('change', function () {
+                var $body = $('#selected-files-body');
+                $body.empty();
+                var rawHtml = document.getElementById('selected-file-row-template').innerHTML;
+                $.each(this.files, function (index, file) {
+                    var $row = $(rawHtml.replace(/__index__/g, index));
+                    $row.find('.selected-file-name').text(file.name).attr('title', file.name);
+                    $row.find('input[type="text"]').val(stripExtension(file.name));
+                    $body.append($row);
+                });
+                $('#selected-files-table').toggle(this.files.length > 0);
+                $body.find('select.document-type-select').select2({ width: '220px' });
+            });
+        });
+    </script>
 {% endblock %}

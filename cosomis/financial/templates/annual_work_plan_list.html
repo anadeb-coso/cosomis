@@ -28,6 +28,7 @@
                             <th>{% translate 'IDA Project' %}</th>
                             <th>{% translate 'Period (year)' %}</th>
                             <th>{% translate 'Label' %}</th>
+                            <th>{% translate 'Status' %}</th>
                             <th>{% translate 'Budgeted amount' %}</th>
                             <th>{% translate 'Amount currently available' %}</th>
                             <th>{% translate 'Observations' %}</th>
@@ -40,16 +41,28 @@
                                 <td>{{ plan.project.name }}</td>
                                 <td>{{ plan.period }}</td>
                                 <td>{{ plan.name }}</td>
+                                <td>
+                                    {% if plan.is_active %}
+                                        <span class="badge badge-success">{% translate 'Active' %}</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">{% translate 'Archived (historical PTBA)' %}</span>
+                                    {% endif %}
+                                </td>
                                 <td class="font-weight-bold">{{ plan.budgeted_amount|separate_with_space }}</td>
                                 <td class="{% if plan.available_amount < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ plan.available_amount|separate_with_space }}</td>
                                 <td>{{ plan.notes|default_if_none:'-'|truncatechars:40 }}</td>
                                 <td>
                                     <a href="{% url 'financial:annual_work_plan_detail' plan.pk %}" style="font-size: 9px !important;" class="btn btn-primary btn-xs" title="{% translate 'View details' %}"><i class="fa fa-eye"></i></a>
+                                    {% if plan.is_active %}
                                     {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
                                     <a href="{% url 'financial:annual_work_plan_activity_sheet' plan.pk %}" style="font-size: 9px !important;" class="btn btn-success btn-xs" title="{% translate 'Activities sheet' %}"><i class="fas fa-table"></i></a>
                                     {% endif %}
                                     {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
                                     <a href="{% url 'financial:annual_work_plan_update' plan.pk %}" style="font-size: 9px !important;" class="btn btn-primary btn-xs" title="{% translate 'Edit' %}"><i class="fa fa-edit"></i></a>
+                                    {% endif %}
+                                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Accountant" %}
+                                    <a href="{% url 'financial:annual_work_plan_copy' plan.pk %}" style="font-size: 9px !important;" class="btn btn-warning btn-xs" title="{% translate 'Copy / revise' %}"><i class="fas fa-code-branch"></i></a>
+                                    {% endif %}
                                     {% endif %}
                                     {% if user.is_superuser or user|has_group:"Financial" %}
                                     <a href="{% url 'financial:annual_work_plan_delete' plan.pk %}" style="font-size: 9px !important;" class="btn btn-danger btn-xs" title="{% translate 'Delete' %}"><i class="fa fa-trash"></i></a>

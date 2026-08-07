@@ -346,13 +346,39 @@ CategoryComponentFormSet = forms.inlineformset_factory(
 
 
 class AnnualWorkPlanForm(forms.ModelForm):
+    """is_active/period_start/period_end/source_annual_work_plan are managed
+    only by the "copy / revise" workflow (see AnnualWorkPlanCopyForm and
+    views_ptba.AnnualWorkPlanCopyView), never by hand through this form."""
+
     def __init__(self, *args, **kwargs):
         super(AnnualWorkPlanForm, self).__init__(*args, **kwargs)
         self.fields['project'].queryset = Project.objects.all().order_by('name')
 
     class Meta:
         model = AnnualWorkPlan
-        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED + [
+            'is_active', 'period_start', 'period_end', 'source_annual_work_plan',
+        ]
+
+
+class AnnualWorkPlanCopyForm(forms.Form):
+    """Asks for the historical period the copy will cover (§ "copie intégrale
+    d'un ptba") - the copy itself is created from this in
+    views_ptba.AnnualWorkPlanCopyView, never through a ModelForm."""
+
+    period_start = forms.DateField(
+        label=_("Period start"), widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+    )
+    period_end = forms.DateField(
+        label=_("Period end"), widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        start, end = cleaned.get('period_start'), cleaned.get('period_end')
+        if start and end and start > end:
+            raise forms.ValidationError(_("The period start must be before the period end."))
+        return cleaned
 
 
 class TagsWidget(forms.SelectMultiple):
@@ -424,7 +450,9 @@ class ActivityForm(forms.ModelForm):
 
     class Meta:
         model = Activity
-        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED
+        # source_activity is only ever set by the PTBA copy/revision workflow
+        # (views_ptba.AnnualWorkPlanCopyView), never hand-picked.
+        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED + ['source_activity']
         widgets = {
             'code': forms.TextInput(attrs={'class': 'form-control', 'style': 'max-width: 100px;'}),
             'name': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
@@ -524,14 +552,22 @@ class SupportingDocumentForm(forms.ModelForm):
 class SupportingDocumentActivityForm(forms.ModelForm):
     def __init__(self, project=None, *args, **kwargs):
         super(SupportingDocumentActivityForm, self).__init__(*args, **kwargs)
+        # A copied/archived PTBA's activities are frozen snapshots (their own
+        # justified_amount/balance_to_justify delegate to the linked source
+        # activity - see Activity.source_activity) - new justification lines
+        # must always target the live activity, never the historical copy.
         self.fields['activity'].queryset = (
-            Activity.objects.filter(annual_work_plan__project=project).order_by('name')
-            if project else Activity.objects.all().order_by('name')
+            Activity.objects.filter(annual_work_plan__project=project, annual_work_plan__is_active=True).order_by('name')
+            if project else Activity.objects.filter(annual_work_plan__is_active=True).order_by('name')
         )
 
     class Meta:
         model = SupportingDocumentActivity
         fields = ['activity', 'allocated_amount', 'notes']
+        widgets = {
+            'allocated_amount': forms.TextInput(attrs={'class': 'form-control amount-field', 'inputmode': 'decimal'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
 
 
 SupportingDocumentActivityFormSet = forms.inlineformset_factory(
@@ -544,11 +580,21 @@ SupportingDocumentActivityFormSet = forms.inlineformset_factory(
 )
 
 
-class SupportingDocumentActivityFileForm(forms.ModelForm):
-    """`supporting_document_activity` is fixed from the URL (see
-    SupportingDocumentActivityFileCreateView), not user-chosen - a line can carry
-    several files (§ Fichiers justif. Activités)."""
+#: SupportingDocumentActivityFileCreateView (§ Fichiers justif. Activités)
+#: attaches several files at once, each with its OWN document_type and
+#: display name - both are read directly from request.FILES/request.POST as
+#: `document_type_<index>` / `file_name_<index>` (matching the order of the
+#: `files` input), never through a Django Form: a ModelForm can't cleanly
+#: validate a variable-length batch of files under a single field.
 
-    class Meta:
-        model = SupportingDocumentActivityFile
-        fields = ['document_type', 'file', 'file_name']
+
+SupportingDocumentActivityFileEditFormSet = forms.modelformset_factory(
+    SupportingDocumentActivityFile,
+    fields=['document_type', 'file_name'],
+    extra=0,
+    can_delete=True,
+    widgets={
+        'document_type': forms.Select(attrs={'class': 'form-control document-type-select'}),
+        'file_name': forms.TextInput(attrs={'class': 'form-control'}),
+    },
+)

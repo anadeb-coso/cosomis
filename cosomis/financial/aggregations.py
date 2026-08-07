@@ -125,7 +125,11 @@ def activity_financial_summary(component_ids):
     """
     from financial.models.planning import Activity
 
-    activities_qs = Activity.objects.filter(component_id__in=list(component_ids))
+    # Archived (copied) PTBAs' activities are historical snapshots whose
+    # justified_amount/effective_amount are read straight from the live
+    # activity they were copied from (Activity.source_activity) - counting
+    # them here on top of the live ones would double every total.
+    activities_qs = Activity.objects.filter(component_id__in=list(component_ids), annual_work_plan__is_active=True)
     # Only top-level activities: a parent's effective_amount already cumulates
     # its children's, so summing every row would double-count them.
     budgeted = sum((activity.effective_amount or 0) for activity in activities_qs.filter(parent__isnull=True))

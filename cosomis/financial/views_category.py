@@ -174,7 +174,7 @@ class CategoryDetailView(PageMixin, LoginRequiredMixin, generic.DetailView):
         sub_level = [c for c in components if c.parent_id is not None]
         ctx['components'] = top_level
         ctx['sub_components'] = sub_level
-        ctx['activities'] = sorted(Activity.objects.filter(component__category=category).select_related('component'), key=activity_sort_key)
+        ctx['activities'] = sorted(Activity.objects.filter(component__category=category, annual_work_plan__is_active=True).select_related('component'), key=activity_sort_key)
         ctx['summary'] = activity_financial_summary([c.pk for c in components])
         return ctx
 

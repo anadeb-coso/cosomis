@@ -51,9 +51,21 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">{{ annual_work_plan.name }} ({{ annual_work_plan.period }})</h3>
+                    <h3 class="card-title">
+                        {{ annual_work_plan.name }} ({{ annual_work_plan.period }})
+                        {% if annual_work_plan.is_active %}
+                            <span class="badge badge-success">{% translate 'Active' %}</span>
+                        {% else %}
+                            <span class="badge badge-secondary">{% translate 'Archived (historical PTBA)' %}</span>
+                        {% endif %}
+                    </h3>
                     <div class="card-tools">
-                        <a class="btn btn-success btn-sm" href="{% url 'financial:annual_work_plan_activity_sheet' annual_work_plan.pk %}"><i class="fas fa-table"></i> {% translate 'Activities sheet' %}</a>
+                        {% if annual_work_plan.is_active %}
+                            <a class="btn btn-success btn-sm" href="{% url 'financial:annual_work_plan_activity_sheet' annual_work_plan.pk %}"><i class="fas fa-table"></i> {% translate 'Activities sheet' %}</a>
+                            {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Accountant" %}
+                            <a class="btn btn-outline-warning btn-sm" href="{% url 'financial:annual_work_plan_copy' annual_work_plan.pk %}"><i class="fas fa-code-branch"></i> {% translate 'Copy / revise' %}</a>
+                            {% endif %}
+                        {% endif %}
                         <a class="btn btn-outline-primary btn-sm" href="{% url 'financial:annual_work_plan_export' %}"><i class="fas fa-file-excel"></i> {% translate 'Export' %}</a>
                         <a class="btn btn-secondary btn-sm" href="{% url 'financial:annual_work_plan_list' %}">{% translate 'Back to list' %}</a>
                     </div>
@@ -65,15 +77,35 @@
                         <div class="col-md-3"><strong>{% translate 'Amount currently available' %}</strong><br><span class="{% if annual_work_plan.available_amount < 0 %}text-danger{% else %}text-success{% endif %} font-weight-bold">{{ annual_work_plan.available_amount|separate_with_space }}</span></div>
                         <div class="col-md-3"><strong>{% translate 'Observations' %}</strong><br>{{ annual_work_plan.notes|default_if_none:'-' }}</div>
                     </div>
+                    {% if not annual_work_plan.is_active or annual_work_plan.source_annual_work_plan or annual_work_plan.revisions.all %}
+                    <div class="row mt-2">
+                        {% if not annual_work_plan.is_active %}
+                        <div class="col-md-4"><strong>{% translate 'Period covered' %}</strong><br>{{ annual_work_plan.period_start }} &rarr; {{ annual_work_plan.period_end }}</div>
+                        {% endif %}
+                        {% if annual_work_plan.source_annual_work_plan %}
+                        <div class="col-md-4"><strong>{% translate 'Revised from' %}</strong><br><a href="{% url 'financial:annual_work_plan_detail' annual_work_plan.source_annual_work_plan.pk %}">{{ annual_work_plan.source_annual_work_plan.name }}</a></div>
+                        {% endif %}
+                        {% if annual_work_plan.revisions.all %}
+                        <div class="col-md-4">
+                            <strong>{% translate 'Historical copies' %}</strong><br>
+                            {% for revision in annual_work_plan.revisions.all %}
+                                <a href="{% url 'financial:annual_work_plan_detail' revision.pk %}">{{ revision.period_start }} &rarr; {{ revision.period_end }}</a>{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
             <div class="card">
                 <div class="card-header">
-                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
-                    <div class="card-tools">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" data-toggle="modal" data-target="#activity-import-modal"><i class="fas fa-file-upload"></i> {% translate 'Import' %}</button>
-                    </div>
+                    {% if annual_work_plan.is_active %}
+                        {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-toggle="modal" data-target="#activity-import-modal"><i class="fas fa-file-upload"></i> {% translate 'Import' %}</button>
+                        </div>
+                        {% endif %}
                     {% endif %}
                 </div>
                 <div class="card-body table-responsive">
@@ -83,7 +115,7 @@
                     </ul>
                     <div class="tab-content financial-tab-content">
                         <div id="ptba-tab-activities" class="tab-pane active">
-                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                    {% if annual_work_plan.is_active and user.is_superuser or annual_work_plan.is_active and user|has_group:"Admin" or annual_work_plan.is_active and user|has_group:"Evaluator" or annual_work_plan.is_active and user|has_group:"Accountant" %}
                     <form method="POST" action="{% url 'financial:annual_work_plan_detail' annual_work_plan.pk %}" id="activity-formset-form">
                         {% csrf_token %}
                         {{ formset.management_form }}
@@ -307,7 +339,7 @@
                         </div>
 
                         <div id="ptba-tab-history" class="tab-pane fade">
-                            {% include 'components/history_panel.html' with target=annual_work_plan %}
+                            {% include 'components/history_panel_ptba.html' with target=annual_work_plan %}
                         </div>
                     </div>
                 </div>

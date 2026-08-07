@@ -1,0 +1,90 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n custom_tags %}
+
+{% block extracss %}
+    {{ block.super }}
+    <style>
+        /* All "Type de pièce" selects must render at the same width, on this
+           page and on the "Add files" page alike - a plain .form-control
+           select stretches to its <td>'s width, which varies row to row, so
+           select2 is given an explicit fixed width instead (see javascript
+           block below and supporting_document_activity_file_add.html). */
+        .document-type-select, .document-type-select + .select2-container { width: 220px !important; }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{% translate 'Edit files' %} - {{ line }}</h3>
+                    <div class="col-md-12">
+                        <div class="btn-group pull-left">
+                            <a href="javascript:close_window();"><i class="fas fa-times text-danger"></i></a>
+                            <a href="{% url 'financial:supporting_document_detail' line.supporting_document_id %}" class="btn btn-secondary btn-sm">{% translate 'Back to list' %}</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if formset.non_form_errors %}
+                        <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+                    {% endif %}
+                    <form method="POST">
+                        {% csrf_token %}
+                        {{ formset.management_form }}
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>{% translate 'File' %}</th>
+                                    <th>{% translate 'Document type' %}</th>
+                                    <th>{% translate 'File display name' %}</th>
+                                    <th>{% translate 'Delete' %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for form in formset %}
+                                <tr>
+                                    {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                                    <td align="left">
+                                        {% if form.instance.file %}
+                                        {% with name=form.instance.file_name|default:form.instance.file.name %}
+                                        <a href="#" class="file-preview-trigger" data-url="{{ form.instance.file.url|imgAWSS3Filter }}" data-name="{{ name }}" data-download-url="{% url 'financial:supporting_document_activity_file_download' form.instance.pk %}">{{ name }}</a>
+                                        {% endwith %}
+                                        {% else %}-{% endif %}
+                                    </td>
+                                    <td>{{ form.document_type }}{{ form.document_type.errors }}</td>
+                                    <td>{{ form.file_name }}{{ form.file_name.errors }}</td>
+                                    <td>{{ form.DELETE }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="4" class="text-center">{% translate 'No data' %}</td></tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                        <button type="submit" class="btn btn-primary float-right">{% translate 'Save' %}</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% include 'components/file_preview_modal.html' %}
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    {% include 'components/file_preview_modal_js.html' %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            // base.html's global $("select").select2() init leaves the width
+            // to select2's own guess (varies with each <td>'s width) - force
+            // the same fixed width on every "Type de pièce" select instead,
+            // matching supporting_document_activity_file_add.html.
+            $('.document-type-select').each(function () {
+                var $select = $(this);
+                if ($select.data('select2')) { $select.select2('destroy'); }
+                $select.select2({ width: '220px' });
+            });
+        });
+    </script>
+{% endblock %}

@@ -4,6 +4,14 @@
 {% block extracss %}
     {{ block.super }}
     {% include 'components/tabs_style.html' %}
+    <style>
+        #document-activities-table { width: max-content; min-width: 100%; }
+        #document-activities-table th, #document-activities-table td { vertical-align: middle; }
+        #document-activities-table td.col-select { min-width: 220px; }
+        #document-activities-table td.col-amount { min-width: 130px; }
+        #document-activities-table td.col-text { min-width: 200px; }
+        #document-activities-table .select2-container { width: 100% !important; min-width: 180px; }
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -14,6 +22,7 @@
                 <div class="card-header">
                     <h3 class="card-title">{{ supporting_document.reference }}</h3>
                     <div class="card-tools">
+                        <a class="btn btn-success btn-sm" href="{% url 'financial:supporting_document_activity_sheet' supporting_document.pk %}"><i class="fas fa-table"></i> {% translate 'Justified activities sheet' %}</a>
                         <a class="btn btn-outline-primary btn-sm" href="{% url 'financial:supporting_document_export' %}"><i class="fas fa-file-excel"></i> {% translate 'Export' %}</a>
                         <a class="btn btn-secondary btn-sm" href="{% url 'financial:supporting_document_list' %}">{% translate 'Back to list' %}</a>
                     </div>
@@ -29,7 +38,9 @@
                         <div class="col-md-6">
                             <strong>{% translate 'File' %}</strong><br>
                             {% if supporting_document.file %}
-                                <a href="{{ supporting_document.file.url }}" target="_blank">{{ supporting_document.file_name|default:supporting_document.file.name }}</a>
+                                {% with name=supporting_document.file_name|default:supporting_document.file.name %}
+                                <a href="#" class="file-preview-trigger" data-url="{{ supporting_document.file.url|imgAWSS3Filter }}" data-name="{{ name }}" data-download-url="{% url 'financial:supporting_document_file_download' supporting_document.pk %}">{{ name }}</a>
+                                {% endwith %}
                             {% else %}-{% endif %}
                         </div>
                         <div class="col-md-6"><strong>{% translate 'Observations' %}</strong><br>{{ supporting_document.notes|default_if_none:'-' }}</div>
@@ -45,6 +56,86 @@
                     </ul>
                     <div class="tab-content financial-tab-content">
                         <div id="document-tab-activities" class="tab-pane active">
+                    {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                    <form method="POST" action="{% url 'financial:supporting_document_detail' supporting_document.pk %}" id="document-activity-formset-form">
+                        {% csrf_token %}
+                        {{ formset.management_form }}
+                        {% if formset.non_form_errors %}
+                            <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+                        {% endif %}
+                        {% include 'components/table_quick_filter.html' with target='document-activities-table' %}
+                        <div class="table-responsive">
+                        <table class="table table-striped table-sm" id="document-activities-table">
+                            <thead>
+                            <tr>
+                                <th>{% translate 'Activity' %}</th>
+                                <th>{% translate 'Allocated amount' %}</th>
+                                <th>{% translate 'Balance to justify' %}</th>
+                                <th>{% translate 'Observations' %}</th>
+                                <th>{% translate 'Files' %}</th>
+                                <th>{% translate 'Delete' %}</th>
+                            </tr>
+                            </thead>
+                            <tbody id="document-activity-lines-body">
+                            {% for line_form in formset %}
+                                <tr>
+                                    {% for hidden in line_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                    <td class="col-select">{{ line_form.activity }}{{ line_form.activity.errors }}</td>
+                                    <td class="col-amount">{{ line_form.allocated_amount }}{{ line_form.allocated_amount.errors }}</td>
+                                    <td class="{% if line_form.instance.pk and line_form.instance.activity.balance_to_justify < 0 %}text-danger{% elif line_form.instance.pk %}text-success{% endif %}">{% if line_form.instance.pk %}{{ line_form.instance.activity.balance_to_justify|separate_with_space }}{% else %}-{% endif %}</td>
+                                    <td class="col-text">{{ line_form.notes }}{{ line_form.notes.errors }}</td>
+                                    <td>
+                                        {% if line_form.instance.pk %}
+                                        <ul class="pl-3 mb-1" align="left">
+                                        {% for line_file in line_form.instance.files %}
+                                            <li>
+                                                {% if line_file.file %}{% with name=line_file.file_name|default:line_file.file.name %}<a href="#" class="file-preview-trigger" data-url="{{ line_file.file.url|imgAWSS3Filter }}" data-name="{{ name }}" data-download-url="{% url 'financial:supporting_document_activity_file_download' line_file.pk %}">{{ name }}</a>{% endwith %}{% else %}{{ line_file.file_name|default:'-' }}{% endif %}
+                                                <span class="badge badge-secondary">{{ line_file.get_document_type_display }}</span>
+                                                <a href="{% url 'financial:supporting_document_activity_file_delete' line_file.pk %}" title="{% translate 'Delete' %}"><i class="fa fa-trash text-danger"></i></a>
+                                            </li>
+                                        {% empty %}
+                                            <li class="text-muted">{% translate 'No data' %}</li>
+                                        {% endfor %}
+                                        </ul>
+                                        <a href="{% url 'financial:supporting_document_activity_file_create' line_form.instance.pk %}" class="btn btn-outline-primary btn-xs"><i class="fas fa-plus"></i> {% translate 'Add a file' %}</a>
+                                        {% if line_form.instance.files %}
+                                        <a href="{% url 'financial:supporting_document_activity_files_edit' line_form.instance.pk %}" class="btn btn-outline-secondary btn-xs"><i class="fas fa-edit"></i> {% translate 'Edit files' %}</a>
+                                        {% endif %}
+                                        {% else %}
+                                        <span class="text-muted">{% translate 'Save the line first' %}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{% if line_form.instance.pk %}{{ line_form.DELETE }}{% endif %}</td>
+                                </tr>
+                            {% empty %}
+                                <tr><td colspan="6" class="text-center">{% translate 'No data' %}</td></tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                        </div>
+                        <button type="button" id="add-document-activity-line" class="btn btn-outline-primary btn-sm mb-3">
+                            <i class="fas fa-plus"></i> {% translate 'Add another activity line' %}
+                        </button>
+                        {% comment %}
+                        A <script type="text/template"> is inert to the browser/jQuery - unlike a hidden
+                        <div>, its <select> is never picked up by the global $("select").select2() init
+                        in base.html, so a cloned row never carries a stale, non-functional select2 widget
+                        alongside the freshly-initialized one.
+                        {% endcomment %}
+                        <script type="text/template" id="document-activity-line-empty-template">
+                                <tr>
+                                    {% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                    <td class="col-select">{{ formset.empty_form.activity }}{{ formset.empty_form.activity.errors }}</td>
+                                    <td class="col-amount">{{ formset.empty_form.allocated_amount }}{{ formset.empty_form.allocated_amount.errors }}</td>
+                                    <td>-</td>
+                                    <td class="col-text">{{ formset.empty_form.notes }}{{ formset.empty_form.notes.errors }}</td>
+                                    <td><span class="text-muted">{% translate 'Save the line first' %}</span></td>
+                                    <td></td>
+                                </tr>
+                        </script>
+                        <button type="submit" class="btn btn-primary float-right">{% translate 'Submit' %}</button>
+                    </form>
+                    {% else %}
                             {% include 'components/table_quick_filter.html' with target='document-activities-table' %}
                             <table id="document-activities-table" class="table table-striped table-sm">
                                 <thead><tr><th>{% translate 'Activity' %}</th><th>{% translate 'Allocated amount' %}</th><th>{% translate 'Balance to justify' %}</th><th>{% translate 'Observations' %}</th><th>{% translate 'Files' %}</th></tr></thead>
@@ -59,19 +150,13 @@
                                             <ul class="pl-3 mb-1">
                                             {% for line_file in line.files %}
                                                 <li>
-                                                    {% if line_file.file %}<a href="{{ line_file.file.url }}" target="_blank">{{ line_file.file_name|default:line_file.file.name }}</a>{% else %}{{ line_file.file_name|default:'-' }}{% endif %}
+                                                    {% if line_file.file %}{% with name=line_file.file_name|default:line_file.file.name %}<a href="#" class="file-preview-trigger" data-url="{{ line_file.file.url|imgAWSS3Filter }}" data-name="{{ name }}" data-download-url="{% url 'financial:supporting_document_activity_file_download' line_file.pk %}">{{ name }}</a>{% endwith %}{% else %}{{ line_file.file_name|default:'-' }}{% endif %}
                                                     <span class="badge badge-secondary">{{ line_file.get_document_type_display }}</span>
-                                                    {% if user.is_superuser or user|has_group:"Financial" %}
-                                                    <a href="{% url 'financial:supporting_document_activity_file_delete' line_file.pk %}" title="{% translate 'Delete' %}"><i class="fa fa-trash text-danger"></i></a>
-                                                    {% endif %}
                                                 </li>
                                             {% empty %}
                                                 <li class="text-muted">{% translate 'No data' %}</li>
                                             {% endfor %}
                                             </ul>
-                                            {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
-                                            <a href="{% url 'financial:supporting_document_activity_file_create' line.pk %}" class="btn btn-outline-primary btn-xs"><i class="fas fa-plus"></i> {% translate 'Add a file' %}</a>
-                                            {% endif %}
                                         </td>
                                     </tr>
                                 {% empty %}
@@ -79,6 +164,7 @@
                                 {% endfor %}
                                 </tbody>
                             </table>
+                    {% endif %}
                         </div>
 
                         <div id="document-tab-history" class="tab-pane fade">
@@ -89,9 +175,43 @@
             </div>
         </div>
     </div>
+    {% include 'components/file_preview_modal.html' %}
 {% endblock %}
 
 {% block javascript %}
     {{ block.super }}
     {% include 'components/table_filter_js.html' %}
+    {% include 'components/file_preview_modal_js.html' %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            function formatAmount(raw) {
+                if (!raw) { return raw; }
+                var cleaned = String(raw).replace(/\s/g, '');
+                var parts = cleaned.split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+                return parts.join('.');
+            }
+
+            function unformatAmount(raw) {
+                return raw ? String(raw).replace(/[\s ]/g, '') : raw;
+            }
+
+            $('.amount-field').each(function () { $(this).val(formatAmount($(this).val())); });
+            $('#document-activity-lines-body').on('focus', '.amount-field', function () { $(this).val(unformatAmount($(this).val())); });
+            $('#document-activity-lines-body').on('blur', '.amount-field', function () { $(this).val(formatAmount($(this).val())); });
+            $('#document-activity-formset-form').on('submit', function () {
+                $(this).find('.amount-field').each(function () { $(this).val(unformatAmount($(this).val())); });
+            });
+
+            $('#add-document-activity-line').on('click', function () {
+                var $totalForms = $('#id_supportingdocumentactivity_set-TOTAL_FORMS');
+                var index = parseInt($totalForms.val(), 10);
+                var rawHtml = document.getElementById('document-activity-line-empty-template').innerHTML.replace(/__prefix__/g, index);
+                var $newRow = $(rawHtml);
+                $('#document-activity-lines-body').append($newRow);
+                $totalForms.val(index + 1);
+                $newRow.find('select').select2();
+            });
+        });
+    </script>
 {% endblock %}

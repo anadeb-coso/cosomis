@@ -131,7 +131,7 @@ class FundingDetailView(PageMixin, LoginRequiredMixin, generic.DetailView):
             component.planning = component_financial_breakdown(component)
         ctx['components'] = [c for c in components if c.parent_id is None]
         ctx['sub_components'] = [c for c in components if c.parent_id is not None]
-        ctx['activities'] = sorted(Activity.objects.filter(component__fundings=funding).select_related('component'), key=activity_sort_key)
+        ctx['activities'] = sorted(Activity.objects.filter(component__fundings=funding, annual_work_plan__is_active=True).select_related('component'), key=activity_sort_key)
 
         requests_qs = DisbursementRequest.objects.filter(funding=funding)
         ctx['disbursement_requests'] = requests_qs

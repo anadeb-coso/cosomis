@@ -1,0 +1,88 @@
+{% load i18n %}
+{% comment %}
+Include this from the page's own {% block javascript %} (after jQuery/Bootstrap
+are loaded) - never from {% block content %}. Pairs with
+components/file_preview_modal.html, included there.
+{% endcomment %}
+<script type="text/javascript">
+    var filePreviewDownloadBtnDefaultHtml = '<i class="fas fa-download"></i> {% translate "Download" %}';
+
+    $(document).on('click', '.file-preview-trigger', function (e) {
+        e.preventDefault();
+        var url = $(this).data('url');
+        var name = String($(this).data('name') || '');
+        // The S3 URL itself can't be made to force a download (no
+        // Content-Disposition header on an anonymous S3 GET) - the Django
+        // endpoint proxies the file back with that header set. Falls back to
+        // the plain URL (best effort - a direct S3 link won't actually force
+        // a download) if a page didn't supply one.
+        var downloadUrl = $(this).data('download-url') || url;
+        if (!url) { return; }
+        var ext = url.split('.').pop().toLowerCase();
+        var downloadName = name && name.toLowerCase().indexOf('.' + ext) !== -1 ? name : (name || 'file') + '.' + ext;
+        var $body = $('#file-preview-modal-body');
+
+        $('#file-preview-modal-title').text(name || url);
+        if (['pdf'].indexOf(ext) !== -1) {
+            $body.html('<iframe src="' + url + '" style="width:100%; height:70vh; border:0;"></iframe>');
+        } else if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].indexOf(ext) !== -1) {
+            $body.html('<img src="' + url + '" style="max-width:100%;">');
+        } else {
+            $body.html('<p class="text-muted text-center py-5">{% translate "No preview available for this file type." %}</p>');
+        }
+        $('#file-preview-open-btn').attr('href', url);
+        var $downloadBtn = $('#file-preview-download-btn');
+        $downloadBtn
+            .removeClass('downloading')
+            .attr('href', downloadUrl)
+            .data('download-url', downloadUrl)
+            .data('download-name', downloadName)
+            .html(filePreviewDownloadBtnDefaultHtml);
+        $('#file-preview-modal').modal('show');
+    });
+
+    // Fetches the file via XHR (rather than a plain navigation) so progress
+    // can be shown and the button can confirm once the save is complete -
+    // a plain <a download> click hands off to the browser's own download
+    // manager with no feedback in the page itself.
+    $(document).on('click', '#file-preview-download-btn', function (e) {
+        e.preventDefault();
+        var $btn = $(this);
+        if ($btn.hasClass('downloading')) { return; }
+        var url = $btn.data('download-url');
+        var filename = $btn.data('download-name') || 'file';
+        if (!url) { return; }
+
+        $btn.addClass('downloading disabled').attr('aria-disabled', 'true');
+        $btn.html('<i class="fas fa-spinner fa-spin"></i> {% translate "Downloading…" %}');
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.responseType = 'blob';
+        xhr.onprogress = function (evt) {
+            if (evt.lengthComputable) {
+                var percent = Math.round((evt.loaded / evt.total) * 100);
+                $btn.html('<i class="fas fa-spinner fa-spin"></i> {% translate "Downloading…" %} ' + percent + '%');
+            }
+        };
+        function resetButton() {
+            $btn.removeClass('downloading disabled').removeAttr('aria-disabled').html(filePreviewDownloadBtnDefaultHtml);
+        }
+        function fail() {
+            $btn.html('<i class="fas fa-exclamation-triangle text-danger"></i> {% translate "Download failed" %}');
+            setTimeout(resetButton, 3000);
+        }
+        xhr.onload = function () {
+            if (xhr.status < 200 || xhr.status >= 300) { fail(); return; }
+            var blobUrl = window.URL.createObjectURL(xhr.response);
+            var $link = $('<a></a>').attr('href', blobUrl).attr('download', filename).appendTo('body');
+            $link[0].click();
+            $link.remove();
+            window.URL.revokeObjectURL(blobUrl);
+            $btn.html('<i class="fas fa-check text-success"></i> {% translate "Downloaded" %}');
+            setTimeout(resetButton, 2000);
+        };
+        xhr.onerror = fail;
+        xhr.send();
+    });
+</script>

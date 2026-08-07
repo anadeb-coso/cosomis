@@ -4440,3 +4440,159 @@ msgstr "Période de réalisation"
 #: .\financial\templates\annual_work_plan_detail.html
 msgid "Excel file (.xlsx) with columns: Composante, Code, Libellé, Montant, Statut, Cible(s)."
 msgstr "Fichier Excel (.xlsx) avec les colonnes : Composante, Code, Libellé, Montant, Statut, Cible(s)."
+
+#: .\financial\forms.py
+msgid "Period start"
+msgstr "Début de la période"
+
+#: .\financial\forms.py
+msgid "Period end"
+msgstr "Fin de la période"
+
+#: .\financial\forms.py
+msgid "The period start must be before the period end."
+msgstr "La date de début de la période doit être antérieure à la date de fin."
+
+#: .\financial\models\planning.py
+msgid "Revised from"
+msgstr "Révisé depuis"
+
+#: .\financial\models\planning.py
+msgid "For a historical copy: the still-active plan it was copied from."
+msgstr "Pour une copie historique : le plan toujours actif dont elle a été copiée."
+
+#: .\financial\models\planning.py
+msgid "For an activity copied along with a PTBA revision: the live activity it was copied from."
+msgstr "Pour une activité copiée lors d'une révision de PTBA : l'activité active dont elle a été copiée."
+
+#: .\financial\views_ptba.py
+msgid "Revised PTBA"
+msgstr "PTBA revu"
+
+#: .\financial\views_ptba.py
+msgid "An archived annual work plan cannot be copied again."
+msgstr "Un PTBA archivé ne peut pas être copié à nouveau."
+
+#: .\financial\views_ptba.py
+msgid "An archived annual work plan is read-only."
+msgstr "Un PTBA archivé est en lecture seule."
+
+#: .\financial\views_ptba.py
+msgid "An archived annual work plan is read-only - see its detail page."
+msgstr "Un PTBA archivé est en lecture seule - consultez sa page de détail."
+
+#: .\financial\views_ptba.py
+msgid "Historical copy created for %(start)s – %(end)s. The current plan was renamed to “%(name)s”."
+msgstr "Copie historique créée pour la période du %(start)s au %(end)s. Le plan actuel a été renommé « %(name)s »."
+
+#: .\financial\views_ptba.py
+msgid "Copy / revise the annual work plan"
+msgstr "Copier / réviser le plan de travail annuel"
+
+#: .\financial\templates\annual_work_plan_detail.html
+msgid "Copy / revise"
+msgstr "Copier / réviser"
+
+#: .\financial\templates\annual_work_plan_copy.html
+msgid "This creates a historical, read-only copy of the plan and all its activities for the period below. The current plan stays active and keeps being used going forward, but it will be renamed to reflect the day right after this period."
+msgstr "Ceci crée une copie historique, en lecture seule, du plan et de toutes ses activités pour la période ci-dessous. Le plan actuel reste actif et continue d'être utilisé, mais il sera renommé pour refléter le lendemain de cette période."
+
+#: .\financial\templates\annual_work_plan_copy.html
+msgid "Create the historical copy"
+msgstr "Créer la copie historique"
+
+#: .\financial\templates\annual_work_plan_detail.html
+msgid "Archived (historical PTBA)"
+msgstr "Archivé (PTBA historique)"
+
+#: .\financial\templates\annual_work_plan_detail.html
+msgid "Period covered"
+msgstr "Période couverte"
+
+#: .\financial\templates\annual_work_plan_detail.html
+msgid "Historical copies"
+msgstr "Copies historiques"
+
+#: .\financial\templates\components\history_panel_ptba.html
+msgid "Element"
+msgstr "Élément"
+
+#: .\financial\templates\supporting_document_detail.html
+msgid "Justified activities sheet"
+msgstr "Feuille des activités justifiées"
+
+#: .\financial\templates\supporting_document_detail.html
+msgid "Save the line first"
+msgstr "Enregistrez d'abord la ligne"
+
+#: .\financial\templates\supporting_document_activity_sheet.html
+msgid "Back to supporting document"
+msgstr "Retour au justificatif"
+
+#: .\financial\views_supporting_document.py
+msgid "Justified activities saved."
+msgstr "Activités justifiées enregistrées."
+
+#: .\financial\views_supporting_document.py
+msgid "Select at least one file."
+msgstr "Sélectionnez au moins un fichier."
+
+#: .\financial\templates\components\file_preview_modal.html
+msgid "Download"
+msgstr "Télécharger"
+
+#: .\financial\templates\components\file_preview_modal.html
+msgid "Open in a new tab"
+msgstr "Ouvrir dans un nouvel onglet"
+
+#: .\financial\templates\components\file_preview_modal.html
+msgid "No preview available for this file type."
+msgstr "Aucun aperçu disponible pour ce type de fichier."
+
+#: .\financial\views_supporting_document.py
+msgid "Add files"
+msgstr "Ajouter des fichiers"
+
+#: .\financial\views_supporting_document.py
+msgid "Choose a document type for each file."
+msgstr "Choisissez un type de document pour chaque fichier."
+
+#: .\financial\templates\supporting_document_detail.html
+msgid "Edit files"
+msgstr "Modifier fichiers"
+
+#: .\financial\views_supporting_document.py
+msgid "Files updated."
+msgstr "Fichiers mis à jour."
+
+#: .\financial\views_supporting_document.py
+msgid "Failed to download the file."
+msgstr "Échec du téléchargement du fichier."
+
+#: .\financial\templates\components\file_preview_modal_js.html
+msgid "Downloading…"
+msgstr "Téléchargement en cours…"
+
+#: .\financial\templates\components\file_preview_modal_js.html
+msgid "Downloaded"
+msgstr "Téléchargé"
+
+#: .\financial\templates\components\file_preview_modal_js.html
+msgid "Download failed"
+msgstr "Échec du téléchargement"
+
+#: .\financial\models\planning.py
+msgid "Justified amount (at copy time)"
+msgstr "Montant justifié (au moment de la copie)"
+
+#: .\financial\models\planning.py
+msgid "Balance to justify (at copy time)"
+msgstr "Solde à justifier (au moment de la copie)"
+
+#: .\financial\models\planning.py
+msgid "For a copied activity: the justified amount its source activity had at the moment of the PTBA copy."
+msgstr "Pour une activité copiée : le montant justifié de son activité source au moment de la copie du PTBA."
+
+#: .\financial\models\planning.py
+msgid "For a copied activity: the balance to justify its source activity had at the moment of the PTBA copy."
+msgstr "Pour une activité copiée : le solde à justifier de son activité source au moment de la copie du PTBA."

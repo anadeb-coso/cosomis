@@ -1,0 +1,43 @@
+{% load i18n %}
+{% comment %}
+Shared file-preview modal: any <a class="file-preview-trigger" data-url="..."
+data-name="..." data-download-url="...">…</a> on the page opens this modal
+instead of navigating away directly - the modal previews the file (PDF/image
+inline, otherwise just a "no preview" message) and offers Download / Open in
+a new tab / Close at the bottom.
+
+- data-url MUST already be the AWS-signed URL with its query string stripped
+  (use the `imgAWSS3Filter` filter, i.e. `url|imgAWSS3Filter`) - the query
+  string carries S3 request keys, not something to parse or persist. Used for
+  the inline preview and "Open in a new tab" (a plain GET renders fine).
+- data-download-url should point to a Django endpoint that proxies the file
+  back with a real `Content-Disposition: attachment` header (e.g.
+  SupportingDocumentFileDownloadView) - a link to the S3 URL directly, even
+  with the `download` attribute, does NOT force a download cross-origin: the
+  browser just opens whatever it can render inline instead. Falls back to
+  data-url if omitted (better than nothing, but won't force a download).
+{% endcomment %}
+<div class="modal fade" id="file-preview-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="file-preview-modal-title">{% translate 'File' %}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body" id="file-preview-modal-body"></div>
+            <div class="modal-footer">
+                <a href="#" id="file-preview-download-btn" class="btn btn-primary" download rel="noopener"><i class="fas fa-download"></i> {% translate 'Download' %}</a>
+                <a href="#" id="file-preview-open-btn" class="btn btn-outline-secondary" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> {% translate 'Open in a new tab' %}</a>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">{% translate 'Close' %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% comment %}
+The click handler lives in components/file_preview_modal_js.html, NOT here:
+this partial is included from {% block content %}, which base.html renders
+before jQuery loads (jQuery is only pulled in inside {% block javascript %}
+via layouts/foot.html) - an inline <script> here would run before `$` exists
+and silently fail to attach the handler. Include the JS partial from your own
+{% block javascript %} instead.
+{% endcomment %}

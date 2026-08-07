@@ -439,18 +439,18 @@ def _history_resolve_display(instance, field, value):
     return value
 
 
-@register.filter
-def history_entries(users_involved, instance=None):
-    """Turns BaseModel.users_involved (the raw list of user_json dicts appended
+def _history_build_entries(instance):
+    """Turns instance.users_involved (the raw list of user_json dicts appended
     by users_history() on every save() - see cosomis/models_base.py) into
-    display-ready entries for the "History" panel at the bottom of financial
-    detail pages: date, action (created/updated/deleted), who, and a
-    human-readable list of what changed. Most recent first.
+    display-ready entries: date, action (created/updated/deleted), who, and a
+    human-readable list of what changed - unsorted, oldest-appended-first
+    (callers reverse/merge/sort as needed).
 
     A "deleted" entry is just the diff where `is_deleted` flips to True (see
     SoftDeleteMixin.soft_delete()) - detected here rather than stored as a
     separate action so it reuses the exact same history mechanism as any other
     field edit, with no extra bookkeeping."""
+    users_involved = instance.users_involved if instance is not None else None
     if not users_involved:
         return []
 
@@ -488,7 +488,33 @@ def history_entries(users_involved, instance=None):
                 'user_label': user_label,
                 'changes': [],
             })
+    return entries
+
+
+@register.filter
+def history_entries(users_involved, instance=None):
+    """Public filter used by components/history_panel.html - most recent
+    first. `users_involved` itself is unused (kept only so the existing
+    `target.users_involved|history_entries:target` call sites keep working);
+    the real data always comes from `instance`."""
+    entries = _history_build_entries(instance)
     entries.reverse()
+    return entries
+
+
+@register.simple_tag
+def plan_history_entries(plan):
+    """Merges an AnnualWorkPlan's own History with that of every one of its
+    Activities (§ "les historiques au niveau du ptba doivent inclure aussi
+    ceux de ses activités") into a single most-recent-first timeline. Each
+    entry carries `entity_label` - blank for the plan's own entries, the
+    activity's code/name for one of its activities' - so the panel can show
+    which row a change belongs to."""
+    entries = [dict(e, entity_label='') for e in _history_build_entries(plan)]
+    for activity in plan.activity_set.all():
+        label = f'{activity.code} - {activity.name}' if activity.code else activity.name
+        entries.extend(dict(e, entity_label=label) for e in _history_build_entries(activity))
+    entries.sort(key=lambda e: e['date'] or datetime.min, reverse=True)
     return entries
 
 

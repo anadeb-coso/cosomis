@@ -1,0 +1,43 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n bootstrap4 %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="col-md-12">
+                        <div class="btn-group pull-left">
+                            <a href="javascript:close_window();"><i class="fas fa-times text-danger"></i></a>
+                            <a href="{% url 'financial:annual_work_plan_detail' annual_work_plan.pk %}" class="btn btn-secondary btn-sm">{% translate 'Back to PTBA' %}</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row justify-content-center">
+                        <div class="col-9">
+                            <h4>{% translate 'Copy / revise' %} "{{ annual_work_plan.name }}"</h4>
+                            <p class="text-muted">
+                                {% blocktranslate %}This creates a historical, read-only copy of the plan and all its activities for the period below. The current plan stays active and keeps being used going forward, but it will be renamed to reflect the day right after this period.{% endblocktranslate %}
+                            </p>
+                            <form method="POST">
+                                {% csrf_token %}
+                                {% if form.non_field_errors %}
+                                    <div class="alert alert-danger"><strong>{{ form.non_field_errors }}</strong></div>
+                                {% endif %}
+                                {% for field in form %}
+                                    {% bootstrap_field field %}
+                                    {% if field.errors %}
+                                        <div class="alert alert-danger alert-sm form_alert">{{ field.errors }}</div>
+                                    {% endif %}
+                                    <div class="clearfix"></div>
+                                {% endfor %}
+                                <button type="submit" class="btn btn-primary float-right">{% translate 'Create the historical copy' %}</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -10,6 +10,19 @@ class AnnualWorkPlan(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     period = models.IntegerField(verbose_name=_("Period (year)"))
     name = models.CharField(max_length=255, verbose_name=_("Label"))
     notes = models.TextField(null=True, blank=True, verbose_name=_("Observations"))
+    # Revision/versioning (§ "copie intégrale d'un ptba"): copying a plan
+    # freezes a historical snapshot (is_active=False) covering [period_start,
+    # period_end], linked back to the plan it was copied from - the source
+    # plan itself keeps the same row/pk and stays active, only renamed. See
+    # views_ptba.AnnualWorkPlanCopyView for the actual copy operation.
+    is_active = models.BooleanField(default=True, verbose_name=_("Active"))
+    period_start = models.DateField(null=True, blank=True, verbose_name=_("Period start"))
+    period_end = models.DateField(null=True, blank=True, verbose_name=_("Period end"))
+    source_annual_work_plan = models.ForeignKey(
+        'self', on_delete=models.SET_NULL, null=True, blank=True, related_name='revisions',
+        verbose_name=_("Revised from"),
+        help_text=_("For a historical copy: the still-active plan it was copied from."),
+    )
 
     class Meta(object):
         app_label = 'financial'
@@ -72,6 +85,25 @@ class Activity(ExternalIdMixin, SoftDeleteMixin, BaseModel):
         'self', on_delete=models.CASCADE, null=True, blank=True, related_name='children',
         verbose_name=_("Parent activity"),
         help_text=_("A parent activity's amount is the cumulative total of its child activities."),
+    )
+    source_activity = models.ForeignKey(
+        'self', on_delete=models.SET_NULL, null=True, blank=True, related_name='revisions',
+        verbose_name=_("Revised from"),
+        help_text=_("For an activity copied along with a PTBA revision: the live activity it was copied from."),
+    )
+    # Frozen snapshot, set once at copy time (views_ptba._clone_annual_work_plan)
+    # - only ever populated on a copied activity (source_activity set). Kept
+    # separate from source_activity itself: the link stays for traceability
+    # ("copiée depuis..."), but the justified_amount/balance_to_justify
+    # properties below read these frozen values instead of the source
+    # activity's own (ever-changing) ones.
+    justified_amount_at_copy = models.FloatField(
+        null=True, blank=True, verbose_name=_("Justified amount (at copy time)"),
+        help_text=_("For a copied activity: the justified amount its source activity had at the moment of the PTBA copy."),
+    )
+    balance_to_justify_at_copy = models.FloatField(
+        null=True, blank=True, verbose_name=_("Balance to justify (at copy time)"),
+        help_text=_("For a copied activity: the balance to justify its source activity had at the moment of the PTBA copy."),
     )
     code = models.CharField(max_length=50, null=True, blank=True, verbose_name=_("Code"))
     name = models.CharField(max_length=255, verbose_name=_("Label"))
@@ -148,10 +180,20 @@ class Activity(ExternalIdMixin, SoftDeleteMixin, BaseModel):
 
     @property
     def justified_amount(self):
+        # A copied activity carries no justification of its own - real
+        # SupportingDocumentActivity links keep pointing at the live activity
+        # it was copied from. Its figure is the frozen snapshot captured at
+        # copy time (justified_amount_at_copy), not a live read of the source
+        # activity: new Justificatifs recorded afterward against the source
+        # activity must NOT retroactively change this historical copy.
+        if self.source_activity_id:
+            return self.justified_amount_at_copy or 0
         return sum((line.allocated_amount or 0) for line in self.supportingdocumentactivity_set.all())
 
     @property
     def balance_to_justify(self):
+        if self.source_activity_id:
+            return self.balance_to_justify_at_copy or 0
         return (self.effective_amount or 0) - self.justified_amount
 
 

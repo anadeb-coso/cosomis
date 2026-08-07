@@ -182,7 +182,7 @@ class ComponentDetailView(PageMixin, LoginRequiredMixin, generic.DetailView):
         # so the activities/summary below aren't limited to direct children.
         descendant_ids = component_descendant_ids(component)
         component_ids = [component.pk] + descendant_ids
-        ctx['activities'] = sorted(Activity.objects.filter(component_id__in=component_ids).select_related('component'), key=activity_sort_key)
+        ctx['activities'] = sorted(Activity.objects.filter(component_id__in=component_ids, annual_work_plan__is_active=True).select_related('component'), key=activity_sort_key)
         ctx['summary'] = activity_financial_summary(component_ids)
         return ctx
 

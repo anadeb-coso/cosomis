@@ -1,0 +1,184 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n custom_tags %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ supporting_document.reference }} - {% translate 'Justified activities sheet' %}</h3>
+                    <div class="card-tools">
+                        <a class="btn btn-secondary btn-sm" href="{% url 'financial:supporting_document_detail' supporting_document.pk %}"><i class="fas fa-arrow-left"></i> {% translate 'Back to supporting document' %}</a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if formset.non_form_errors %}
+                        <div class="alert alert-danger m-3">{{ formset.non_form_errors }}</div>
+                    {% endif %}
+                    <form method="POST" id="sheet-form">
+                        {% csrf_token %}
+                        {{ formset.management_form }}
+                        <div class="sheet-scroll">
+                        <table class="sheet-table" id="sheet-table">
+                            <thead>
+                            <tr>
+                                <th class="sheet-row-number"></th>
+                                <th>{% translate 'Activity' %}</th>
+                                <th>{% translate 'Allocated amount' %}</th>
+                                <th class="sheet-justified">{% translate 'Balance to justify' %}</th>
+                                <th>{% translate 'Observations' %}</th>
+                                <th class="sheet-delete-col"></th>
+                            </tr>
+                            </thead>
+                            <tbody id="sheet-body">
+                            {% for line_form in formset %}
+                                <tr class="sheet-row{% if line_form.instance.pk %} sheet-row-saved{% endif %}">
+                                    {% for hidden in line_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                    <td class="sheet-row-number">{{ forloop.counter }}</td>
+                                    <td class="sheet-cell">{{ line_form.activity }}{{ line_form.activity.errors }}</td>
+                                    <td class="sheet-cell">{{ line_form.allocated_amount }}{{ line_form.allocated_amount.errors }}</td>
+                                    <td class="sheet-cell sheet-readonly sheet-balance {% if line_form.instance.pk and line_form.instance.activity.balance_to_justify < 0 %}text-danger{% endif %}">{% if line_form.instance.pk %}{{ line_form.instance.activity.balance_to_justify|separate_with_space }}{% else %}-{% endif %}</td>
+                                    <td class="sheet-cell">{{ line_form.notes }}{{ line_form.notes.errors }}</td>
+                                    <td class="sheet-delete-col">
+                                        {% if line_form.instance.pk %}
+                                        <label class="sheet-delete-toggle" title="{% translate 'Delete' %}">
+                                            {{ line_form.DELETE }}
+                                            <i class="fas fa-trash"></i>
+                                        </label>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                        </div>
+                        <div id="sheet-add-row" class="sheet-add-row">
+                            <i class="fas fa-plus"></i> {% translate 'Add another activity line' %}
+                        </div>
+                        {% comment %}
+                        A <script type="text/template"> is inert to the browser/jQuery - see
+                        annual_work_plan_sheet.html for why this avoids a stale select2 widget on clone.
+                        {% endcomment %}
+                        <script type="text/template" id="sheet-empty-template">
+                                <tr class="sheet-row">
+                                    {% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                    <td class="sheet-row-number"></td>
+                                    <td class="sheet-cell">{{ formset.empty_form.activity }}{{ formset.empty_form.activity.errors }}</td>
+                                    <td class="sheet-cell">{{ formset.empty_form.allocated_amount }}{{ formset.empty_form.allocated_amount.errors }}</td>
+                                    <td class="sheet-cell sheet-readonly sheet-balance">-</td>
+                                    <td class="sheet-cell">{{ formset.empty_form.notes }}{{ formset.empty_form.notes.errors }}</td>
+                                    <td class="sheet-delete-col"></td>
+                                </tr>
+                        </script>
+                        <div class="p-3">
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> {% translate 'Save' %}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extracss %}
+    {{ block.super }}
+    <style>
+        .sheet-scroll { overflow-x: auto; }
+        table.sheet-table { width: max-content; min-width: 100%; border-collapse: collapse; }
+        table.sheet-table thead th {
+            position: sticky; top: 0; background: #f4f6f9; border: 1px solid #dee2e6;
+            padding: 6px 8px; font-size: 12px; text-transform: uppercase; color: #6c757d; z-index: 1;
+        }
+        table.sheet-table td.sheet-row-number {
+            width: 36px; text-align: center; background: #f8f9fa; color: #9aa0a6;
+            border: 1px solid #dee2e6; font-size: 12px; vertical-align: middle;
+        }
+        table.sheet-table td.sheet-cell { border: 1px solid #dee2e6; padding: 0; vertical-align: middle; min-width: 220px; }
+        table.sheet-table td.sheet-cell input, table.sheet-table td.sheet-cell select, table.sheet-table td.sheet-cell textarea {
+            width: 100%; height: 100%; border: none; border-radius: 0; padding: 6px 8px;
+            background: transparent; box-shadow: none !important;
+        }
+        table.sheet-table td.sheet-cell textarea { resize: vertical; min-height: 32px; max-height: 100px; font-family: inherit; }
+        table.sheet-table td.sheet-cell input:focus, table.sheet-table td.sheet-cell select:focus, table.sheet-table td.sheet-cell textarea:focus {
+            outline: 2px solid #2a78d6; outline-offset: -2px; background: #eef4fc;
+        }
+        table.sheet-table td.sheet-readonly { background: #fafafa; color: #6c757d; padding: 6px 8px; border: 1px solid #dee2e6; white-space: nowrap; min-width: 130px; }
+        table.sheet-table .sheet-delete-col { width: 36px; min-width: 36px; text-align: center; border: 1px solid #dee2e6; }
+        table.sheet-table .sheet-delete-toggle { margin: 0; cursor: pointer; color: #dc3545; }
+        table.sheet-table .sheet-delete-toggle input { display: none; }
+        table.sheet-table tr.sheet-row-marked-deleted td.sheet-cell input,
+        table.sheet-table tr.sheet-row-marked-deleted td.sheet-cell select,
+        table.sheet-table tr.sheet-row-marked-deleted td.sheet-cell textarea { text-decoration: line-through; color: #adb5bd; }
+        .sheet-add-row {
+            padding: 8px 12px; color: #2a78d6; cursor: pointer; border-top: 1px dashed #dee2e6; font-size: 13px;
+        }
+        .sheet-add-row:hover { background: #f4f6f9; }
+        .select2-container { width: 100% !important; }
+    </style>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            function focusFirstField($row) {
+                $row.find('input, select, textarea').first().trigger('focus');
+            }
+
+            function formatAmount(raw) {
+                if (!raw) { return raw; }
+                var cleaned = String(raw).replace(/\s/g, '');
+                var parts = cleaned.split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+                return parts.join('.');
+            }
+
+            function unformatAmount(raw) {
+                return raw ? String(raw).replace(/[\s ]/g, '') : raw;
+            }
+
+            $('.amount-field').each(function () { $(this).val(formatAmount($(this).val())); });
+            $('#sheet-body').on('focus', '.amount-field', function () { $(this).val(unformatAmount($(this).val())); });
+            $('#sheet-body').on('blur', '.amount-field', function () { $(this).val(formatAmount($(this).val())); });
+            $('#sheet-form').on('submit', function () {
+                $(this).find('.amount-field').each(function () { $(this).val(unformatAmount($(this).val())); });
+            });
+
+            $('#sheet-add-row').on('click', function () {
+                var $totalForms = $('#id_supportingdocumentactivity_set-TOTAL_FORMS');
+                var index = parseInt($totalForms.val(), 10);
+                var rawHtml = document.getElementById('sheet-empty-template').innerHTML.replace(/__prefix__/g, index);
+                var $newRow = $(rawHtml);
+                $('#sheet-body').append($newRow);
+                $totalForms.val(index + 1);
+                $newRow.find('select').select2({ width: '100%' });
+                renumberRows();
+                focusFirstField($newRow);
+            });
+
+            function renumberRows() {
+                $('#sheet-body tr.sheet-row').each(function (i) {
+                    $(this).find('td.sheet-row-number').text(i + 1);
+                });
+            }
+
+            $('#sheet-body').on('change', '.sheet-delete-toggle input', function () {
+                $(this).closest('tr').toggleClass('sheet-row-marked-deleted', this.checked);
+            });
+
+            $('#sheet-body').on('keydown', 'input:not([type="checkbox"])', function (e) {
+                if (e.key !== 'Enter') { return; }
+                e.preventDefault();
+                var $cell = $(this).closest('td');
+                var cellIndex = $cell.index();
+                var $row = $cell.closest('tr');
+                var $nextRow = $row.nextAll('tr.sheet-row').first();
+                if ($nextRow.length) {
+                    $nextRow.find('td').eq(cellIndex).find('input, select, textarea').trigger('focus');
+                } else {
+                    $('#sheet-add-row').trigger('click');
+                }
+            });
+        });
+    </script>
+{% endblock %}
