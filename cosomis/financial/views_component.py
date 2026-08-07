@@ -11,7 +11,7 @@ from usermanager.permissions import SuperAdminPermissionRequiredMixin, Component
 from subprojects.models import Component
 from financial.models.planning import Activity
 from financial.forms import ComponentForm
-from financial.aggregations import activity_financial_summary, component_descendant_ids, category_cascade_meta, funding_cascade_meta, component_financial_breakdown
+from financial.aggregations import activity_financial_summary, component_descendant_ids, category_cascade_meta, funding_cascade_meta, component_financial_breakdown, activity_sort_key
 from financial.exports import export_component
 from financial.list_filters import apply_entity_filters, build_filter_context
 
@@ -182,7 +182,7 @@ class ComponentDetailView(PageMixin, LoginRequiredMixin, generic.DetailView):
         # so the activities/summary below aren't limited to direct children.
         descendant_ids = component_descendant_ids(component)
         component_ids = [component.pk] + descendant_ids
-        ctx['activities'] = Activity.objects.filter(component_id__in=component_ids)
+        ctx['activities'] = sorted(Activity.objects.filter(component_id__in=component_ids).select_related('component'), key=activity_sort_key)
         ctx['summary'] = activity_financial_summary(component_ids)
         return ctx
 

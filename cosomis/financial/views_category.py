@@ -12,7 +12,7 @@ from usermanager.permissions import AccountantPermissionRequiredMixin, Financial
 from subprojects.models import Project, CategoryIDA, Component
 from financial.models.planning import Activity
 from financial.forms import CategoryIDAForm, CategoryComponentFormSet
-from financial.aggregations import activity_financial_summary, funding_cascade_meta, component_financial_breakdown
+from financial.aggregations import activity_financial_summary, funding_cascade_meta, component_financial_breakdown, activity_sort_key
 from financial.exports import export_category
 from financial.list_filters import apply_entity_filters, build_filter_context
 
@@ -174,7 +174,7 @@ class CategoryDetailView(PageMixin, LoginRequiredMixin, generic.DetailView):
         sub_level = [c for c in components if c.parent_id is not None]
         ctx['components'] = top_level
         ctx['sub_components'] = sub_level
-        ctx['activities'] = Activity.objects.filter(component__category=category)
+        ctx['activities'] = sorted(Activity.objects.filter(component__category=category).select_related('component'), key=activity_sort_key)
         ctx['summary'] = activity_financial_summary([c.pk for c in components])
         return ctx
 

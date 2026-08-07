@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 import datetime
+import threading
 from cosomis.base_functions import model_to_full_dict, format_value
 
 
@@ -172,6 +173,62 @@ class BaseModel(models.Model):
             
         return self
 
+
+_m2m_history_snapshots = threading.local()
+
+
+def _m2m_field_name(instance, sender):
+    """Which of instance's own ManyToManyFields is backed by `sender` (the
+    m2m_changed signal's through model) - lets the receiver below log the
+    change under the right field name/verbose_name."""
+    for field in instance._meta.many_to_many:
+        if field.remote_field.through is sender:
+            return field.name
+    return None
+
+
+def _track_m2m_history(sender, instance, action, reverse, **kwargs):
+    """Makes every ManyToManyField change on every BaseModel - on any app's
+    model, not just the ones that call record_m2m_change() by hand - show up
+    in the "History" panel the same way a concrete field edit does.
+
+    Needed because BaseModel.users_history() only runs from save(), and a
+    ManyToManyField is never touched by save() - form.save_m2m(),
+    field.set()/.add()/.remove()/.clear() all write directly to the through
+    table. Connected once, at import time, on the model_base module - every
+    model file imports BaseModel from here, so this always loads before any
+    m2m edit can happen.
+
+    Only the forward direction (reverse=False) is handled: every
+    form.save_m2m() in this codebase (the actual source of M2M writes here)
+    edits the field from its owning model, never via the reverse accessor -
+    handling reverse=True too would need locating the reverse relation
+    descriptor instead of instance._meta.many_to_many, for a case that does
+    not occur in practice here.
+    """
+    if reverse or not isinstance(instance, BaseModel):
+        return
+    field_name = _m2m_field_name(instance, sender)
+    if field_name is None:
+        return
+
+    key = (sender, instance.pk)
+    if action in ('pre_add', 'pre_remove', 'pre_clear'):
+        snapshots = getattr(_m2m_history_snapshots, 'data', None)
+        if snapshots is None:
+            snapshots = {}
+            _m2m_history_snapshots.data = snapshots
+        if key not in snapshots:
+            snapshots[key] = list(getattr(instance, field_name).values_list('pk', flat=True))
+    elif action in ('post_add', 'post_remove', 'post_clear'):
+        snapshots = getattr(_m2m_history_snapshots, 'data', {})
+        old_pks = snapshots.pop(key, [])
+        from cosomis.middleware import get_current_user
+        from cosomis.base_functions import record_m2m_change
+        record_m2m_change(instance, field_name, old_pks, user=get_current_user())
+
+
+models.signals.m2m_changed.connect(_track_m2m_history)
 
 
 class CustomQuerySet(models.QuerySet):

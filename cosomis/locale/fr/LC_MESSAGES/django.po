@@ -4304,3 +4304,7 @@ msgstr "Retour au PTBA"
 #: .\financial\views_ptba.py
 msgid "Activities saved."
 msgstr "Activités enregistrées."
+
+#: .\financial\models\planning.py
+msgid "Code"
+msgstr "Code"

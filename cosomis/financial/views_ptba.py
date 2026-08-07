@@ -14,9 +14,24 @@ from usermanager.permissions import AccountantPermissionRequiredMixin, Financial
 from subprojects.models import Component
 from financial.models.planning import AnnualWorkPlan, Activity
 from financial.forms import AnnualWorkPlanForm, ActivityForm, PTBAActivityFormSet
+from financial.aggregations import activity_sort_key
 from financial.exports import export_annual_work_plan
 from financial.list_filters import apply_entity_filters, build_filter_context
 from financial.management.commands.import_disbursement_workbook import get_value, to_str, to_float
+
+
+def _sort_formset_forms(formset):
+    """Reorders an already-built PTBAActivityFormSet's display order by
+    activity_sort_key (component natural order, then code) - blank/unsaved extra
+    rows (no instance.pk yet) are left at the end so "add a new line" still
+    appears last rather than jumping to wherever an empty sort key would land.
+    Only the display order changes - form prefixes/indices (and therefore POST
+    processing) are untouched."""
+    existing = [f for f in formset.forms if f.instance.pk]
+    new = [f for f in formset.forms if not f.instance.pk]
+    existing.sort(key=lambda f: activity_sort_key(f.instance))
+    formset.forms = existing + new
+    return formset
 
 
 def _filtered_annual_work_plans(get):
@@ -146,11 +161,12 @@ class AnnualWorkPlanDetailView(PageMixin, LoginRequiredMixin, generic.DetailView
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         plan = self.object
-        ctx['activities'] = plan.activity_set.all()
+        ctx['activities'] = sorted(plan.activity_set.select_related('component').all(), key=activity_sort_key)
         if getattr(self, 'formset_mixin', None):
             ctx['formset'] = self.formset_mixin
         else:
             ctx['formset'] = PTBAActivityFormSet(instance=plan, form_kwargs={'project': plan.project})
+        _sort_formset_forms(ctx['formset'])
         return ctx
 
     def post(self, request, *args, **kwargs):
@@ -183,6 +199,7 @@ class AnnualWorkPlanActivitySheetView(PageMixin, LoginRequiredMixin, generic.Det
             ctx['formset'] = self.formset_mixin
         else:
             ctx['formset'] = PTBAActivityFormSet(instance=plan, form_kwargs={'project': plan.project})
+        _sort_formset_forms(ctx['formset'])
         return ctx
 
     def post(self, request, *args, **kwargs):

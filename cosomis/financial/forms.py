@@ -372,6 +372,7 @@ class ActivityForm(forms.ModelForm):
         model = Activity
         exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED
         widgets = {
+            'code': forms.TextInput(attrs={'class': 'form-control', 'style': 'max-width: 100px;'}),
             'name': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'target': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
@@ -393,8 +394,9 @@ class PTBAActivityForm(forms.ModelForm):
 
     class Meta:
         model = Activity
-        fields = ['component', 'name', 'amount', 'target']
+        fields = ['component', 'code', 'name', 'amount', 'target']
         widgets = {
+            'code': forms.TextInput(attrs={'class': 'form-control', 'style': 'max-width: 100px;'}),
             'name': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'amount': forms.TextInput(attrs={'class': 'form-control amount-field', 'inputmode': 'decimal'}),
             'target': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
@@ -406,7 +408,7 @@ PTBAActivityFormSet = forms.inlineformset_factory(
     Activity,
     form=PTBAActivityForm,
     fk_name='annual_work_plan',
-    fields=['component', 'name', 'amount', 'target'],
+    fields=['component', 'code', 'name', 'amount', 'target'],
     extra=1,
     can_delete=True,
 )

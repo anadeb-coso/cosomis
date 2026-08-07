@@ -5,7 +5,30 @@ computes "requested/validated/disbursed/available" and "budgeted/justified/avail
 the exact same way the dashboard does - no drift between the KPI cards and the detail
 pages of the objects those KPIs are built from.
 """
+import re
+
 from django.db.models import Sum
+
+_NATURAL_SORT_SPLIT_RE = re.compile(r'(\d+)')
+
+
+def natural_sort_key(text):
+    """Sort key so "Composante 1", "1.1", "1.2", "1.2a", "1.2b", "2", "10" compare
+    in the order a human expects (digit runs compared numerically, not lexically -
+    plain string sort would put "10" before "2"). Every token is tagged (0, int) or
+    (1, str) so comparing two keys of different shapes never raises a TypeError from
+    Python comparing an int to a str mid-list."""
+    text = str(text or '')
+    parts = _NATURAL_SORT_SPLIT_RE.split(text)
+    return [(0, int(part)) if part.isdigit() else (1, part.lower()) for part in parts]
+
+
+def activity_sort_key(activity):
+    """Order PTBA activities by their component's name (natural order) then by
+    their own code - matches how the reference workbook numbers activities under
+    each component."""
+    component_name = activity.component.name if activity.component_id else ''
+    return (natural_sort_key(component_name), natural_sort_key(activity.code))
 
 
 def requests_indicators(requests_qs):

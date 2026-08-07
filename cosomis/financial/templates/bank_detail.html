@@ -1,6 +1,11 @@
 {% extends 'layouts/base.html' %}
 {% load static i18n custom_tags %}
 
+{% block extracss %}
+    {{ block.super }}
+    {% include 'components/tabs_style.html' %}
+{% endblock %}
+
 {% block content %}
 {% include 'components/financial_menu.html' with active_menu='banks' %}
     <div class="row">
@@ -42,28 +47,43 @@
             </div>
 
             <div class="card">
-                <div class="card-header"><h3 class="card-title">{% translate 'Accounts' %}</h3></div>
                 <div class="card-body table-responsive">
-                    <table class="table table-striped table-sm">
-                        <thead><tr><th>{% translate 'Name' %}</th><th>{% translate 'Account type' %}</th><th>{% translate 'Account category' %}</th><th>{% translate 'Account number' %}</th><th>{% translate 'Contact' %}</th></tr></thead>
-                        <tbody>
-                        {% for account in accounts %}
-                            <tr>
-                                <td><a href="{% url 'financial:account_detail' account.pk %}">{{ account.name }}</a></td>
-                                <td><span class="badge {{ account.account_type|account_type_badge }}">{{ account.get_account_type_display }}</span></td>
-                                <td>{{ account.get_account_category_display }}</td>
-                                <td>{{ account.account_number|default_if_none:'-' }}</td>
-                                <td>{{ account.contact|default_if_none:'-' }}</td>
-                            </tr>
-                        {% empty %}
-                            <tr><td colspan="5" class="text-center">{% translate 'No data' %}</td></tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                    <ul class="nav nav-tabs financial-tabs">
+                        <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#bank-tab-accounts"><i class="fas fa-university"></i> {% translate 'Accounts' %}</a></li>
+                        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#bank-tab-history"><i class="fas fa-history"></i> {% translate 'History' %}</a></li>
+                    </ul>
+                    <div class="tab-content financial-tab-content">
+                        <div id="bank-tab-accounts" class="tab-pane active">
+                            {% include 'components/table_quick_filter.html' with target='bank-accounts-table' %}
+                            <table id="bank-accounts-table" class="table table-striped table-sm">
+                                <thead><tr><th>{% translate 'Name' %}</th><th>{% translate 'Account type' %}</th><th>{% translate 'Account category' %}</th><th>{% translate 'Account number' %}</th><th>{% translate 'Contact' %}</th></tr></thead>
+                                <tbody>
+                                {% for account in accounts %}
+                                    <tr>
+                                        <td><a href="{% url 'financial:account_detail' account.pk %}">{{ account.name }}</a></td>
+                                        <td><span class="badge {{ account.account_type|account_type_badge }}">{{ account.get_account_type_display }}</span></td>
+                                        <td>{{ account.get_account_category_display }}</td>
+                                        <td>{{ account.account_number|default_if_none:'-' }}</td>
+                                        <td>{{ account.contact|default_if_none:'-' }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="5" class="text-center">{% translate 'No data' %}</td></tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div id="bank-tab-history" class="tab-pane fade">
+                            {% include 'components/history_panel.html' with target=bank %}
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            {% include 'components/history_panel.html' with target=bank %}
         </div>
     </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    {% include 'components/table_filter_js.html' %}
 {% endblock %}

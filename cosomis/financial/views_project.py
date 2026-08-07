@@ -14,7 +14,7 @@ from financial.models.planning import AnnualWorkPlan, Activity
 from financial.models.financial import DisbursementRequest, Disbursement
 from financial.models.supporting_document import SupportingDocument
 from financial.forms import ProjectForm
-from financial.aggregations import requests_indicators, activity_financial_summary, component_financial_breakdown
+from financial.aggregations import requests_indicators, activity_financial_summary, component_financial_breakdown, activity_sort_key
 from financial.exports import export_project_ida, export_project_ida_detail
 
 
@@ -119,7 +119,7 @@ class ProjectIDADetailView(PageMixin, LoginRequiredMixin, generic.DetailView):
 
         annual_work_plans = list(AnnualWorkPlan.objects.filter(project=project))
         for plan in annual_work_plans:
-            plan.activities = Activity.objects.filter(annual_work_plan=plan)
+            plan.activities = sorted(Activity.objects.filter(annual_work_plan=plan).select_related('component'), key=activity_sort_key)
         ctx['annual_work_plans'] = annual_work_plans
 
         requests_qs = DisbursementRequest.objects.filter(project=project)

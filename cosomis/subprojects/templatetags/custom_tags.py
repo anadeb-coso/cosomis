@@ -452,7 +452,7 @@ def history_entries(users_involved, instance=None):
 
     field_labels = {}
     if instance is not None:
-        for f in instance._meta.fields:
+        for f in list(instance._meta.fields) + list(instance._meta.many_to_many):
             if f.name != 'is_deleted':
                 field_labels[f.name] = str(f.verbose_name)
 

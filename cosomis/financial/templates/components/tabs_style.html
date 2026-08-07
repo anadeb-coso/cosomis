@@ -1,0 +1,45 @@
+<style>
+    ul.nav.financial-tabs {
+        border-bottom: 2px solid #e9ecef;
+        flex-wrap: wrap;
+        row-gap: 2px;
+    }
+    ul.nav.financial-tabs .nav-item { margin-bottom: -2px; }
+    ul.nav.financial-tabs .nav-link {
+        border: none;
+        border-bottom: 3px solid transparent;
+        border-radius: 6px 6px 0 0;
+        color: #6c757d;
+        font-weight: 500;
+        font-size: 13px;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        white-space: nowrap;
+        transition: color .15s ease, background-color .15s ease, border-color .15s ease;
+    }
+    ul.nav.financial-tabs .nav-link i {
+        font-size: 12px;
+        color: #adb5bd;
+        transition: color .15s ease;
+    }
+    ul.nav.financial-tabs .nav-link:hover {
+        color: #2a78d6;
+        background-color: #f4f8fd;
+    }
+    ul.nav.financial-tabs .nav-link:hover i { color: #2a78d6; }
+    ul.nav.financial-tabs .nav-link.active {
+        color: #2a78d6;
+        background-color: #eef5fd;
+        border-bottom-color: #2a78d6;
+        font-weight: 700;
+    }
+    ul.nav.financial-tabs .nav-link.active i { color: #2a78d6; }
+    .financial-tab-content { padding-top: 1.25rem; }
+    .financial-tab-content .tab-pane { animation: financial-tab-fade-in .18s ease; }
+    @keyframes financial-tab-fade-in {
+        from { opacity: 0; transform: translateY(2px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>

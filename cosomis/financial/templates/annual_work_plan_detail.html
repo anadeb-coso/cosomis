@@ -3,6 +3,7 @@
 
 {% block extracss %}
     {{ block.super }}
+    {% include 'components/tabs_style.html' %}
     <style>
         /* select2's default rendering truncates long option labels with an
            ellipsis - the Component select needs its full text visible so the
@@ -55,7 +56,6 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">{% translate 'Activities' %}</h3>
                     {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
                     <div class="card-tools">
                         <button type="button" class="btn btn-outline-secondary btn-sm" data-toggle="modal" data-target="#activity-import-modal"><i class="fas fa-file-upload"></i> {% translate 'Import' %}</button>
@@ -63,6 +63,12 @@
                     {% endif %}
                 </div>
                 <div class="card-body table-responsive">
+                    <ul class="nav nav-tabs financial-tabs">
+                        <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#ptba-tab-activities"><i class="fas fa-tasks"></i> {% translate 'Activities' %}</a></li>
+                        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#ptba-tab-history"><i class="fas fa-history"></i> {% translate 'History' %}</a></li>
+                    </ul>
+                    <div class="tab-content financial-tab-content">
+                        <div id="ptba-tab-activities" class="tab-pane active">
                     {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
                     <form method="POST" action="{% url 'financial:annual_work_plan_detail' annual_work_plan.pk %}" id="activity-formset-form">
                         {% csrf_token %}
@@ -70,9 +76,11 @@
                         {% if formset.non_form_errors %}
                             <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
                         {% endif %}
-                        <table class="table table-striped table-sm">
+                        {% include 'components/table_quick_filter.html' with target='ptba-activities-table' %}
+                        <table class="table table-striped table-sm" id="ptba-activities-table">
                             <thead>
                             <tr>
+                                <th>{% translate 'Code' %}</th>
                                 <th>{% translate 'Label' %}</th>
                                 <th>{% translate 'Component' %}</th>
                                 <th>{% translate 'Amount' %}</th>
@@ -86,6 +94,7 @@
                             {% for line_form in formset %}
                                 <tr>
                                     {% for hidden in line_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                    <td>{{ line_form.code }}{{ line_form.code.errors }}</td>
                                     <td>{{ line_form.name }}{{ line_form.name.errors }}</td>
                                     <td>{{ line_form.component }}{{ line_form.component.errors }}</td>
                                     <td>{{ line_form.amount }}{{ line_form.amount.errors }}</td>
@@ -95,7 +104,7 @@
                                     <td>{% if line_form.instance.pk %}{{ line_form.DELETE }}{% endif %}</td>
                                 </tr>
                             {% empty %}
-                                <tr><td colspan="7" class="text-center">{% translate 'No data' %}</td></tr>
+                                <tr><td colspan="8" class="text-center">{% translate 'No data' %}</td></tr>
                             {% endfor %}
                             </tbody>
                         </table>
@@ -111,6 +120,7 @@
                         <script type="text/template" id="activity-line-empty-template">
                                 <tr>
                                     {% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                    <td>{{ formset.empty_form.code }}{{ formset.empty_form.code.errors }}</td>
                                     <td>{{ formset.empty_form.name }}{{ formset.empty_form.name.errors }}</td>
                                     <td>{{ formset.empty_form.component }}{{ formset.empty_form.component.errors }}</td>
                                     <td>{{ formset.empty_form.amount }}{{ formset.empty_form.amount.errors }}</td>
@@ -123,9 +133,11 @@
                         <button type="submit" class="btn btn-primary float-right">{% translate 'Submit' %}</button>
                     </form>
                     {% else %}
-                    <table class="table table-striped table-sm">
+                    {% include 'components/table_quick_filter.html' with target='ptba-activities-table' %}
+                    <table class="table table-striped table-sm" id="ptba-activities-table">
                         <thead>
                         <tr>
+                            <th>{% translate 'Code' %}</th>
                             <th>{% translate 'Label' %}</th>
                             <th>{% translate 'Component' %}</th>
                             <th>{% translate 'Amount' %}</th>
@@ -137,6 +149,7 @@
                         <tbody>
                         {% for activity in activities %}
                             <tr>
+                                <td>{{ activity.code|default_if_none:'-' }}</td>
                                 <td>{{ activity.name }}</td>
                                 <td>{{ activity.component.name }}</td>
                                 <td>{{ activity.amount|separate_with_space }}</td>
@@ -145,15 +158,19 @@
                                 <td class="{% if activity.balance_to_justify < 0 %}text-danger{% else %}text-success{% endif %}">{{ activity.balance_to_justify|separate_with_space }}</td>
                             </tr>
                         {% empty %}
-                            <tr><td colspan="6" class="text-center">{% translate 'No data' %}</td></tr>
+                            <tr><td colspan="7" class="text-center">{% translate 'No data' %}</td></tr>
                         {% endfor %}
                         </tbody>
                     </table>
                     {% endif %}
+                        </div>
+
+                        <div id="ptba-tab-history" class="tab-pane fade">
+                            {% include 'components/history_panel.html' with target=annual_work_plan %}
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            {% include 'components/history_panel.html' with target=annual_work_plan %}
         </div>
     </div>
 
@@ -184,6 +201,7 @@
 
 {% block javascript %}
     {{ block.super }}
+    {% include 'components/table_filter_js.html' %}
     <script type="text/javascript">
         $(document).ready(function () {
             function formatAmount(raw) {

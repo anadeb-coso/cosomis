@@ -36,6 +36,7 @@ class AnnualWorkPlan(ExternalIdMixin, SoftDeleteMixin, BaseModel):
 class Activity(ExternalIdMixin, SoftDeleteMixin, BaseModel):
     component = models.ForeignKey('subprojects.Component', on_delete=models.CASCADE, verbose_name=_("Component / Sub-component"))
     annual_work_plan = models.ForeignKey(AnnualWorkPlan, on_delete=models.CASCADE, verbose_name=_("Annual work plan"))
+    code = models.CharField(max_length=50, null=True, blank=True, verbose_name=_("Code"))
     name = models.CharField(max_length=255, verbose_name=_("Label"))
     amount = models.FloatField(verbose_name=_("Amount"))
     target = models.TextField(null=True, blank=True, verbose_name=_("Target(s)"))
@@ -46,9 +47,21 @@ class Activity(ExternalIdMixin, SoftDeleteMixin, BaseModel):
         verbose_name = _("Activity")
         verbose_name_plural = _("Activities")
         base_manager_name = 'objects'
+        constraints = [
+            models.UniqueConstraint(fields=['annual_work_plan', 'code'], name='unique_activity_code_per_annual_work_plan'),
+        ]
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        # Blank submitted as '' (not None) would otherwise count as a real value for
+        # the unique_activity_code_per_annual_work_plan constraint (MySQL only treats
+        # NULL, not '', as exempt from uniqueness) - normalize so multiple activities
+        # can still be left without a code.
+        if self.code == '':
+            self.code = None
+        super().save(*args, **kwargs)
 
     @property
     def justified_amount(self):

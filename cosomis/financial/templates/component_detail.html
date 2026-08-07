@@ -1,6 +1,11 @@
 {% extends 'layouts/base.html' %}
 {% load static i18n custom_tags %}
 
+{% block extracss %}
+    {{ block.super }}
+    {% include 'components/tabs_style.html' %}
+{% endblock %}
+
 {% block content %}
 {% include 'components/financial_menu.html' with active_menu='component' %}
     <div class="row">
@@ -32,59 +37,74 @@
             </div>
 
             <div class="card">
-                <div class="card-header"><h3 class="card-title">{% translate 'Sub-components' %}</h3></div>
                 <div class="card-body table-responsive">
-                    <table class="table table-striped table-sm">
-                        <thead><tr><th>{% translate 'Label' %}</th><th>{% translate 'Funding' %}</th><th>{% translate 'Own amount' %}</th><th>{% translate 'Effective amount' %}</th><th>{% translate 'Target(s)' %}</th><th>{% translate 'Planned amount (PTBA)' %}</th><th>{% translate 'Available amount (vs. plan)' %}</th><th>{% translate 'Justified amount' %}</th><th>{% translate 'Available amount (vs. justified)' %}</th><th width="10%">{% translate 'Action' %}</th></tr></thead>
-                        <tbody>
-                        {% for sub in sub_components %}
-                            <tr>
-                                <td>{{ sub.name }}</td>
-                                <td>{{ sub.funding_labels|default:'-' }}</td>
-                                <td>{% if sub.amount is not None %}{{ sub.amount|separate_with_space }}{% else %}-{% endif %}</td>
-                                <td>{{ sub.effective_amount|separate_with_space }}</td>
-                                <td>{{ sub.target|default_if_none:'-' }}</td>
-                                <td>{{ sub.planning.planned_amount|separate_with_space }}</td>
-                                <td class="{% if sub.planning.available_vs_plan < 0 %}text-danger{% else %}text-success{% endif %}">{{ sub.planning.available_vs_plan|separate_with_space }}</td>
-                                <td>{{ sub.planning.justified_amount|separate_with_space }}</td>
-                                <td class="{% if sub.planning.available_vs_justified < 0 %}text-danger{% else %}text-success{% endif %}">{{ sub.planning.available_vs_justified|separate_with_space }}</td>
-                                <td>
-                                    {% if user.is_superuser or user|has_group:"Financial" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
-                                    <a href="{% url 'financial:component_update' sub.pk %}" style="font-size: 9px !important;" target="_blank" class="btn btn-primary btn-xs" title="{% translate 'Edit' %}"><i class="fa fa-edit"></i></a>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% empty %}
-                            <tr><td colspan="10" class="text-center">{% translate 'No data' %}</td></tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
+                    <ul class="nav nav-tabs financial-tabs">
+                        <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#component-tab-activities"><i class="fas fa-tasks"></i> {% translate 'Activities' %}</a></li>
+                        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#component-tab-subcomponents"><i class="fas fa-code-branch"></i> {% translate 'Sub-components' %}</a></li>
+                        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#component-tab-history"><i class="fas fa-history"></i> {% translate 'History' %}</a></li>
+                    </ul>
+                    <div class="tab-content financial-tab-content">
+                        <div id="component-tab-activities" class="tab-pane active">
+                            {% include 'components/table_quick_filter.html' with target='component-activities-table' %}
+                            <table id="component-activities-table" class="table table-striped table-sm">
+                                <thead><tr><th>{% translate 'Code' %}</th><th>{% translate 'Label' %}</th><th>{% translate 'Component' %}</th><th>{% translate 'Amount' %}</th><th>{% translate 'Justified amount' %}</th><th>{% translate 'Balance to justify' %}</th></tr></thead>
+                                <tbody>
+                                {% for activity in activities %}
+                                    <tr>
+                                        <td>{{ activity.code|default_if_none:'-' }}</td>
+                                        <td>{{ activity.name }}</td>
+                                        <td>{{ activity.component.name }}</td>
+                                        <td>{{ activity.amount|separate_with_space }}</td>
+                                        <td>{{ activity.justified_amount|separate_with_space }}</td>
+                                        <td class="{% if activity.balance_to_justify < 0 %}text-danger{% else %}text-success{% endif %}">{{ activity.balance_to_justify|separate_with_space }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="6" class="text-center">{% translate 'No data' %}</td></tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div id="component-tab-subcomponents" class="tab-pane fade">
+                            {% include 'components/table_quick_filter.html' with target='component-subcomponents-table' %}
+                            <table id="component-subcomponents-table" class="table table-striped table-sm">
+                                <thead><tr><th>{% translate 'Label' %}</th><th>{% translate 'Funding' %}</th><th>{% translate 'Own amount' %}</th><th>{% translate 'Effective amount' %}</th><th>{% translate 'Target(s)' %}</th><th>{% translate 'Planned amount (PTBA)' %}</th><th>{% translate 'Available amount (vs. plan)' %}</th><th>{% translate 'Justified amount' %}</th><th>{% translate 'Available amount (vs. justified)' %}</th><th width="10%">{% translate 'Action' %}</th></tr></thead>
+                                <tbody>
+                                {% for sub in sub_components %}
+                                    <tr>
+                                        <td>{{ sub.name }}</td>
+                                        <td>{{ sub.funding_labels|default:'-' }}</td>
+                                        <td>{% if sub.amount is not None %}{{ sub.amount|separate_with_space }}{% else %}-{% endif %}</td>
+                                        <td>{{ sub.effective_amount|separate_with_space }}</td>
+                                        <td>{{ sub.target|default_if_none:'-' }}</td>
+                                        <td>{{ sub.planning.planned_amount|separate_with_space }}</td>
+                                        <td class="{% if sub.planning.available_vs_plan < 0 %}text-danger{% else %}text-success{% endif %}">{{ sub.planning.available_vs_plan|separate_with_space }}</td>
+                                        <td>{{ sub.planning.justified_amount|separate_with_space }}</td>
+                                        <td class="{% if sub.planning.available_vs_justified < 0 %}text-danger{% else %}text-success{% endif %}">{{ sub.planning.available_vs_justified|separate_with_space }}</td>
+                                        <td>
+                                            {% if user.is_superuser or user|has_group:"Financial" or user|has_group:"Evaluator" or user|has_group:"Accountant" %}
+                                            <a href="{% url 'financial:component_update' sub.pk %}" style="font-size: 9px !important;" target="_blank" class="btn btn-primary btn-xs" title="{% translate 'Edit' %}"><i class="fa fa-edit"></i></a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="10" class="text-center">{% translate 'No data' %}</td></tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div id="component-tab-history" class="tab-pane fade">
+                            {% include 'components/history_panel.html' with target=component %}
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <div class="card">
-                <div class="card-header"><h3 class="card-title">{% translate 'Activities' %}</h3></div>
-                <div class="card-body table-responsive">
-                    <table class="table table-striped table-sm">
-                        <thead><tr><th>{% translate 'Label' %}</th><th>{% translate 'Component' %}</th><th>{% translate 'Amount' %}</th><th>{% translate 'Justified amount' %}</th><th>{% translate 'Balance to justify' %}</th></tr></thead>
-                        <tbody>
-                        {% for activity in activities %}
-                            <tr>
-                                <td>{{ activity.name }}</td>
-                                <td>{{ activity.component.name }}</td>
-                                <td>{{ activity.amount|separate_with_space }}</td>
-                                <td>{{ activity.justified_amount|separate_with_space }}</td>
-                                <td class="{% if activity.balance_to_justify < 0 %}text-danger{% else %}text-success{% endif %}">{{ activity.balance_to_justify|separate_with_space }}</td>
-                            </tr>
-                        {% empty %}
-                            <tr><td colspan="5" class="text-center">{% translate 'No data' %}</td></tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {% include 'components/history_panel.html' with target=component %}
         </div>
     </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    {% include 'components/table_filter_js.html' %}
 {% endblock %}

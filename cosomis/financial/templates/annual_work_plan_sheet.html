@@ -23,6 +23,7 @@
                             <thead>
                             <tr>
                                 <th class="sheet-row-number"></th>
+                                <th class="sheet-code">{% translate 'Code' %}</th>
                                 <th>{% translate 'Label' %}</th>
                                 <th>{% translate 'Component' %}</th>
                                 <th>{% translate 'Amount' %}</th>
@@ -37,6 +38,7 @@
                                 <tr class="sheet-row{% if line_form.instance.pk %} sheet-row-saved{% endif %}">
                                     {% for hidden in line_form.hidden_fields %}{{ hidden }}{% endfor %}
                                     <td class="sheet-row-number">{{ forloop.counter }}</td>
+                                    <td class="sheet-cell sheet-code">{{ line_form.code }}{{ line_form.code.errors }}</td>
                                     <td class="sheet-cell">{{ line_form.name }}{{ line_form.name.errors }}</td>
                                     <td class="sheet-cell">{{ line_form.component }}{{ line_form.component.errors }}</td>
                                     <td class="sheet-cell">{{ line_form.amount }}{{ line_form.amount.errors }}</td>
@@ -69,6 +71,7 @@
                                 <tr class="sheet-row">
                                     {% for hidden in formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
                                     <td class="sheet-row-number"></td>
+                                    <td class="sheet-cell sheet-code">{{ formset.empty_form.code }}{{ formset.empty_form.code.errors }}</td>
                                     <td class="sheet-cell">{{ formset.empty_form.name }}{{ formset.empty_form.name.errors }}</td>
                                     <td class="sheet-cell">{{ formset.empty_form.component }}{{ formset.empty_form.component.errors }}</td>
                                     <td class="sheet-cell">{{ formset.empty_form.amount }}{{ formset.empty_form.amount.errors }}</td>
@@ -102,6 +105,7 @@
             border: 1px solid #dee2e6; font-size: 12px; vertical-align: middle;
         }
         table.sheet-table td.sheet-cell { border: 1px solid #dee2e6; padding: 0; vertical-align: middle; }
+        table.sheet-table th.sheet-code, table.sheet-table td.sheet-code { width: 90px; }
         table.sheet-table td.sheet-cell input, table.sheet-table td.sheet-cell select, table.sheet-table td.sheet-cell textarea {
             width: 100%; height: 100%; border: none; border-radius: 0; padding: 6px 8px;
             background: transparent; box-shadow: none !important;

@@ -1,0 +1,13 @@
+<script type="text/javascript">
+    // Powers every ".table-quick-filter" input on financial detail pages: a
+    // client-side, instant row filter for the table it targets (data-target, a
+    // CSS id selector) - included once per page rather than duplicated inline in
+    // every tab, so all "onglets" tables share the exact same behaviour.
+    $(document).on('keyup', '.table-quick-filter', function () {
+        var value = $(this).val().toLowerCase();
+        var $table = $($(this).data('target'));
+        $table.find('tbody tr').each(function () {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        });
+    });
+</script>
