@@ -28,6 +28,7 @@ class CheckUserSerializer(serializers.Serializer):
 				
 		# Try to find user by token first
 		if token:
+			print(token)
 			if token in settings.TOKEN_ALLOWED_TO_ACCESS_API:
 				return User(id=None, username="TokenUser", is_active=True)
 			

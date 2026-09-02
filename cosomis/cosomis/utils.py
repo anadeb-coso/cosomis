@@ -16,6 +16,7 @@ from cosomis.constants import (
     COMPLETED_RANKING, RECEPTION_TECHNICAL_RANKING, PROVISIONAL_RECEPTION_RANKING,
     HANDOVER_TO_COMMUNITY_RANKING, FINAL_RECEPTION_RANKING
 )
+from cdd_client import CddClient
 
 
 def get_facilitators_village_liste(develop_mode=False, training_mode=False, no_sql_db=False, only_ids=True):
@@ -997,3 +998,18 @@ def change_subproject_attr_val_entreprise_selectionne_to_entreprise_selectionnee
 # today_start = timezone.make_aware(timezone.datetime.combine(now.date(), timezone.datetime.min.time()))
 # today_end = timezone.make_aware(timezone.datetime.combine(now.date(), timezone.datetime.max.time()))
 # subprojects = Subproject.objects.filter(updated_date__range=(today_start, today_end))
+
+
+def update_administrative_levels_couchdb():
+    client = CddClient()
+    print("Start")
+    print()
+    ads = AdministrativeLevel.objects.all()
+    for ad in ads:
+        client.update_administrative_level(ad)
+    print()
+
+    print("End")
+
+def review_component_12_structures():
+    Subproject.objects.filter(component__name="COMPOSANTE 1.2").update(component=Component.objects.get(name="COMPOSANTE 1.2a"))

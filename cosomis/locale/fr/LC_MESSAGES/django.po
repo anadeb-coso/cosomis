@@ -4596,3 +4596,55 @@ msgstr "Pour une activité copiée : le montant justifié de son activité sourc
 #: .\financial\models\planning.py
 msgid "For a copied activity: the balance to justify its source activity had at the moment of the PTBA copy."
 msgstr "Pour une activité copiée : le solde à justifier de son activité source au moment de la copie du PTBA."
+
+#: .\administrativelevels\models.py
+msgid "Risk and inaccessible"
+msgstr "À risque et inaccessible"
+
+#: .\administrativelevels\models.py
+msgid "Risk level"
+msgstr "Niveau à risque"
+
+#: .\administrativelevels\models.py
+msgid "Moderate risk level"
+msgstr "Niveau à risque modéré"
+
+#: .\administrativelevels\models.py
+msgid "Non-risk level"
+msgstr "Niveau sans risque"
+
+#: .\administrativelevels\models.py
+msgid "Area status"
+msgstr "Statut de la zone"
+
+#: .\administrativelevels\models.py
+msgid "Risk level of the area"
+msgstr "Niveau de risque de la zone"
+
+#: .\administrativelevels\views.py
+msgid "Area status updated successfully."
+msgstr "Statut de la zone mis à jour avec succès."
+
+#: .\administrativelevels\views.py
+msgid "Please select at least one administrative level and an area status."
+msgstr "Veuillez sélectionner au moins un niveau administratif et un statut de zone."
+
+#: .\administrativelevels\templates\administrativelevel_area_status.html
+msgid "Current area status"
+msgstr "Statut de zone actuel"
+
+#: .\administrativelevels\templates\administrativelevel_area_status.html
+msgid "Not set"
+msgstr "Non défini"
+
+#: .\administrativelevels\templates\administrativelevel_area_status.html
+msgid "No results"
+msgstr "Aucun résultat"
+
+#: .\administrativelevels\templates\administrativelevel_area_status.html
+msgid "Choose an area status"
+msgstr "Choisir un statut de zone"
+
+#: .\administrativelevels\templates\administrativelevel_area_status.html
+msgid "Please select at least one administrative level."
+msgstr "Veuillez sélectionner au moins un niveau administratif."

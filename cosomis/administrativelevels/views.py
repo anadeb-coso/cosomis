@@ -119,7 +119,9 @@ class AdministrativeLevelCreateView(PageMixin, LoginRequiredMixin, AdminPermissi
     def post(self, request, *args, **kwargs):
         form = AdministrativeLevelForm(self.get_parent(self.request.GET.get("type")), request.POST)
         if form.is_valid():
-            form.save()
+            instance = form.save()
+            if instance.area_status:
+                instance.cascade_area_status()
             return redirect('administrativelevels:list')
         return super(AdministrativeLevelCreateView, self).get(request, *args, **kwargs)
 
@@ -157,7 +159,9 @@ class AdministrativeLevelUpdateView(PageMixin, LoginRequiredMixin, AdminPermissi
     def post(self, request, *args, **kwargs):
         form = AdministrativeLevelForm(self.get_parent(self.request.GET.get("type")), request.POST, instance=self.get_object())
         if form.is_valid():
-            form.save()
+            instance = form.save()
+            if instance.area_status:
+                instance.cascade_area_status()
             return redirect('administrativelevels:list')
         return super(AdministrativeLevelUpdateView, self).get(request, *args, **kwargs)
     
@@ -494,7 +498,155 @@ class AdministrativeLevelsListView(PageMixin, LoginRequiredMixin, ListView):
         )
 
         return ctx
-    
+
+
+class AdministrativeLevelAreaStatusView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, ListView):
+    """Bulk assignment page: select several Regions/Prefectures/Communes/Cantons/Villages
+    and assign them all the same area_status (risk level). The status is then
+    cascaded down to descendants and used to recompute ancestors' status."""
+
+    model = AdministrativeLevel
+    template_name = 'administrativelevel_area_status.html'
+    context_object_name = 'administrativelevels'
+    title = _('Area status')
+    active_level1 = 'administrative_levels'
+    breadcrumb = [
+        {
+            'url': '',
+            'title': title
+        },
+    ]
+
+    def filter_list_by_delete_empty(self, _list):
+        return [elt for elt in _list if elt] if _list else []
+
+    def get_filters_context(self):
+        kwargs = dict()
+
+        id_regions = self.filter_list_by_delete_empty(self.request.GET.getlist('region', []))
+        id_prefectures = self.filter_list_by_delete_empty(self.request.GET.getlist('prefecture', []))
+        id_communes = self.filter_list_by_delete_empty(self.request.GET.getlist('commune', []))
+        id_cantons = self.filter_list_by_delete_empty(self.request.GET.getlist('canton', []))
+        id_villages = self.filter_list_by_delete_empty(self.request.GET.getlist('village', []))
+
+        kwargs["id_regions_selected"] = id_regions
+        kwargs["id_prefectures_selected"] = id_prefectures
+        kwargs["id_communes_selected"] = id_communes
+        kwargs["id_cantons_selected"] = id_cantons
+        kwargs["id_villages_selected"] = id_villages
+
+        adm_queryset = AdministrativeLevel.objects.all()
+        kwargs["regions"] = adm_queryset.filter(type=AdministrativeLevel.REGION)
+
+        kwargs["prefectures"] = adm_queryset.filter(type=AdministrativeLevel.PREFECTURE)
+        if id_regions:
+            kwargs["prefectures"] = kwargs["prefectures"].filter(parent__id__in=id_regions)
+
+        kwargs["communes"] = adm_queryset.filter(type=AdministrativeLevel.COMMUNE)
+        if id_prefectures:
+            kwargs["communes"] = kwargs["communes"].filter(parent__id__in=id_prefectures)
+        elif id_regions:
+            kwargs["communes"] = kwargs["communes"].filter(parent__parent__id__in=id_regions)
+
+        kwargs["cantons"] = adm_queryset.filter(type=AdministrativeLevel.CANTON)
+        if id_communes:
+            kwargs["cantons"] = kwargs["cantons"].filter(parent__id__in=id_communes)
+        elif id_prefectures:
+            kwargs["cantons"] = kwargs["cantons"].filter(parent__parent__id__in=id_prefectures)
+        elif id_regions:
+            kwargs["cantons"] = kwargs["cantons"].filter(parent__parent__parent__id__in=id_regions)
+
+        kwargs["villages"] = adm_queryset.filter(type=AdministrativeLevel.VILLAGE)
+        if id_cantons:
+            kwargs["villages"] = kwargs["villages"].filter(parent__id__in=id_cantons)
+        elif id_communes:
+            kwargs["villages"] = kwargs["villages"].filter(parent__parent__id__in=id_communes)
+        elif id_prefectures:
+            kwargs["villages"] = kwargs["villages"].filter(parent__parent__parent__id__in=id_prefectures)
+        elif id_regions:
+            kwargs["villages"] = kwargs["villages"].filter(parent__parent__parent__parent__id__in=id_regions)
+
+        return kwargs
+
+    def get_queryset(self):
+        _type = self.request.GET.get("type", AdministrativeLevel.VILLAGE)
+        search = self.request.GET.get("search", None)
+        id_regions = self.filter_list_by_delete_empty(self.request.GET.getlist('region', []))
+        id_prefectures = self.filter_list_by_delete_empty(self.request.GET.getlist('prefecture', []))
+        id_communes = self.filter_list_by_delete_empty(self.request.GET.getlist('commune', []))
+        id_cantons = self.filter_list_by_delete_empty(self.request.GET.getlist('canton', []))
+        id_villages = self.filter_list_by_delete_empty(self.request.GET.getlist('village', []))
+
+        administrative_levels = AdministrativeLevel.objects.filter(type=_type)
+
+        if id_villages:
+            _ids = id_villages
+        elif id_cantons:
+            _ids = id_cantons
+        elif id_communes:
+            _ids = id_communes
+        elif id_prefectures:
+            _ids = id_prefectures
+        elif id_regions:
+            _ids = id_regions
+        else:
+            _ids = None
+
+        if _ids:
+            administrative_levels = administrative_levels.filter(
+                Q(id__in=_ids) |
+                Q(parent__id__in=_ids) |
+                Q(parent__parent__id__in=_ids) |
+                Q(parent__parent__parent__id__in=_ids) |
+                Q(parent__parent__parent__parent__id__in=_ids)
+            )
+
+        if search:
+            administrative_levels = administrative_levels.filter(name__icontains=search.upper())
+
+        return administrative_levels.distinct().order_by('name')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx.update(self.get_filters_context())
+
+        ctx['search'] = self.request.GET.get("search", None)
+        ctx['type'] = self.request.GET.get("type", AdministrativeLevel.VILLAGE)
+        ctx['area_status_choices'] = AdministrativeLevel.AreaStatus.choices
+
+        ctx['form_adl'] = AdministrativeLevelFilterForm(
+            has_all=False,
+
+            regions=ctx.get('regions', []),
+            prefectures=ctx.get('prefectures', []),
+            communes=ctx.get('communes', []),
+            cantons=ctx.get('cantons', []),
+            villages=ctx.get('villages', []),
+
+            default_regions=ctx.get('id_regions_selected', []),
+            default_prefectures=ctx.get('id_prefectures_selected', []),
+            default_communes=ctx.get('id_communes_selected', []),
+            default_cantons=ctx.get('id_cantons_selected', []),
+            default_villages=ctx.get('id_villages_selected', []),
+        )
+
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        selected_ids = request.POST.getlist('administrative_levels')
+        new_status = request.POST.get('area_status')
+
+        if selected_ids and new_status in AdministrativeLevel.AreaStatus.values:
+            AdministrativeLevel.objects.filter(id__in=selected_ids).update(area_status=new_status)
+            for level in AdministrativeLevel.objects.filter(id__in=selected_ids):
+                level.cascade_area_status()
+            messages.success(request, _("Area status updated successfully."))
+        else:
+            messages.error(request, _("Please select at least one administrative level and an area status."))
+
+        query_string = request.GET.urlencode()
+        url = reverse_lazy('administrativelevels:area_status')
+        return redirect(f"{url}?{query_string}" if query_string else url)
 
 
 #Obstacles

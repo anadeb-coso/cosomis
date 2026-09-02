@@ -9,6 +9,7 @@ urlpatterns = [
     path('', views.AdministrativeLevelsListView.as_view(), name='list'), # Administrative levels list path
     path('create/', views.AdministrativeLevelCreateView.as_view(), name='create'), # Administrative level path to create
     path('update/<int:pk>/', views.AdministrativeLevelUpdateView.as_view(), name='update'), # Administrative level path to update
+    path('area-status/', views.AdministrativeLevelAreaStatusView.as_view(), name='area_status'), # Bulk area status assignment path
     path('village-detail/<int:pk>/', views.VillageDetailView.as_view(), name='village_detail'), #The path of the detail of village
     path('detail/<int:pk>/', views.AdministrativeLevelDetailView.as_view(), name='detail'), #The path of the detail
     path('upload/', views.UploadCSVView.as_view(), name='upload'), #The path to download CSV/Excel file from db

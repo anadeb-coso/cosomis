@@ -1,0 +1,309 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n custom_tags bootstrap4 %}
+
+
+{% block content %}
+
+    {% make_list "Village" as begin_village %}
+    {% make_list "Village" "Canton" as begin_canton %}
+    {% make_list "Village" "Canton" "Commune" as begin_commune %}
+    {% make_list "Village" "Canton" "Commune" "Prefecture" as begin_prefecture %}
+    {% make_list "Village" "Canton" "Commune" "Prefecture" "Region" as begin_region %}
+
+    {% if type in begin_village %}
+        {% var 2 as number_col %}
+    {% elif type in begin_canton %}
+        {% var 3 as number_col %}
+    {% elif type == "Commune" %}
+        {% var 4 as number_col %}
+    {% elif type == "Prefecture" %}
+        {% var 6 as number_col %}
+    {% elif type == "Region" %}
+        {% var 12 as number_col %}
+    {% endif %}
+
+    <div class="row">
+        <div class="col-12">
+            <div>
+                <form method="get">
+                    <div class="clearfix"></div>
+                    <div class="row administrative-level-filter">
+                        {% if type in begin_region %}
+                        <div class="col-{{ number_col }}">
+                            {% bootstrap_field form_adl.region show_label=False %}
+                        </div>
+                        {% endif %}
+                        {% if type in begin_prefecture %}
+                        <div class="col-{{ number_col }}">
+                            {% bootstrap_field form_adl.prefecture show_label=False %}
+                        </div>
+                        {% endif %}
+                        {% if type in begin_commune %}
+                        <div class="col-{{ number_col }}">
+                            {% bootstrap_field form_adl.commune show_label=False %}
+                        </div>
+                        {% endif %}
+                        {% if type in begin_canton %}
+                        <div class="col-{{ number_col }}">
+                            {% bootstrap_field form_adl.canton show_label=False %}
+                        </div>
+                        {% endif %}
+                        {% if type in begin_village %}
+                        <div class="col-{{ number_col }}">
+                            {% bootstrap_field form_adl.village show_label=False %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-8" class="input-group mb-3 search-bar">
+                            <div class="d-flex">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                </div>
+                                <input type="hidden" name="type" value="{{ type }}">
+                                <input class="form-control" name="search" value="{% if search %}{{ search }}{% endif %}" placeholder="{% translate 'Search in database' %}..." id="id_search_in_db">
+                            </div>
+                        </div>
+                        <div class="col-2">
+                            <input class="btn btn-primary" type="submit" value="{% translate 'Search' %}">
+                        </div>
+                        <div class="col-2">
+                            <a class="btn fs12 text-bold-family text-primary p-0" style="margin-top: 8px;" id="clear_all_filters">
+                                {% translate "Clear" %}
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="col-md-12">
+                        <div class="btn-group pull-left">
+                            <div style="display: inline-block;">
+                                <button class="btn btn-primary" style="display: inline-block;"
+                                    type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    {% if type %}{{ type }}{% else %}{% translate 'See Others' %}{% endif %} <i class="fa fa-chevron-down"></i>
+                                </button>
+                                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                                    <a class="dropdown-item" href="?type=Village">Village</a>
+                                    <a class="dropdown-item" href="?type=Canton">Canton</a>
+                                    <a class="dropdown-item" href="?type=Commune">Commune</a>
+                                    <a class="dropdown-item" href="?type=Prefecture">Prefecture</a>
+                                    <a class="dropdown-item" href="?type=Region">Region</a>
+                                </div>
+                            </div>
+                            <div> &nbsp; &nbsp; </div>
+                            <a class="btn btn-primary" href="{% url 'administrativelevels:list' %}">{% translate 'Administrative levels' %}</a>
+
+                            <div> &nbsp; &nbsp; </div>
+                            
+                            <div class="row align-items-center justify-content-end">
+                                <div class="col-8">
+                                    <select name="area_status" id="id_area_status" class="form-control" required>
+                                        <option value="">{% translate 'Choose an area status' %}</option>
+                                        {% for value, label in area_status_choices %}
+                                            <option value="{{ value }}">{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-4">
+                                    <button type="submit" class="btn btn-primary" id="apply_area_status">{% translate 'Apply' %}</button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body table-responsive">
+                    <form method="post" id="area_status_form">
+                        {% csrf_token %}
+
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} alert-sm">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+
+                        <table id="table" class="table">
+                            <thead>
+                            <tr>
+                                <th><input type="checkbox" id="select_all"></th>
+                                <th>{% translate 'Region' %}</th>
+                                {% if type in begin_prefecture %}<th>{% translate 'Prefecture' %}</th>{% endif %}
+                                {% if type in begin_commune %}<th>{% translate 'Commune' %}</th>{% endif %}
+                                {% if type in begin_canton %}<th>{% translate 'Canton' %}</th>{% endif %}
+                                {% if type in begin_village %}<th>{% translate 'Village' %}</th>{% endif %}
+                                <th>{% translate 'Current area status' %}</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for administrativelevel in administrativelevels %}
+                                <tr>
+                                    <td><input type="checkbox" name="administrative_levels" value="{{ administrativelevel.pk }}"></td>
+                                    {% if type in begin_village %}<td>{{ administrativelevel.parent.parent.parent.parent.name }}</td>{% endif %}
+                                    {% if type in begin_canton %}<td>{{ administrativelevel.parent.parent.parent.name }}</td>{% endif %}
+                                    {% if type in begin_commune %}<td>{{ administrativelevel.parent.parent.name }}</td>{% endif %}
+                                    {% if type in begin_prefecture %}<td>{{ administrativelevel.parent.name }}</td>{% endif %}
+                                    <td>{{ administrativelevel.name }}</td>
+                                    <td>
+                                        {% if administrativelevel.area_status == 'RISK_INACCESSIBLE' %}
+                                            <span class="badge badge-danger">{{ administrativelevel.get_area_status_display }}</span>
+                                        {% elif administrativelevel.area_status == 'RISK' %}
+                                            <span class="badge badge-warning">{{ administrativelevel.get_area_status_display }}</span>
+                                        {% elif administrativelevel.area_status == 'MODERATE_RISK' %}
+                                            <span class="badge badge-info">{{ administrativelevel.get_area_status_display }}</span>
+                                        {% elif administrativelevel.area_status == 'NON_RISK' %}
+                                            <span class="badge badge-success">{{ administrativelevel.get_area_status_display }}</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">{% translate 'Not set' %}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="7">{% translate 'No results' %}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+
+    <script src="{% static 'js/csrfSafeMethodAjax.js' %}"></script>
+    <script src="{% static 'js/cascade_requests.js' %}"></script>
+    <script src="{% static 'js/utils.js' %}"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            {% get_current_language as lang %}
+
+            $('#table').DataTable({
+                language: {
+                    url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}')
+                },
+                dom: 'Bfrtipl',
+                columnDefs: [
+                    { targets: 0, orderable: false, searchable: false }
+                ],
+                lengthMenu: [10, 25, 50, 100, 1000, 10000, 100000],
+                pageLength: 10,
+            });
+
+            $("#select_all").on("change", function () {
+                $('#table tbody input[name="administrative_levels"]:visible').prop('checked', $(this).is(':checked'));
+            });
+
+            $("#area_status_form").on("submit", function (e) {
+                if ($('input[name="administrative_levels"]:checked').length === 0) {
+                    e.preventDefault();
+                    alert("{% translate 'Please select at least one administrative level.' %}");
+                }
+            });
+
+            let cascaded = false;
+            let id_region = $('#id_region');
+            let id_prefecture = $('#id_prefecture');
+            let id_commune = $('#id_commune');
+            let id_canton = $('#id_canton');
+            let id_village = $('#id_village');
+            $('.administrative-level-filter select').on('change', function () {
+                if (!cascaded) {
+                    cascaded = true;
+
+                    let administrative_level_id = null;
+                    let administrative_level_type = null;
+                    if ($(this).attr('id')) {
+                        administrative_level_id = $(this).val();
+                        administrative_level_id = administrative_level_id && administrative_level_id.length != 0 ? administrative_level_id : null;
+                        administrative_level_type = administrative_level_id ? $(this).attr('id').split('_')[1] : null;
+                    }
+
+                    $(".administrative-level-filter select").attr('disabled', true);
+                    $.ajax({
+                        type: 'GET',
+                        url: "{% url 'administrativelevels:utils:get_choices_for_next_administrative_level_all' %}",
+                        data: {
+                            parent_id: $("#id_" + administrative_level_type).val()
+                        },
+                        success: function (data) {
+                            if (!administrative_level_type || administrative_level_type == "region" || $("#id_" + administrative_level_type).val().length == 0) {
+                                set_datas_administrative_level(id_prefecture, data.prefectures);
+                                set_datas_administrative_level(id_commune, data.communes);
+                                set_datas_administrative_level(id_canton, data.cantons);
+                                set_datas_administrative_level(id_village, data.villages);
+                            } else if (administrative_level_type == "prefecture") {
+                                set_datas_administrative_level(id_commune, data.communes);
+                                set_datas_administrative_level(id_canton, data.cantons);
+                                set_datas_administrative_level(id_village, data.villages);
+                            } else if (administrative_level_type == "commune") {
+                                set_datas_administrative_level(id_canton, data.cantons);
+                                set_datas_administrative_level(id_village, data.villages);
+                            } else if (administrative_level_type == "canton") {
+                                set_datas_administrative_level(id_village, data.villages);
+                            }
+                            cascaded = false;
+                        },
+                        error: function (data) {
+                            alert(error_server_message + "Error " + data.status);
+                            $(".administrative-level-filter select").attr('disabled', false);
+                            cascaded = false;
+                        }
+                    }).done(function () {
+                        $(".administrative-level-filter select").attr('disabled', false);
+                        cascaded = false;
+                    });
+                }
+            });
+
+            $("#clear_all_filters").on("click", function () {
+                $('.administrative-level-filter select').val(null).trigger('change.select2');
+                $('#id_search_in_db').val('');
+            });
+        });
+    </script>
+{% endblock %}
+
+
+{% block select2 %}
+    <script type="text/javascript">
+        $("#id_region").select2({
+            placeholder: "{% translate 'Region' %}",
+            allowClear: true,
+        });
+        $("#id_prefecture").select2({
+            placeholder: "{% translate 'Prefecture' %}",
+            allowClear: true,
+        });
+        $("#id_commune").select2({
+            placeholder: "{% translate 'Commune' %}",
+            allowClear: true,
+        });
+        $("#id_canton").select2({
+            placeholder: "{% translate 'Canton' %}",
+            allowClear: true,
+        });
+        $("#id_village").select2({
+            placeholder: "{% translate 'Village' %}",
+            allowClear: true,
+        });
+        $("#id_area_status").select2({
+            placeholder: "{% translate 'Choose an area status' %}",
+            allowClear: true,
+        });
+
+        $('b[role="presentation"]').hide();
+        $('.select2-selection__arrow').append(
+            '<i class="fas fa-chevron-circle-down text-primary" style="margin-top:12px;"></i>');
+    </script>
+{% endblock select2 %}

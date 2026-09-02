@@ -187,6 +187,10 @@
                             <a class="btn btn-primary" href="{% url 'administrativelevels:geographical_units_list' %}">{% translate 'Geographical unit' %}</a>
                             <div> &nbsp; &nbsp; </div>
                             <a class="btn btn-primary" href="{% url 'administrativelevels:cvds_list' %}">{% translate 'CVD' %}</a>
+                            {% if user.is_superuser or user|has_group:"Admin" %}
+                            <div> &nbsp; &nbsp; </div>
+                            <a class="btn btn-primary" href="{% url 'administrativelevels:area_status' %}">{% translate 'Area status' %}</a>
+                            {% endif %}
                         </div>
 
                         <div class="btn-group pull-right">

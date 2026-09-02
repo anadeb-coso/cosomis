@@ -65,8 +65,8 @@ class SubprojectForm(forms.ModelForm):
                 if instance_datas[label]:
                     self.fields[label].initial = instance_datas[label]
             
-            if label == "component":
-                self.fields[label].queryset = Component.objects.filter(parent__name="Composante 1")
+            # if label == "component":
+            #     self.fields[label].queryset = Component.objects.filter(parent__name="Composante 1")
 
     class Meta:
         model = Subproject
@@ -113,8 +113,8 @@ class SubprojectWithoutLinkHeavyObjectsForm(forms.ModelForm):
                 if instance_datas[label]:
                     self.fields[label].initial = instance_datas[label]
             
-            if label == "component":
-                self.fields[label].queryset = Component.objects.filter(parent__name="Composante 1")
+            # if label == "component":
+            #     self.fields[label].queryset = Component.objects.filter(parent__name="Composante 1")
 
     class Meta:
         model = Subproject

@@ -41,6 +41,8 @@ class CddClient:
             "parent_id": parent,
             "latitude": float(adm_obj.latitude) if adm_obj.latitude else None,
             "longitude": float(adm_obj.longitude) if adm_obj.longitude else None,
+            "is_headquarters": adm_obj.is_headquarters,
+            "cvd_villages": adm_obj.cvd_villages_json,
         }
         self.nsc.create_document(self.adm_db, data)
         new = self.adm_db.get_query_result(
@@ -95,6 +97,8 @@ class CddClient:
             "parent_id": parent,
             "latitude": float(obj.latitude) if obj.latitude else None,
             "longitude": float(obj.longitude) if obj.longitude else None,
+            "is_headquarters": obj.is_headquarters,
+            "cvd_villages": obj.cvd_villages_json,
         }
         for k, v in data.items():
             if v:

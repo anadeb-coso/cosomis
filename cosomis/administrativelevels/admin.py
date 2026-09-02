@@ -11,7 +11,11 @@ class AdministrativeLevelAdmin(admin.ModelAdmin):
     list_display = (
         'name',
         'parent',
+        'area_status',
         'no_sql_db_id'
+    )
+    list_filter = (
+        'area_status',
     )
 
 

@@ -251,7 +251,7 @@ def insufficient_subprojects_status_to_excel(request):
     # ================================== Par FT ===================================
 
     ws4 = wb.create_sheet(title="Situation par FT")
-    columns4 = ["FT", "Nombre de Cantons (de stabilisation + additionnel)", "Nombre d'ouvrages achevés", "Nombre d'ouvrages achevés sans 3 images achevées",  "Pourcentage d'ouvrages achevés sans 3 images achevées", "Nombre d'ouvrages achevés sans coords", "Pourcentage d'ouvrages achevés sans coords", "Pourcentage global"]
+    columns4 = ["FT", "Nombre de Cantons (de stabilisation + additionnel)", "Nombre d'ouvrages achevés", "Nombre d'ouvrages achevés sans 3 images achevées",  "Pourcentage d'ouvrages achevés avec 3 images achevées", "Nombre d'ouvrages achevés sans coords", "Pourcentage d'ouvrages achevés avec coords", "Pourcentage global"]
     ws4.append(columns4)
     f_subprojects_completed__count = None
     f_subprojects_completed_lt_3_images__count = None
