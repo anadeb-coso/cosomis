@@ -106,7 +106,12 @@ class Subproject(BaseModel):
     expected_duration_of_the_work = models.FloatField(null=True, blank=True, verbose_name=_("Estimated completion time (months)"))
     expected_end_date_of_the_contract = models.DateField(null=True, blank=True, verbose_name=_("Expected contract end date"))
     total_contract_amount_paid = models.FloatField(null=True, blank=True, verbose_name=_("Total amount of the pay contract (technical inspection + safeguard inspection + construction company + furniture company + facilitator)"))
-    amount_of_the_care_and_maintenance_fund_expected_to_be_mobilized = models.FloatField(null=True, blank=True, verbose_name=_("Upkeep and maintenance fund (EMI) to be mobilized"))
+    amount_of_the_care_and_maintenance_fund_expected_to_be_mobilized = models.FloatField(
+        null=True, blank=True,
+        # Nom auto = 64 c. > limite d'identifiant PostgreSQL (63) → db_column
+        # explicite tronqué à 63 c. (fusion cdd + cosomis, base PostgreSQL).
+        db_column="amount_of_the_care_and_maintenance_fund_expected_to_be_mobilize",
+        verbose_name=_("Upkeep and maintenance fund (EMI) to be mobilized"))
     care_and_maintenance_amount_on_village_account = models.FloatField(null=True, blank=True, verbose_name=_("Amount of maintenance fund (EMI) mobilized and deposited in village account"))
     existence_of_maintenance_and_upkeep_plan_developed_by_community = models.BooleanField(null=True, blank=True, default=False, verbose_name=_("Existence of a maintenance and upkeep plan (EMI plan) drawn up by the community (if yes, put 1; if no, put 0)"))
     work_completion_date = models.DateField(null=True, blank=True, verbose_name=_("Work completion date"))
