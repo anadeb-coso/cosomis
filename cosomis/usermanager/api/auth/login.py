@@ -57,8 +57,10 @@ class CheckUserSerializer(serializers.Serializer):
 			if not username:
 				raise serializers.ValidationError(_("Invalid token"))
 	
-		user = User.objects.filter(Q(email=username) | Q(username=username)).first()
-		user = Facilitator.objects.using('cdd').filter(Q(email=username) | Q(username=username)).first() if not user else user
+		# Fusion PostgreSQL : __iexact préserve la connexion insensible à la
+		# casse (comportement MySQL utf8mb4_general_ci historique).
+		user = User.objects.filter(Q(email__iexact=username) | Q(username__iexact=username)).first()
+		user = Facilitator.objects.using('cdd').filter(Q(email__iexact=username) | Q(username__iexact=username)).first() if not user else user
 
 		if user and check_password(password, user.password):
 			if not user.is_active:
