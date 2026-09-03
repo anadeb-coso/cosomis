@@ -33,7 +33,13 @@ class Facilitator(models.Model):
     total_tasks = None #models.IntegerField(default=0)
     total_tasks_completed = None #models.IntegerField(default=0)
     last_activity = None #models.DateTimeField(blank=True, null=True)
-    
+
+    class Meta:
+        # Fusion cdd + cosomis : la table authentication_facilitator est
+        # possédée par CDD (catégorie B). COSOMIS ne fait que la lire
+        # (souvent via .using('cdd')) et ne doit ni la créer ni la migrer.
+        managed = False
+        db_table = 'authentication_facilitator'
 
     @property
     def is_active(self):

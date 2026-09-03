@@ -135,6 +135,34 @@ DATABASES = {
     # EXTERNAL_GRM_DATABASE_NAME: env.db('LEGACY_GRM_DATABASE_URL')
 }
 
+# Fusion cdd + cosomis (branche merge/cdd-cosomis) : une fois `.env` pointant
+# DATABASE_URL et LEGACY_DATABASE_URL sur la même base PostgreSQL unifiée,
+# COSOMIS ne migre QUE les apps dont il possède le schéma (subprojects,
+# administrativelevels, assignments) + ses apps propres.
+DATABASE_ROUTERS = ['cosomis.merge_routers.CosomisMergeRouter']
+
+# Les apps homonymes (auth, contenttypes, process_manager, authentication,
+# usermanager, reports…) sont possédées par CDD : leur historique de migrations
+# diffère de celui de COSOMIS. On le retire du graphe COSOMIS pour que
+# `check_consistent_history` et `makemigrations` restent cohérents ; leur schéma
+# est créé/maintenu par CDD (ou par `migrate --run-syncdb` au chargement).
+_COSOMIS_OWNED_MIGRATIONS = {
+    'subprojects', 'administrativelevels', 'assignments',
+    'financial', 'custom_file', 'kobotoolbox',
+}
+MIGRATION_MODULES = {
+    app.split('.')[-1]: None
+    for app in INSTALLED_APPS
+    if app.split('.')[-1] not in _COSOMIS_OWNED_MIGRATIONS
+}
+MIGRATION_MODULES.update({
+    a: None for a in (
+        'admin', 'auth', 'contenttypes', 'sessions', 'messages', 'staticfiles',
+        'authtoken', 'django_celery_results', 'process_manager',
+        'authentication', 'usermanager', 'reports', 'attachments', 'dashboard',
+    )
+})
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
