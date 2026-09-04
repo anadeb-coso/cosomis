@@ -131,12 +131,12 @@ EXTERNAL_DATABASE_NAME = 'cdd'
 
 DATABASES = {
     'default': env.db(),
-    EXTERNAL_DATABASE_NAME: env.db('LEGACY_DATABASE_URL'),
+    # Fusion cdd + cosomis : l'alias `cdd` pointe la MÊME base que `default`
+    # (base PostgreSQL unifiée) ; `.using('cdd')` reste donc valide.
+    EXTERNAL_DATABASE_NAME: env.db(),
     # EXTERNAL_GRM_DATABASE_NAME: env.db('LEGACY_GRM_DATABASE_URL')
 }
 
-# Fusion cdd + cosomis (branche merge/cdd-cosomis) : une fois `.env` pointant
-# DATABASE_URL et LEGACY_DATABASE_URL sur la même base PostgreSQL unifiée,
 # COSOMIS ne migre QUE les apps dont il possède le schéma (subprojects,
 # administrativelevels, assignments) + ses apps propres.
 DATABASE_ROUTERS = ['cosomis.merge_routers.CosomisMergeRouter']
