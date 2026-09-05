@@ -817,6 +817,45 @@ class Component(ExternalIdMixin, BaseModel):
         return self.name
 
     @property
+    def descendant_ids(self):
+        """Ids de tous les descendants (récursif), self exclu."""
+        out = []
+        for child in self.component_set.all():
+            out.append(child.id)
+            out.extend(child.descendant_ids)
+        return out
+
+    @property
+    def self_and_descendant_ids(self):
+        """Ids de ce composant + tous ses descendants : un filtre sur
+        « Composante 1.2 » couvre alors aussi « 1.2a » et « 1.2b »."""
+        return [self.id] + self.descendant_ids
+
+    @classmethod
+    def expand_ids(cls, ids):
+        """Une liste d'ids -> ces ids + tous leurs descendants (itératif)."""
+        if not isinstance(ids, (list, tuple, set)):
+            ids = [ids]
+        base = {int(i) for i in ids if str(i).strip().lstrip('-').isdigit()}
+        seen, frontier = set(base), list(base)
+        while frontier:
+            children = list(cls.objects.filter(parent_id__in=frontier)
+                            .values_list('id', flat=True))
+            frontier = [c for c in children if c not in seen]
+            seen.update(frontier)
+        return list(seen)
+
+    @classmethod
+    def expand_names(cls, names):
+        """Une liste de noms -> ids de ces composants + descendants."""
+        names = [n for n in names if n]
+        if not names:
+            return []
+        root_ids = list(cls.objects.filter(name__in=names)
+                        .values_list('id', flat=True))
+        return cls.expand_ids(root_ids)
+
+    @property
     def effective_amount(self):
         """Own amount if set, otherwise the sum of the effective_amount of its children (never both)."""
         if self.amount is not None:
@@ -887,6 +926,11 @@ class Project(ExternalIdMixin, BaseModel):
     administrative_levels = models.ManyToManyField(AdministrativeLevel, default=[], blank=True, verbose_name=_("Administrative Levels"), related_name="administrative_levels_projects")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE, verbose_name=_("Status"))
 
+    class Meta:
+        # Fusion cdd + cosomis : le concept Project est porté par la table
+        # survivante `process_manager_project` (§4.3/§4.5). Ce modèle la lit et
+        # l'écrit ; les tables M2M `subprojects_project_*` restent gérées ici.
+        db_table = 'process_manager_project'
 
     def __str__(self):
         return self.name

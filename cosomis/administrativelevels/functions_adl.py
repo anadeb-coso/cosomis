@@ -220,9 +220,18 @@ def get_cascade_adls_by_administrative_level_id(_ids, __type="Village", parent_i
 
 def get_multiple_administrative_hierarchies_ids(level_ids, search_descendants_for=["Canton", ]):
     """Récupère tous les ascendants et descendants des niveaux donnés."""
-    
+
+    level_ids = [int(i) for i in level_ids if str(i).strip().lstrip("-").isdigit()]
+    if not level_ids:
+        return [], [], list(level_ids)
+
     # Convertir les IDs en chaîne pour l'utiliser dans la requête SQL
     level_ids_str = ",".join(map(str, level_ids))
+    # Liste `IN (...)` en guillemets SIMPLES, apostrophes doublées : portable
+    # PostgreSQL (str(tuple(...)) mettrait des guillemets doubles = identifiants).
+    types_in = "(" + ", ".join(
+        "'" + str(t).replace("'", "''") + "'" for t in search_descendants_for
+    ) + ")" if search_descendants_for else "(NULL)"
 
     # Requête SQL récursive pour récupérer tous les descendants
     sql_descendants = f"""
@@ -230,7 +239,7 @@ def get_multiple_administrative_hierarchies_ids(level_ids, search_descendants_fo
             SELECT * FROM administrativelevels_administrativelevel WHERE id IN ({level_ids_str})
             UNION ALL
             SELECT al.* FROM administrativelevels_administrativelevel al
-            INNER JOIN descendants d ON al.parent_id = d.id AND d.type IN {tuple(search_descendants_for+search_descendants_for)}
+            INNER JOIN descendants d ON al.parent_id = d.id AND d.type IN {types_in}
         )
         SELECT id FROM descendants;
     """

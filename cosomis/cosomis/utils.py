@@ -644,14 +644,28 @@ from django.db import connection
 import logging
 
 def set_projects_images():
+    # Identifiants entre guillemets doubles (PostgreSQL) et non backticks
+    # (MySQL) ; `order` est un mot réservé -> "order". Idempotent via ON CONFLICT.
+    rows = [
+        (3, '2023-04-24 10:21:53.758608', '2023-04-24 10:22:52.616677',
+         'Forage réception provisoire',
+         'https://cddfiles.s3.amazonaws.com/proof_of_work/1682080153717.jpg1682331713.4758635?AWSAccessKeyId=AKIAVNBI2LQUFQ6X2VPO&Signature=wBh6fp5Y4eah1rgQTyCXQc9QcEw%3D&Expires=1682335313',
+         1, True, '2023-04-21', 748),
+        (4, '2023-04-24 10:23:54.968777', '2023-04-24 10:23:54.968825',
+         'Forage réception provisoire',
+         'https://cddfiles.s3.amazonaws.com/proof_of_work/1682080079370.jpg1682331834.7461157?AWSAccessKeyId=AKIAVNBI2LQUFQ6X2VPO&Signature=WeXyPtSDTibn448RmQrfIADj2oY%3D&Expires=1682335434',
+         2, False, '2023-04-21', 748),
+    ]
     with connection.cursor() as cursor:
         try:
-            cursor.execute("""
-            INSERT INTO `subprojects_subprojectfile` (`id`, `created_date`, `updated_date`, `name`, `url`, `order`, `principal`, `date_taken`, `subproject_id`) VALUES
-(3, '2023-04-24 10:21:53.758608', '2023-04-24 10:22:52.616677', 'Forage réception provisoire', 'https://cddfiles.s3.amazonaws.com/proof_of_work/1682080153717.jpg1682331713.4758635?AWSAccessKeyId=AKIAVNBI2LQUFQ6X2VPO&Signature=wBh6fp5Y4eah1rgQTyCXQc9QcEw%3D&Expires=1682335313', 1, 1, '2023-04-21', 748),
-(4, '2023-04-24 10:23:54.968777', '2023-04-24 10:23:54.968825', 'Forage réception provisoire', 'https://cddfiles.s3.amazonaws.com/proof_of_work/1682080079370.jpg1682331834.7461157?AWSAccessKeyId=AKIAVNBI2LQUFQ6X2VPO&Signature=WeXyPtSDTibn448RmQrfIADj2oY%3D&Expires=1682335434', 2, 0, '2023-04-21', 748);
-            """)
-            
+            cursor.executemany(
+                'INSERT INTO subprojects_subprojectfile '
+                '(id, created_date, updated_date, name, url, "order", principal, '
+                'date_taken, subproject_id) '
+                'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) '
+                'ON CONFLICT (id) DO NOTHING',
+                rows,
+            )
         except Exception as exc:
             logging.exception(exc)
 

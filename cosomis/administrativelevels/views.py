@@ -1566,7 +1566,8 @@ class CVDDetailView(PageMixin, LoginRequiredMixin, DetailView):
         financing_components = {}
         context['pie_graphes'] = []
         for component_label, component_id in components_mapping.items():
-            comp_qs = context['list_subprojects'].filter(component_id=component_id)
+            _cids = Component.expand_ids([component_id])  # 1.x + sous-composantes
+            comp_qs = context['list_subprojects'].filter(component_id__in=_cids)
 
             # Agrégation des montants en une seule passe
             agg = comp_qs.aggregate(
@@ -1576,7 +1577,7 @@ class CVDDetailView(PageMixin, LoginRequiredMixin, DetailView):
             total_estimated = agg['estimated_cost'] or 0
             total_contract = agg['contract_amount'] or 0
 
-            total_allocations = allocations_project.filter(component_id=component_id).aggregate(Sum('amount'))['amount__sum'] or 0
+            total_allocations = allocations_project.filter(component_id__in=_cids).aggregate(Sum('amount'))['amount__sum'] or 0
 
             financing_components[component_label] = {
                 'total_amount_subprojects_estimated_cost': total_estimated,

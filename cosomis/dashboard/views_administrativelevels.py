@@ -729,7 +729,9 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
             _("Remainder after estimated cost") + " FCFA": {},
             _("Remaining amount") + " FCFA": {},
         }
-        components = Component.objects.filter(parent__name="Composante 1")
+        # __iexact : PostgreSQL est sensible à la casse (données = "COMPOSANTE 1"),
+        # MySQL (utf8mb4_general_ci) ne l'était pas.
+        components = Component.objects.filter(parent__name__iexact="Composante 1")
         ids = []
         
         if adl_ids:
@@ -772,12 +774,12 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
                 Q(canton__id__in=_ids)
             )
             for component in components:
-                subproject_filter = subproject_filter_adl_project.filter(component_id=component.id)
+                subproject_filter = subproject_filter_adl_project.filter(component_id__in=component.self_and_descendant_ids)
 
                 datas[_("Cantons")][count] = line.administrative_level.name
                 datas[_("Component")][count] = component.name
 
-                amount__sum = allocation_adl_project.filter(component_id=component.id).aggregate(Sum('amount'))['amount__sum'] or 0
+                amount__sum = allocation_adl_project.filter(component_id__in=component.self_and_descendant_ids).aggregate(Sum('amount'))['amount__sum'] or 0
                 subproject_agg = subproject_filter.aggregate(
                     estimated_cost_sum=Sum('estimated_cost'),
                     spent_sum=Sum('contract_amount_work_companies')
@@ -801,8 +803,8 @@ class DashboardSummaryAdministrativeLevelAllocationListView(DashboardAdministrat
             datas[_("Cantons")][count+c] = _("Total")
             datas[_("Component")][count+c] = component.name
 
-            amount__sum = allocations_project.filter(component_id=component.id).aggregate(Sum('amount'))['amount__sum'] or 0
-            subproject_filter = subprojects.filter(component_id=component.id)            
+            amount__sum = allocations_project.filter(component_id__in=component.self_and_descendant_ids).aggregate(Sum('amount'))['amount__sum'] or 0
+            subproject_filter = subprojects.filter(component_id__in=component.self_and_descendant_ids)            
             subproject_agg = subproject_filter.aggregate(
                 estimated_cost_sum=Sum('estimated_cost'),
                 spent_sum=Sum('contract_amount_work_companies')
@@ -882,7 +884,9 @@ class DashboardSummaryCVDAllocationListView(DashboardAdministrativeLevelMixin, A
             _("Remainder after estimated cost") + " FCFA": {},
             _("Remaining amount") + " FCFA": {},
         }
-        components = Component.objects.filter(parent__name="Composante 1")
+        # __iexact : PostgreSQL est sensible à la casse (données = "COMPOSANTE 1"),
+        # MySQL (utf8mb4_general_ci) ne l'était pas.
+        components = Component.objects.filter(parent__name__iexact="Composante 1")
         ids = []
         
         if adl_ids:
@@ -928,7 +932,7 @@ class DashboardSummaryCVDAllocationListView(DashboardAdministrativeLevelMixin, A
 
                 try:
                     amount__sum = allocation_adl_project.filter(
-                        component_id=component.id
+                        component_id__in=component.self_and_descendant_ids
                     ).aggregate(Sum('amount'))['amount__sum']
 
                     datas[_("Allocation") + " FCFA"][count] = amount__sum if amount__sum else ""
@@ -936,7 +940,7 @@ class DashboardSummaryCVDAllocationListView(DashboardAdministrativeLevelMixin, A
                     datas[_("Allocation") + " FCFA"][count] = 0
                 
                 subproject_filter = subproject_filter_adl_project.filter(
-                        component_id=component.id
+                        component_id__in=component.self_and_descendant_ids
                     )
                 try:
                     estimated_cost__sum = subproject_filter.aggregate(Sum('estimated_cost'))['estimated_cost__sum']
@@ -976,11 +980,11 @@ class DashboardSummaryCVDAllocationListView(DashboardAdministrativeLevelMixin, A
             datas[_("CVD")][count+c] = _("Total")
             datas[_("Component")][count+c] = component.name
             amount__sum = allocations_project.filter(
-                component_id=component.id
+                component_id__in=component.self_and_descendant_ids
             ).aggregate(Sum('amount'))['amount__sum']
             datas[_("Allocation") + " FCFA"][count+c] = amount__sum if amount__sum else ""
 
-            subproject_filter = subprojects.filter(component_id=component.id)
+            subproject_filter = subprojects.filter(component_id__in=component.self_and_descendant_ids)
 
             estimated_cost__sum = subproject_filter.aggregate(Sum('estimated_cost'))['estimated_cost__sum']
             datas[_("Total estimate for subprojects") + " FCFA"][count+c] = estimated_cost__sum if estimated_cost__sum else ""

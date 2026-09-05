@@ -26,6 +26,19 @@ from cosomis.constants import (
 from cosomis.views_manage_url_parse import redirect_user_to_login, redirect_to_an_url
 
 
+def _sql_in(values):
+    """Rend une liste Python en fragment SQL `('a', 'b', ...)` pour une clause IN.
+
+    `str(tuple(...))` met des guillemets DOUBLES autour des chaînes contenant
+    une apostrophe (repr Python) — PostgreSQL les interprète alors comme des
+    identifiants de colonne. Ici : guillemets simples, apostrophes doublées.
+    """
+    vals = list(values)
+    if not vals:
+        return "(NULL)"
+    return "(" + ", ".join("'" + str(v).replace("'", "''") + "'" for v in vals) + ")"
+
+
 class DashboardTemplateView(PageMixin, LoginRequiredMixin, generic.TemplateView):
     template_name = 'dashboard_summary.html'
     active_level1 = 'dashboard_summary'
@@ -213,7 +226,8 @@ class DashboardSubprojectsMixin(ModalListMixin):
             subprojects = subprojects.filter(q)
 
         if components_names:
-            subprojects = subprojects.filter(component__name__in=[elt for elt in components_names if elt])
+            subprojects = subprojects.filter(
+                component_id__in=Component.expand_names(components_names))
         
         if subproject_sectors:
             subprojects = subprojects.filter(subproject_sector__in=[elt for elt in subproject_sectors if elt])
@@ -373,7 +387,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
             #     # SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
             #     # FROM subprojects_subproject AS sub_subp 
             #     # LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
-            #     # WHERE (((sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS*2)} 
+            #     # WHERE (((sub_subp.current_status_of_the_site IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)} 
             #     #     AND sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}) 
             #     #     OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
             #     #     AND sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS+STRUCTURE_IN_PROGRESS_STATUS)})
@@ -385,12 +399,12 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
             #     #     AND (sub_infras.infrastructure_deleted IS NULL OR sub_infras.infrastructure_deleted = 0)
             #     # """, _params
             #     f"""
-            #     SELECT DISTINCT id, joint_subproject_number
+            #     SELECT MIN(id) AS id, joint_subproject_number
             #     FROM subprojects_subproject
             #     WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub) 
             #     GROUP BY joint_subproject_number
-            #     HAVING SUM(current_status_of_the_site NOT IN {tuple(STRUCTURE_NOT_START_STATUS*2)}) > 0
-            #     AND SUM(current_status_of_the_site NOT IN {tuple(STRUCTURE_COMPLETED_STATUS)}) > 0
+            #     HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)})::int) > 0
+            #     AND SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})::int) > 0
             #     """, _params
             # )
             
@@ -402,8 +416,8 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                 # SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
                 # FROM subprojects_subproject AS sub_subp 
                 # LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
-                # WHERE (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)}
-                #     AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)})) 
+                # WHERE (sub_subp.current_status_of_the_site IN {_sql_in(STRUCTURE_COMPLETED_STATUS)}
+                #     AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})) 
                 #     AND sub_subp.id IN (
                 #         SELECT sub.id FROM ({_sql}) AS sub 
                 #     ) 
@@ -411,11 +425,11 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                 #     AND (sub_infras.infrastructure_deleted IS NULL OR sub_infras.infrastructure_deleted = 0)
                 # """, _params
                 f"""
-                SELECT DISTINCT id, joint_subproject_number
+                SELECT MIN(id) AS id, joint_subproject_number
                 FROM subprojects_subproject
                 WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub) 
                 GROUP BY joint_subproject_number
-                HAVING SUM(current_status_of_the_site NOT IN {tuple(STRUCTURE_COMPLETED_STATUS)}) = 0
+                HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})::int) = 0
                 """, _params
             )
             ctx['total_subproject_completed'] = len(final_queryset)
@@ -423,11 +437,11 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
 
             final_queryset = _s.raw(
                 f"""
-                SELECT DISTINCT id, joint_subproject_number
+                SELECT MIN(id) AS id, joint_subproject_number
                 FROM subprojects_subproject
                 WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub)
                 GROUP BY joint_subproject_number
-                HAVING SUM(current_status_of_the_site NOT IN {tuple(STRUCTURE_NOT_START_STATUS*2)}) = 0         
+                HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)})::int) = 0         
                 """, _params
             )
             ctx['total_subproject_not_started'] = len(final_queryset)
@@ -662,18 +676,18 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                             # SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject
                             # FROM subprojects_subproject AS sub_subp
                             # LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id = sub_infras.link_to_subproject_id
-                            # WHERE (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)}
-                            #     AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)}))
+                            # WHERE (sub_subp.current_status_of_the_site IN {_sql_in(STRUCTURE_COMPLETED_STATUS)}
+                            #     AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site IN {_sql_in(STRUCTURE_COMPLETED_STATUS)}))
                             #     AND sub_subp.id IN (SELECT sub.id FROM ({subquery_sql}) AS sub) 
                             #     AND (sub_subp.infrastructure_deleted IS NULL OR sub_subp.infrastructure_deleted = 0)
                             #     AND (sub_infras.infrastructure_deleted IS NULL OR sub_infras.infrastructure_deleted = 0)
                             # """, params
                             f"""
-                            SELECT DISTINCT id, joint_subproject_number
+                            SELECT MIN(id) AS id, joint_subproject_number
                             FROM subprojects_subproject
                             WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({subquery_sql}) AS sub) 
                             GROUP BY joint_subproject_number
-                            HAVING SUM(current_status_of_the_site NOT IN {tuple(STRUCTURE_COMPLETED_STATUS)}) = 0
+                            HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})::int) = 0
                             """, params
                         )
                         datas[_("Total number of sub-projects completed")][count] = len(final_qs)
@@ -765,20 +779,20 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                     status_filter=STRUCTURE_COMPLETED_STATUS,
                     total_key=ctx["total_infrastrutures_completed"],
                     raw_sql=f"""
-                    SELECT DISTINCT id, joint_subproject_number
+                    SELECT MIN(id) AS id, joint_subproject_number
                     FROM subprojects_subproject
                     WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub) AND subproject_sector=%s 
                     GROUP BY joint_subproject_number
-                    HAVING SUM(current_status_of_the_site NOT IN {tuple(STRUCTURE_COMPLETED_STATUS)}) = 0
+                    HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})::int) = 0
                     """,
                     # f"""
                     #     SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
                     #     FROM subprojects_subproject AS sub_subp 
                     #     LEFT JOIN subprojects_subproject AS sub_infras 
                     #         ON sub_subp.id=sub_infras.link_to_subproject_id 
-                    #     WHERE (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)}
+                    #     WHERE (sub_subp.current_status_of_the_site IN {_sql_in(STRUCTURE_COMPLETED_STATUS)}
                     #         AND (sub_infras.current_status_of_the_site IS NULL 
-                    #         OR sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)})) 
+                    #         OR sub_infras.current_status_of_the_site IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})) 
                     #         AND sub_subp.id IN (SELECT sub.id FROM ({_sql}) AS sub) 
                     #         AND sub_subp.subproject_sector=%s 
                     #         AND (sub_subp.infrastructure_deleted IS NULL OR sub_subp.infrastructure_deleted = 0)
@@ -792,19 +806,19 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                     status_filter=STRUCTURE_IN_PROGRESS_STATUS,
                     total_key=ctx["total_infrastrutures_in_progress"],
                     raw_sql=f"""
-                    SELECT DISTINCT id, joint_subproject_number
+                    SELECT MIN(id) AS id, joint_subproject_number
                     FROM subprojects_subproject
                     WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub) AND subproject_sector=%s
                     GROUP BY joint_subproject_number
-                    HAVING SUM(current_status_of_the_site NOT IN {tuple(STRUCTURE_NOT_START_STATUS*2)}) > 0
-                        AND SUM(current_status_of_the_site NOT IN {tuple(STRUCTURE_COMPLETED_STATUS)}) > 0
+                    HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)})::int) > 0
+                        AND SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})::int) > 0
                     """,
                     # f"""
                     #     SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
                     #     FROM subprojects_subproject AS sub_subp 
                     #     LEFT JOIN subprojects_subproject AS sub_infras 
                     #         ON sub_subp.id=sub_infras.link_to_subproject_id 
-                    #     WHERE (((sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS*2)} 
+                    #     WHERE (((sub_subp.current_status_of_the_site IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)} 
                     #         AND sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}) 
                     #         OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
                     #         AND sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS+STRUCTURE_IN_PROGRESS_STATUS)})
@@ -822,11 +836,11 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                     status_filter=STRUCTURE_NOT_START_STATUS,
                     total_key=ctx["total_infrastrutures_not_started"],
                     raw_sql=f"""
-                        SELECT DISTINCT id, joint_subproject_number
+                        SELECT MIN(id) AS id, joint_subproject_number
                         FROM subprojects_subproject
                         WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub) AND subproject_sector=%s 
                         GROUP BY joint_subproject_number
-                        HAVING SUM(current_status_of_the_site NOT IN {tuple(STRUCTURE_NOT_START_STATUS*2)}) = 0
+                        HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)})::int) = 0
                     """,
                     # f"""
                     #     SELECT DISTINCT sub_subp.id 
@@ -911,7 +925,8 @@ class DashboardFinancingListView(DashboardSubprojectsMixin, AJAXRequestMixin, Lo
         financing_components = {}
 
         for component_label, component_id in components_mapping.items():
-            comp_qs = all_subprojects.filter(component_id=component_id)
+            _cids = Component.expand_ids([component_id])  # 1.x + sous-composantes
+            comp_qs = all_subprojects.filter(component_id__in=_cids)
 
             # Agrégation des montants en une seule passe
             agg = comp_qs.aggregate(
@@ -921,7 +936,7 @@ class DashboardFinancingListView(DashboardSubprojectsMixin, AJAXRequestMixin, Lo
             total_estimated = agg['estimated_cost'] or 0
             total_contract = agg['contract_amount'] or 0
 
-            total_allocations = allocations_project.filter(component_id=component_id).aggregate(Sum('amount'))['amount__sum'] or 0
+            total_allocations = allocations_project.filter(component_id__in=_cids).aggregate(Sum('amount'))['amount__sum'] or 0
 
             financing_components[component_label] = {
                 'total_amount_subprojects_estimated_cost': total_estimated,
@@ -1141,12 +1156,13 @@ class DashboardFinancingListByCantonView(DashboardSubprojectsMixin, AJAXRequestM
 
         # Fonction pour construire les données par composant
         def build_component_data(component_id, title):
+            _cids = Component.expand_ids([component_id])  # 1.x + sous-composantes
             bars = [
                 {
                     'label': _("Allocation"),
                     'backgroundColor': 'blue',
                     'data': [
-                        adml_alloc.filter(component_id=component_id).aggregate(total=Sum('amount'))['total'] or 0
+                        adml_alloc.filter(component_id__in=_cids).aggregate(total=Sum('amount'))['total'] or 0
                         for _, adml_alloc, _ in admls_children
                     ]
                 },
@@ -1156,7 +1172,7 @@ class DashboardFinancingListByCantonView(DashboardSubprojectsMixin, AJAXRequestM
                     'data': [
                         all_subprojects.filter(
                             Q(location_subproject_realized__id__in=descendants) | Q(canton__id__in=descendants),
-                            component_id=component_id
+                            component_id__in=_cids
                         ).aggregate(total=Sum('estimated_cost'))['total'] or 0
                         for _, _, descendants in admls_children
                     ]
@@ -1167,7 +1183,7 @@ class DashboardFinancingListByCantonView(DashboardSubprojectsMixin, AJAXRequestM
                     'data': [
                         all_subprojects.filter(
                             Q(location_subproject_realized__id__in=descendants) | Q(canton__id__in=descendants),
-                            component_id=component_id
+                            component_id__in=_cids
                         ).aggregate(total=Sum('contract_amount_work_companies'))['total'] or 0
                         for _, _, descendants in admls_children
                     ]
@@ -1437,8 +1453,8 @@ class SubprojectsDetailsModalView(DashboardSubprojectsMixin, AJAXRequestMixin,
                         # SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
                         # FROM subprojects_subproject AS sub_subp 
                         # LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
-                        # WHERE (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)}
-                        #     AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS)})) 
+                        # WHERE (sub_subp.current_status_of_the_site IN {_sql_in(STRUCTURE_COMPLETED_STATUS)}
+                        #     AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})) 
                         #     AND sub_subp.id IN (
                         #         SELECT sub.id FROM ({_sql}) AS sub 
                         #     ) 
@@ -1446,11 +1462,11 @@ class SubprojectsDetailsModalView(DashboardSubprojectsMixin, AJAXRequestMixin,
                         #     AND (sub_infras.infrastructure_deleted IS NULL OR sub_infras.infrastructure_deleted = 0)
                         # """, _params
                         f"""
-                        SELECT DISTINCT id, joint_subproject_number
+                        SELECT MIN(id) AS id, joint_subproject_number
                         FROM subprojects_subproject
                         WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub) 
                         GROUP BY joint_subproject_number
-                        HAVING SUM(current_status_of_the_site NOT IN {tuple(STRUCTURE_COMPLETED_STATUS)}) = 0
+                        HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})::int) = 0
                         """, _params
                     )
                     # all_subprojects = all_subprojects.filter(subproject_type_designation="Subproject", current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS)
@@ -1462,7 +1478,7 @@ class SubprojectsDetailsModalView(DashboardSubprojectsMixin, AJAXRequestMixin,
                         # SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
                         # FROM subprojects_subproject AS sub_subp 
                         # LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
-                        # WHERE (((sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS*2)} 
+                        # WHERE (((sub_subp.current_status_of_the_site IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)} 
                         #     AND sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}) 
                         #     OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
                         #     AND (sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}))
@@ -1474,12 +1490,12 @@ class SubprojectsDetailsModalView(DashboardSubprojectsMixin, AJAXRequestMixin,
                         #     AND (sub_infras.infrastructure_deleted IS NULL OR sub_infras.infrastructure_deleted = 0)
                         # """, _params
                         f"""
-                           SELECT DISTINCT id, joint_subproject_number
+                           SELECT MIN(id) AS id, joint_subproject_number
                             FROM subprojects_subproject
                             WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub) 
                             GROUP BY joint_subproject_number
-                            HAVING SUM(current_status_of_the_site NOT IN {tuple(STRUCTURE_NOT_START_STATUS*2)}) > 0
-                                AND SUM(current_status_of_the_site NOT IN {tuple(STRUCTURE_COMPLETED_STATUS)}) > 0
+                            HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)})::int) > 0
+                                AND SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})::int) > 0
                         """, _params
                     )
                     # all_subprojects = all_subprojects.filter(subproject_type_designation="Subproject", current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS)
@@ -1500,11 +1516,11 @@ class SubprojectsDetailsModalView(DashboardSubprojectsMixin, AJAXRequestMixin,
                         #     AND (sub_infras.infrastructure_deleted IS NULL OR sub_infras.infrastructure_deleted = 0)
                         # """, _params
                         f"""
-                        SELECT DISTINCT id, joint_subproject_number
+                        SELECT MIN(id) AS id, joint_subproject_number
                         FROM subprojects_subproject
                         WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub)
                         GROUP BY joint_subproject_number
-                        HAVING SUM(current_status_of_the_site NOT IN {tuple(STRUCTURE_NOT_START_STATUS*2)}) = 0
+                        HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)})::int) = 0
                         """, _params
                     )
                     # all_subprojects = all_subprojects.filter(subproject_type_designation="Subproject").exclude(current_status_of_the_site__in=(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS))

@@ -15,7 +15,7 @@ from django.db.models import Q, Count, Max
 from django.core.exceptions import PermissionDenied
 from datetime import datetime
 
-from subprojects.models import Subproject, VulnerableGroup, SubprojectFile, Project
+from subprojects.models import Subproject, VulnerableGroup, SubprojectFile, Project, Component
 from django import forms
 from subprojects import functions as subprojects_functions
 from administrativelevels.libraries import download_file
@@ -445,7 +445,8 @@ class InfrastructuresListView(PageMixin, LoginRequiredMixin, generic.ListView):
             infrastructures = infrastructures.filter(q)
 
         if components:
-            infrastructures = infrastructures.filter(component__name__in=[elt for elt in components if elt])
+            infrastructures = infrastructures.filter(
+                component_id__in=Component.expand_names(components))  # + sous-composantes
         
         if subproject_sectors:
             infrastructures = infrastructures.filter(subproject_sector__in=[elt for elt in subproject_sectors if elt])

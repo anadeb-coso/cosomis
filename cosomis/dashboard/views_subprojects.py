@@ -682,12 +682,16 @@ class DashboardSubprojectsCurrentStepsListView(DashboardSubprojectsMixin, AJAXRe
         #     count += 1
 
             
-        administrative_levels_ids_str = ', '.join(str(elt) for elt in administrative_levels_ids)
+        # Sanitiser en entiers et éviter `IN ()` (erreur de syntaxe SQL, PG et MySQL)
+        _ids = [int(e) for e in administrative_levels_ids
+                if str(e).strip().lstrip('-').isdigit()]
+        administrative_levels_ids_str = ', '.join(str(e) for e in _ids)
         count = 0
         with connection.cursor() as cursor:
+          if _ids:
             try:
                 cursor.execute("""
-SELECT s.wording, COUNT(subp_step_current.subp_id) FROM subprojects_step s 
+SELECT s.wording, COUNT(subp_step_current.subp_id) FROM subprojects_step s
 LEFT JOIN (
         SELECT subp.id subp_id, (
             SELECT subp_step.step_id FROM subprojects_subprojectstep subp_step 
