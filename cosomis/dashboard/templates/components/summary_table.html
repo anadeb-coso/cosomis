@@ -253,13 +253,34 @@ jQuery.extend(jQuery.fn.dataTableExt.oSort, {
                         datas: datas_json,
                         type_datas: '{{ data_id }}' + '_{{ queryset_results.administrative_level_type }}_'
                     }),
-                    success: function (response) {
-                        if(response.error){
-                            alert(response.error);
+                    // La vue renvoie désormais le fichier directement dans cette réponse
+                    // (une seule requête HTTP) : plus de second window.open() vers une URL
+                    // {% templatetag openblock %} static {% templatetag closeblock %}, qui n'existe jamais en
+                    // production pour un fichier déposé à la volée.
+                    xhrFields: { responseType: 'blob' },
+                    success: function (blob, status, xhr) {
+                        var contentType = (xhr.getResponseHeader('Content-Type') || '');
+                        if (contentType.indexOf('json') !== -1) {
+                            var reader = new FileReader();
+                            reader.onload = function () {
+                                var message = error_server_message;
+                                try { message = JSON.parse(reader.result).error || message; } catch (e) {}
+                                alert(message);
+                            };
+                            reader.readAsText(blob);
                             return;
-                        }else{
-                            window.open('{% static 'o' %}'.replace('o', response), '_blank');
                         }
+                        var disposition = xhr.getResponseHeader('Content-Disposition') || '';
+                        var match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);
+                        var filename = match ? decodeURIComponent(match[1]) : 'export.xlsx';
+                        var blobUrl = window.URL.createObjectURL(blob);
+                        var a = document.createElement('a');
+                        a.href = blobUrl;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        window.URL.revokeObjectURL(blobUrl);
                     },
                     error: function (response) {
                         alert(error_server_message + "Error " + response.status);
