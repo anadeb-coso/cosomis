@@ -60,7 +60,12 @@ class CheckUserSerializer(serializers.Serializer):
 		# Fusion PostgreSQL : __iexact préserve la connexion insensible à la
 		# casse (comportement MySQL utf8mb4_general_ci historique).
 		user = User.objects.filter(Q(email__iexact=username) | Q(username__iexact=username)).first()
-		user = Facilitator.objects.using('cdd').filter(Q(email__iexact=username) | Q(username__iexact=username)).first() if not user else user
+		facilitator = Facilitator.objects.using('cdd').filter(Q(email__iexact=username) | Q(username__iexact=username)).first()
+
+		if facilitator and facilitator.is_active:
+			user = facilitator
+		else:
+			user = user if user and user.is_active else None
 
 		if user and check_password(password, user.password):
 			if not user.is_active:
