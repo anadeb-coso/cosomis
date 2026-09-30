@@ -201,6 +201,14 @@ LOGIN_REDIRECT_URL = 'process_manager:list'
 # LOGIN_REDIRECT_URL = 'dashboard:dashboard'
 LOGOUT_REDIRECT_URL = '/'
 
+# Cookies propres à COSOMIS (SIG). CDD et COSOMIS peuvent tourner sur le même hôte (ports
+# différents en local) : un navigateur ne distingue pas les cookies par port. Avec les
+# noms par défaut (`sessionid`/`csrftoken`), la connexion sur l'une des applications
+# écrasait le cookie de session de l'autre (SECRET_KEY différentes → session illisible
+# → déconnexion). Garder ces noms distincts de ceux de CDD et de GRM.
+SESSION_COOKIE_NAME = 'mis_sessionid'
+CSRF_COOKIE_NAME = 'mis_csrftoken'
+
 # MAX data to upload
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 
@@ -274,7 +282,7 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=3650),  # 10 ans
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
-    'UPDATE_LAST_LOGIN': False,
+    'UPDATE_LAST_LOGIN': True,
 }
 
 TOKEN_ALLOWED_TO_ACCESS_API = [token.strip() for token in str(env('TOKEN_ALLOWED_TO_ACCESS_API', default='')).split(',') if token.strip()]

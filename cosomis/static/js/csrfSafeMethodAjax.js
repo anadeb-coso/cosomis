@@ -14,7 +14,7 @@ function getCookie(name) {
     return cookieValue;
 }
 
-var csrftoken = getCookie('csrftoken');
+var csrftoken = getCookie('mis_csrftoken');
 console.log(csrftoken);
 
 //Ajax call

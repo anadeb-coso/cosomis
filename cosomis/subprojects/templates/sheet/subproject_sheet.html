@@ -107,7 +107,7 @@
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json',
-                                    'X-CSRFToken': getCookie('csrftoken')
+                                    'X-CSRFToken': getCookie('mis_csrftoken')
                                 },
                                 body: JSON.stringify({subproject: subproject, update_data: updateData}) //(recordId === undefined || recordId === null ? subproject : {...updateData, id: recordId}) // Envoyer toutes les données de la ligne
                             })
