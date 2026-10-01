@@ -209,6 +209,19 @@ LOGOUT_REDIRECT_URL = '/'
 SESSION_COOKIE_NAME = 'mis_sessionid'
 CSRF_COOKIE_NAME = 'mis_csrftoken'
 
+# Même hachage des mots de passe que CDD (table auth_user partagée) : sans lui, chaque application réécrivait
+# à la connexion le hash produit par l'autre (itérations PBKDF2 différentes selon la version de Django), ce qui
+# déconnectait l'utilisateur de l'autre application. Cf. cosomis/hashers.py (identique à cdd/hashers.py). Le
+# hasher pbkdf2_sha256 par défaut de Django ne doit pas figurer dans la liste (à algorithme égal, Django prendrait
+# le dernier déclaré).
+PASSWORD_HASHERS = [
+    'cosomis.hashers.SharedPBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    'django.contrib.auth.hashers.ScryptPasswordHasher',
+]
+
 # MAX data to upload
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 
