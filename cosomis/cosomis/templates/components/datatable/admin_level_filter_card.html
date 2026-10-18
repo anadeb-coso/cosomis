@@ -1,0 +1,36 @@
+{% load i18n bootstrap4 %}
+{% comment %}
+"Choose the Administrative level" card of a list page filter form; expects
+`adm_filter_fields` = [(label, bound field), ...] (see get_admin_level_filter_fields).
+{% endcomment %}
+<div class="card dt-filter-card">
+    <div class="card-header" id="headingAdministrativeLevel">
+        <h5 class="mb-0">
+            <button aria-controls="collapseAdministrativeLevel" aria-expanded="true" class="btn btn-link"
+                    data-target="#collapseAdministrativeLevel" data-toggle="collapse" type="button">
+                {% translate 'Choose the administrative level' %}
+            </button>
+        </h5>
+    </div>
+    <div aria-labelledby="headingAdministrativeLevel" class="collapse show" id="collapseAdministrativeLevel">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-9">
+                    <div class="row administrative-level-filter">
+                        {% for label, field in adm_filter_fields %}
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="{{ field.id_for_label }}">{{ label }}</label>
+                                    {% bootstrap_field field show_label=False %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-lg-3">
+                    {% include 'components/datatable/filter_actions.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

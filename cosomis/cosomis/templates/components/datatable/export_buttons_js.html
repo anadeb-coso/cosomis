@@ -1,0 +1,5 @@
+{% load static %}
+{% comment %}Copy / Excel / PDF buttons of the table (exports the rows displayed).{% endcomment %}
+<link rel="stylesheet" href="{% static 'AdminLTE/plugins/datatables-buttons/css/buttons.bootstrap4.min.css' %}"/>
+{% include 'layouts/datatable-js.html' %}
+<script src="{% static 'AdminLTE/plugins/datatables-buttons/js/buttons.bootstrap4.min.js' %}"></script>

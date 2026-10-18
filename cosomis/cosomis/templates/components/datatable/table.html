@@ -1,0 +1,42 @@
+{% load i18n %}
+{% comment %}
+Empty table filled page by page by static/js/server_side_datatable.js, with the
+skeleton overlay shown while a page loads. Header cells come from the view's
+DatatableColumn list; a column whose title is empty and `select_all` is set gets
+the "select every result" checkbox.
+{% endcomment %}
+<div class="dt-table-stage">
+    <div class="table-loading-overlay is-active" role="status" aria-live="polite" aria-label="{% translate 'Loading data' %}">
+        <span class="skeleton-status-pill">{% translate 'Loading' %}</span>
+        <div class="skeleton-table-mock" aria-hidden="true">
+            {% for i in "12345678" %}
+            <div class="skeleton-row">
+                <span class="skeleton-cell"></span>
+                <span class="skeleton-cell"></span>
+                <span class="skeleton-cell"></span>
+                <span class="skeleton-cell"></span>
+                <span class="skeleton-cell"></span>
+                <span class="skeleton-cell"></span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <table id="{{ table_id|default:'table' }}" class="table" style="width: 100%;">
+        <thead>
+        <tr>
+            {% for column in datatable_columns %}
+                <th class="align-middle {{ column.css_class }}">
+                    {% if select_all and forloop.first %}
+                        <label class="dt-checkbox" title="{% translate 'Select every result' %}">
+                            <input type="checkbox" id="dt-select-all" aria-label="{% translate 'Select every result' %}"><span></span>
+                        </label>
+                    {% else %}
+                        {{ column.title }}
+                    {% endif %}
+                </th>
+            {% endfor %}
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>

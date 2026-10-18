@@ -29,6 +29,8 @@
                 </div>
             </div>
 
+            {% include 'components/subprojects_filters.html' %}
+
 
 
 
@@ -182,6 +184,7 @@
     <script src="{% static 'js/csrfSafeMethodAjax.js' %}?v=2"></script>
     <script src="{% static 'js/formAjaxSubmit.js' %}"></script>
     <script src="{% static 'js/cascade_requests.js' %}"></script>
+    {% include 'components/subprojects_filters_js.html' %}
 
     <script type="text/javascript">
         $(document).ready(function () {
@@ -215,10 +218,10 @@
                 $.ajax({
                     type: "GET",
                     url: "{% url 'dashboard:dashboard_subprojects_sectors' %}",
-                    data: {
+                    data: $.extend({
                         administrative_level_id: administrative_level_id,
                         administrative_level_type: administrative_level_type
-                    },
+                    }, subprojectsFilters()),
                     success: function (response) {
                         subprojects_number_spin.hide();
                         
@@ -238,10 +241,10 @@
                 $.ajax({
                     type: "GET",
                     url: "{% url 'dashboard:dashboard_subprojects_sectors_amount' %}",
-                    data: {
+                    data: $.extend({
                         administrative_level_id: administrative_level_id,
                         administrative_level_type: administrative_level_type
-                    },
+                    }, subprojectsFilters()),
                     success: function (response) {
                         subprojects_amount_spin.hide();
                         
@@ -261,10 +264,10 @@
                 $.ajax({
                     type: "GET",
                     url: "{% url 'dashboard:dashboard_subprojects_sectors_and_steps' %}",
-                    data: {
+                    data: $.extend({
                         administrative_level_id: administrative_level_id,
                         administrative_level_type: administrative_level_type
-                    },
+                    }, subprojectsFilters()),
                     success: function (response) {
                         subprojects_sectors_steps_number_spin.hide();
                         
@@ -285,10 +288,10 @@
                 $.ajax({
                     type: "GET",
                     url: "{% url 'dashboard:dashboard_subprojects_steps_already_track' %}",
-                    data: {
+                    data: $.extend({
                         administrative_level_id: administrative_level_id,
                         administrative_level_type: administrative_level_type
-                    },
+                    }, subprojectsFilters()),
                     success: function (response) {
                         subprojects_steps_number_spin.hide();
                         
@@ -309,10 +312,10 @@
                 $.ajax({
                     type: "GET",
                     url: "{% url 'dashboard:dashboard_subprojects_current_steps' %}",
-                    data: {
+                    data: $.extend({
                         administrative_level_id: administrative_level_id,
                         administrative_level_type: administrative_level_type
-                    },
+                    }, subprojectsFilters()),
                     success: function (response) {
                         subprojects_current_steps_number_spin.hide();
                         
@@ -416,6 +419,11 @@
                 $('.administrative-level-filter select').val(null).trigger('change.select2');
                 administrative_level_id = null;
                 administrative_level_type = null;
+
+                $('.subprojects-filter input[type="text"]').val('');
+                $('.subprojects-filter input[type="checkbox"]').prop('checked', false);
+                $('.subprojects-filter select').val(null).trigger('change.select2');
+
                 current_nav_links = [];
                 callNavLinkPage();
                 /*loadSubprojects();
@@ -427,6 +435,19 @@
 
             $('.nav-tab-toggle').on('click', function () {
                 current_nav_link = this.href;
+                callNavLinkPage();
+            });
+
+            // A changed subproject filter applies on "Search" (or on the next tab opened)
+            $('.subprojects-filter select, .subprojects-filter input').on('change', function () {
+                current_nav_links = [];
+            });
+            $('#start_date, #end_date').on('change.datetimepicker', function () {
+                current_nav_links = [];
+            });
+            $('#btn-search').on('click', function (e) {
+                e.preventDefault();
+                current_nav_links = [];
                 callNavLinkPage();
             });
 
@@ -460,6 +481,9 @@
             allowClear: true,
         });
 
+        </script>
+    {% include 'components/subprojects_filters_select2.html' %}
+    <script type="text/javascript">
         $('b[role="presentation"]').hide();
         $('.select2-selection__arrow').append(
             '<i class="fas fa-chevron-circle-down text-primary" style="margin-top:12px;"></i>');

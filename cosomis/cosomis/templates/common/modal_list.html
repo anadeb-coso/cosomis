@@ -72,14 +72,14 @@
                             </tr>
                             </thead>
                             <tbody>
-                            {% for subproject in subprojects %}
+                            {% for subproject in subprojects %}{% with cantons_names=subproject.get_cantons_names step_and_level=subproject.get_current_subproject_step_and_level %}
                             <tr>
                                 <td>N{{ subproject.number }}.{{ subproject.joint_subproject_number }}</td>
                                 {% comment %} <td>{{ subproject.get_village.name }}</td>
                                 <td>{{ subproject.get_cantons_names }}</td> {% endcomment %}
                                 <td>
-                                    {% if '/' in subproject.get_cantons_names %}
-                                        {{ subproject.get_cantons_names }}
+                                    {% if '/' in cantons_names %}
+                                        {{ cantons_names }}
                                     {% else %}
                                         {{ subproject.get_village.name }}
                                     {% endif %}
@@ -96,8 +96,8 @@
                                 {% endif %} {% endcomment %}
 
                                 <td>
-                                    {% if subproject.get_current_subproject_step_and_level %}
-                                        {{ subproject.get_current_subproject_step_and_level }}
+                                    {% if step_and_level %}
+                                        {{ step_and_level }}
                                     {% else %}
                                         {% translate 'No start' %}
                                     {% endif %}
@@ -122,7 +122,7 @@
                                     {% endif %}
                                 </td>
                             </tr>
-                        {% endfor %}
+                        {% endwith %}{% endfor %}
                             </tbody>
 
                             

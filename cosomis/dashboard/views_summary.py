@@ -4,7 +4,10 @@ from cosomis.mixins import PageMixin, AJAXRequestMixin, ModalListMixin, JSONResp
 from django.utils.translation import gettext_lazy as _
 from django.core.paginator import Paginator
 from django.db.models import Q, Count, Sum, Case, When, IntegerField, Max, Prefetch
+from django.db.models.functions import Upper
+from django.db.models.query import QuerySet, RawQuerySet
 from datetime import datetime
+from collections import defaultdict
 from django.db import connection
 import logging
 from django.http import Http404
@@ -13,8 +16,12 @@ from subprojects.models import Subproject, Step, Component, Project, SubprojectS
 from administrativelevels.models import AdministrativeLevel
 from financial.models.allocation import AdministrativeLevelAllocation
 from process_manager.models import AdministrativeLevelWave
-from administrativelevels.functions import get_administrative_level_ids_descendants, get_administrative_level_ids_descendants_with_dict
+from administrativelevels.functions import (
+    get_administrative_level_ids_descendants, get_administrative_level_ids_descendants_with_dict,
+    get_administrative_level_children_map,
+)
 from . import forms
+from .functions import plain_summary_tables, filter_dashboard_subprojects
 from subprojects.forms import SubprojectFilterForm, SearchForm
 from cosomis.constants import (
     TYPES_OF_STRUCTURE_COLOR, STRUCTURE_COMPLETED_STATUS, STRUCTURE_IN_PROGRESS_STATUS,
@@ -37,6 +44,32 @@ def _sql_in(values):
     if not vals:
         return "(NULL)"
     return "(" + ", ".join("'" + str(v).replace("'", "''") + "'" for v in vals) + ")"
+
+
+def _rows_per_subproject(subprojects):
+    """Rows to GROUP BY so that each group gets the same total as .count() or
+    .aggregate() on `subprojects` filtered to that group: like Django does for
+    these on a distinct queryset (joined to the subproject steps by the date
+    filters), a distinct `subprojects` is first reduced to one row per subproject."""
+    if subprojects.query.distinct:
+        return Subproject.objects.filter(pk__in=subprojects.values('pk'))
+    return subprojects
+
+
+def _subprojects_for_display(subprojects):
+    """`subprojects` (queryset, raw queryset or list) as a list in the same
+    order, with everything the details table reads loaded in a few queries
+    (a raw queryset only loads the id: every other field was read with one query)."""
+    if isinstance(subprojects, RawQuerySet):
+        ids = [subproject.id for subproject in subprojects]
+        loaded = Subproject.objects.prefetch_related(*Subproject.location_prefetches()).in_bulk(ids)
+        subprojects = [loaded[pk] for pk in ids]
+    elif isinstance(subprojects, QuerySet):
+        subprojects = list(subprojects.prefetch_related(*Subproject.location_prefetches()))
+    else:
+        subprojects = list(subprojects)
+    Subproject.prefetch_display_data(subprojects)
+    return subprojects
 
 
 class DashboardTemplateView(PageMixin, LoginRequiredMixin, generic.TemplateView):
@@ -113,22 +146,6 @@ class DashboardSubprojectsMixin(ModalListMixin):
         # --- Récupération des paramètres ---
         administrative_level_ids_get = request.GET.getlist('administrative_level_id[]', [])
         administrative_level_type = request.GET.get('administrative_level_type', 'All').title()
-        subproject_sectors = self.filter_list_by_delete_empty(self.request.GET.getlist('id_subproject_sectors[]'))
-        subproject_types = self.filter_list_by_delete_empty(self.request.GET.getlist('id_subproject_types[]'))
-        works_type_of_subprojects = self.filter_list_by_delete_empty(self.request.GET.getlist('id_works_type_of_subproject[]'))
-        subproject_steps = self.filter_list_by_delete_empty(self.request.GET.getlist('id_subproject_step[]'))
-        components_names = self.filter_list_by_delete_empty(self.request.GET.getlist('id_components[]'))
-        start_date_raw = request.GET.get('start_date', None)
-        end_date_raw = request.GET.get('end_date', None)
-        
-        start_date = None
-        end_date = None
-
-        if start_date_raw:
-            start_date = self.parse_fr_date(start_date_raw)
-        if end_date_raw:
-            end_date = self.parse_fr_date(end_date_raw)
-
 
         if administrative_level_type in ("", "null", "undefined"):
             administrative_level_type = "All"
@@ -169,74 +186,9 @@ class DashboardSubprojectsMixin(ModalListMixin):
             administrative_levels = adl_qs.filter(id__in=ald_filter_ids).prefetch_related()
 
         # --- Subprojects ---
-        subprojects = Subproject.objects.get_objects_by_general_filtre(request, None).prefetch_related().get_actifs()
-
-        if start_date or end_date:
-            if not subproject_steps:
-                subprojects = subprojects.filter(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS)
-                
-                if start_date and end_date:
-                    subprojects = subprojects.filter(
-                        work_completion_date__range=[start_date, end_date]
-                    )
-                elif start_date:
-                    subprojects = subprojects.filter(
-                        work_completion_date__gte=start_date
-                    )
-                else:
-                    subprojects = subprojects.filter(
-                        work_completion_date__lte=end_date
-                    )
-                
-            else:
-                q = Q()
-                if 'not_started' in subproject_steps:
-                    q |= Q(subprojectstep__ranking__gte=0, subprojectstep__ranking__lt=IN_PROGRESS_RANKING)
-                if 'in_progress' in subproject_steps:
-                    if start_date and end_date:
-                        q |= Q(subprojectstep__ranking__gte=IN_PROGRESS_RANKING, subprojectstep__ranking__lt=IN_PROGRESS_RANKING, subprojectstep__level__begin__range=[start_date, end_date])
-                    elif start_date:
-                        q |= Q(subprojectstep__ranking__gte=IN_PROGRESS_RANKING, subprojectstep__ranking__lt=IN_PROGRESS_RANKING, subprojectstep__level__begin__gte=start_date)
-                    else:
-                        q |= Q(subprojectstep__ranking__gte=IN_PROGRESS_RANKING, subprojectstep__ranking__lt=IN_PROGRESS_RANKING, subprojectstep__level__begin__lte=end_date)
-                if 'completed' in subproject_steps:
-                    q |= Q(subprojectstep__ranking__gte=COMPLETED_RANKING)
-
-                if start_date and end_date:
-                    subprojects = subprojects.filter(Q(
-                        Q(Q(subprojectstep__begin__range=[start_date, end_date]) & q)
-                    )).distinct()
-                elif start_date:
-                    subprojects = subprojects.filter(Q(
-                        Q(Q(subprojectstep__begin__gte=start_date) & q)
-                    )).distinct()
-                else:
-                    subprojects = subprojects.filter(Q(
-                        Q(Q(subprojectstep__begin__lte=end_date) & q)
-                    )).distinct()
-
-        elif subproject_steps:
-            q = Q()
-            if 'not_started' in subproject_steps:
-                q |= Q(current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS)
-            if 'in_progress' in subproject_steps:
-                q |= Q(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS)
-            if 'completed' in subproject_steps:
-                q |= Q(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS)
-            subprojects = subprojects.filter(q)
-
-        if components_names:
-            subprojects = subprojects.filter(
-                component_id__in=Component.expand_names(components_names))
-        
-        if subproject_sectors:
-            subprojects = subprojects.filter(subproject_sector__in=[elt for elt in subproject_sectors if elt])
-        
-        if subproject_types:
-            subprojects = subprojects.filter(type_of_subproject__in=[elt for elt in subproject_types if elt])
-            
-        if works_type_of_subprojects:
-            subprojects = subprojects.filter(works_type__in=[elt for elt in works_type_of_subprojects if elt])
+        subprojects = filter_dashboard_subprojects(
+            Subproject.objects.get_objects_by_general_filtre(request, None).prefetch_related().get_actifs(), request
+        )
 
         if ald_filter_ids:
             adls = ald_filter_ids + list(administrative_levels_ids)
@@ -332,147 +284,81 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
     template_name = 'components/dashboard_summary_subprojects.html'
     context_object_name = 'queryset_results'
 
-
     def get_context_data(self, **kwargs):
         ctx = super(DashboardSubprojectsListView, self).get_context_data(**kwargs)
         all_subprojects_include_infrastructures = ctx['queryset_results']['subprojects']
         all_infrastructures = ctx['queryset_results']['subprojects'].filter(number_of_infrastructures=1)
         sectors = ctx['queryset_results']['sectors'].copy()
-        
-        ctx['total'] = all_infrastructures.count()
-        ctx['total_without_link'] = all_subprojects_include_infrastructures.filter(link_to_subproject=None, subproject_type_designation="Subproject").count()
-        ctx['total_subproject'] = all_subprojects_include_infrastructures.filter(subproject_type_designation="Subproject").count()
-        ctx['total_infrastruture'] = all_infrastructures.filter(subproject_type_designation="Infrastructure").count()
-        # ctx['total_latrine_blocks'] = all_subprojects.filter(has_latrine_blocs=True).count()
-        # ctx['total_number_latrine_blocks'] = all_subprojects.filter(has_latrine_blocs=True).aggregate(Sum('number_of_latrine_blocks'))['number_of_latrine_blocks__sum']
-        # ctx['total_number_latrine_blocks'] = ctx['total_number_latrine_blocks'] if ctx['total_number_latrine_blocks'] else 0
-        # ctx['total_fences'] = all_subprojects.filter(has_fence=True).count()
-        ctx['total_infrastrutures'] = ctx['total'] # + ctx['total_latrine_blocks'] + ctx['total_fences']
-        
-        # ctx['total_subproject_in_progress'] = all_subprojects.filter(subproject_type_designation="Subproject", current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()
-        # ctx['total_subproject_completed'] = all_subprojects.filter(subproject_type_designation="Subproject", current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()
-                
+
+        # Every count of the cards in one query (one query per count before).
+        totals = _rows_per_subproject(all_subprojects_include_infrastructures).aggregate(
+            total=Count('id', filter=Q(number_of_infrastructures=1)),
+            total_without_link=Count('id', filter=Q(link_to_subproject=None, subproject_type_designation="Subproject")),
+            total_subproject=Count('id', filter=Q(subproject_type_designation="Subproject")),
+            total_infrastruture=Count('id', filter=Q(number_of_infrastructures=1, subproject_type_designation="Infrastructure")),
+            total_infrastruture_in_progress=Count('id', filter=Q(number_of_infrastructures=1, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS)),
+            total_infrastruture_completed=Count('id', filter=Q(number_of_infrastructures=1, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS)),
+        )
+
+        ctx['total'] = totals['total']
+        ctx['total_without_link'] = totals['total_without_link']
+        ctx['total_subproject'] = totals['total_subproject']
+        ctx['total_infrastruture'] = totals['total_infrastruture']
+        ctx['total_infrastrutures'] = ctx['total']
+
         _s = all_subprojects_include_infrastructures.filter(subproject_type_designation="Subproject")
 
-        # Compter tous les Subprojects par secteur
-        subprojects_by_sector = (
-            _s
-            .values("subproject_sector")
-            .annotate(total=Count("id"))
-        )
-        subprojects_dict = {entry['subproject_sector']: entry['total'] for entry in subprojects_by_sector}
-
-        # stats = all_subprojects_include_infrastructures.values("subproject_type_designation").annotate(total=Count("id"))
-
-        infrastructures_stats = all_infrastructures.values("subproject_sector").annotate(total=Count("id"))
-        infrastructures_dict = {entry['subproject_sector']: entry['total'] for entry in infrastructures_stats}
-
-
-        # Somme des coûts par secteur
-        costs_by_sector = (
+        # Subprojects, infrastructures and costs by sector in one GROUP BY over
+        # the same rows as the three GROUP BY it replaces.
+        by_sector = (
             all_subprojects_include_infrastructures
             .values('subproject_sector')
-            .annotate(total_estimated_cost=Sum('estimated_cost'))
+            .annotate(
+                subprojects=Count('id', filter=Q(subproject_type_designation="Subproject")),
+                infrastructures=Count('id', filter=Q(number_of_infrastructures=1)),
+                total_estimated_cost=Sum('estimated_cost'),
+            )
         )
-        costs_dict = {entry['subproject_sector']: entry['total_estimated_cost'] or 0 for entry in costs_by_sector}
+        subprojects_dict = {}
+        infrastructures_dict = {}
+        costs_dict = {}
+        for entry in by_sector:
+            subprojects_dict[entry['subproject_sector']] = entry['subprojects']
+            infrastructures_dict[entry['subproject_sector']] = entry['infrastructures']
+            costs_dict[entry['subproject_sector']] = entry['total_estimated_cost'] or 0
 
-
-
-        # Get SQL representation of the first filter's queryset
-        if _s.exists():
+        if ctx['total_subproject']:  # _s.exists()
             _sql, _params = _s.query.get_compiler('default').as_sql()
-            # Use the SQL representation in the raw query for the second filter
-            # final_queryset = _s.raw(
-            #     # f"""
-            #     # SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
-            #     # FROM subprojects_subproject AS sub_subp 
-            #     # LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
-            #     # WHERE (((sub_subp.current_status_of_the_site IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)} 
-            #     #     AND sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}) 
-            #     #     OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
-            #     #     AND sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS+STRUCTURE_IN_PROGRESS_STATUS)})
-            #     #     OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS*2)})) 
-            #     #     AND sub_subp.id IN (
-            #     #         SELECT sub.id FROM ({_sql}) AS sub 
-            #     #     )) 
-            #     #     AND (sub_subp.infrastructure_deleted IS NULL OR sub_subp.infrastructure_deleted = 0)
-            #     #     AND (sub_infras.infrastructure_deleted IS NULL OR sub_infras.infrastructure_deleted = 0)
-            #     # """, _params
-            #     f"""
-            #     SELECT MIN(id) AS id, joint_subproject_number
-            #     FROM subprojects_subproject
-            #     WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub) 
-            #     GROUP BY joint_subproject_number
-            #     HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)})::int) > 0
-            #     AND SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})::int) > 0
-            #     """, _params
-            # )
-            
-            # ctx['total_subproject_in_progress'] = len(final_queryset)
 
-
-            final_queryset = _s.raw(
-                # f"""
-                # SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
-                # FROM subprojects_subproject AS sub_subp 
-                # LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id=sub_infras.link_to_subproject_id 
-                # WHERE (sub_subp.current_status_of_the_site IN {_sql_in(STRUCTURE_COMPLETED_STATUS)}
-                #     AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})) 
-                #     AND sub_subp.id IN (
-                #         SELECT sub.id FROM ({_sql}) AS sub 
-                #     ) 
-                #     AND (sub_subp.infrastructure_deleted IS NULL OR sub_subp.infrastructure_deleted = 0)
-                #     AND (sub_infras.infrastructure_deleted IS NULL OR sub_infras.infrastructure_deleted = 0)
-                # """, _params
-                f"""
-                SELECT MIN(id) AS id, joint_subproject_number
-                FROM subprojects_subproject
-                WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub) 
-                GROUP BY joint_subproject_number
-                HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})::int) = 0
-                """, _params
-            )
-            ctx['total_subproject_completed'] = len(final_queryset)
-
-
-            final_queryset = _s.raw(
-                f"""
-                SELECT MIN(id) AS id, joint_subproject_number
-                FROM subprojects_subproject
-                WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub)
-                GROUP BY joint_subproject_number
-                HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)})::int) = 0         
-                """, _params
-            )
-            ctx['total_subproject_not_started'] = len(final_queryset)
-            # ctx['total_subproject_not_started'] = ctx['total_subproject'] - (ctx['total_subproject_in_progress'] + ctx['total_subproject_completed'])
-            
+            # A subproject (all the rows sharing its joint_subproject_number) is
+            # completed when all its rows are, not started when none has started.
+            with connection.cursor() as cursor:
+                cursor.execute(f"""
+                    SELECT
+                        COUNT(*) FILTER (WHERE not_completed = 0),
+                        COUNT(*) FILTER (WHERE not_not_started = 0)
+                    FROM (
+                        SELECT
+                            SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})::int) AS not_completed,
+                            SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)})::int) AS not_not_started
+                        FROM subprojects_subproject
+                        WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub)
+                        GROUP BY joint_subproject_number
+                    ) AS by_joint_number
+                """, _params)
+                ctx['total_subproject_completed'], ctx['total_subproject_not_started'] = cursor.fetchone()
 
             ctx['total_subproject_in_progress'] = ctx['total_subproject'] - (ctx['total_subproject_not_started'] + ctx['total_subproject_completed'])
-            
-            
-            ctx['total_infrastruture_in_progress'] = all_infrastructures.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS).count()
-            ctx['total_infrastruture_completed'] = all_infrastructures.filter(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS).count()
+
+
+            ctx['total_infrastruture_in_progress'] = totals['total_infrastruture_in_progress']
+            ctx['total_infrastruture_completed'] = totals['total_infrastruture_completed']
             ctx['total_infrastruture_not_started'] = ctx['total'] - (ctx['total_infrastruture_in_progress'] + ctx['total_infrastruture_completed'])
-            
-            # ctx['total_latrines_in_progress'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS, has_latrine_blocs=True).count()
-            # ctx['total_latrines_completed'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS, has_latrine_blocs=True).count()
-            # ctx['total_latrines_not_started'] = ctx['total_latrine_blocks'] - (ctx['total_latrines_in_progress'] + ctx['total_latrines_completed'])
-            
-            # ctx['total_number_latrine_in_progress'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS, has_latrine_blocs=True).aggregate(Sum('number_of_latrine_blocks'))['number_of_latrine_blocks__sum']
-            # ctx['total_number_latrine_in_progress'] = ctx['total_number_latrine_in_progress'] if ctx['total_number_latrine_in_progress'] else 0
-            # ctx['total_number_latrine_completed'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS, has_latrine_blocs=True).aggregate(Sum('number_of_latrine_blocks'))['number_of_latrine_blocks__sum']
-            # ctx['total_number_latrine_completed'] = ctx['total_number_latrine_completed'] if ctx['total_number_latrine_completed'] else 0
-            # ctx['total_number_latrine_not_started'] = ctx['total_number_latrine_blocks'] - (ctx['total_number_latrine_in_progress'] + ctx['total_number_latrine_completed'])
-            
-            # ctx['total_fences_in_progress'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS, has_fence=True).count()
-            # ctx['total_fences_completed'] = all_subprojects.filter(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS, has_fence=True).count()
-            # ctx['total_fences_not_started'] = ctx['total_fences'] - (ctx['total_fences_in_progress'] + ctx['total_fences_completed'])
-            
+
             ctx['total_infrastrutures_in_progress'] = ctx['total_infrastruture_in_progress'] #+ ctx['total_latrines_in_progress'] + ctx['total_fences_in_progress']
             ctx['total_infrastrutures_completed'] = ctx['total_infrastruture_completed'] #+ ctx['total_latrines_completed'] + ctx['total_fences_completed']
             ctx['total_infrastrutures_not_started'] = ctx['total_infrastruture_not_started'] #+ ctx['total_latrines_not_started'] + ctx['total_fences_not_started']
-            
+
             ctx['number_subproject_infrastrutures'] = {
                 'title': _("Number of subprojects selected in relation to infrastructure by sector"),
                 'labels': sectors,
@@ -491,87 +377,38 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                         'label': _("Infras with latrines/fences"),
                         'backgroundColor': 'green',
                         'data': [infrastructures_dict.get(sector, 0) for sector in sectors]
-                        # [
-                        #     (
-                        #         all_subprojects.filter(subproject_sector=sector).count() #+ \
-                        #             # all_subprojects.filter(subproject_sector=sector, has_latrine_blocs=True).count() + \
-                        #             #     all_subprojects.filter(subproject_sector=sector, has_fence=True).count()
-                        #     ) for sector in sectors
-                        # ]
                     }
                 ]
             }
-            
-            
+
+
             ctx['amount_subproject_infrastrutures'] = {
                 'title': _("Amount of subprojects selected in relation to infrastructure by sector"),
                 'labels': sectors,
                 'bars': [
-                    # {
-                    #     'label': _("Subproject"),
-                    #     'backgroundColor': 'red',
-                    #     'data': [(elt if elt else 0) for elt in [
-                    #         all_subprojects.filter(subproject_type_designation="Subproject", subproject_sector=sector).aggregate(Sum('estimated_cost'))['estimated_cost__sum'] for sector in sectors
-                    #     ]]
-                    # },
                     {
                         'label': _("Infrastructure"),
                         'backgroundColor': 'blue',
                         'data': [costs_dict.get(sector, 0) for sector in sectors]
                     }
-                    # ,
-                    # {
-                    #     'label': _("Infras with latrines/fences"),
-                    #     'backgroundColor': 'green',
-                    #     'data': [
-                    #         (
-                    #             all_subprojects.filter(subproject_sector=sector).aggregate(Sum('estimated_cost'))['estimated_cost__sum']
-                    #         ) for sector in sectors
-                    #     ]
-                    # }
                 ]
             }
-            
-            
+
+
             #Structure Graphe
-            # structures = dict(sorted(TYPES_OF_STRUCTURE_COLOR.items()))
-            # type_structures = sorted(list(structures.keys()))
             type_structures = list(TYPES_OF_SUB_PROJECT_COLOR.keys())
             ctx['type_structures'] = type_structures
 
-            # Préparer un dictionnaire pour tous les statuts
-            status_map = {
-                # "Not start": ~Q(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS + STRUCTURE_IN_PROGRESS_STATUS),
-                # "In progress": Q(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS),
-                "Completed": Q(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS),
-            }
-
-            # Comptes et classes totales par type de structure #.filter(number_of_classrooms__isnull=False)
-            all_counts = all_infrastructures.values('type_of_subproject') \
-                .annotate(
-                    total=Count('id')
-                    # ,
-                    # total_classrooms=Sum('number_of_classrooms')
-                )
-
-            # Conversion en dictionnaires pour accès rapide
-            counts_dict = {entry['type_of_subproject']: entry['total'] for entry in all_counts}
-            # classrooms_dict = {entry['type_of_subproject']: entry['total_classrooms'] or 0 for entry in all_counts}
-
-            # Comptes par statut
-            status_counts_dict = {}
-            # status_classrooms_dict = {}
-
-            for label, q_filter in status_map.items():
-                qs_count = all_infrastructures.filter(q_filter).values('type_of_subproject')\
-                    .annotate(total=Count('id')
-                )
-                # qs_classrooms = all_infrastructures.filter(q_filter & Q(number_of_classrooms__isnull=False)).values('type_of_subproject')\
-                #     .annotate(total_classrooms=Sum('number_of_classrooms')
-                # )
-                
-                status_counts_dict[label] = {entry['type_of_subproject']: entry['total'] for entry in qs_count}
-                # status_classrooms_dict[label] = {entry['type_of_subproject']: entry['total_classrooms'] or 0 for entry in qs_classrooms}
+            # Structures and completed structures by type of structure, one GROUP BY
+            counts_dict = {}
+            completed_counts_dict = {}
+            for entry in all_infrastructures.values('type_of_subproject').annotate(
+                total=Count('id'),
+                completed=Count('id', filter=Q(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS)),
+            ):
+                counts_dict[entry['type_of_subproject']] = entry['total']
+                if entry['completed']:
+                    completed_counts_dict[entry['type_of_subproject']] = entry['completed']
 
             # Construction finale des données pour le graphique
             bars_type_structures = [
@@ -579,25 +416,11 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                     'label': _("Structure"),
                     'backgroundColor': 'blue',
                     'data': [counts_dict.get(ts, 0) for ts in type_structures],
-                    # 'classrooms': [classrooms_dict.get(ts, 0) for ts in type_structures]
                 },
-                # {
-                #     'label': _("Not start"),
-                #     'backgroundColor': 'red',
-                #     'data': [status_counts_dict["Not start"].get(ts, 0) for ts in type_structures],
-                #     # 'classrooms': [status_classrooms_dict["Not start"].get(ts, 0) for ts in type_structures]
-                # },
-                # {
-                #     'label': _("In progress"),
-                #     'backgroundColor': 'purple',
-                #     'data': [status_counts_dict["In progress"].get(ts, 0) for ts in type_structures],
-                #     # 'classrooms': [status_classrooms_dict["In progress"].get(ts, 0) for ts in type_structures]
-                # },
                 {
                     'label': _("Completed"),
                     'backgroundColor': 'green',
-                    'data': [status_counts_dict["Completed"].get(ts, 0) for ts in type_structures],
-                    # 'classrooms': [status_classrooms_dict["Completed"].get(ts, 0) for ts in type_structures]
+                    'data': [completed_counts_dict.get(ts, 0) for ts in type_structures],
                 }
             ]
             ctx['bars_type_structures'] = bars_type_structures
@@ -607,8 +430,8 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                 'labels': type_structures,
                 'bars': [bars_type_structures[0], bars_type_structures[1]]
             }
-            
-            
+
+
             #Summary Recap
 
             # --- Préparer le dictionnaire de datas ---
@@ -624,38 +447,64 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                 _("Comments"): {}
             }
 
+            recap_sectors = [s.upper() for s in sectors]
+
+            # The counts of every (sector, type of structure) in one GROUP BY
+            # instead of two queries per sector. The sectors are matched in upper
+            # case: an exact `subproject_sector = 'EDUCATION'` matched "Education"
+            # on MySQL (case-insensitive collation) but matches nothing on
+            # PostgreSQL, which left this table empty.
+            recap_by_sector = defaultdict(dict)
+            for item in (
+                all_subprojects_include_infrastructures
+                .annotate(recap_sector=Upper('subproject_sector'))
+                .filter(recap_sector__in=recap_sectors)
+                .values('recap_sector', 'type_of_subproject')
+                .annotate(
+                    total_subprojects_selected=Count('id', filter=Q(subproject_type_designation="Subproject")),
+                    total_structures_to_build=Count('id', filter=Q(number_of_infrastructures=1)),
+                    total_projects_launched=Count('id', filter=Q(number_of_infrastructures=1, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS)),
+                    total_works_completed=Count('id', filter=Q(number_of_infrastructures=1, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS)),
+                    total_provisionally_approved=Count('id', filter=Q(number_of_infrastructures=1, current_status_of_the_site__in=STRUCTURE_PROVISIONAL_ACCEPTANCE_STATUS)),
+                    total_finally_accepted=Count('id', filter=Q(number_of_infrastructures=1, current_status_of_the_site__in=STRUCTURE_FINAL_ACCEPTANCE_STATUS)),
+                )
+            ):
+                recap_by_sector[item['recap_sector']][item['type_of_subproject']] = item
+
+            # Completed subprojects of every (sector, type) in one query instead
+            # of one query per type of structure.
+            completed_by_sector_type = {}
+            if any(item['total_subprojects_selected'] for items in recap_by_sector.values() for item in items.values()):
+                with connection.cursor() as cursor:
+                    cursor.execute(f"""
+                        SELECT recap_sector, type_of_subproject, COUNT(*)
+                        FROM (
+                            SELECT UPPER(subproject_sector) AS recap_sector, type_of_subproject
+                            FROM subprojects_subproject
+                            WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub)
+                                AND UPPER(subproject_sector) IN {_sql_in(recap_sectors)}
+                            GROUP BY UPPER(subproject_sector), type_of_subproject, joint_subproject_number
+                            HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})::int) = 0
+                        ) AS completed_subprojects
+                        GROUP BY recap_sector, type_of_subproject
+                    """, _params)
+                    completed_by_sector_type = {(row[0], row[1]): row[2] for row in cursor.fetchall()}
+
             count = 0
             lines_to_skip_for_sum = []
 
             # --- Parcourir chaque secteur ---
-            for sector in [s.upper() for s in sectors]:
-                all_subprojects_sector = all_subprojects_include_infrastructures.filter(subproject_sector=sector)
+            for sector in recap_sectors:
+                agg_dict = recap_by_sector.get(sector, {})
 
                 # Récupérer les types distincts de sous-projets dans ce secteur
-                types_in_sector = sorted(all_subprojects_sector.values_list('type_of_subproject', flat=True).distinct())
-                
+                types_in_sector = sorted(agg_dict)
+
                 # Nom du secteur dans toutes les colonnes
                 for k in datas.keys():
                     datas[k][count] = _(sector)
                 count += 1
                 count_start = count
-
-                # Pré-annoter tous les counts pour éviter les multiples requêtes
-                aggregated = (
-                    all_subprojects_sector
-                    .values('type_of_subproject')
-                    .annotate(
-                        total_subprojects_selected=Count('id', filter=Q(subproject_type_designation="Subproject")),
-                        total_structures_to_build=Count('id', filter=Q(number_of_infrastructures=1)),
-                        total_projects_launched=Count('id', filter=Q(number_of_infrastructures=1, current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS)),
-                        total_works_completed=Count('id', filter=Q(number_of_infrastructures=1, current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS)),
-                        total_provisionally_approved=Count('id', filter=Q(number_of_infrastructures=1, current_status_of_the_site__in=STRUCTURE_PROVISIONAL_ACCEPTANCE_STATUS)),
-                        total_finally_accepted=Count('id', filter=Q(number_of_infrastructures=1, current_status_of_the_site__in=STRUCTURE_FINAL_ACCEPTANCE_STATUS)),
-                        total_classrooms=Sum('number_of_classrooms', filter=Q(number_of_infrastructures=1, number_of_classrooms__isnull=False))
-                    )
-                )
-
-                agg_dict = {item['type_of_subproject']: item for item in aggregated}
 
                 for _type in types_in_sector:
                     data = agg_dict.get(_type, {})
@@ -666,33 +515,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                     datas[_("Total number of works completed")][count] = data.get('total_works_completed', 0)
                     datas[_("Total number of provisionally approved structures")][count] = data.get('total_provisionally_approved', 0)
                     datas[_("Total number of works finally accepted")][count] = data.get('total_finally_accepted', 0)
-
-                    # Calcul spécifique des sub-projects complets (raw SQL)
-                    qs_sub = all_subprojects_sector.filter(type_of_subproject=_type, subproject_type_designation="Subproject")
-                    if qs_sub.exists():
-                        subquery_sql, params = qs_sub.query.get_compiler('default').as_sql()
-                        final_qs = qs_sub.raw(
-                            # f"""
-                            # SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject
-                            # FROM subprojects_subproject AS sub_subp
-                            # LEFT JOIN subprojects_subproject AS sub_infras ON sub_subp.id = sub_infras.link_to_subproject_id
-                            # WHERE (sub_subp.current_status_of_the_site IN {_sql_in(STRUCTURE_COMPLETED_STATUS)}
-                            #     AND (sub_infras.current_status_of_the_site IS NULL OR sub_infras.current_status_of_the_site IN {_sql_in(STRUCTURE_COMPLETED_STATUS)}))
-                            #     AND sub_subp.id IN (SELECT sub.id FROM ({subquery_sql}) AS sub) 
-                            #     AND (sub_subp.infrastructure_deleted IS NULL OR sub_subp.infrastructure_deleted = 0)
-                            #     AND (sub_infras.infrastructure_deleted IS NULL OR sub_infras.infrastructure_deleted = 0)
-                            # """, params
-                            f"""
-                            SELECT MIN(id) AS id, joint_subproject_number
-                            FROM subprojects_subproject
-                            WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({subquery_sql}) AS sub) 
-                            GROUP BY joint_subproject_number
-                            HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})::int) = 0
-                            """, params
-                        )
-                        datas[_("Total number of sub-projects completed")][count] = len(final_qs)
-                    else:
-                        datas[_("Total number of sub-projects completed")][count] = 0
+                    datas[_("Total number of sub-projects completed")][count] = completed_by_sector_type.get((sector, _type), 0)
 
                     count += 1
 
@@ -719,147 +542,78 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                 'values': list(datas.values())
             }
             ctx["table_class_style"] = 'table table-striped table-secondary table-bordered'
+            plain_summary_tables(ctx["summary_recap"])
             #End Summary Recap
-            
-            
-            def get_types_count(qs, sector, status_filter=None):
-                """Retourne un dictionnaire {type: count} pour un secteur donné."""
-                sector_qs = qs.filter(subproject_sector=sector)
-                if status_filter:
-                    sector_qs = sector_qs.filter(current_status_of_the_site__in=status_filter)
-
-                return {
-                    t.capitalize(): sector_qs.filter(type_of_subproject=t).count()
-                    for t in sorted(sector_qs.values_list("type_of_subproject", flat=True).distinct())
-                }
 
 
-            def get_totals(qs, sector, status_filter=None, raw_sql=None, raw_params=None):
-                """Retourne les totaux pour un secteur donné."""
-                sector_qs = qs.filter(subproject_sector=sector)
-                if status_filter:
-                    sector_qs = sector_qs.filter(current_status_of_the_site__in=status_filter)
+            # Structures by sector and type for each status, from one GROUP BY
+            # (sector, type) and one query on the subprojects (by joint number),
+            # instead of several queries per sector and per type for each status.
+            by_sector_type = defaultdict(dict)
+            for item in _rows_per_subproject(all_infrastructures).values('subproject_sector', 'type_of_subproject').annotate(
+                identified=Count('id'),
+                identified_subprojects=Count('id', filter=Q(subproject_type_designation="Subproject")),
+                completed=Count('id', filter=Q(current_status_of_the_site__in=STRUCTURE_COMPLETED_STATUS)),
+                in_progress=Count('id', filter=Q(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS)),
+                not_start=Count('id', filter=Q(current_status_of_the_site__in=STRUCTURE_NOT_START_STATUS)),
+            ):
+                by_sector_type[item['subproject_sector']][item['type_of_subproject']] = item
 
-                subprojects_count = (
-                    len(qs.raw(raw_sql, raw_params + (sector,))) if raw_sql
-                    else sector_qs.filter(subproject_type_designation="Subproject").count()
-                )
+            subprojects_by_status = defaultdict(dict)
+            with connection.cursor() as cursor:
+                cursor.execute(f"""
+                    SELECT
+                        subproject_sector,
+                        COUNT(*) FILTER (WHERE not_completed = 0),
+                        COUNT(*) FILTER (WHERE not_not_started > 0 AND not_completed > 0),
+                        COUNT(*) FILTER (WHERE not_not_started = 0)
+                    FROM (
+                        SELECT
+                            subproject_sector,
+                            SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})::int) AS not_completed,
+                            SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)})::int) AS not_not_started
+                        FROM subprojects_subproject
+                        WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub)
+                        GROUP BY subproject_sector, joint_subproject_number
+                    ) AS by_joint_number
+                    GROUP BY subproject_sector
+                """, _params)
+                for sector, completed, in_progress, not_start in cursor.fetchall():
+                    subprojects_by_status['completed'][sector] = completed
+                    subprojects_by_status['in_progress'][sector] = in_progress
+                    subprojects_by_status['not_start'][sector] = not_start
 
-                infrastructures_count = sector_qs.count()
-                return {
-                    "subprojects": subprojects_count,
-                    "infrastructures": infrastructures_count,
-                    "infrastructures_with_latrines_and_fences": infrastructures_count,  # inchangé
-                }
-
-
-            def build_sector_data(base_qs, sectors, status_filter, total_key, raw_sql=None, raw_params=None):
+            def build_sector_data(status_key, total_key, subprojects_from_joint_numbers=True):
                 """Construit les données par secteur pour un statut donné."""
-                return {
-                    **{
-                        sector: {
-                            "types": get_types_count(base_qs, sector, status_filter),
-                            "total": get_totals(base_qs, sector, status_filter, raw_sql, raw_params),
-                        }
-                        for sector in sectors
-                    },
-                    "total": total_key,
-                }
+                data = {}
+                for sector in sectors:
+                    rows = by_sector_type.get(sector, {})
+                    types = {}
+                    for t in sorted(t for t, row in rows.items() if row[status_key]):
+                        types[t.capitalize()] = rows[t][status_key]
+                    infrastructures_count = sum(row[status_key] for row in rows.values())
+                    if subprojects_from_joint_numbers:
+                        subprojects_count = subprojects_by_status[status_key].get(sector, 0)
+                    else:
+                        subprojects_count = sum(row['identified_subprojects'] for row in rows.values())
+                    data[sector] = {
+                        "types": types,
+                        "total": {
+                            "subprojects": subprojects_count,
+                            "infrastructures": infrastructures_count,
+                            "infrastructures_with_latrines_and_fences": infrastructures_count,  # inchangé
+                        },
+                    }
+                data["total"] = total_key
+                return data
 
             ctx["number_subproject_infrastrutures_by_sectors_and_type"] = {
-                _("Identified"): build_sector_data(
-                    base_qs=all_infrastructures,
-                    sectors=sectors,
-                    status_filter=None,
-                    total_key=ctx["total_infrastrutures"],
-                ),
-                _("Completed"): build_sector_data(
-                    base_qs=all_infrastructures,
-                    sectors=sectors,
-                    status_filter=STRUCTURE_COMPLETED_STATUS,
-                    total_key=ctx["total_infrastrutures_completed"],
-                    raw_sql=f"""
-                    SELECT MIN(id) AS id, joint_subproject_number
-                    FROM subprojects_subproject
-                    WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub) AND subproject_sector=%s 
-                    GROUP BY joint_subproject_number
-                    HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})::int) = 0
-                    """,
-                    # f"""
-                    #     SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
-                    #     FROM subprojects_subproject AS sub_subp 
-                    #     LEFT JOIN subprojects_subproject AS sub_infras 
-                    #         ON sub_subp.id=sub_infras.link_to_subproject_id 
-                    #     WHERE (sub_subp.current_status_of_the_site IN {_sql_in(STRUCTURE_COMPLETED_STATUS)}
-                    #         AND (sub_infras.current_status_of_the_site IS NULL 
-                    #         OR sub_infras.current_status_of_the_site IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})) 
-                    #         AND sub_subp.id IN (SELECT sub.id FROM ({_sql}) AS sub) 
-                    #         AND sub_subp.subproject_sector=%s 
-                    #         AND (sub_subp.infrastructure_deleted IS NULL OR sub_subp.infrastructure_deleted = 0)
-                    #         AND (sub_infras.infrastructure_deleted IS NULL OR sub_infras.infrastructure_deleted = 0)
-                    # """,
-                    raw_params=_params,
-                ),
-                _("In progress"): build_sector_data(
-                    base_qs=all_infrastructures,
-                    sectors=sectors,
-                    status_filter=STRUCTURE_IN_PROGRESS_STATUS,
-                    total_key=ctx["total_infrastrutures_in_progress"],
-                    raw_sql=f"""
-                    SELECT MIN(id) AS id, joint_subproject_number
-                    FROM subprojects_subproject
-                    WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub) AND subproject_sector=%s
-                    GROUP BY joint_subproject_number
-                    HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)})::int) > 0
-                        AND SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_COMPLETED_STATUS)})::int) > 0
-                    """,
-                    # f"""
-                    #     SELECT DISTINCT sub_subp.id, sub_subp.full_title_of_approved_subproject 
-                    #     FROM subprojects_subproject AS sub_subp 
-                    #     LEFT JOIN subprojects_subproject AS sub_infras 
-                    #         ON sub_subp.id=sub_infras.link_to_subproject_id 
-                    #     WHERE (((sub_subp.current_status_of_the_site IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)} 
-                    #         AND sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_COMPLETED_STATUS+STRUCTURE_IN_PROGRESS_STATUS)}) 
-                    #         OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
-                    #         AND sub_infras.current_status_of_the_site IN {tuple(STRUCTURE_NOT_START_STATUS+STRUCTURE_IN_PROGRESS_STATUS)})
-                    #         OR (sub_subp.current_status_of_the_site IN {tuple(STRUCTURE_IN_PROGRESS_STATUS*2)})) 
-                    #         AND sub_subp.id IN (SELECT sub.id FROM ({_sql}) AS sub) 
-                    #         AND sub_subp.subproject_sector=%s) 
-                    #         AND (sub_subp.infrastructure_deleted IS NULL OR sub_subp.infrastructure_deleted = 0)
-                    #         AND (sub_infras.infrastructure_deleted IS NULL OR sub_infras.infrastructure_deleted = 0)
-                    # """,
-                    raw_params=_params,
-                ),
-                _("Not start"): build_sector_data(
-                    base_qs=all_infrastructures,
-                    sectors=sectors,
-                    status_filter=STRUCTURE_NOT_START_STATUS,
-                    total_key=ctx["total_infrastrutures_not_started"],
-                    raw_sql=f"""
-                        SELECT MIN(id) AS id, joint_subproject_number
-                        FROM subprojects_subproject
-                        WHERE (infrastructure_deleted IS NULL OR infrastructure_deleted = FALSE) AND id IN (SELECT sub.id FROM ({_sql}) AS sub) AND subproject_sector=%s 
-                        GROUP BY joint_subproject_number
-                        HAVING SUM((current_status_of_the_site NOT IN {_sql_in(STRUCTURE_NOT_START_STATUS*2)})::int) = 0
-                    """,
-                    # f"""
-                    #     SELECT DISTINCT sub_subp.id 
-                    #     FROM subprojects_subproject AS sub_subp 
-                    #     LEFT JOIN subprojects_subproject AS sub_infras 
-                    #         ON sub_infras.link_to_subproject_id=sub_subp.id 
-                    #         AND sub_infras.subproject_type_designation='Infrastructure' 
-                    #     WHERE (sub_subp.current_status_of_the_site NOT IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)} 
-                    #         AND (sub_infras.current_status_of_the_site IS NULL 
-                    #         OR sub_infras.current_status_of_the_site NOT IN {tuple(STRUCTURE_IN_PROGRESS_STATUS+STRUCTURE_COMPLETED_STATUS)})) 
-                    #         AND sub_subp.id IN (SELECT sub.id FROM ({_sql}) AS sub) 
-                    #         AND sub_subp.subproject_sector=%s 
-                    #         AND (sub_subp.infrastructure_deleted IS NULL OR sub_subp.infrastructure_deleted = 0)
-                    #         AND (sub_infras.infrastructure_deleted IS NULL OR sub_infras.infrastructure_deleted = 0)
-                    # """,
-                    raw_params=_params,
-                ),
+                _("Identified"): build_sector_data('identified', ctx["total_infrastrutures"], subprojects_from_joint_numbers=False),
+                _("Completed"): build_sector_data('completed', ctx["total_infrastrutures_completed"]),
+                _("In progress"): build_sector_data('in_progress', ctx["total_infrastrutures_in_progress"]),
+                _("Not start"): build_sector_data('not_start', ctx["total_infrastrutures_not_started"]),
             }
-        
+
             ctx['pie_graphes'] = [
                 {
                     'type': _("Level"),
@@ -877,29 +631,13 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                     'columnSorted': 1
                 }
             ]
-            
-            
-        
-        # ctx['administrative_level_id'] = self.request.GET.getlist('administrative_level_id[]', [])
-        # administrative_level_type = self.request.GET.get('administrative_level_type', 'All').title()
-        # ctx['subproject_sectors'] = self.filter_list_by_delete_empty(self.request.GET.getlist('id_subproject_sectors[]'))
-        # ctx['subproject_types'] = self.filter_list_by_delete_empty(self.request.GET.getlist('id_subproject_types[]'))
-        # ctx['works_type_of_subprojects'] = self.filter_list_by_delete_empty(self.request.GET.getlist('id_works_type_of_subproject[]'))
-        # ctx['subproject_steps'] = self.filter_list_by_delete_empty(self.request.GET.getlist('id_subproject_step[]'))
-        # ctx['components_names'] = self.filter_list_by_delete_empty(self.request.GET.getlist('id_components[]'))
-        # ctx['start_date_raw'] = self.request.GET.get('start_date', None)
-        # ctx['end_date_raw'] = self.request.GET.get('end_date', None)
-
-        # ctx['all_projects'] = self.request.GET.getlist('all_projects[]') if type(self.request.GET.getlist('all_projects[]')) is list and len(self.request.GET.getlist('all_projects[]')) >= 2 else []
-
-        # ctx['administrative_level_type'] = "All" if administrative_level_type in ("", "null", "undefined") else administrative_level_type
 
         ctx.update(self.get_datas_on_request_get())
-        
+
         ctx['SUB_PROJECT_SECTORS_COLOR'] = SUB_PROJECT_SECTORS_COLOR
         ctx['SUB_PROJECT_STATUS_COLOR_TRANSLATE'] = SUB_PROJECT_STATUS_COLOR_TRANSLATE
         return ctx
-    
+
 
 
 class DashboardFinancingListView(DashboardSubprojectsMixin, AJAXRequestMixin, LoginRequiredMixin, generic.ListView):
@@ -923,20 +661,29 @@ class DashboardFinancingListView(DashboardSubprojectsMixin, AJAXRequestMixin, Lo
         # Définir les composants de financement
         components_mapping = { _('Component 1.1'): 2, _('Component 1.2'): 3, _('Component 1.3'): 6 }
         financing_components = {}
+        components_ids = [Component.expand_ids([component_id]) for component_id in components_mapping.values()]  # 1.x + sous-composantes
 
-        for component_label, component_id in components_mapping.items():
-            _cids = Component.expand_ids([component_id])  # 1.x + sous-composantes
-            comp_qs = all_subprojects.filter(component_id__in=_cids)
+        # The amounts of every component and of all the subprojects in one query,
+        # the allocations in another (two queries per component before).
+        subprojects_sums = all_subprojects.aggregate(
+            total_estimated_cost=Sum('estimated_cost'),
+            total_contract_amount=Sum('contract_amount_work_companies'),
+            **{
+                f'{key}_{i}': Sum(field, filter=Q(component_id__in=_cids))
+                for i, _cids in enumerate(components_ids)
+                for key, field in (('estimated_cost', 'estimated_cost'), ('contract_amount', 'contract_amount_work_companies'))
+            }
+        )
+        allocations_sums = allocations_project.aggregate(
+            total=Sum('amount'),
+            **{f'amount_{i}': Sum('amount', filter=Q(component_id__in=_cids)) for i, _cids in enumerate(components_ids)}
+        )
 
-            # Agrégation des montants en une seule passe
-            agg = comp_qs.aggregate(
-                estimated_cost=Sum('estimated_cost'),
-                contract_amount=Sum('contract_amount_work_companies')
-            )
-            total_estimated = agg['estimated_cost'] or 0
-            total_contract = agg['contract_amount'] or 0
+        for i, component_label in enumerate(components_mapping):
+            total_estimated = subprojects_sums[f'estimated_cost_{i}'] or 0
+            total_contract = subprojects_sums[f'contract_amount_{i}'] or 0
 
-            total_allocations = allocations_project.filter(component_id__in=_cids).aggregate(Sum('amount'))['amount__sum'] or 0
+            total_allocations = allocations_sums[f'amount_{i}'] or 0
 
             financing_components[component_label] = {
                 'total_amount_subprojects_estimated_cost': total_estimated,
@@ -959,13 +706,9 @@ class DashboardFinancingListView(DashboardSubprojectsMixin, AJAXRequestMixin, Lo
         ctx['financing_components'] = financing_components
 
         # Totaux globaux
-        agg_total = all_subprojects.aggregate(
-            total_estimated_cost=Sum('estimated_cost'),
-            total_contract_amount=Sum('contract_amount_work_companies')
-        )
-        total_estimated = agg_total['total_estimated_cost'] or 0
-        total_contract = agg_total['total_contract_amount'] or 0
-        total_allocations = allocations_project.aggregate(Sum('amount'))['amount__sum'] or 0
+        total_estimated = subprojects_sums['total_estimated_cost'] or 0
+        total_contract = subprojects_sums['total_contract_amount'] or 0
+        total_allocations = allocations_sums['total'] or 0
 
         ctx.update({
             'total_amount_subprojects_estimated_cost': total_estimated,
@@ -975,11 +718,12 @@ class DashboardFinancingListView(DashboardSubprojectsMixin, AJAXRequestMixin, Lo
             'total_amount_residual': total_allocations - total_contract
         })
 
-        # Montants par secteur
-        sector_data = [
-            all_subprojects.filter(subproject_sector=sector).aggregate(Sum('estimated_cost'))['estimated_cost__sum'] or 0
-            for sector in sectors
-        ]
+        # Montants par secteur (one GROUP BY instead of one query per sector)
+        costs_by_sector = dict(
+            _rows_per_subproject(all_subprojects).values('subproject_sector')
+            .annotate(total=Sum('estimated_cost')).values_list('subproject_sector', 'total')
+        )
+        sector_data = [costs_by_sector.get(sector) or 0 for sector in sectors]
         ctx['amount_subproject_infrastrutures'] = {
             'title': _("Amount of infrastructures by sector"),
             'labels': sectors,
@@ -1141,64 +885,89 @@ class DashboardFinancingListByCantonView(DashboardSubprojectsMixin, AJAXRequestM
         lines = AdministrativeLevelWave.objects.filter(
             administrative_level__id__in=ids
         ).order_by("administrative_level__name") if ids else AdministrativeLevelWave.objects.all().order_by("administrative_level__name")
-        
-        admls = [adl.administrative_level for adl in lines]
+        lines = list(lines)
+        levels = AdministrativeLevel._base_manager.in_bulk({line.administrative_level_id for line in lines})
+        admls = [levels.get(line.administrative_level_id) for line in lines]
 
-        # Préparer les enfants et allocations
-        admls_children = [
-            (
-                adl,
-                allocations_project.filter(administrative_level__id=adl.id),
-                [adl.id] + (ctx['queryset_results']['id_with_descendants'].copy().get(str(adl.id)) or []) if ctx['queryset_results']['ald_filter_ids'] else get_administrative_level_ids_descendants(adl.id, None, [], self.request.session.get('project_id'))
-            )
-            for adl in admls
+        # Les administrative levels of each canton (the canton itself only when
+        # the dashboard is filtered, as before), the whole tree loaded at once.
+        if ctx['queryset_results']['ald_filter_ids']:
+            id_with_descendants = ctx['queryset_results']['id_with_descendants']
+            admls_descendants = [[adl.id] + (id_with_descendants.get(str(adl.id)) or []) for adl in admls]
+        else:
+            project_id = self.request.session.get('project_id')
+            children_map = get_administrative_level_children_map({adl.id for adl in admls}, project_id)
+            admls_descendants = [
+                get_administrative_level_ids_descendants(adl.id, None, [], project_id, children_map=children_map)
+                for adl in admls
+            ]
+        lines_by_administrative_level = defaultdict(set)
+        for i, descendants in enumerate(admls_descendants):
+            for adl_id in descendants:
+                lines_by_administrative_level[adl_id].add(i)
+
+        components = [
+            (2, _("Presentation of allocations, estimates and expenditure by canton - Component 1.1")),
+            (3, _("Presentation of allocations, estimates and expenditure by canton - Component 1.2")),
+            (6, _("Presentation of allocations, estimates and expenditure by canton - Component 1.3")),
         ]
+        components_ids = [set(Component.expand_ids([component_id])) for component_id, title in components]  # 1.x + sous-composantes
+
+        # Estimates and expenditure of every canton for every component from one
+        # read of the subprojects (three queries per canton and component before).
+        # With the pk, a distinct queryset still gives one row per subproject.
+        estimates = [[None] * len(admls) for c in components]
+        spent = [[None] * len(admls) for c in components]
+        for pk, location_id, canton_id, component_id, estimated_cost, contract_amount in all_subprojects.values_list(
+            'pk', 'location_subproject_realized_id', 'canton_id', 'component_id',
+            'estimated_cost', 'contract_amount_work_companies'
+        ):
+            matched_lines = lines_by_administrative_level.get(location_id, set()) | lines_by_administrative_level.get(canton_id, set())
+            if not matched_lines:
+                continue
+            for k, _cids in enumerate(components_ids):
+                if component_id not in _cids:
+                    continue
+                for i in matched_lines:
+                    if estimated_cost is not None:
+                        estimates[k][i] = estimated_cost if estimates[k][i] is None else estimates[k][i] + estimated_cost
+                    if contract_amount is not None:
+                        spent[k][i] = contract_amount if spent[k][i] is None else spent[k][i] + contract_amount
 
         # Fonction pour construire les données par composant
-        def build_component_data(component_id, title):
-            _cids = Component.expand_ids([component_id])  # 1.x + sous-composantes
+        def build_component_data(k, title):
+            allocations = dict(
+                allocations_project.filter(component_id__in=components_ids[k])
+                .values('administrative_level_id').annotate(total=Sum('amount'))
+                .values_list('administrative_level_id', 'total')
+            )
             bars = [
                 {
                     'label': _("Allocation"),
                     'backgroundColor': 'blue',
-                    'data': [
-                        adml_alloc.filter(component_id__in=_cids).aggregate(total=Sum('amount'))['total'] or 0
-                        for _, adml_alloc, _ in admls_children
-                    ]
+                    'data': [allocations.get(adl.id) or 0 for adl in admls]
                 },
                 {
                     'label': _("Sub-project estimates"),
                     'backgroundColor': 'red',
-                    'data': [
-                        all_subprojects.filter(
-                            Q(location_subproject_realized__id__in=descendants) | Q(canton__id__in=descendants),
-                            component_id__in=_cids
-                        ).aggregate(total=Sum('estimated_cost'))['total'] or 0
-                        for _, _, descendants in admls_children
-                    ]
+                    'data': [total or 0 for total in estimates[k]]
                 },
                 {
                     'label': _("Spent"),
                     'backgroundColor': 'green',
-                    'data': [
-                        all_subprojects.filter(
-                            Q(location_subproject_realized__id__in=descendants) | Q(canton__id__in=descendants),
-                            component_id__in=_cids
-                        ).aggregate(total=Sum('contract_amount_work_companies'))['total'] or 0
-                        for _, _, descendants in admls_children
-                    ]
+                    'data': [total or 0 for total in spent[k]]
                 }
             ]
             return {
                 'title': title,
-                'labels': [adl.name for adl, _, _ in admls_children],
+                'labels': [adl.name for adl in admls],
                 'bars': bars
             }
 
         # Construire les données pour les composants 1.1, 1.2 et 1.3
-        ctx['amount_cantons_component_1_1'] = build_component_data(2, _("Presentation of allocations, estimates and expenditure by canton - Component 1.1"))
-        ctx['amount_cantons_component_1_2'] = build_component_data(3, _("Presentation of allocations, estimates and expenditure by canton - Component 1.2"))
-        ctx['amount_cantons_component_1_3'] = build_component_data(6, _("Presentation of allocations, estimates and expenditure by canton - Component 1.3"))
+        ctx['amount_cantons_component_1_1'] = build_component_data(0, components[0][1])
+        ctx['amount_cantons_component_1_2'] = build_component_data(1, components[1][1])
+        ctx['amount_cantons_component_1_3'] = build_component_data(2, components[2][1])
 
         # Informations administratives
         # ctx['administrative_level_id'] = self.request.GET.getlist('administrative_level_id[]', [])
@@ -1589,8 +1358,8 @@ class SubprojectsDetailsModalView(DashboardSubprojectsMixin, AJAXRequestMixin,
                 all_subprojects = []
         if not list_name_search:
             list_name_search = self.title
-        
-        subprojects = self.get_queryset_search(all_subprojects)
+
+        subprojects = self.get_queryset_search(_subprojects_for_display(all_subprojects))
         
         administrative_level_type = self.request.GET.get('administrative_level_type', 'All').title()
 

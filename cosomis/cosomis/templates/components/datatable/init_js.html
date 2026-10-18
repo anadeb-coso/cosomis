@@ -1,0 +1,30 @@
+{% load static i18n %}
+{% comment %}
+Starts the server-side DataTables of components/datatable/table.html.
+`selection_form`: selector of the form that posts the selected rows (row
+checkboxes .dt-row-check + header #dt-select-all), when the rows are selectable.
+{% endcomment %}
+{% get_current_language as lang %}
+{% translate 'An error has occurred...' as error_message %}
+{% translate 'Please select at least one row.' as empty_selection_message %}
+{{ datatable_config|json_script:"datatable-config" }}
+<script src="{% static 'js/server_side_datatable.js' %}?v=1"></script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        window.datatable = ServerSideDatatable.init({
+            table: '#{{ table_id|default:"table" }}',
+            config: JSON.parse(document.getElementById('datatable-config').textContent),
+            languageUrl: '{% static "AdminLTE/plugins/datatables/locale/lang.json" %}'.replace('lang', '{{ lang }}'),
+            errorMessage: '{{ error_message|escapejs }}',
+            {% if selection_form %}
+            selection: {
+                form: '{{ selection_form }}',
+                selectAll: '#dt-select-all',
+                rowCheck: '.dt-row-check',
+                counter: '.dt-selection-count',
+                emptyMessage: '{{ selection_empty_message|default:empty_selection_message|escapejs }}'
+            },
+            {% endif %}
+        });
+    });
+</script>

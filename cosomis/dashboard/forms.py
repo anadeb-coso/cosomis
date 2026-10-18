@@ -46,3 +46,19 @@ class AdministrativeLevelFilterForm(forms.Form):
             self.fields['canton'].initial = default_cantons
         if default_villages:
             self.fields['village'].initial = default_villages
+
+
+# Label of each AdministrativeLevelFilterForm field, from the top level down.
+ADMIN_LEVEL_FILTER_LABELS = {
+    'region': _('Region'),
+    'prefecture': _('Prefecture'),
+    'commune': _('Commune'),
+    'canton': _('Canton'),
+    'village': _('Village'),
+}
+
+
+def get_admin_level_filter_fields(form, levels=None):
+    """(label, bound field) of the AdministrativeLevelFilterForm fields shown in
+    a list page's "Choose the administrative level" card (all levels by default)."""
+    return [(ADMIN_LEVEL_FILTER_LABELS[name], form[name]) for name in (levels or ADMIN_LEVEL_FILTER_LABELS)]

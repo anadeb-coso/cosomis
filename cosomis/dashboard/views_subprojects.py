@@ -7,12 +7,17 @@ from django.db.models import Q
 from django.db.models import Sum, Max
 from django.db import connection
 import logging
+from collections import defaultdict
 from django.http import Http404
 
 from subprojects.models import Subproject, Step, Project
 from administrativelevels.models import AdministrativeLevel
-from administrativelevels.functions import get_administrative_level_ids_descendants, get_administrative_level_ids_descendants_with_dict
+from administrativelevels.functions import (
+    get_administrative_level_ids_descendants, get_administrative_level_ids_descendants_with_dict,
+    get_administrative_level_children_map,
+)
 from . import forms
+from subprojects.forms import SubprojectFilterForm, SearchForm
 from . import functions
 from cosomis.views_manage_url_parse import redirect_user_to_login, redirect_to_an_url
 from cosomis.constants import STRUCTURE_COMPLETED_STATUS, STRUCTURE_IN_PROGRESS_STATUS
@@ -28,6 +33,8 @@ class DashboardTemplateView(PageMixin, LoginRequiredMixin, generic.TemplateView)
         ctx = super(DashboardTemplateView, self).get_context_data(**kwargs)
         ctx['hide_content_header'] = True
         ctx['form_adl'] = forms.AdministrativeLevelFilterForm()
+        ctx['form_suproject'] = SubprojectFilterForm(False)
+        ctx['form_searcht'] = SearchForm()
         return ctx
 
 
@@ -51,7 +58,49 @@ class DashboardSubprojectsMixin:
         ctx.setdefault('table_class_style', self.table_class_style)
         ctx.setdefault('table_thead_class_style', self.table_thead_class_style)
         return ctx
-    
+
+    def render_to_response(self, context, **response_kwargs):
+        functions.plain_summary_tables(*context.get('summary', {}).values())
+        return super().render_to_response(context, **response_kwargs)
+
+    def get_projects_ids(self):
+        """The project of the session, or the list of projects of "show for all
+        projects" (all_projects[], as Subproject.objects.get_objects_by_general_filtre())."""
+        all_projects = self.request.GET.getlist('all_projects[]')
+        if len(all_projects) >= 2:
+            return [int(project_id) for project_id in all_projects]
+        return self.request.session.get('project_id')
+
+    def get_columns_listes(self, queryset_results):
+        """[id, name, ids of the level and of all its descendants] of each column
+        (the administrative levels under the filtered ones), the whole tree loaded
+        in a few queries."""
+        if queryset_results['ald_filter_ids']:
+            def get_descendants(column_id):
+                return queryset_results['id_with_descendants'].get(str(column_id)) or []
+        else:
+            project_id = self.get_projects_ids()
+            children_map = get_administrative_level_children_map(
+                [column[0] for column in queryset_results['columns_tuples'] if column[0] != "All"], project_id
+            )
+
+            def get_descendants(column_id):
+                if column_id == "All":
+                    return get_administrative_level_ids_descendants(column_id, None, [], project_id)
+                return get_administrative_level_ids_descendants(column_id, None, [], project_id, children_map=children_map)
+
+        columns_listes = []
+        for column in queryset_results['columns_tuples']:
+            ids_descendants = get_descendants(column[0])
+            columns_listes.append(
+                [
+                    column[0],
+                    column[1],
+                    [column[0]] + ids_descendants if column[0] != "All" else ids_descendants
+                ]
+            )
+        return columns_listes
+
     def get_queryset(self):
         request = self.request
 
@@ -68,12 +117,16 @@ class DashboardSubprojectsMixin:
             if ald_id not in ("", "null", "undefined", "All")
         ]
 
+        # "Show for all projects": the administrative levels (columns and their
+        # descendants) of all the projects, as the subprojects counted.
+        projects_ids = self.get_projects_ids()
+
         id_with_descendants = dict()
         # id_with_first_descendants = dict()
         administrative_levels_ids = set()
         for ald_id in ald_filter_ids:  # si vide, on met 0
             _ids, _ids_with_desc, _id_with_first_desces = get_administrative_level_ids_descendants_with_dict(
-                ald_id, administrative_level_type, [], {}, {}, request.session.get('project_id')
+                ald_id, administrative_level_type, [], {}, {}, projects_ids
             )
             administrative_levels_ids.update(
                 _ids
@@ -82,7 +135,10 @@ class DashboardSubprojectsMixin:
             # id_with_first_descendants.update(**_id_with_first_desces)
 
         # --- Filtrage des AdministrativeLevels ---
-        adl_qs = AdministrativeLevel.objects.get_objects_by_general_filtre(request, None)
+        if isinstance(projects_ids, list):
+            adl_qs = AdministrativeLevel.objects.filter(administrative_levels_projects__in=projects_ids).distinct()
+        else:
+            adl_qs = AdministrativeLevel.objects.get_objects_by_general_filtre(request, None)
 
         if administrative_level_type == "All":
             administrative_levels = adl_qs.filter(type="Region").prefetch_related()
@@ -97,8 +153,10 @@ class DashboardSubprojectsMixin:
         if not administrative_levels.exists() and ald_filter_ids:
             administrative_levels = adl_qs.filter(id__in=ald_filter_ids).prefetch_related()
 
-        # --- Subprojects ---
-        subprojects = Subproject.objects.get_objects_by_general_filtre(request, None).prefetch_related().get_actifs()
+        # --- Subprojects --- (status, dates, component, sector, type, works type and all projects filters)
+        subprojects = functions.filter_dashboard_subprojects(
+            Subproject.objects.get_objects_by_general_filtre(request, None).prefetch_related().get_actifs(), request
+        )
 
         if ald_filter_ids:
             adls = ald_filter_ids + list(administrative_levels_ids)
@@ -207,6 +265,24 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
         for s in sectors:
             sector_pairs.extend([s, s])
 
+        # The numbers of every (sector, row type, column) from one pass over the
+        # subprojects (they were scanned again for every sector and column).
+        columns_by_adl = defaultdict(set)
+        for index, (_id, col_name, col_ids) in enumerate(columns_listes):
+            for adl_id in col_ids:
+                columns_by_adl[adl_id].add(index)
+        numbers = defaultdict(int)  # (sector, infrastructures row, column index) -> number
+        for pk, location_id, canton_id, sector, number_of_infrastructures, designation in all_subprojects.values_list(
+            'pk', 'location_subproject_realized_id', 'canton_id', 'subproject_sector',
+            'number_of_infrastructures', 'subproject_type_designation'
+        ):
+            matched_columns = columns_by_adl.get(location_id, set()) | columns_by_adl.get(canton_id, set())
+            for index in matched_columns:
+                if designation in ["Subproject"]:
+                    numbers[(sector, False, index)] += 1
+                if number_of_infrastructures == 1 and designation in ["Infrastructure", "Subproject"]:
+                    numbers[(sector, True, index)] += 1
+
         count = 0
         for i, sector in enumerate(sector_pairs):
             datas[_("Sectors")][count] = sector
@@ -214,14 +290,8 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
 
             number_total = 0
             # Filtrer les sous-projets pertinents pour ce secteur et type
-            for _id, col_name, col_ids in columns_listes:
-                number = sum(
-                    1 for sp in all_subprojects
-                    if (sp.location_subproject_realized_id in col_ids or sp.canton_id in col_ids)
-                    and sp.subproject_sector == sector
-                    and (sp.number_of_infrastructures == 1 if (i + 1) % 2 == 0 else True)
-                    and sp.subproject_type_designation in (["Infrastructure", "Subproject"] if (i + 1) % 2 == 0 else ["Subproject"])
-                )
+            for index, (_id, col_name, col_ids) in enumerate(columns_listes):
+                number = numbers.get((sector, (i + 1) % 2 == 0, index), 0)
                 datas[col_name][count] = number
                 number_total += number
 
@@ -328,17 +398,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
         ctx = super(DashboardSubprojectsListView, self).get_context_data(**kwargs)
         # subprojects = ctx['queryset_results']['subprojects']
         sectors = ctx['queryset_results']['sectors'].copy()
-        columns_tuples = ctx['queryset_results']['columns_tuples'].copy()
-        columns_listes = []
-        for column in columns_tuples:
-            ids_descendants = (ctx['queryset_results']['id_with_descendants'].get(str(column[0])) or []) if ctx['queryset_results']['ald_filter_ids'] else get_administrative_level_ids_descendants(column[0], None, [], self.request.session.get('project_id'))
-            columns_listes.append(
-                [
-                    column[0],
-                    column[1],
-                    [column[0]] + ids_descendants if column[0] != "All" else ids_descendants
-                ]
-            )
+        columns_listes = self.get_columns_listes(ctx['queryset_results'])
         all_subprojects = ctx['queryset_results']['subprojects']
         # all_steps = Step.objects.all().order_by('-ranking')
 
@@ -370,31 +430,39 @@ class DashboardSubprojectsBySectorAmountListView(DashboardSubprojectsMixin, AJAX
         datas[_("Total")] = {}
         # datas[_("OBSERVATIONS")] = {}
 
+        # The numbers and amounts of every sector and column from one pass over
+        # the subprojects (two queries per sector, then a scan per column, before).
+        columns_by_adl = defaultdict(set)
+        for index, column in enumerate(columns_listes):
+            for adl_id in column[2]:
+                columns_by_adl[adl_id].add(index)
+        number_subprojects = defaultdict(int)
+        number_infrastructures = defaultdict(int)
+        amounts = {}  # (sector, column index) -> estimated cost, added in the subprojects order as before
+        for pk, location_id, canton_id, sector, designation, cost in all_subprojects.values_list(
+            'pk', 'location_subproject_realized_id', 'canton_id', 'subproject_sector',
+            'subproject_type_designation', 'estimated_cost'
+        ):
+            if designation == "Subproject":
+                number_subprojects[sector] += 1
+            if designation in ["Infrastructure", "Subproject"]:
+                number_infrastructures[sector] += 1
+                if cost:
+                    for index in columns_by_adl.get(location_id, set()) | columns_by_adl.get(canton_id, set()):
+                        amounts[(sector, index)] = amounts.get((sector, index), 0) + cost
+
         count = 0
         _sectors = sectors
-            
+
         for i in range(len(_sectors)):
             datas[_("Sectors")][count] = _sectors[i]
 
-            subprojects_filter = all_subprojects.filter(subproject_sector=_sectors[i])
-            datas[_("Number of subprojects")][count] = subprojects_filter.filter(
-                subproject_type_designation="Subproject"
-            ).count()
-            
-            subprojects_filter_infras = all_subprojects.filter(
-                subproject_sector=_sectors[i], subproject_type_designation__in=["Infrastructure", "Subproject"]
-            )
-            datas[_("Number of subproject infrastructures")][count] = subprojects_filter_infras.count()
+            datas[_("Number of subprojects")][count] = number_subprojects[_sectors[i]]
+            datas[_("Number of subproject infrastructures")][count] = number_infrastructures[_sectors[i]]
 
             toal_mount = 0
-            for column in columns_listes:
-                estimated_cost = 0
-                estimated_cost = sum([
-                    _subp_structure.estimated_cost for _subp_structure in subprojects_filter_infras if ((
-                            _subp_structure.location_subproject_realized_id in column[2] or \
-                            _subp_structure.canton_id in column[2]) and _subp_structure.estimated_cost
-                        )
-                ])
+            for index, column in enumerate(columns_listes):
+                estimated_cost = amounts.get((_sectors[i], index), 0)
                 datas[column[1]][count] = estimated_cost #str(estimated_cost).rjust(characters_length,'0')
                 toal_mount += estimated_cost
 
@@ -428,19 +496,8 @@ class DashboardSubprojectsBySectorAmountListView(DashboardSubprojectsMixin, AJAX
         ctx = super(DashboardSubprojectsBySectorAmountListView, self).get_context_data(**kwargs)
         # subprojects = ctx['queryset_results']['subprojects']
         sectors = ctx['queryset_results']['sectors'].copy()
-        columns_tuples = ctx['queryset_results']['columns_tuples'].copy()
-        columns_listes = []
-        for column in columns_tuples:
-            ids_descendants = (ctx['queryset_results']['id_with_descendants'].get(str(column[0])) or []) if ctx['queryset_results']['ald_filter_ids'] else get_administrative_level_ids_descendants(column[0], None, [], self.request.session.get('project_id'))
-            columns_listes.append(
-                [
-                    column[0],
-                    column[1],
-                    [column[0]] + ids_descendants if column[0] != "All" else ids_descendants
-                ]
-            )
+        columns_listes = self.get_columns_listes(ctx['queryset_results'])
         all_subprojects = ctx['queryset_results']['subprojects']
-        all_steps = Step.objects.all().order_by('-ranking')
 
         ctx["summary"] = {}
         
@@ -474,8 +531,17 @@ class DashboardSubprojectsSectorsAndStepsListView(DashboardSubprojectsMixin, AJA
         }
         
         count = 0
-        all_subprojects = all_subprojects.order_by('number', 'joint_subproject_number')
-        
+        # The village, canton and region of every row, and the current step of
+        # the rows without a level of realization, loaded in a few queries (up to
+        # seven queries per subproject before); same order (number, joint number
+        # are unique). The history JSON fields, costly to decode, aren't shown.
+        all_subprojects = list(
+            all_subprojects.order_by('number', 'joint_subproject_number')
+            .defer('create_by_user', 'update_by_user', 'delete_by_user', 'users_involved', 'priority')
+            .prefetch_related(*Subproject.location_prefetches())
+        )
+        Subproject.prefetch_display_data(all_subprojects)
+
         for subproject in all_subprojects:
             datas[_("N°")][count] = subproject.number
             canton = None
@@ -595,24 +661,26 @@ class DashboardSubprojectsStepsAlreadyTrackListView(DashboardSubprojectsMixin, A
             datas[_("Step")][count] = v
             count += 1
             
-        for sub in all_subprojects:
-            if sub.current_status_of_the_site in STRUCTURE_IN_PROGRESS_STATUS:
+        # With the pk: one row per subproject even when the queryset is distinct.
+        statuses = [status for pk, status in all_subprojects.values_list('pk', 'current_status_of_the_site')]
+        for current_status_of_the_site in statuses:
+            if current_status_of_the_site in STRUCTURE_IN_PROGRESS_STATUS:
                 datas[_("Number")][1] = (1 if datas[_("Number")].get(1) == None else datas[_("Number")].get(1) + 1)
 
-            elif sub.current_status_of_the_site in STRUCTURE_COMPLETED_STATUS:
+            elif current_status_of_the_site in STRUCTURE_COMPLETED_STATUS:
                 datas[_("Number")][2] = (1 if datas[_("Number")].get(2) == None else datas[_("Number")].get(2) + 1)
-                if sub.current_status_of_the_site == "Réception technique":
+                if current_status_of_the_site == "Réception technique":
                     datas[_("Number")][3] = (1 if datas[_("Number")].get(3) == None else datas[_("Number")].get(3) + 1)
-                elif sub.current_status_of_the_site == "Réception provisoire":
+                elif current_status_of_the_site == "Réception provisoire":
                     datas[_("Number")][4] = (1 if datas[_("Number")].get(4) == None else datas[_("Number")].get(4) + 1)
-                elif sub.current_status_of_the_site == "Réception définitive":
+                elif current_status_of_the_site == "Réception définitive":
                     datas[_("Number")][5] = (1 if datas[_("Number")].get(5) == None else datas[_("Number")].get(5) + 1)
             
             else:
                 datas[_("Number")][0] = (1 if datas[_("Number")].get(0) == None else datas[_("Number")].get(0) + 1)
 
         datas[_("Step")][count] = _("Number of infrastructures")
-        datas[_("Number")][count] = all_subprojects.count()
+        datas[_("Number")][count] = len(statuses)
 
 #         administrative_levels_ids_str = ', '.join(str(elt) for elt in administrative_levels_ids)
 #         count = 0

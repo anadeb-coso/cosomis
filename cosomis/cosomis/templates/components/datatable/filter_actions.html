@@ -1,0 +1,5 @@
+{% load i18n %}
+<div class="dt-filter-actions">
+    <button type="submit" class="btn btn-primary"><i class="fa fa-filter"></i> {% translate 'Apply' %}</button>
+    <a class="btn btn-outline-primary" href="{{ reset_url|default:'?' }}"><i class="fa fa-undo"></i> {% translate 'Reset' %}</a>
+</div>

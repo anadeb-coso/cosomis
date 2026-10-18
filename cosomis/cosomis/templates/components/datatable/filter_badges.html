@@ -1,0 +1,9 @@
+{% if filter_badges %}
+<div class="results-filters">
+    {% for badge in filter_badges %}
+        <span class="filter-badge" title="{{ badge.label }} : {{ badge.value }}">
+            <span class="filter-badge-label"><b>{{ badge.label }}</b> : {{ badge.value }}</span>
+        </span>
+    {% endfor %}
+</div>
+{% endif %}

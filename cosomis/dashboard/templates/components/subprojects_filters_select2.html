@@ -1,0 +1,23 @@
+{% load i18n %}
+<script type="text/javascript">
+    $("#id_subproject_sectors").select2({
+        placeholder: "{% translate 'Subproject sector' %}",
+        allowClear: true,
+    });
+    $("#id_subproject_types").select2({
+        placeholder: "{% translate 'Type of structure' %}",
+        allowClear: true,
+    });
+    $("#id_works_type_of_subproject").select2({
+        placeholder: "{% translate 'Works type' %}",
+        allowClear: true,
+    });
+    $("#id_subproject_step").select2({
+        placeholder: "{% translate 'Status' %}",
+        allowClear: true,
+    });
+    $("#id_components").select2({
+        placeholder: "{% translate 'Component' %}",
+        allowClear: true,
+    });
+</script>

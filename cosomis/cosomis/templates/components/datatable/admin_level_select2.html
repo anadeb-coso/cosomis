@@ -1,0 +1,8 @@
+{% load i18n %}
+<script type="text/javascript">
+    $("#id_region").select2({placeholder: "{% translate 'Region' %}", allowClear: true, width: '100%'});
+    $("#id_prefecture").select2({placeholder: "{% translate 'Prefecture' %}", allowClear: true, width: '100%'});
+    $("#id_commune").select2({placeholder: "{% translate 'Commune' %}", allowClear: true, width: '100%'});
+    $("#id_canton").select2({placeholder: "{% translate 'Canton' %}", allowClear: true, width: '100%'});
+    $("#id_village").select2({placeholder: "{% translate 'Village' %}", allowClear: true, width: '100%'});
+</script>

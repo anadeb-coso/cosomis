@@ -1,0 +1,51 @@
+{% load i18n %}
+{% comment %}
+"Choose filters" card of a list page filter form: the database search, plus the
+"Show for all projects" checkbox when `show_all_projects` is set.
+{% endcomment %}
+<div class="card dt-filter-card">
+    <div class="card-header" id="headingFilters">
+        <h5 class="mb-0">
+            <button aria-controls="collapseFilters" aria-expanded="true" class="btn btn-link"
+                    data-target="#collapseFilters" data-toggle="collapse" type="button">
+                {% translate 'Choose filters' %}
+            </button>
+        </h5>
+    </div>
+    <div aria-labelledby="headingFilters" class="collapse show" id="collapseFilters">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-lg-9">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="id_search_in_db">{% translate 'Search in database' %}</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    </div>
+                                    <input class="form-control" name="search" id="id_search_in_db"
+                                           value="{% if search and search != 'All' %}{{ search }}{% endif %}"
+                                           placeholder="{% translate 'Search in database' %}...">
+                                </div>
+                            </div>
+                        </div>
+                        {% if show_all_projects and PROJECTS_NAMES and PROJECTS_NAMES|length >= 2 %}
+                        <div class="col-md-6">
+                            <div class="form-check dt-filter-check">
+                                <input class="form-check-input" type="checkbox" id="id_include_all_projects" name="include_all_projects" value="1" {% if include_all_projects_checked == '1' %}checked{% endif %}>
+                                <label class="form-check-label" for="id_include_all_projects">
+                                    {% translate "Show for all projects" %} ({% for project in PROJECTS_NAMES %}{{ project }}{% if not forloop.last %}, {% endif %}{% endfor %})
+                                </label>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-lg-3">
+                    {% include 'components/datatable/filter_actions.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

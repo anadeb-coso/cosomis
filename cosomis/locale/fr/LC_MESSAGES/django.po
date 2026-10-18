@@ -4648,3 +4648,160 @@ msgstr "Choisir un statut de zone"
 #: .\administrativelevels\templates\administrativelevel_area_status.html
 msgid "Please select at least one administrative level."
 msgstr "Veuillez sélectionner au moins un niveau administratif."
+
+#: .\cosomis\datatables.py
+msgid "Show all"
+msgstr "Tout afficher"
+
+#: .\cosomis\templates\components\datatable\table.html
+msgid "Loading data"
+msgstr "Chargement des données"
+
+#: .\cosomis\templates\components\datatable\table.html
+msgid "Loading"
+msgstr "Chargement"
+
+#: .\cosomis\templates\components\datatable\table.html
+msgid "Select every result"
+msgstr "Sélectionner tous les résultats"
+
+#: .\cosomis\templates\components\datatable\column_switches.html
+msgid "Choose the columns to display"
+msgstr "Choisir les colonnes à afficher"
+
+#: .\cosomis\templates\components\datatable\search_filter_card.html
+#: .\subprojects\templates\infrastructures_list.html
+msgid "Choose filters"
+msgstr "Choisir les filtres"
+
+#: .\cosomis\templates\components\datatable\admin_level_filter_card.html
+msgid "Choose the administrative level"
+msgstr "Choisir le niveau administratif"
+
+#: .\cosomis\templates\components\datatable\init_js.html
+msgid "Please select at least one row."
+msgstr "Veuillez sélectionner au moins une ligne."
+
+#: .\administrativelevels\templates\administrativelevel_area_status.html
+msgid "Selected"
+msgstr "Sélectionnés"
+
+#: .\administrativelevels\templates\administrativelevel_area_status.html
+msgid "How to use this table"
+msgstr "Comment utiliser ce tableau"
+
+#: .\administrativelevels\templates\administrativelevel_area_status.html
+msgid ""
+"Tick the box on the left of a row to select it; the selection is kept when "
+"you change page."
+msgstr ""
+"Cochez la case à gauche d'une ligne pour la sélectionner ; la sélection est "
+"conservée lorsque vous changez de page."
+
+#: .\administrativelevels\templates\administrativelevel_area_status.html
+msgid ""
+"Tick the box in the header to select every result of the current filters, on "
+"all pages."
+msgstr ""
+"Cochez la case de l'en-tête pour sélectionner tous les résultats des filtres "
+"en cours, sur toutes les pages."
+
+#: .\administrativelevels\templates\administrativelevel_area_status.html
+msgid ""
+"Choose an area status above, then click “Apply” to assign it to the selected "
+"administrative levels."
+msgstr ""
+"Choisissez un statut de zone ci-dessus, puis cliquez sur « Appliquer » pour "
+"l'attribuer aux niveaux administratifs sélectionnés."
+
+#: .\dashboard\templates\dashboard_administrativelevels.html
+msgid "Beneficiary villages"
+msgstr "Villages bénéficiaires"
+
+#: .\dashboard\templates\dashboard_administrativelevels.html
+msgid "Clear all filters"
+msgstr "Effacer tous les filtres"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Direct (site of a subproject)"
+msgstr "Direct (site de réalisation)"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Indirect (through the CVD)"
+msgstr "Indirect (via le CVD)"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Indirect (list of beneficiary villages)"
+msgstr "Indirect (liste des villages bénéficiaires)"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Direct (subproject of the CVD)"
+msgstr "Direct (sous-projet du CVD)"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Benefit"
+msgstr "Type de bénéfice"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Subprojects carried out in the village"
+msgstr "Sous-projets réalisés dans le village"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Subprojects of the CVD"
+msgstr "Sous-projets du CVD"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Subprojects listing the village as beneficiary"
+msgstr "Sous-projets dont le village est bénéficiaire"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Villages where subprojects were carried out"
+msgstr "Villages sites de sous-projets"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Direct beneficiaries (site of a subproject)"
+msgstr "Bénéficiaires directs (site de réalisation d'un sous-projet)"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Indirect beneficiaries through their CVD"
+msgstr "Bénéficiaires indirects via leur CVD"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Indirect beneficiaries through the list of beneficiary villages"
+msgstr "Bénéficiaires indirects via la liste des villages bénéficiaires"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Total beneficiaries"
+msgstr "Total des bénéficiaires"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Not beneficiaries"
+msgstr "Non bénéficiaires"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "% of villages"
+msgstr "% des villages"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "% of CVD"
+msgstr "% des CVD"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Villages and CVD that benefited from subprojects"
+msgstr "Villages et CVD ayant bénéficié de sous-projets"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Villages that benefited from subprojects"
+msgstr "Villages ayant bénéficié de sous-projets"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "Villages that did not benefit from subprojects"
+msgstr "Villages n'ayant pas bénéficié de sous-projets"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "CVD that benefited from subprojects"
+msgstr "CVD ayant bénéficié de sous-projets"
+
+#: .\dashboard\views_administrativelevels.py
+msgid "CVD that did not benefit from subprojects"
+msgstr "CVD n'ayant pas bénéficié de sous-projets"

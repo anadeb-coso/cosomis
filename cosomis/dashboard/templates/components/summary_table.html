@@ -164,6 +164,9 @@ jQuery.extend(jQuery.fn.dataTableExt.oSort, {
 });
 
 
+// Own scope for each table: a tab can render several tables, whose ready
+// callbacks run after all their scripts (shared globals took the last table's columns).
+(function () {
     var columns_number_filter_filter = [];
     var columns_number_width = [];
     var columns_number_filter = [];
@@ -196,6 +199,18 @@ jQuery.extend(jQuery.fn.dataTableExt.oSort, {
     }
     else if("{{ data_id }}" == "summary_recap"){
         columns_number_filter = [1, 2, 3, 4, 5, 6, 7];
+    }
+    else if("{{ data_id }}" == "summary_beneficiary_villages_numbers"){
+        columns_number_filter = [1, 3];
+    }
+    else if("{{ data_id }}" == "summary_beneficiary_villages"){
+        columns_number_filter = [7, 8, 9];
+    }
+    else if("{{ data_id }}" == "summary_beneficiary_cvds"){
+        columns_number_filter = [6, 7, 8];
+    }
+    else if("{{ data_id }}" == "summary_not_beneficiary_cvds"){
+        columns_number_filter = [5];
     }else{
 
     }
@@ -293,6 +308,7 @@ jQuery.extend(jQuery.fn.dataTableExt.oSort, {
 
                         
     });
+})();
 </script>
 
 

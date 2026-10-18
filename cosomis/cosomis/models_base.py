@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models.query import ModelIterable
 from django.utils.translation import gettext_lazy as _
 import datetime
 import threading
@@ -234,11 +235,18 @@ models.signals.m2m_changed.connect(_track_m2m_history)
 class CustomQuerySet(models.QuerySet):
     
     def get_objects_by_general_filtre(self, request, attrs, *args, **kwargs):
-        if self.first():
-            if self.first().__class__.__name__ in ["Phase", "Activity", "Task"]:
-                return self.get_process_manager_actifs(request, attrs, *args, **kwargs)
-            elif self.first().__class__.__name__ in ["AdministrativeLevel"]:
-                return self.get_adl_actifs(request, attrs, *args, **kwargs)
+        # The model is known without fetching a row (this used to run first()
+        # twice per call); an empty queryset stays empty once filtered, so the
+        # result is the same.
+        if issubclass(self._iterable_class, ModelIterable):
+            model_name = self.model.__name__
+        else:
+            first = self.first()
+            model_name = first.__class__.__name__ if first else None
+        if model_name in ["Phase", "Activity", "Task"]:
+            return self.get_process_manager_actifs(request, attrs, *args, **kwargs)
+        elif model_name in ["AdministrativeLevel"]:
+            return self.get_adl_actifs(request, attrs, *args, **kwargs)
         return self.filter()
     
     def get_adl_actifs(self, request, attrs, *args, **kwargs):

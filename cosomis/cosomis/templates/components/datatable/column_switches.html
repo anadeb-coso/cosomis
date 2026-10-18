@@ -1,0 +1,26 @@
+{% load i18n %}
+<div class="card dt-filter-card">
+    <div class="card-header" id="headingColumns">
+        <h5 class="mb-0">
+            <button aria-controls="collapseColumns" aria-expanded="false" class="btn btn-link collapsed"
+                    data-target="#collapseColumns" data-toggle="collapse" type="button">
+                {% translate 'Choose the columns to display' %}
+            </button>
+        </h5>
+    </div>
+    <div aria-labelledby="headingColumns" class="collapse" id="collapseColumns">
+        <div class="card-body">
+            <div class="row">
+                {% for switch in datatable_column_switches %}
+                    <div class="col-md-3 col-sm-6">
+                        <div class="custom-control custom-switch">
+                            <input checked class="custom-control-input column-switch" type="checkbox"
+                                   data-column="{{ switch.index }}" id="column-switch-{{ switch.index }}">
+                            <label class="custom-control-label" for="column-switch-{{ switch.index }}">{{ switch.title }}</label>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
