@@ -4,7 +4,7 @@ import locale
 from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import post_save
 from typing import TypeVar, Any
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.contrib.auth import get_user_model
 from datetime import date, timedelta
 
@@ -272,7 +272,68 @@ class Subproject(BaseModel):
         return _location_subproject_realized
 
     def get_all_subprojects_linked(self):
+        prefetched = self.__dict__.get('_prefetched_linked_subprojects')
+        if prefetched is not None:
+            return prefetched
         return self.linked_subprojects.get_queryset().get_actifs()
+
+    @staticmethod
+    def location_prefetches(location_depth=4, canton_depth=3):
+        """prefetch_related() lookups of the site of subprojects (village, or canton
+        for cantonal ones) and of its parents (up to the region with the default
+        depths), loading only their name and parent: tables show these names."""
+        lookups = []
+        for field, depth in (('location_subproject_realized', location_depth), ('canton', canton_depth)):
+            for i in range(depth + 1):
+                lookups.append(Prefetch(
+                    '__'.join([field] + ['parent'] * i),
+                    queryset=AdministrativeLevel.objects.only('id', 'name', 'parent')
+                ))
+        return lookups
+
+    @classmethod
+    def prefetch_display_data(cls, subprojects):
+        """For a list of subprojects shown in a table: loads their linked
+        subprojects (get_all_subprojects_linked) and their current step and level
+        (get_current_subproject_step_and_level and its _without_percent and _object
+        variants) in three queries, instead of up to
+        five queries per subproject. Same rows and order as these methods."""
+        subprojects = [subproject for subproject in subprojects if subproject.pk]
+        ids = [subproject.pk for subproject in subprojects]
+        if not ids:
+            return
+
+        # The history JSON fields aren't read here and are costly to decode.
+        history_fields = ('create_by_user', 'update_by_user', 'delete_by_user', 'users_involved')
+        label_fields = ('id', 'wording', 'percent', 'ranking', 'begin', 'created_date')
+
+        linked_by_subproject = {}
+        for linked in cls.objects.filter(link_to_subproject_id__in=ids).get_actifs().defer(*history_fields).prefetch_related('canton'):
+            linked_by_subproject.setdefault(linked.link_to_subproject_id, []).append(linked)
+
+        # The first step of get_subproject_steps() of each subproject.
+        current_steps = {
+            step.subproject_id: step
+            for step in SubprojectStep.objects.filter(subproject_id__in=ids).only('subproject_id', *label_fields)
+            .order_by('subproject_id', '-begin', '-created_date', '-ranking').distinct('subproject_id')
+        }
+        levels_by_step = {}
+        for level in Level.objects.filter(subproject_step_id__in=[step.pk for step in current_steps.values()]).only(
+            'subproject_step_id', *label_fields
+        ).order_by('subproject_step_id', '-begin', '-ranking', '-created_date', '-id'):
+            levels_by_step.setdefault(level.subproject_step_id, []).append(level)
+
+        for subproject in subprojects:
+            # A queryset already evaluated: .filter() on it still queries.
+            linked = subproject.linked_subprojects.get_queryset().get_actifs()
+            linked._result_cache = linked_by_subproject.get(subproject.pk, [])
+            linked._prefetch_done = True
+            subproject._prefetched_linked_subprojects = linked
+
+            step = current_steps.get(subproject.pk)
+            subproject._prefetched_current_step = subproject._current_step_data(
+                step, levels_by_step.get(step.pk, []) if step else []
+            )
     
     @property
     def has_subprojects_linked(self):
@@ -398,6 +459,8 @@ class Subproject(BaseModel):
     
     @property
     def get_current_subproject_step_and_level(self):
+        if '_prefetched_current_step' in self.__dict__:  # see prefetch_display_data()
+            return self._prefetched_current_step['label']
         step = self.get_current_subproject_step
         if step and (step.wording in STRUCTURE_IN_PROGRESS_STATUS or (step.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST)):
             level = step.get_levels().first()
@@ -405,6 +468,23 @@ class Subproject(BaseModel):
                 return level.__str__()
         if step:
             return step.__str__()
+        return self._physical_realization_status()
+
+    def _current_step_data(self, step, levels):
+        """get_current_subproject_step_and_level and its _without_percent and
+        _object variants, from the current step and its levels already loaded
+        (in the order of SubprojectStep.get_levels())."""
+        level = None
+        if step and (step.wording in STRUCTURE_IN_PROGRESS_STATUS or (step.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST)):
+            level = levels[0] if levels else None
+        if level:
+            return {'object': level, 'label': level.__str__(), 'wording': level.wording}
+        if step:
+            return {'object': step, 'label': step.label_from_levels(levels), 'wording': step.wording}
+        status = self._physical_realization_status()
+        return {'object': None, 'label': status, 'wording': status}
+
+    def _physical_realization_status(self):
         if self.current_level_of_physical_realization_of_the_work:
             if not self.current_level_of_physical_realization_of_the_work.replace('.','',1).replace(',','',1).isdigit():
                 return self.current_level_of_physical_realization_of_the_work
@@ -418,6 +498,8 @@ class Subproject(BaseModel):
     
     @property
     def get_current_subproject_step_and_level_without_percent(self):
+        if '_prefetched_current_step' in self.__dict__:  # see prefetch_display_data()
+            return self._prefetched_current_step['wording']
         step = self.get_current_subproject_step
         if step and (step.wording in STRUCTURE_IN_PROGRESS_STATUS or (step.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST)):
             level = step.get_levels().first()
@@ -458,6 +540,8 @@ class Subproject(BaseModel):
     
     @property
     def get_current_subproject_step_and_level_object(self):
+        if '_prefetched_current_step' in self.__dict__:  # see prefetch_display_data()
+            return self._prefetched_current_step['object']
         step = self.get_current_subproject_step
         if step and (step.wording in STRUCTURE_IN_PROGRESS_STATUS or (step.ranking in STRUCTURE_IN_PROGRESS_RANKING_LIST)):
             level = step.get_levels().first()
@@ -658,8 +742,12 @@ class SubprojectStep(_Step):
         
     
     def __str__(self):
+        return self.label_from_levels(self.get_levels())
+
+    def label_from_levels(self, levels):
+        """The step and its highest percent among `levels` (its levels)."""
         percent = self.percent
-        for level in  self.get_levels():
+        for level in levels:
             if (level.percent and not percent) or (level.percent and percent and level.percent > percent):
                 percent = level.percent
         return f'{self.wording}' + (' '+str(percent)+'%' if percent else '')

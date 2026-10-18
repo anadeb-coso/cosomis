@@ -14,9 +14,18 @@ register = template.Library()
 def img_aws_s3_filter(uri):
     return uri.split("?")[0]
 
-@register.filter(name='has_group') 
+@register.filter(name='has_group')
 def has_group(user, group_name):
-    return user.groups.filter(name=group_name).exists() 
+    # Group names are read once per user object (i.e. once per request) instead
+    # of one query per call: list templates test them on every row.
+    group_names = getattr(user, '_has_group_names_cache', None)
+    if group_names is None:
+        group_names = set(user.groups.values_list('name', flat=True))
+        try:
+            user._has_group_names_cache = group_names
+        except AttributeError:
+            pass
+    return group_name in group_names
 
 @register.filter(name='has_in_a_group') 
 def has_in_a_group(user):
@@ -177,7 +186,27 @@ def var(parser, token):
     else:
         raise template.TemplateSyntaxError("%r expected format is 'item as varname'" % bits[0])
 
-@register.filter(name='get_to_percent_str') 
+class DatatableCellNode(template.Node):
+    def __init__(self, nodelist):
+        self.nodelist = nodelist
+
+    def render(self, context):
+        content = self.nodelist.render(context).strip()
+        cells = context.get('datatable_cells')
+        if cells is None:
+            return content
+        cells.append(content)
+        return ""
+
+@register.tag
+def datatable_cell(parser, token):
+    """{% datatable_cell %}...{% enddatatable_cell %}: one cell of a row served
+    to a server-side DataTables (see cosomis.datatables.ServerSideDatatableMixin)."""
+    nodelist = parser.parse(('enddatatable_cell',))
+    parser.delete_first_token()
+    return DatatableCellNode(nodelist)
+
+@register.filter(name='get_to_percent_str')
 def get_to_percent_str(number):
     return str(number if number >= 10 else "0"+str(number)) + " %"
 

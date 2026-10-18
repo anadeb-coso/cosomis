@@ -556,9 +556,18 @@ def get_priorities_group_combine(old_liste, new_liste, group):
     return old_liste
 
 
-def get_administrative_level_ids_descendants(parent_id, parent_type=None, ids=[], project_id=None):
-    data = []
-    
+def _filter_projects(data, project_id):
+    """`data` restricted to the administrative levels of the project `project_id`
+    (or of any of the projects when it is a list)."""
+    if isinstance(project_id, (list, tuple, set)):
+        # distinct: a level of several of these projects is joined once per project
+        return data.filter(administrative_levels_projects__in=list(project_id)).distinct()
+    return data.filter(administrative_levels_projects__in=[project_id])
+
+
+def _get_top_level_ids(parent_id, parent_type=None, project_id=None):
+    """Ids of the first level under `parent_id` ("All": every level of
+    `parent_type`, 0: the regions)."""
     if parent_id == "All":
         data = AdministrativeLevel.objects.filter(type=parent_type)
     elif parent_id == 0:
@@ -566,44 +575,67 @@ def get_administrative_level_ids_descendants(parent_id, parent_type=None, ids=[]
     else:
         data = AdministrativeLevel.objects.filter(parent_id=int(parent_id))
     if project_id:
-        data = data.filter(administrative_levels_projects__in=[project_id])
+        data = _filter_projects(data, project_id)
+    return list(data.values_list('id', flat=True))
 
-    descendants_ids = [obj.id for obj in data if obj.id not in ids]
-    for descendant_id in descendants_ids:
-        get_administrative_level_ids_descendants(descendant_id, parent_type, ids, project_id)
-        ids.append(descendant_id)
 
+def get_administrative_level_children_map(parent_ids, project_id=None):
+    """{parent id: [child ids]} for the whole subtree under `parent_ids`, with
+    one query per depth level instead of one query per administrative level.
+    `project_id` can be a list of projects."""
+    children = {}
+    seen = set(parent_ids)
+    frontier = list(parent_ids)
+    while frontier:
+        data = AdministrativeLevel.objects.filter(parent_id__in=frontier)
+        if project_id:
+            data = _filter_projects(data, project_id)
+        frontier = []
+        for parent_id, child_id in data.values_list('parent_id', 'id'):
+            children.setdefault(parent_id, []).append(child_id)
+            if child_id not in seen:
+                seen.add(child_id)
+                frontier.append(child_id)
+    return children
+
+
+def get_administrative_level_ids_descendants(parent_id, parent_type=None, ids=[], project_id=None, children_map=None):
+    """Ids of every administrative level under `parent_id`, deepest first.
+    `children_map` (see get_administrative_level_children_map) avoids any query
+    when the subtree is already loaded."""
+    if children_map is None:
+        top_ids = _get_top_level_ids(parent_id, parent_type, project_id)
+        children_map = get_administrative_level_children_map(top_ids, project_id)
+    else:
+        top_ids = children_map.get(int(parent_id), [])
+
+    def visit(node_ids):
+        descendants_ids = [_id for _id in node_ids if _id not in ids]
+        for descendant_id in descendants_ids:
+            visit(children_map.get(descendant_id, []))
+            ids.append(descendant_id)
+
+    visit(top_ids)
     return ids
 
 def get_administrative_level_ids_descendants_with_dict(parent_id, parent_type=None, ids=[], _id_with_descendants={}, _id_with_first_descendants={}, project_id=None):
-    data = []
-    if project_id:
-        if parent_id == "All":
-            data = list(AdministrativeLevel.objects.filter(type=parent_type, administrative_levels_projects__in=[project_id]).values_list('id', flat=True))
-        elif parent_id == 0:
-            data = list(AdministrativeLevel.objects.filter(type="Region", administrative_levels_projects__in=[project_id]).values_list('id', flat=True))
-        else:
-            data = list(AdministrativeLevel.objects.filter(parent_id=int(parent_id), administrative_levels_projects__in=[project_id]).values_list('id', flat=True))
-    else:
-        if parent_id == "All":
-            data = list(AdministrativeLevel.objects.filter(type=parent_type).values_list('id', flat=True))
-        elif parent_id == 0:
-            data = list(AdministrativeLevel.objects.filter(type="Region").values_list('id', flat=True))
-        else:
-            data = list(AdministrativeLevel.objects.filter(parent_id=int(parent_id)).values_list('id', flat=True))
+    top_ids = _get_top_level_ids(parent_id, parent_type, project_id)
+    children_map = get_administrative_level_children_map(top_ids, project_id)
 
-    descendants_ids = [_id for _id in data if _id not in ids]
+    def visit(node_id, data):
+        descendants_ids = [_id for _id in data if _id not in ids]
 
-    for k, v in _id_with_descendants.items():
-        if parent_id in v:
-            _id_with_descendants[k] = list(set(_id_with_descendants[k] + descendants_ids))
-    _id_with_descendants[str(parent_id)] = descendants_ids
-    # _id_with_first_descendants[str(parent_id)] = descendants_ids
-    
-    for descendant_id in descendants_ids:
-        get_administrative_level_ids_descendants_with_dict(descendant_id, parent_type, ids, _id_with_descendants, _id_with_first_descendants, project_id)
-        ids.append(descendant_id)
+        for k, v in _id_with_descendants.items():
+            if node_id in v:
+                _id_with_descendants[k] = list(set(_id_with_descendants[k] + descendants_ids))
+        _id_with_descendants[str(node_id)] = descendants_ids
+        # _id_with_first_descendants[str(node_id)] = descendants_ids
 
+        for descendant_id in descendants_ids:
+            visit(descendant_id, children_map.get(descendant_id, []))
+            ids.append(descendant_id)
+
+    visit(parent_id, top_ids)
     return ids, _id_with_descendants, _id_with_first_descendants
 
 def get_administrative_level_ids_ascendants(child_id, ids=[]):

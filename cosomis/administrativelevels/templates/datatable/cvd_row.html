@@ -1,0 +1,20 @@
+{% load i18n custom_tags %}{% with cvd=object canton=object.get_canton %}
+{% datatable_cell %}{{ canton.parent.parent.parent.name }}{% enddatatable_cell %}
+{% datatable_cell %}{{ canton.parent.parent.name }}{% enddatatable_cell %}
+{% datatable_cell %}{{ canton.parent.name }}{% enddatatable_cell %}
+{% datatable_cell %}{{ canton.name }}{% enddatatable_cell %}
+{% datatable_cell %}<span class="dt-title">{{ cvd.get_name }}</span>{% enddatatable_cell %}
+{% datatable_cell %}<span class="dt-code">{{ cvd.unique_code }}</span>{% enddatatable_cell %}
+{% datatable_cell %}
+    <div class="dt-actions">
+        <a href="{% url 'administrativelevels:cvd_detail' cvd.pk %}" class="btn btn-primary btn-xs" title="{% translate 'View details' %}">
+            <i class="fa fa-eye"></i>
+        </a>
+        {% if can_edit %}
+        <a href="{% url 'administrativelevels:cvd_update' cvd.pk %}" class="btn btn-primary btn-xs" title="{% translate 'Edit' %}">
+            <i class="fa fa-edit"></i>
+        </a>
+        {% endif %}
+    </div>
+{% enddatatable_cell %}
+{% endwith %}

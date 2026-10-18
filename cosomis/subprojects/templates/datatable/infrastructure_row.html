@@ -1,0 +1,54 @@
+{% load i18n custom_tags %}{% with infrastructure=object delayed=object.is_delayed_update %}
+{% datatable_cell %}<span class="dt-number"{% if delayed %} data-row-class="dt-row-delayed"{% endif %}>N{{ infrastructure.number }}.{{ infrastructure.joint_subproject_number }}</span>{% enddatatable_cell %}
+{% datatable_cell %}{{ infrastructure.get_canton.parent.parent.parent.name }}{% enddatatable_cell %}
+{% datatable_cell %}
+    {% if '/' in infrastructure.get_cantons_names %}
+        {{ infrastructure.get_cantons_names }}
+    {% else %}
+        {{ infrastructure.get_village.name }}
+    {% endif %}
+{% enddatatable_cell %}
+{% datatable_cell %}
+    <div class="dt-title">
+        {% if delayed %}<i class="fa fa-flag" aria-hidden="true"></i> {% endif %}
+        {% if infrastructure.full_title_of_approved_subproject %}
+            {{ infrastructure.full_title_of_approved_subproject }}
+        {% elif infrastructure.link_to_subproject %}
+            {{ infrastructure.link_to_subproject.full_title_of_approved_subproject }}
+        {% else %}
+            {{ infrastructure.type_of_subproject }}
+        {% endif %}
+    </div>
+{% enddatatable_cell %}
+{% datatable_cell %}<span class="dt-pill">{{ infrastructure.type_of_subproject }}</span>{% enddatatable_cell %}
+{% datatable_cell %}
+    {% if infrastructure.get_current_subproject_step_and_level %}
+        {{ infrastructure.get_current_subproject_step_and_level }}
+    {% else %}
+        {% translate 'No start' %}
+    {% endif %}
+{% enddatatable_cell %}
+{% datatable_cell %}<span class="dt-cost">{{ infrastructure.estimated_cost|separate_with_space }}</span>{% enddatatable_cell %}
+{% datatable_cell %}<span class="dt-number">{{ infrastructure.photos_count }}</span>{% enddatatable_cell %}
+{% datatable_cell %}<span class="dt-number">{{ infrastructure.photos_completed_validated_count }}</span>{% enddatatable_cell %}
+{% datatable_cell %}<span class="dt-number{% if infrastructure.photos_completed_invalidated_count %} dt-number-alert{% endif %}">{{ infrastructure.photos_completed_invalidated_count }}</span>{% enddatatable_cell %}
+{% datatable_cell %}<span class="dt-number">{{ infrastructure.photos_validated_count }}</span>{% enddatatable_cell %}
+{% datatable_cell %}<span class="dt-number{% if infrastructure.photos_invalidated_count %} dt-number-alert{% endif %}">{{ infrastructure.photos_invalidated_count }}</span>{% enddatatable_cell %}
+{% datatable_cell %}<span class="dt-number{% if infrastructure.photos_unreview1_count %} dt-number-alert{% endif %}">{{ infrastructure.photos_unreview1_count }}</span>{% enddatatable_cell %}
+{% datatable_cell %}<span class="dt-number{% if infrastructure.photos_unreview_count %} dt-number-alert{% endif %}">{{ infrastructure.photos_unreview_count }}</span>{% enddatatable_cell %}
+{% datatable_cell %}
+    <div class="dt-actions">
+        <a href="{% url 'subprojects:detail' infrastructure.pk %}" class="btn btn-primary btn-xs" title="{% translate 'View details' %}">
+            <i class="fa fa-eye"></i>
+        </a>
+        {% if can_edit %}
+        <a href="{% url 'subprojects:update_without_link_heavy_object' infrastructure.pk %}" class="btn btn-primary btn-xs" title="{% translate 'Edit' %}">
+            <i class="fa fa-edit"></i>
+        </a>
+        {% endif %}
+        <a href="{% url 'subprojects:files:files' infrastructure.pk %}" class="btn btn-primary btn-xs" title="{% translate 'View details' %}">
+            <i class="fa fa-picture-o"></i>
+        </a>
+    </div>
+{% enddatatable_cell %}
+{% endwith %}

@@ -10,11 +10,14 @@ from storages.backends.s3boto3 import S3Boto3Storage
 from cosomis.mixins import AJAXRequestMixin, PageMixin
 from .forms import SubprojectForm, VulnerableGroupForm, SubprojectWithoutLinkHeavyObjectsForm
 from django.utils.translation import gettext_lazy as _
-from django.core.paginator import Paginator
 from django.db.models import Q, Count, Max
+from django.db.models.functions import Coalesce
 from django.core.exceptions import PermissionDenied
 from datetime import datetime
 
+from cosomis.datatables import (
+    DATATABLE_EXPORT_BUTTONS_OPTIONS, DatatableColumn, ServerSideDatatableMixin, get_filter_badges
+)
 from subprojects.models import Subproject, VulnerableGroup, SubprojectFile, Project, Component
 from django import forms
 from subprojects import functions as subprojects_functions
@@ -30,7 +33,7 @@ from cosomis.constants import (
     IN_PROGRESS_RANKING, NOT_APPROVED_BY_CORA_RANKING, COMPLETED_RANKING
 )
 from administrativelevels.functions_adl import get_cascade_villages_ids_by_administrative_level_id
-from dashboard.forms import AdministrativeLevelFilterForm
+from dashboard.forms import AdministrativeLevelFilterForm, ADMIN_LEVEL_FILTER_LABELS, get_admin_level_filter_fields
 from subprojects.forms import SubprojectFilterForm, SearchForm
 from assignments.models import AssignAdministrativeLevelToFacilitator
 from administrativelevels.models import AdministrativeLevel
@@ -75,9 +78,70 @@ class SubprojectMixin:
         return context
     
 
-class SubprojectsListView(PageMixin, LoginRequiredMixin, generic.ListView):
+def get_subprojects_search_q(search):
+    """Text search of the subprojects/infrastructures lists ("Search in database")."""
+    search = search.upper()
+    return (
+        Q(number__icontains=search) |
+        Q(linked_subprojects__number__icontains=search) |
+        Q(joint_subproject_number__icontains=search) |
+        Q(full_title_of_approved_subproject__icontains=search) |
+
+        # Location
+        Q(location_subproject_realized__name__icontains=search) |
+        Q(linked_subprojects__location_subproject_realized__name__icontains=search) |
+        Q(location_subproject_realized__parent__name__icontains=search) |
+        Q(linked_subprojects__location_subproject_realized__parent__name__icontains=search) |
+        Q(location_subproject_realized__parent__parent__name__icontains=search) |
+        Q(linked_subprojects__location_subproject_realized__parent__parent__name__icontains=search) |
+        Q(location_subproject_realized__parent__parent__parent__name__icontains=search) |
+        Q(linked_subprojects__location_subproject_realized__parent__parent__parent__name__icontains=search) |
+        Q(location_subproject_realized__parent__parent__parent__parent__name__icontains=search) |
+        Q(linked_subprojects__location_subproject_realized__parent__parent__parent__parent__name__icontains=search) |
+        Q(cvd__name__icontains=search) |
+        #canton
+        Q(canton__name__icontains=search) |
+        Q(linked_subprojects__canton__name__icontains=search) |
+        Q(canton__parent__name__icontains=search) |
+        Q(linked_subprojects__canton__parent__name__icontains=search) |
+        Q(canton__parent__parent__name__icontains=search) |
+        Q(linked_subprojects__canton__parent__parent__name__icontains=search) |
+        Q(canton__parent__parent__parent__name__icontains=search) |
+        Q(linked_subprojects__canton__parent__parent__parent__name__icontains=search) |
+
+        Q(subproject_sector__icontains=search) |
+        Q(type_of_subproject__icontains=search) |
+        Q(linked_subprojects__type_of_subproject__icontains=search) |
+        Q(works_type__icontains=search) |
+        Q(linked_subprojects__works_type__icontains=search) |
+        Q(facilitator_name__icontains=search)
+    )
+
+
+def get_subproject_region_ordering():
+    """Region of the subproject's site (village, or canton for cantonal ones)."""
+    return Coalesce(
+        'location_subproject_realized__parent__parent__parent__parent__name',
+        'canton__parent__parent__parent__name',
+    )
+
+
+SUBPROJECT_LOCATION_RELATED = (
+    'location_subproject_realized__parent__parent__parent__parent',
+    'canton__parent__parent__parent',
+)
+
+
+class SubprojectDatatableRowsMixin:
+    def get_datatable_shared_context(self):
+        ctx = super().get_datatable_shared_context()
+        user = self.request.user
+        ctx['can_edit'] = user.is_superuser or user.groups.filter(name__in=("Admin", "Evaluator", "Infra")).exists()
+        return ctx
+
+
+class SubprojectsListView(PageMixin, LoginRequiredMixin, SubprojectDatatableRowsMixin, ServerSideDatatableMixin, generic.ListView):
     model = Subproject
-    queryset = [] #Subproject.objects.all().get_actifs()
     template_name = 'subprojects_list.html'
     context_object_name = 'subprojects'
     title = _('Subprojects')
@@ -88,72 +152,34 @@ class SubprojectsListView(PageMixin, LoginRequiredMixin, generic.ListView):
             'title': title
         },
     ]
+    datatable_row_template = 'datatable/subproject_row.html'
+    datatable_default_order = ([0, 'asc'],)
 
-    # def get_queryset(self):
-    #     # return super().get_queryset()
-    #     return Subproject.objects.filter(link_to_subproject=None).get_actifs()
-    def get_queryset(self):
-        project_mis = Project.objects.get(id=self.request.session.get('project_id'))
+    def get_datatable_columns(self):
+        return [
+            DatatableColumn(_('N°'), ('number', 'joint_subproject_number')),
+            DatatableColumn(_('Sites')),
+            DatatableColumn(_('Region'), get_subproject_region_ordering()),
+            DatatableColumn(_('Project Name'), 'full_title_of_approved_subproject'),
+            DatatableColumn(_('Type'), 'type_of_subproject'),
+            DatatableColumn(_('Status')),
+            DatatableColumn(_('Estimated cost'), 'estimated_cost'),
+            DatatableColumn(_('Action'), switchable=False),
+        ]
 
+    def get_datatable_queryset(self):
+        subprojects = Subproject.objects.get_objects_by_general_filtre(self.request, None).filter(link_to_subproject=None)
         search = self.request.GET.get("search", None)
-        page_number = self.request.GET.get("page", None)
-        if search:
-            if search == "All":
-                gs = Subproject.objects.get_objects_by_general_filtre(self.request, None).filter(link_to_subproject=None).get_actifs()
-                return Paginator(gs, gs.count()).get_page(page_number)
-            search = search.upper()
-            return Paginator(
-                Subproject.objects.get_objects_by_general_filtre(self.request, None).filter(link_to_subproject=None).filter(
-                    # Q(Q(link_to_subproject=None) & Q(Q(number__icontains=search) | Q(linked_subprojects__number__icontains=search))) | 
-                    # Q(link_to_subproject=None, joint_subproject_number__icontains=search) | 
-                    # Q(link_to_subproject=None, full_title_of_approved_subproject__icontains=search) | 
-                    # Q(Q(link_to_subproject=None) & Q(Q(location_subproject_realized__name__icontains=search) | Q(linked_subprojects__location_subproject_realized__name__icontains=search))) | 
-                    # Q(link_to_subproject=None, subproject_sector__icontains=search) | 
-                    # Q(Q(link_to_subproject=None) & Q(Q(type_of_subproject__icontains=search) | Q(linked_subprojects__type_of_subproject__icontains=search))) | 
-                    # Q(Q(link_to_subproject=None) & Q(Q(works_type__icontains=search) | Q(linked_subprojects__works_type__icontains=search))) | 
-                    # Q(link_to_subproject=None, cvd__name__icontains=search) | 
-                    # Q(link_to_subproject=None, facilitator_name__icontains=search)
-                    Q(number__icontains=search) | 
-                    Q(linked_subprojects__number__icontains=search) | 
-                    Q(joint_subproject_number__icontains=search) | 
-                    Q(full_title_of_approved_subproject__icontains=search) | 
+        if search and search != "All":
+            subprojects = subprojects.filter(get_subprojects_search_q(search)).distinct()
+        return subprojects.get_actifs().select_related(*SUBPROJECT_LOCATION_RELATED)
 
-                    # Location
-                    Q(location_subproject_realized__name__icontains=search) | 
-                    Q(linked_subprojects__location_subproject_realized__name__icontains=search) |
-                    Q(location_subproject_realized__parent__name__icontains=search) | 
-                    Q(linked_subprojects__location_subproject_realized__parent__name__icontains=search) |
-                    Q(location_subproject_realized__parent__parent__name__icontains=search) | 
-                    Q(linked_subprojects__location_subproject_realized__parent__parent__name__icontains=search) |
-                    Q(location_subproject_realized__parent__parent__parent__name__icontains=search) | 
-                    Q(linked_subprojects__location_subproject_realized__parent__parent__parent__name__icontains=search) |
-                    Q(location_subproject_realized__parent__parent__parent__parent__name__icontains=search) | 
-                    Q(linked_subprojects__location_subproject_realized__parent__parent__parent__parent__name__icontains=search) | 
-                    Q(cvd__name__icontains=search) | 
-                    #canton
-                    Q(canton__name__icontains=search) | 
-                    Q(linked_subprojects__canton__name__icontains=search) |
-                    Q(canton__parent__name__icontains=search) | 
-                    Q(linked_subprojects__canton__parent__name__icontains=search) |
-                    Q(canton__parent__parent__name__icontains=search) | 
-                    Q(linked_subprojects__canton__parent__parent__name__icontains=search) |
-                    Q(canton__parent__parent__parent__name__icontains=search) | 
-                    Q(linked_subprojects__canton__parent__parent__parent__name__icontains=search) |
-
-                    Q(subproject_sector__icontains=search) | 
-                    Q(type_of_subproject__icontains=search) | 
-                    Q(linked_subprojects__type_of_subproject__icontains=search) | 
-                    Q(works_type__icontains=search) | 
-                    Q(linked_subprojects__works_type__icontains=search) | 
-                    Q(facilitator_name__icontains=search)
-                ).get_actifs(), 100).get_page(page_number)
-        else:
-            return Paginator(Subproject.objects.get_objects_by_general_filtre(self.request, None).filter(link_to_subproject=None).get_actifs(), 100).get_page(page_number)
-        
     def get_context_data(self, **kwargs):
         ctx = super(SubprojectsListView, self).get_context_data(**kwargs)
         ctx['hide_content_header'] = True
         ctx['search'] = self.request.GET.get("search", None)
+        ctx['filter_badges'] = [{'label': _('Search'), 'value': ctx['search']}] if ctx['search'] and ctx['search'] != "All" else []
+        ctx['reset_url'] = reverse_lazy('subprojects:list')
         all = Subproject.objects.get_objects_by_general_filtre(self.request, None).get_actifs()
         # ctx['total'] = all.count()
         # ctx['total_without_link'] = all.filter(link_to_subproject=None, subproject_type_designation="Subproject").count()
@@ -165,9 +191,8 @@ class SubprojectsListView(PageMixin, LoginRequiredMixin, generic.ListView):
         return ctx
 
 
-class InfrastructuresListView(PageMixin, LoginRequiredMixin, generic.ListView):
+class InfrastructuresListView(PageMixin, LoginRequiredMixin, SubprojectDatatableRowsMixin, ServerSideDatatableMixin, generic.ListView):
     model = Subproject
-    queryset = []
     template_name = 'infrastructures_list.html'
     context_object_name = 'infrastructures'
     title = _('Infrastructures')
@@ -178,6 +203,27 @@ class InfrastructuresListView(PageMixin, LoginRequiredMixin, generic.ListView):
             'title': title
         },
     ]
+    datatable_row_template = 'datatable/infrastructure_row.html'
+    datatable_options = DATATABLE_EXPORT_BUTTONS_OPTIONS
+
+    def get_datatable_columns(self):
+        return [
+            DatatableColumn(_('N°'), ('number', 'joint_subproject_number')),
+            DatatableColumn(_('Region'), get_subproject_region_ordering()),
+            DatatableColumn(_('Sites')),
+            DatatableColumn(_('Project Name'), 'full_title_of_approved_subproject'),
+            DatatableColumn(_('Type'), 'type_of_subproject'),
+            DatatableColumn(_('Status')),
+            DatatableColumn(_('Estimated cost'), 'estimated_cost'),
+            DatatableColumn('CT', 'photos_count'),
+            DatatableColumn('CV', 'photos_completed_validated_count'),
+            DatatableColumn('CIV', 'photos_completed_invalidated_count'),
+            DatatableColumn('TV', 'photos_validated_count'),
+            DatatableColumn('TIN', 'photos_invalidated_count'),
+            DatatableColumn('UR1', 'photos_unreview1_count'),
+            DatatableColumn('UR', 'photos_unreview_count'),
+            DatatableColumn(_('Action'), switchable=False),
+        ]
 
     def filter_list_by_delete_empty(self, _list):
         if _list:
@@ -278,11 +324,10 @@ class InfrastructuresListView(PageMixin, LoginRequiredMixin, generic.ListView):
 
         return kwargs
 
-    def get_queryset(self):
+    def get_datatable_queryset(self):
 
         # --- Récupération des paramètres ---
         search = self.request.GET.get("search", None)
-        page_number = self.request.GET.get("page", None)
         id_regions = self.filter_list_by_delete_empty(self.request.GET.getlist('region', []))
         id_prefectures = self.filter_list_by_delete_empty(self.request.GET.getlist('prefecture', []))
         id_communes = self.filter_list_by_delete_empty(self.request.GET.getlist('commune', []))
@@ -304,8 +349,7 @@ class InfrastructuresListView(PageMixin, LoginRequiredMixin, generic.ListView):
                 all_projects if type(all_projects) is list and len(all_projects) >= 2 else [self.request.session.get('project_id')]
             )
         )
-        count = 100
-        
+
         start_date = None
         end_date = None
         liste_villages = []
@@ -322,44 +366,8 @@ class InfrastructuresListView(PageMixin, LoginRequiredMixin, generic.ListView):
             file_query_for_subproject |= Q(subprojectfile__description__icontains=elt)
         
         if search and search != "All":
-            search = search.upper()
-            infrastructures = infrastructures.filter(
-                Q(number__icontains=search) | 
-                Q(linked_subprojects__number__icontains=search) | 
-                Q(joint_subproject_number__icontains=search) | 
-                Q(full_title_of_approved_subproject__icontains=search) | 
+            infrastructures = infrastructures.filter(get_subprojects_search_q(search))
 
-                # Location
-                Q(location_subproject_realized__name__icontains=search) | 
-                Q(linked_subprojects__location_subproject_realized__name__icontains=search) |
-                Q(location_subproject_realized__parent__name__icontains=search) | 
-                Q(linked_subprojects__location_subproject_realized__parent__name__icontains=search) |
-                Q(location_subproject_realized__parent__parent__name__icontains=search) | 
-                Q(linked_subprojects__location_subproject_realized__parent__parent__name__icontains=search) |
-                Q(location_subproject_realized__parent__parent__parent__name__icontains=search) | 
-                Q(linked_subprojects__location_subproject_realized__parent__parent__parent__name__icontains=search) |
-                Q(location_subproject_realized__parent__parent__parent__parent__name__icontains=search) | 
-                Q(linked_subprojects__location_subproject_realized__parent__parent__parent__parent__name__icontains=search) | 
-                Q(cvd__name__icontains=search) | 
-                #canton
-                Q(canton__name__icontains=search) | 
-                Q(linked_subprojects__canton__name__icontains=search) |
-                Q(canton__parent__name__icontains=search) | 
-                Q(linked_subprojects__canton__parent__name__icontains=search) |
-                Q(canton__parent__parent__name__icontains=search) | 
-                Q(linked_subprojects__canton__parent__parent__name__icontains=search) |
-                Q(canton__parent__parent__parent__name__icontains=search) | 
-                Q(linked_subprojects__canton__parent__parent__parent__name__icontains=search) |
-
-                Q(subproject_sector__icontains=search) | 
-                Q(type_of_subproject__icontains=search) | 
-                Q(linked_subprojects__type_of_subproject__icontains=search) | 
-                Q(works_type__icontains=search) | 
-                Q(linked_subprojects__works_type__icontains=search) | 
-                Q(facilitator_name__icontains=search)
-            )
-        # else:
-        
         if start_date_raw:
             start_date = self.parse_fr_date(start_date_raw)
         if end_date_raw:
@@ -528,26 +536,16 @@ class InfrastructuresListView(PageMixin, LoginRequiredMixin, generic.ListView):
         ).order_by('-last_file_updated', 'photos_completed_validated_count', '-photos_completed_invalidated_count', '-photos_invalidated_count', '-photos_unreview_count')
         # ---------End FILES count---------------
 
-        if (
-            id_regions or id_prefectures or id_communes or id_cantons or id_villages or 
-            subproject_sectors or subproject_types or works_type_of_subprojects or subproject_steps or 
-            components or start_date_raw or end_date_raw or search or include_all_projects_checked
-        ):
-            count = infrastructures.count()
-            if count == 0:
-                count = 1
-        
-        return Paginator(infrastructures, count).get_page(page_number)
+        return infrastructures.select_related('link_to_subproject', *SUBPROJECT_LOCATION_RELATED)
 
-
-        
     def get_context_data(self, **kwargs):
         ctx = super(InfrastructuresListView, self).get_context_data(**kwargs)
         ctx.update(self.get_filters_context())
 
         ctx['hide_content_header'] = True
-        
+
         ctx['search'] = self.request.GET.get("search", None)
+        ctx['reset_url'] = reverse_lazy('subprojects:infrastructures_list')
 
         ctx['form_adl'] = AdministrativeLevelFilterForm(
             has_all=False, 
@@ -576,10 +574,29 @@ class InfrastructuresListView(PageMixin, LoginRequiredMixin, generic.ListView):
         )
         
         ctx['form_searcht'] = SearchForm(
-            default_start_date=ctx.get('start_date_raw_selected', []), 
+            default_start_date=ctx.get('start_date_raw_selected', []),
             default_end_date=ctx.get('end_date_raw_selected', [])
         )
 
+        ctx['adm_filter_fields'] = get_admin_level_filter_fields(ctx['form_adl'])
+        ctx['filter_badges'] = (
+            get_filter_badges(ctx['form_suproject'], {
+                'components': _('Component'),
+                'subproject_step': _('Status'),
+                'subproject_sectors': _('Subproject sector'),
+                'subproject_types': _('Type of structure'),
+                'works_type_of_subproject': _('Works type'),
+            })
+            + get_filter_badges(ctx['form_searcht'], {'start_date': _('Start Date'), 'end_date': _('End Date')})
+            + get_filter_badges(ctx['form_adl'], ADMIN_LEVEL_FILTER_LABELS)
+        )
+        if ctx['search'] and ctx['search'] != "All":
+            ctx['filter_badges'].append({'label': _('Search'), 'value': ctx['search']})
+        if ctx['include_all_projects_checked'] in (1, '1'):
+            ctx['filter_badges'].append({
+                'label': _('Show for all projects'),
+                'value': ', '.join(str(name) for name in self.request.session.get('tree_structure_projects_names') or []),
+            })
 
         return ctx
     

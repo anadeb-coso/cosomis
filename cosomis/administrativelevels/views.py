@@ -9,7 +9,6 @@ from django.http import Http404
 import pandas as pd
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils.translation import gettext_lazy as _
-from django.core.paginator import Paginator
 from django.db.models import Q, Count, Sum
 
 from administrativelevels.models import AdministrativeLevel, GeographicalUnit, CVD
@@ -29,7 +28,10 @@ from administrativelevels.functions_cvd import save_cvd_instead_of_csv_file_data
 from administrativelevels.functions_adl import get_cascade_villages_ids_by_administrative_level_id
 from financial import function_allocation
 from financial.models.allocation import AdministrativeLevelAllocation
-from dashboard.forms import AdministrativeLevelFilterForm
+from dashboard.forms import AdministrativeLevelFilterForm, ADMIN_LEVEL_FILTER_LABELS, get_admin_level_filter_fields
+from cosomis.datatables import (
+    DATATABLE_EXPORT_BUTTONS_OPTIONS, DatatableColumn, ServerSideDatatableMixin, get_filter_badges
+)
 
 
 class VillageDetailView(PageMixin, LoginRequiredMixin, DetailView):
@@ -317,11 +319,74 @@ class DownloadCSVView(PageMixin, LoginRequiredMixin, TemplateView):
     
 
 
-class AdministrativeLevelsListView(PageMixin, LoginRequiredMixin, ListView):
+def get_list_filters_context(request, form_adl, levels=None):
+    """Context of the filter cards of a list page: the administrative level
+    fields to display and the badges of the active filters."""
+    levels = levels or list(ADMIN_LEVEL_FILTER_LABELS)
+    badges = get_filter_badges(form_adl, {name: ADMIN_LEVEL_FILTER_LABELS[name] for name in levels})
+    search = request.GET.get("search")
+    if search and search != "All":
+        badges.append({'label': _('Search'), 'value': search})
+    if request.GET.get('include_all_projects') in (1, '1'):
+        badges.append({
+            'label': _('Show for all projects'),
+            'value': ', '.join(str(name) for name in request.session.get('tree_structure_projects_names') or []),
+        })
+    return {
+        'adm_filter_fields': get_admin_level_filter_fields(form_adl, levels),
+        'filter_badges': badges,
+    }
+
+
+ADMINISTRATIVE_LEVEL_TYPES = (
+    AdministrativeLevel.REGION, AdministrativeLevel.PREFECTURE, AdministrativeLevel.COMMUNE,
+    AdministrativeLevel.CANTON, AdministrativeLevel.VILLAGE,
+)
+
+
+class AdministrativeLevelHierarchyDatatableMixin:
+    """Server-side table of the administrative levels of the `type` given in the
+    query string, one column per level from the region down to that type."""
+
+    def get_type(self):
+        _type = self.request.GET.get("type", AdministrativeLevel.VILLAGE)
+        return _type if _type in ADMINISTRATIVE_LEVEL_TYPES else AdministrativeLevel.VILLAGE
+
+    def get_depth(self):
+        return ADMINISTRATIVE_LEVEL_TYPES.index(self.get_type())
+
+    def get_hierarchy_columns(self):
+        depth = self.get_depth()
+        return [
+            DatatableColumn(ADMIN_LEVEL_FILTER_LABELS[level_type.lower()], 'parent__' * (depth - i) + 'name')
+            for i, level_type in enumerate(ADMINISTRATIVE_LEVEL_TYPES[:depth + 1])
+        ]
+
+    def get_admin_level_filter_levels(self):
+        return [level_type.lower() for level_type in ADMINISTRATIVE_LEVEL_TYPES[:self.get_depth() + 1]]
+
+    def get_datatable_row_context(self, obj):
+        ctx = super().get_datatable_row_context(obj)
+        hierarchy = [obj]
+        for i in range(self.get_depth()):
+            hierarchy.insert(0, hierarchy[0].parent if hierarchy[0] else None)
+        ctx['hierarchy'] = hierarchy
+        return ctx
+
+    def get_hierarchy_related(self):
+        return '__'.join(['parent'] * self.get_depth()) or None
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['type_label'] = ADMIN_LEVEL_FILTER_LABELS[self.get_type().lower()]
+        return ctx
+
+
+class AdministrativeLevelsListView(PageMixin, LoginRequiredMixin, AdministrativeLevelHierarchyDatatableMixin,
+                                   ServerSideDatatableMixin, ListView):
     """Display administrative level list"""
 
     model = AdministrativeLevel
-    queryset = [] # AdministrativeLevel.objects.filter(type="Village")
     template_name = 'administrativelevels_list.html'
     context_object_name = 'administrativelevels'
     title = _('Administrative levels')
@@ -332,6 +397,21 @@ class AdministrativeLevelsListView(PageMixin, LoginRequiredMixin, ListView):
             'title': title
         },
     ]
+    datatable_row_template = 'datatable/administrativelevel_row.html'
+    datatable_options = DATATABLE_EXPORT_BUTTONS_OPTIONS
+
+    def get_datatable_columns(self):
+        return self.get_hierarchy_columns() + [DatatableColumn(_('Action'), switchable=False)]
+
+    def get_datatable_default_order(self):
+        return [[i, 'asc'] for i in range(self.get_depth() + 1)]
+
+    def get_datatable_shared_context(self):
+        ctx = super().get_datatable_shared_context()
+        user = self.request.user
+        ctx['type'] = self.get_type()
+        ctx['can_edit'] = user.is_superuser or user.groups.filter(name="Admin").exists()
+        return ctx
 
     def filter_list_by_delete_empty(self, _list):
         if _list:
@@ -410,11 +490,9 @@ class AdministrativeLevelsListView(PageMixin, LoginRequiredMixin, ListView):
 
         return kwargs
 
-    def get_queryset(self):
-        count = 100
+    def get_datatable_queryset(self):
         search = self.request.GET.get("search", None)
-        page_number = self.request.GET.get("page", None)
-        _type = self.request.GET.get("type", "Village")
+        _type = self.get_type()
         id_regions = self.filter_list_by_delete_empty(self.request.GET.getlist('region', []))
         id_prefectures = self.filter_list_by_delete_empty(self.request.GET.getlist('prefecture', []))
         id_communes = self.filter_list_by_delete_empty(self.request.GET.getlist('commune', []))
@@ -458,20 +536,12 @@ class AdministrativeLevelsListView(PageMixin, LoginRequiredMixin, ListView):
         if search and search != "All":
             search = search.upper()
             administrative_levels = administrative_levels.filter(name__icontains=search).distinct()
-        
+
         administrative_levels = administrative_levels.distinct()
+        if self.get_hierarchy_related():
+            administrative_levels = administrative_levels.select_related(self.get_hierarchy_related())
+        return administrative_levels
 
-        if (
-            id_regions or id_prefectures or id_communes or id_cantons or id_villages or search or include_all_projects_checked
-        ):
-            count = administrative_levels.count()
-            if count == 0:
-                count = 1
-        
-        return Paginator(administrative_levels, count).get_page(page_number)
-    
-
-        # return super().get_queryset()
     def get_context_data(self, **kwargs):
         ctx = super(AdministrativeLevelsListView, self).get_context_data(**kwargs)
         ctx.update(self.get_filters_context())
@@ -479,7 +549,7 @@ class AdministrativeLevelsListView(PageMixin, LoginRequiredMixin, ListView):
         # ctx['hide_content_header'] = True
 
         ctx['search'] = self.request.GET.get("search", None)
-        ctx['type'] = self.request.GET.get("type", "Village")
+        ctx['type'] = self.get_type()
 
         ctx['form_adl'] = AdministrativeLevelFilterForm(
             has_all=False, 
@@ -496,11 +566,14 @@ class AdministrativeLevelsListView(PageMixin, LoginRequiredMixin, ListView):
             default_cantons=ctx.get('id_cantons_selected', []),
             default_villages=ctx.get('id_villages_selected', []),
         )
+        ctx.update(get_list_filters_context(self.request, ctx['form_adl'], self.get_admin_level_filter_levels()))
+        ctx['reset_url'] = '%s?type=%s' % (reverse_lazy('administrativelevels:list'), ctx['type'])
 
         return ctx
 
 
-class AdministrativeLevelAreaStatusView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, ListView):
+class AdministrativeLevelAreaStatusView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin,
+                                        AdministrativeLevelHierarchyDatatableMixin, ServerSideDatatableMixin, ListView):
     """Bulk assignment page: select several Regions/Prefectures/Communes/Cantons/Villages
     and assign them all the same area_status (risk level). The status is then
     cascaded down to descendants and used to recompute ancestors' status."""
@@ -516,6 +589,17 @@ class AdministrativeLevelAreaStatusView(PageMixin, LoginRequiredMixin, AdminPerm
             'title': title
         },
     ]
+    datatable_row_template = 'datatable/area_status_row.html'
+
+    def get_datatable_columns(self):
+        return (
+            [DatatableColumn('', switchable=False, css_class='all')]
+            + self.get_hierarchy_columns()
+            + [DatatableColumn(_('Current area status'), 'area_status')]
+        )
+
+    def get_datatable_default_order(self):
+        return [[i + 1, 'asc'] for i in range(self.get_depth() + 1)]
 
     def filter_list_by_delete_empty(self, _list):
         return [elt for elt in _list if elt] if _list else []
@@ -568,8 +652,8 @@ class AdministrativeLevelAreaStatusView(PageMixin, LoginRequiredMixin, AdminPerm
 
         return kwargs
 
-    def get_queryset(self):
-        _type = self.request.GET.get("type", AdministrativeLevel.VILLAGE)
+    def get_datatable_queryset(self):
+        _type = self.get_type()
         search = self.request.GET.get("search", None)
         id_regions = self.filter_list_by_delete_empty(self.request.GET.getlist('region', []))
         id_prefectures = self.filter_list_by_delete_empty(self.request.GET.getlist('prefecture', []))
@@ -604,14 +688,25 @@ class AdministrativeLevelAreaStatusView(PageMixin, LoginRequiredMixin, AdminPerm
         if search:
             administrative_levels = administrative_levels.filter(name__icontains=search.upper())
 
-        return administrative_levels.distinct().order_by('name')
+        administrative_levels = administrative_levels.distinct().order_by('name')
+        if self.get_hierarchy_related():
+            administrative_levels = administrative_levels.select_related(self.get_hierarchy_related())
+        return administrative_levels
+
+    def get_selected_ids(self):
+        """Ids of the rows ticked in the table: with `all_queryset`, every result
+        of the filters except the unticked ones listed in `selected_ids`."""
+        toggled_ids = [pk for pk in self.request.POST.get('selected_ids', '').split('-') if pk.isdigit()]
+        if self.request.POST.get('all_queryset') == 'true':
+            return list(self.get_datatable_queryset().exclude(id__in=toggled_ids).values_list('id', flat=True))
+        return toggled_ids + [pk for pk in self.request.POST.getlist('administrative_levels') if pk.isdigit()]
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx.update(self.get_filters_context())
 
         ctx['search'] = self.request.GET.get("search", None)
-        ctx['type'] = self.request.GET.get("type", AdministrativeLevel.VILLAGE)
+        ctx['type'] = self.get_type()
         ctx['area_status_choices'] = AdministrativeLevel.AreaStatus.choices
 
         ctx['form_adl'] = AdministrativeLevelFilterForm(
@@ -629,11 +724,13 @@ class AdministrativeLevelAreaStatusView(PageMixin, LoginRequiredMixin, AdminPerm
             default_cantons=ctx.get('id_cantons_selected', []),
             default_villages=ctx.get('id_villages_selected', []),
         )
+        ctx.update(get_list_filters_context(self.request, ctx['form_adl'], self.get_admin_level_filter_levels()))
+        ctx['reset_url'] = '%s?type=%s' % (reverse_lazy('administrativelevels:area_status'), ctx['type'])
 
         return ctx
 
     def post(self, request, *args, **kwargs):
-        selected_ids = request.POST.getlist('administrative_levels')
+        selected_ids = self.get_selected_ids()
         new_status = request.POST.get('area_status')
 
         if selected_ids and new_status in AdministrativeLevel.AreaStatus.values:
@@ -932,11 +1029,10 @@ def priority_delete(request, priority_id):
 
 
 #====================== Geographical unit=========================================
-class GeographicalUnitListView(PageMixin, LoginRequiredMixin, ListView):
+class GeographicalUnitListView(PageMixin, LoginRequiredMixin, ServerSideDatatableMixin, ListView):
     """Display geographical unit list"""
 
     model = GeographicalUnit
-    queryset = [] #GeographicalUnit.objects.all()
     template_name = 'geographical_unit_list.html'
     context_object_name = 'geographicalunits'
     title = _('Geographical units')
@@ -947,6 +1043,26 @@ class GeographicalUnitListView(PageMixin, LoginRequiredMixin, ListView):
             'title': title
         },
     ]
+    datatable_row_template = 'datatable/geographical_unit_row.html'
+    datatable_options = DATATABLE_EXPORT_BUTTONS_OPTIONS
+    datatable_default_order = ([0, 'asc'], [1, 'asc'], [2, 'asc'], [3, 'asc'], [5, 'asc'])
+
+    def get_datatable_columns(self):
+        return [
+            DatatableColumn(_('Region'), 'canton__parent__parent__parent__name'),
+            DatatableColumn(_('Prefecture'), 'canton__parent__parent__name'),
+            DatatableColumn(_('Commune'), 'canton__parent__name'),
+            DatatableColumn(_('Canton'), 'canton__name'),
+            DatatableColumn(_('Name')),
+            DatatableColumn(_('Code'), 'unique_code'),
+            DatatableColumn(_('Actions'), switchable=False),
+        ]
+
+    def get_datatable_shared_context(self):
+        ctx = super().get_datatable_shared_context()
+        user = self.request.user
+        ctx['can_edit'] = user.is_superuser or user.groups.filter(name="Admin").exists()
+        return ctx
 
     def filter_list_by_delete_empty(self, _list):
         if _list:
@@ -1025,12 +1141,8 @@ class GeographicalUnitListView(PageMixin, LoginRequiredMixin, ListView):
 
         return kwargs
 
-    # def get_queryset(self):
-    #     return super().get_queryset()
-    def get_queryset(self):
-        count = 100
+    def get_datatable_queryset(self):
         search = self.request.GET.get("search", None)
-        page_number = self.request.GET.get("page", None)        
         id_regions = self.filter_list_by_delete_empty(self.request.GET.getlist('region', []))
         id_prefectures = self.filter_list_by_delete_empty(self.request.GET.getlist('prefecture', []))
         id_communes = self.filter_list_by_delete_empty(self.request.GET.getlist('commune', []))
@@ -1039,7 +1151,7 @@ class GeographicalUnitListView(PageMixin, LoginRequiredMixin, ListView):
         include_all_projects_checked = self.request.GET.get('include_all_projects', 0) in (1, '1')
 
         all_projects = self.request.session.get('tree_structure_projects_ids') if include_all_projects_checked else [self.request.session.get('project_id')]
-        
+
         geographical_units = GeographicalUnit.objects.filter(
             canton__administrative_levels_projects__in=all_projects
         )
@@ -1076,17 +1188,10 @@ class GeographicalUnitListView(PageMixin, LoginRequiredMixin, ListView):
                 Q(administrativelevel__name__icontains=search) | Q(administrativelevel__parent__name__icontains=search)
             )
                     
-        geographical_units = geographical_units.distinct()
+        return geographical_units.distinct().select_related(
+            'canton__parent__parent__parent'
+        ).prefetch_related('administrativelevel_set')
 
-        if (
-            id_regions or id_prefectures or id_communes or id_cantons or id_villages or search or include_all_projects_checked
-        ):
-            count = geographical_units.count()
-            if count == 0:
-                count = 1
-        
-        return Paginator(geographical_units, count).get_page(page_number)
-    
     def get_context_data(self, **kwargs):
         ctx = super(GeographicalUnitListView, self).get_context_data(**kwargs)
         ctx.update(self.get_filters_context())
@@ -1111,6 +1216,8 @@ class GeographicalUnitListView(PageMixin, LoginRequiredMixin, ListView):
             default_cantons=ctx.get('id_cantons_selected', []),
             default_villages=ctx.get('id_villages_selected', []),
         )
+        ctx.update(get_list_filters_context(self.request, ctx['form_adl']))
+        ctx['reset_url'] = reverse_lazy('administrativelevels:geographical_units_list')
 
         return ctx
 
@@ -1260,11 +1367,10 @@ class GeographicalUnitDetailView(PageMixin, LoginRequiredMixin, DetailView):
 
 #======================================CVD==============================================
 
-class CVDListView(PageMixin, LoginRequiredMixin, ListView):
+class CVDListView(PageMixin, LoginRequiredMixin, ServerSideDatatableMixin, ListView):
     """Display geographical unit list"""
 
     model = CVD
-    queryset = [] #CVD.objects.filter()
     template_name = 'cvds_list.html'
     context_object_name = 'cvds'
     title = _('CVD')
@@ -1275,6 +1381,26 @@ class CVDListView(PageMixin, LoginRequiredMixin, ListView):
             'title': title
         },
     ]
+    datatable_row_template = 'datatable/cvd_row.html'
+    datatable_options = DATATABLE_EXPORT_BUTTONS_OPTIONS
+    datatable_default_order = ([0, 'asc'], [1, 'asc'], [2, 'asc'], [3, 'asc'], [4, 'asc'])
+
+    def get_datatable_columns(self):
+        return [
+            DatatableColumn(_('Region'), 'headquarters_village__parent__parent__parent__parent__name'),
+            DatatableColumn(_('Prefecture'), 'headquarters_village__parent__parent__parent__name'),
+            DatatableColumn(_('Commune'), 'headquarters_village__parent__parent__name'),
+            DatatableColumn(_('Canton'), 'headquarters_village__parent__name'),
+            DatatableColumn(_('Name'), 'name'),
+            DatatableColumn(_('Code'), 'unique_code'),
+            DatatableColumn(_('Action'), switchable=False),
+        ]
+
+    def get_datatable_shared_context(self):
+        ctx = super().get_datatable_shared_context()
+        user = self.request.user
+        ctx['can_edit'] = user.is_superuser or user.groups.filter(name__in=("Admin", "Evaluator", "Accountant")).exists()
+        return ctx
 
     def filter_list_by_delete_empty(self, _list):
         if _list:
@@ -1353,12 +1479,8 @@ class CVDListView(PageMixin, LoginRequiredMixin, ListView):
 
         return kwargs
 
-    # def get_queryset(self):
-    #     return super().get_queryset()
-    def get_queryset(self):
-        count = 100
+    def get_datatable_queryset(self):
         search = self.request.GET.get("search", None)
-        page_number = self.request.GET.get("page", None)        
         id_regions = self.filter_list_by_delete_empty(self.request.GET.getlist('region', []))
         id_prefectures = self.filter_list_by_delete_empty(self.request.GET.getlist('prefecture', []))
         id_communes = self.filter_list_by_delete_empty(self.request.GET.getlist('commune', []))
@@ -1367,7 +1489,7 @@ class CVDListView(PageMixin, LoginRequiredMixin, ListView):
         include_all_projects_checked = self.request.GET.get('include_all_projects', 0) in (1, '1')
 
         all_projects = self.request.session.get('tree_structure_projects_ids') if include_all_projects_checked else [self.request.session.get('project_id')]
-        
+
         cvds = CVD.objects.filter(
             headquarters_village__administrative_levels_projects__in=all_projects
         )
@@ -1404,17 +1526,10 @@ class CVDListView(PageMixin, LoginRequiredMixin, ListView):
                 Q(name__icontains=search) | Q(headquarters_village__parent__name__icontains=search)
             )
         
-        cvds = cvds.distinct()
+        return cvds.distinct().select_related(
+            'headquarters_village__parent__parent__parent__parent'
+        ).prefetch_related('administrativelevel_set__parent__parent__parent__parent')
 
-        if (
-            id_regions or id_prefectures or id_communes or id_cantons or id_villages or search or include_all_projects_checked
-        ):
-            count = cvds.count()
-            if count == 0:
-                count = 1
-        
-        return Paginator(cvds, count).get_page(page_number)
-    
 
     def get_context_data(self, **kwargs):
         ctx = super(CVDListView, self).get_context_data(**kwargs)
@@ -1440,6 +1555,8 @@ class CVDListView(PageMixin, LoginRequiredMixin, ListView):
             default_cantons=ctx.get('id_cantons_selected', []),
             default_villages=ctx.get('id_villages_selected', []),
         )
+        ctx.update(get_list_filters_context(self.request, ctx['form_adl']))
+        ctx['reset_url'] = reverse_lazy('administrativelevels:cvds_list')
 
         return ctx
 

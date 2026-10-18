@@ -1,468 +1,102 @@
 {% extends 'layouts/base.html' %}
-{% load static i18n custom_tags bootstrap4 %}
+{% load static i18n custom_tags %}
 
+{% block extracss %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'css/datatable_list.css' %}?v=1"/>
+{% endblock %}
 
 {% block content %}
+<div class="dt-list-page">
+    <form method="get" class="dt-filter-form">
+        <input type="hidden" name="type" value="{{ type }}">
+        {% include 'components/datatable/search_filter_card.html' with show_all_projects=True %}
+        {% include 'components/datatable/admin_level_filter_card.html' %}
+    </form>
 
-    {% make_list "Village" as begin_village %}
-    {% make_list "Village" "Canton" as begin_canton %}
-    {% make_list "Village" "Canton" "Commune" as begin_commune %}
-    {% make_list "Village" "Canton" "Commune" "Prefecture" as begin_prefecture %}
-    {% make_list "Village" "Canton" "Commune" "Prefecture" "Region" as begin_region %}
+    {% include 'components/datatable/column_switches.html' %}
 
-    {% if type in begin_canton %}
-        {% var 2 as number_col %}
-    {% elif type == "Commune" %}
-        {% var 3 as number_col %}
-    {% elif type == "Prefecture" %}
-        {% var 4 as number_col %}
-    {% elif type == "Region" %}
-        {% var 6 as number_col %}
-    {% endif %}
-
-    <div class="row">
-        <div class="col-12">
-            <div >
-
-                
-                <form method="get" >
-                    <div class="clearfix"></div>
-                    <div class="row administrative-level-filter">
-                        {% if type in begin_region %}
-                        <div class="col-{{ number_col }}">
-                            {% bootstrap_field form_adl.region show_label=False %}
-                        </div>
-                        {% endif %}
-                        {% if type in begin_prefecture %}
-                        <div class="col-{{ number_col }}">
-                            {% bootstrap_field form_adl.prefecture show_label=False %}
-                        </div>
-                        {% endif %}
-                        {% if type in begin_commune %}
-                        <div class="col-{{ number_col }}">
-                            {% bootstrap_field form_adl.commune show_label=False %}
-                        </div>
-                        {% endif %}
-                        {% if type in  begin_canton %}
-                        <div class="col-{{ number_col }}">
-                            {% bootstrap_field form_adl.canton show_label=False %}
-                        </div>
-                        {% endif %}
-                        {% if type in  begin_village %}
-                            <div class="col-{{ number_col }}">
-                                {% bootstrap_field form_adl.village show_label=False %}
-                            </div>
-                        {% endif %}
-
-                        <div class="col-{{ number_col }}">
-                            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
-                            <a class="btn fs12 text-bold-family text-primary p-0" style="margin-top: 8px;"
-                            onclick="location.reload();">
-                                {% translate "Refresh" %}
-                            </a>
-                            &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
-                            <a class="btn fs12 text-bold-family text-primary p-0" style="margin-top: 8px;"
-                                id="clear_all_filters">
-                                {% translate "Clear" %}
-                            </a>
+    <div class="card">
+        <div class="card-header results-header">
+            <div class="results-top">
+                <div class="results-actions">
+                    <div class="dropdown d-inline-block">
+                        <button class="btn btn-primary" type="button" id="typeDropdownButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            {{ type_label }} <i class="fa fa-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="typeDropdownButton">
+                            <a class="dropdown-item" href="?type=Village">{% translate 'Village' %}</a>
+                            <a class="dropdown-item" href="?type=Canton">{% translate 'Canton' %}</a>
+                            <a class="dropdown-item" href="?type=Commune">{% translate 'Commune' %}</a>
+                            <a class="dropdown-item" href="?type=Prefecture">{% translate 'Prefecture' %}</a>
+                            <a class="dropdown-item" href="?type=Region">{% translate 'Region' %}</a>
                         </div>
                     </div>
-
-
-                    <div class="row">
-                        {% comment %} <div class="col-3" class="input-group mb-3 search-bar">
-                            <div method="get" class="d-flex">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                </div>
-                                <input class="form-control" id="search" placeholder="{% translate 'Search in table' %}...">
-                            </div>
-                        </div> {% endcomment %}
-
-                        <div class="col-10" >
-                            <div class="row">
-                                <div class="col-4" class="input-group mb-3 search-bar">
-                                    <div class="d-flex">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                        </div>
-                                    
-                                        <input type="hidden" name="type" value="{{ type }}">
-                                        <input class="form-control" name="search" value="{% if search %}{{ search }}{% endif %}" placeholder="{% translate 'Search in database' %}..." id="id_search_in_db">
-                                    </div>
-                                </div>
-                                <div class="col-6" class="input-group mb-3">
-                                    <div class="d-flex">
-                                        {% if PROJECTS_NAMES and PROJECTS_NAMES|length >= 2 %}
-                                        <div class="form-check" style="margin-top: 7px !important;">
-                                            <input class="form-check-input" type="checkbox" id="id_include_all_projects" name="include_all_projects" value="1" {% if include_all_projects_checked == '1' %}checked{% endif %}>
-                                            <label class="form-check-label" for="id_include_all_projects">
-                                                {% translate "Show for all projects" %} ({% for project in PROJECTS_NAMES %}{{ project }}{% if not forloop.last %}, {% else %}{% endif %}{% endfor %})
-                                            </label>
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="col-2" class="input-group mb-3 search-bar">
-                                    <div class="d-flex">
-                                        <input class="btn btn-primary" type="submit" value="{% translate 'Search' %}">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-
-                        <div class="col-2" class="input-group mb-3 search-bar">
-                            <a class="btn btn-primary" href="?type={{ type }}&search=All" >{% translate 'All' %} ({{ PROJECT_NAME }})</a>
-                            {% comment %} <form method="get" class="d-flex">
-                                <input type="hidden" name="search" value="All">
-                                <input type="hidden" name="type" value="{{ type }}">
-                                <input class="btn btn-primary" type="submit" value="{% translate 'All' %} ({{ PROJECT_NAME }})">
-                            </form> {% endcomment %}
+                    {% if user.is_superuser or user|has_group:"Admin" %}
+                    <div class="dropdown d-inline-block">
+                        <button class="btn btn-primary" type="button" id="createDropdownButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fa fa-plus"></i> {% translate 'Create Administrative level' %}
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="createDropdownButton">
+                            <a class="dropdown-item" href="{% url 'administrativelevels:create' %}?type=Village">{% translate 'Village' %}</a>
+                            <a class="dropdown-item" href="{% url 'administrativelevels:create' %}?type=Canton">{% translate 'Canton' %}</a>
+                            <a class="dropdown-item" href="{% url 'administrativelevels:create' %}?type=Commune">{% translate 'Commune' %}</a>
+                            <a class="dropdown-item" href="{% url 'administrativelevels:create' %}?type=Prefecture">{% translate 'Prefecture' %}</a>
+                            <a class="dropdown-item" href="{% url 'administrativelevels:create' %}?type=Region">{% translate 'Region' %}</a>
                         </div>
                     </div>
-
-                </form>
-
-
-
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <div class="col-md-12">
-                        <div class="btn-group pull-left">
-                            <div class="" style="display: inline-block;">
-                                <button class="btn btn-primary" style="display: inline-block;" 
-                                    type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    {% if type %}{{ type }}{% else %}{% translate 'See Others' %}{% endif %} <i class="fa fa-chevron-down"></i>
-                                </button>
-                                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                
-                                    <a class="dropdown-item" href="?type=Village">
-                                    Village
-                                    </a>
-                                    <a class="dropdown-item" href="?type=Canton">
-                                    Canton
-                                    </a>
-                                    <a class="dropdown-item" href="?type=Commune">
-                                    Commune
-                                    </a>
-                                    <a class="dropdown-item" href="?type=Prefecture">
-                                    Prefecture
-                                    </a>
-                                    <a class="dropdown-item" href="?type=Region">
-                                    Region
-                                    </a>
-                                </div>
-                            </div>
-                            {% if user.is_superuser or user|has_group:"Admin" %}
-                            <div> &nbsp; &nbsp; </div>
-                            <div class="" style="display: inline-block;">
-                                <button class="btn btn-primary" style="display: inline-block;" 
-                                    type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    {% translate 'Create Administrative level' %}
-                                </button>
-                                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                
-                                    <a class="dropdown-item" href="{% url 'administrativelevels:create' %}?type=Village">
-                                    Village
-                                    </a>
-                                    <a class="dropdown-item" href="{% url 'administrativelevels:create' %}?type=Canton">
-                                    Canton
-                                    </a>
-                                    <a class="dropdown-item" href="{% url 'administrativelevels:create' %}?type=Commune">
-                                    Commune
-                                    </a>
-                                    <a class="dropdown-item" href="{% url 'administrativelevels:create' %}?type=Prefecture">
-                                    Prefecture
-                                    </a>
-                                    <a class="dropdown-item" href="{% url 'administrativelevels:create' %}?type=Region">
-                                    Region
-                                    </a>
-                                </div>
-                            </div>
-                            {% endif %}
-
-                            <div> &nbsp; &nbsp; </div>
-                            <a class="btn btn-primary" href="{% url 'administrativelevels:geographical_units_list' %}">{% translate 'Geographical unit' %}</a>
-                            <div> &nbsp; &nbsp; </div>
-                            <a class="btn btn-primary" href="{% url 'administrativelevels:cvds_list' %}">{% translate 'CVD' %}</a>
-                            {% if user.is_superuser or user|has_group:"Admin" %}
-                            <div> &nbsp; &nbsp; </div>
-                            <a class="btn btn-primary" href="{% url 'administrativelevels:area_status' %}">{% translate 'Area status' %}</a>
-                            {% endif %}
-                        </div>
-
-                        <div class="btn-group pull-right">
-                            {% if user.is_superuser or user|has_group:"Admin" %}
-                                {% include 'components/upload.html' %}
-                                <div> &nbsp; &nbsp; </div>
-                            {% endif %}
-                            {% include 'components/download.html' with export_url='administrativelevels:download' %}
-                        </div>
-                    </div>
+                    {% endif %}
+                    <a class="btn btn-primary" href="{% url 'administrativelevels:geographical_units_list' %}">{% translate 'Geographical unit' %}</a>
+                    <a class="btn btn-primary" href="{% url 'administrativelevels:cvds_list' %}">{% translate 'CVD' %}</a>
+                    {% if user.is_superuser or user|has_group:"Admin" %}
+                    <a class="btn btn-primary" href="{% url 'administrativelevels:area_status' %}?type={{ type }}">{% translate 'Area status' %}</a>
+                    {% endif %}
                 </div>
-                <div class="card-body table-responsive">
-                    <table id="table" class="table">
-                        <thead>
-                        <tr>
-                            <th>{% translate 'Region' %}</th>
-                            {% if type in begin_prefecture %}<th>{% translate 'Prefecture' %}</th>{% endif %}
-                            {% if type in begin_commune %}<th>{% translate 'Commune' %}</th>{% endif %}
-                            {% if type in begin_canton %}<th>{% translate 'Canton' %}</th>{% endif %}
-                            {% if type in begin_village %}<th>{% translate 'Village' %}</th>{% endif %}
-                            <th>{% translate 'Action' %}</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {% for administrativelevel in administrativelevels %}
-                            <tr>
-                                {% if type in begin_village %}<td>{{ administrativelevel.parent.parent.parent.parent.name }}</td>{% endif %}
-                                {% if type in begin_canton %}<td>{{ administrativelevel.parent.parent.parent.name }}</td>{% endif %}
-                                {% if type in begin_commune %}<td>{{ administrativelevel.parent.parent.name }}</td>{% endif %}
-                                {% if type in begin_prefecture %}<td>{{ administrativelevel.parent.name }}</td>{% endif %}
-                                <td>{{ administrativelevel.name }}</td>
-                                <td>
-                                     {% comment %} <a href="{% url 'administrativelevels:village_detail' administrativelevel.pk %}"
-                                       class="btn btn-primary btn-xs">
-                                        {% translate 'View details' %}
-                                    </a> {% endcomment %}
-                                    <a href="{% url 'administrativelevels:detail' administrativelevel.pk %}?type={{ type }}"
-                                       class="btn btn-primary btn-xs" title="{% translate 'View details' %}" >
-                                        <span class="_mobile"><i class="fa fa-eye"></i></span>
-                                    </a>
-                                    {% if user.is_superuser or user|has_group:"Admin" %}
-                                    <a href="{% url 'administrativelevels:update' administrativelevel.pk %}?type={{ type }}"
-                                       class="btn btn-primary btn-xs" title="{% translate 'Edit' %}" >
-                                        <span class="_mobile"><i class="fa fa-edit"></i></span>
-                                    </a>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
-                        
-                        <tfoot>
-                            <tr>
-                            {% if type in begin_village %}<th rowspan="1" colspan="1"></th>{% endif %}
-                            {% if type in begin_canton %}<th rowspan="1" colspan="1"></th>{% endif %}
-                            {% if type in begin_commune %}<th rowspan="1" colspan="1"></th>{% endif %}
-                            {% if type in begin_prefecture %}<th rowspan="1" colspan="1"></th>{% endif %}
-                            <th rowspan="1" colspan="1"></th>
-                            </tr>
-                        </tfoot>
-                    </table>
+                <div class="results-actions">
+                    {% if user.is_superuser or user|has_group:"Admin" %}
+                        {% include 'components/upload.html' %}
+                    {% endif %}
+                    {% include 'components/download.html' with export_url='administrativelevels:download' %}
+                </div>
+            </div>
 
-                    <nav>
-                        <ul class="pagination justify-content-center">
-                            {% if administrativelevels.has_previous %}
-                                <li>
-                                    <a class="page-link" href="?page={{ administrativelevels.previous_page_number }}">
-                                        {% comment %} <span aria-hiden="true">&laquo;</span> {% endcomment %}
-                                        <i class="fa fa-arrow-left text-bold"></i>
-                                    </a>
-                                </li>
-                            {% endif %}
-                            <li class="page-item">
-                                <p class="page-link text-bold">
-                                    {% translate 'Page' %} {{ administrativelevels.number }} {% translate 'of' %} {{ administrativelevels.paginator.num_pages }}
-                                </p>
-                            </li>
-                            {% if administrativelevels.has_next %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ administrativelevels.next_page_number }}">
-                                        {% comment %} <span aria-hidden="true">&laquo;</span> {% endcomment %}
-                                        <i class="fa fa-arrow-right text-bold"></i>
-                                    </a>
-                                </li>
-                            {% endif %}
-                        </ul>
-                    </nav>
+            {% include 'components/datatable/filter_badges.html' %}
 
-
+            <div class="results-stats">
+                <div class="results-stat-card">
+                    <div class="results-stat-icon" aria-hidden="true"><i class="fa fa-map-marker-alt"></i></div>
+                    <div class="results-stat-body">
+                        <div class="results-stat-label">{{ type_label }}</div>
+                        <div class="results-stat-num dt-results-count"><span class="skeleton skeleton-text"></span></div>
+                    </div>
                 </div>
             </div>
         </div>
+        <div class="card-body">
+            {% include 'components/datatable/table.html' %}
+        </div>
     </div>
+</div>
 {% endblock %}
 
 {% block javascript %}
     {{ block.super }}
-    
-    <script src="{% static 'AdminLTE/plugins/chart.js/Chart.js' %}"></script>
+
     <script src="{% static 'js/csrfSafeMethodAjax.js' %}?v=2"></script>
     <script src="{% static 'js/formAjaxSubmit.js' %}"></script>
     <script src="{% static 'js/cascade_requests.js' %}"></script>
     <script src="{% static 'js/utils.js' %}"></script>
-
-    <!-- DataTables export files -->
-    <script src="{% static 'AdminLTE/plugins/datatables-buttons/js/dataTables.buttons.min.js' %}"></script>
-    <script src="{% static 'AdminLTE/plugins/datatables-buttons/js/buttons.html5.min.js' %}"></script>
-    <script src="{% static 'AdminLTE/plugins/datatables-buttons/js/buttons.print.min.js' %}"></script>
-    <script src="{% static 'AdminLTE/plugins/datatables-buttons/js/buttons.colVis.min.js' %}"></script>
-
-    <script src="{% static 'AdminLTE/plugins/cloudflare/ajax/libs/jszip/3.10.1/jszip.min.js' %}"></script>
-    <script src="{% static 'AdminLTE/plugins/cloudflare/ajax/libs/pdfmake/0.1.53/pdfmake.min.js' %}"></script>
-    <script src="{% static 'AdminLTE/plugins/cloudflare/ajax/libs/pdfmake/0.1.53/vfs_fonts.js' %}"></script>
-
-    <script type="text/javascript">
-        $(document).ready(function () {
-            {% get_current_language as lang %}
-
-            let table = $('#table').DataTable({
-                language: {
-                    url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}')
-                },
-                dom: 'Bfrtipl',
-                buttons: ['copy', 'excel', 'pdf', 'colvis'],
-                initComplete: function () {
-                    this.api()
-                        .columns()
-                        .every(function () {
-                            var column = this;
-                            
-                            // Create select element and listener
-                            var select = $('<select style="width:50px !important;"><option value=""></option></select>')
-                                .appendTo($(column.footer()).empty())
-                                .on('change', function () {
-                                    var val = $(`#table`).DataTable.util.escapeRegex($(this).val());
-            
-                                    column.search(val ? '^' + val + '$' : '', true, false).draw();
-                                });
-            
-                            // Add list of options
-                            column
-                                .data()
-                                .unique()
-                                .sort()
-                                .each(function (d, j) {
-                                    select.append('<option value="' + d + '">' + d + '</option>');
-                                });
-                        });
-                },
-                columnDefs: [
-                    {% comment %} {
-                        targets: 1,
-                        orderable: false,
-                        searchable: false,
-                    } {% endcomment %}
-                ],
-                lengthMenu: [10, 50, 100],
-                pageLength: 10,
-                order: [[0, 'desc']]
-            });
-            {% comment %} $('#search').on('keyup', function () {
-                table.search($(this).val()).draw();
-            }); {% endcomment %}
-
-
-
-
-            let cascaded = false;
-            let administrative_level_id;
-            let administrative_level_type;
-            let id_region = $('#id_region');
-            let id_prefecture = $('#id_prefecture');
-            let id_commune = $('#id_commune');
-            let id_canton = $('#id_canton');
-            let id_village = $('#id_village');
-            $('.administrative-level-filter select').on('change', function () {
-                if (!cascaded){
-                    cascaded = true;
-
-                    
-                    administrative_level_id = null;
-                    administrative_level_type = null;
-                    if($(this).attr('id')){
-                        administrative_level_id = $(this).val();
-                        administrative_level_id = administrative_level_id && administrative_level_id.length != 0 ? administrative_level_id : null;
-                        administrative_level_type = administrative_level_id ? $(this).attr('id').split('_')[1] : null;
-                    }
-                
-                    $(".administrative-level-filter select").attr('disabled', true);
-                    $.ajax({
-                        type: 'GET',
-                        url: "{% url 'administrativelevels:utils:get_choices_for_next_administrative_level_all' %}",
-                        data: {
-                            parent_id: $("#id_"+administrative_level_type).val()
-                        },
-                        success: function (data) {
-                            if(!administrative_level_type || administrative_level_type == "region" || $("#id_"+administrative_level_type).val().length == 0){
-                                set_datas_administrative_level(id_prefecture, data.prefectures);
-                                set_datas_administrative_level(id_commune, data.communes);
-                                set_datas_administrative_level(id_canton, data.cantons);
-                                set_datas_administrative_level(id_village, data.villages);
-                            }else if(administrative_level_type == "prefecture"){
-                                set_datas_administrative_level(id_commune, data.communes);
-                                set_datas_administrative_level(id_canton, data.cantons);
-                                set_datas_administrative_level(id_village, data.villages);
-                            }else if(administrative_level_type == "commune"){
-                                set_datas_administrative_level(id_canton, data.cantons);
-                                set_datas_administrative_level(id_village, data.villages);
-                            }else if(administrative_level_type == "canton"){
-                                set_datas_administrative_level(id_village, data.villages);
-                            }
-                            cascaded = false;
-                        },
-                        error: function (data) {
-                            alert(error_server_message + "Error " + data.status);
-                            $(".administrative-level-filter select").attr('disabled', false);
-                            cascaded = false;
-                        }
-                    }).done(function () {
-                            $(".administrative-level-filter select").attr('disabled', false);
-                            cascaded = false;
-                        }
-                    );
-                }
-
-
-            });
-
-            
-            
-
-            $("#clear_all_filters").on("click", function () {
-                $('.administrative-level-filter input').val('');
-                $('.administrative-level-filter select').val(null).trigger('change.select2');
-                
-                $('#id_search_in_db').val('');  
-
-            });
-
-
-        });
-    </script>
+    {% include 'components/datatable/export_buttons_js.html' %}
+    {% include 'components/datatable/init_js.html' %}
+    {% include 'components/datatable/admin_level_filter_js.html' %}
 {% endblock %}
 
 
 {% block select2 %}
+    {% include 'components/datatable/admin_level_select2.html' %}
     <script type="text/javascript">
-        $("#id_region").select2({
-            placeholder: "{% translate 'Region' %}",
-            allowClear: true,
-        });
-        $("#id_prefecture").select2({
-            placeholder: "{% translate 'Prefecture' %}",
-            allowClear: true,
-        });
-        $("#id_commune").select2({
-            placeholder: "{% translate 'Commune' %}",
-            allowClear: true,
-        });
-         $("#id_canton").select2({
-            placeholder: "{% translate 'Canton' %}",
-            allowClear: true,
-        });
-         $("#id_village").select2({
-            placeholder: "{% translate 'Village' %}",
-            allowClear: true,
-        });
-        
-
         $('b[role="presentation"]').hide();
         $('.select2-selection__arrow').append(
             '<i class="fas fa-chevron-circle-down text-primary" style="margin-top:12px;"></i>');
-
     </script>
 {% endblock select2 %}

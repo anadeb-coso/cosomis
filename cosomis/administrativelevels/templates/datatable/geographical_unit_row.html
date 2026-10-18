@@ -1,0 +1,20 @@
+{% load i18n custom_tags %}{% with geographicalunit=object %}
+{% datatable_cell %}{{ geographicalunit.canton.parent.parent.parent.name }}{% enddatatable_cell %}
+{% datatable_cell %}{{ geographicalunit.canton.parent.parent.name }}{% enddatatable_cell %}
+{% datatable_cell %}{{ geographicalunit.canton.parent.name }}{% enddatatable_cell %}
+{% datatable_cell %}{{ geographicalunit.canton.name }}{% enddatatable_cell %}
+{% datatable_cell %}<span class="dt-title">{{ geographicalunit.get_name }}</span>{% enddatatable_cell %}
+{% datatable_cell %}<span class="dt-code">{{ geographicalunit.unique_code }}</span>{% enddatatable_cell %}
+{% datatable_cell %}
+    <div class="dt-actions">
+        <a href="{% url 'administrativelevels:geographical_unit_detail' geographicalunit.pk %}" class="btn btn-primary btn-xs" title="{% translate 'View details' %}">
+            <i class="fa fa-eye"></i>
+        </a>
+        {% if can_edit %}
+        <a href="{% url 'administrativelevels:geographical_unit_update' geographicalunit.pk %}" class="btn btn-primary btn-xs" title="{% translate 'Edit' %}">
+            <i class="fa fa-edit"></i>
+        </a>
+        {% endif %}
+    </div>
+{% enddatatable_cell %}
+{% endwith %}

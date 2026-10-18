@@ -1,0 +1,22 @@
+{% load i18n custom_tags %}
+{% datatable_cell %}
+    <label class="dt-checkbox">
+        <input type="checkbox" class="dt-row-check" value="{{ object.pk }}" aria-label="{{ object.name }}"><span></span>
+    </label>
+{% enddatatable_cell %}
+{% for level in hierarchy %}
+{% datatable_cell %}{% if forloop.last %}<span class="dt-title">{{ level.name }}</span>{% else %}{{ level.name }}{% endif %}{% enddatatable_cell %}
+{% endfor %}
+{% datatable_cell %}
+    {% if object.area_status == 'RISK_INACCESSIBLE' %}
+        <span class="badge badge-danger">{{ object.get_area_status_display }}</span>
+    {% elif object.area_status == 'RISK' %}
+        <span class="badge badge-warning">{{ object.get_area_status_display }}</span>
+    {% elif object.area_status == 'MODERATE_RISK' %}
+        <span class="badge badge-info">{{ object.get_area_status_display }}</span>
+    {% elif object.area_status == 'NON_RISK' %}
+        <span class="badge badge-success">{{ object.get_area_status_display }}</span>
+    {% else %}
+        <span class="badge badge-secondary">{% translate 'Not set' %}</span>
+    {% endif %}
+{% enddatatable_cell %}

@@ -1,0 +1,16 @@
+{% load i18n custom_tags %}
+{% for level in hierarchy %}
+{% datatable_cell %}{% if forloop.last %}<span class="dt-title">{{ level.name }}</span>{% else %}{{ level.name }}{% endif %}{% enddatatable_cell %}
+{% endfor %}
+{% datatable_cell %}
+    <div class="dt-actions">
+        <a href="{% url 'administrativelevels:detail' object.pk %}?type={{ type }}" class="btn btn-primary btn-xs" title="{% translate 'View details' %}">
+            <i class="fa fa-eye"></i>
+        </a>
+        {% if can_edit %}
+        <a href="{% url 'administrativelevels:update' object.pk %}?type={{ type }}" class="btn btn-primary btn-xs" title="{% translate 'Edit' %}">
+            <i class="fa fa-edit"></i>
+        </a>
+        {% endif %}
+    </div>
+{% enddatatable_cell %}
