@@ -3,6 +3,7 @@ from django.urls import path
 
 from usermanager.forms import EmailAuthenticationForm
 from usermanager.tokens import jwt_views
+from usermanager import views_first_login
 
 app_name = 'usermanager'
 urlpatterns = [
@@ -11,6 +12,7 @@ urlpatterns = [
         template_name='login.html',
         redirect_authenticated_user=True), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('first-login-password/', views_first_login.FirstLoginPasswordView.as_view(), name='first_login_password'),
 
     path('user/manager/token/', auth_views.TemplateView.as_view(template_name='token.html'), name='token'),
     

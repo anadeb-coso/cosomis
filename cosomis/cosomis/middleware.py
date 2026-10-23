@@ -44,3 +44,46 @@ class CurrentUserMiddleware:
             return self.get_response(request)
         finally:
             _thread_locals.request = None
+
+
+class PasswordChangeRequiredMiddleware:
+    """Compte créé dans le DCC dont le mot de passe initial n'a été changé sur aucune plateforme : toute page du SIG
+    (adresses préfixées par la langue) renvoie vers le changement obligatoire (`usermanager:first_login_password`).
+    Les API (`/api/`, jetons du mobile) ne sont pas concernées. Vérifié une fois par session. Doit suivre
+    AuthenticationMiddleware."""
+
+    EXEMPT_VIEW_NAMES = {
+        'usermanager:first_login_password',
+        'usermanager:login',
+        'usermanager:logout',
+    }
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        return self.get_response(request)
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        from django.conf import settings
+        from usermanager.password_change import CHECKED_SESSION_KEY, password_change_required
+
+        user = getattr(request, 'user', None)
+        if user is None or not user.is_authenticated or request.session.get(CHECKED_SESSION_KEY):
+            return None
+        match = request.resolver_match
+        prefixes = tuple(f"/{code}/" for code, _name in settings.LANGUAGES)
+        if match is None or match.view_name in self.EXEMPT_VIEW_NAMES or not request.path_info.startswith(prefixes):
+            return None
+        if not password_change_required(user):
+            request.session[CHECKED_SESSION_KEY] = True
+            return None
+
+        from django.http import JsonResponse
+        from django.shortcuts import redirect
+        from django.utils.translation import gettext
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest' or getattr(request, 'htmx', False):
+            return JsonResponse({'detail': gettext('You must change your password before your first login.'),
+                                 'code': 'password_change_required'}, status=403)
+        return redirect('usermanager:first_login_password')
