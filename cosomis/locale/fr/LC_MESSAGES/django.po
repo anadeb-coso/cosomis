@@ -4805,3 +4805,122 @@ msgstr "CVD ayant bénéficié de sous-projets"
 #: .\dashboard\views_administrativelevels.py
 msgid "CVD that did not benefit from subprojects"
 msgstr "CVD n'ayant pas bénéficié de sous-projets"
+
+#: .\cosomis\middleware.py:87
+msgid "You must change your password before your first login."
+msgstr "Vous devez changer votre mot de passe avant votre première connexion."
+
+#: .\usermanager\password_change.py:51
+msgid ""
+"The password could not be changed: the DCC platform cannot be reached. "
+"Please try again later."
+msgstr ""
+"Le mot de passe n'a pas pu être changé : la plateforme DCC est injoignable. "
+"Réessayez plus tard."
+
+#: .\usermanager\password_change.py:55
+#, python-format
+msgid "The password could not be changed (error %(status)s)."
+msgstr "Le mot de passe n'a pas pu être changé (erreur %(status)s)."
+
+#: .\usermanager\templates\first_login_password.html:11
+msgid "Change your password"
+msgstr "Changez votre mot de passe"
+
+#: .\usermanager\templates\first_login_password.html:25
+msgid ""
+"Welcome! For your security, please choose your own password before going "
+"further. It will be valid on all the platforms (DCC, MGP and SIG)."
+msgstr ""
+"Bienvenue ! Pour votre sécurité, choisissez votre propre mot de passe avant "
+"d'aller plus loin. Il sera valable sur toutes les plateformes (DCC, MGP et "
+"SIG)."
+
+#: .\usermanager\templates\first_login_password.html:35
+msgid "Change my password"
+msgstr "Changer mon mot de passe"
+
+#: .\usermanager\templates\first_login_password.html:38
+msgid "Log out"
+msgstr "Se déconnecter"
+
+#: .\usermanager\views_first_login.py:15
+msgid "Current password"
+msgstr "Mot de passe actuel"
+
+#: .\usermanager\views_first_login.py:17
+msgid "New password"
+msgstr "Nouveau mot de passe"
+
+#: .\usermanager\views_first_login.py:19
+msgid "8 to 16 letters and digits, with at least one letter and one digit."
+msgstr "8 à 16 lettres et chiffres, avec au moins une lettre et un chiffre."
+
+#: .\usermanager\views_first_login.py:20
+msgid "New password confirmation"
+msgstr "Confirmation du nouveau mot de passe"
+
+#: .\usermanager\views_first_login.py:49
+msgid ""
+"Your password has been changed. It is now valid on all the platforms (DCC, "
+"MGP and SIG)."
+msgstr ""
+"Votre mot de passe a été changé. Il est désormais valable sur toutes les "
+"plateformes (DCC, MGP et SIG)."
+
+#: .\subprojects\models.py
+msgid "Subproject sectors"
+msgstr "Secteurs des sous-projets"
+
+#: .\subprojects\models.py
+msgid "Types of structure"
+msgstr "Types d'ouvrage"
+
+#: .\subprojects\models.py
+msgid "Works types"
+msgstr "Types de travaux"
+
+#: .\subprojects\models.py
+msgid "Subproject type designation"
+msgstr "Type désignatif de sous-projet"
+
+#: .\subprojects\models.py
+msgid "Subproject type designations"
+msgstr "Types désignatifs de sous-projet"
+
+#: .\subprojects\models.py
+msgid "Color"
+msgstr "Couleur"
+
+#: .\subprojects\sheet\functions.py
+#, python-format
+msgid "“%(value)s” is not in the list of values of the field “%(field)s”."
+msgstr "« %(value)s » ne fait pas partie de la liste des valeurs du champ « %(field)s »."
+
+#: .\usermanager\api\auth\login.py
+msgid "Your session has expired. Please log in again."
+msgstr "Votre session a expiré. Veuillez vous reconnecter."
+
+#: .\subprojects\admin.py
+msgid "Only the administrative levels of the project. A canton added to the cycle brings all its villages; the parents of the chosen levels are added automatically. No level chosen: all the levels of the project."
+msgstr "Seulement les niveaux administratifs du projet. Un canton ajouté au cycle apporte tous ses villages ; les parents des niveaux choisis sont ajoutés automatiquement. Aucun niveau choisi : tous les niveaux du projet."
+
+#: .\subprojects\admin.py
+#, python-format
+msgid "The project %(project)s has no administrative level: add its administrative levels to the project first, then to the cycle."
+msgstr "Le projet %(project)s n'a aucun niveau administratif : ajoutez d'abord ses niveaux administratifs au projet, puis au cycle."
+
+#: .\subprojects\admin.py
+#, python-format
+msgid "%(count)s administrative level(s) are not part of the project %(project)s: %(names)s. Add them to the project first, or remove them from the cycle."
+msgstr "%(count)s niveau(x) administratif(s) ne font pas partie du projet %(project)s : %(names)s. Ajoutez-les d'abord au projet, ou retirez-les du cycle."
+
+#: .\subprojects\admin.py
+#, python-format
+msgid "No administrative level chosen: all the administrative levels of the project %(project)s were assigned to the cycle."
+msgstr "Aucun niveau administratif choisi : tous les niveaux administratifs du projet %(project)s ont été affectés au cycle."
+
+#: .\subprojects\admin.py
+#, python-format
+msgid "%(count)s administrative level(s) added automatically: villages of the added cantons and parents of the chosen levels."
+msgstr "%(count)s niveau(x) administratif(s) ajouté(s) automatiquement : villages des cantons ajoutés et parents des niveaux choisis."

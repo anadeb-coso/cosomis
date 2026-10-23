@@ -1,5 +1,5 @@
 from django.utils.translation import gettext_lazy as _
-from django.contrib import admin
+from django.contrib import admin, messages
 from django import forms
 from .models import *
 from administrativelevels.widgets import AdministrativeLevelSelectWidget
@@ -11,6 +11,7 @@ from administrativelevels.functions_adl import (
 )
 from cosomis import FORM_FIELDS_TO_EXCLUDE, FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 from django.db import connection
+from django.db.models import Count
 
 
 class ProjectForm(forms.ModelForm):
@@ -87,42 +88,74 @@ class ProjectFormAdmin(admin.ModelAdmin):
 
 
 class CycleForm(forms.ModelForm):
+    """Niveaux administratifs d'un cycle : seulement ceux de son projet.
+    - un canton AJOUTÉ apporte tous ses villages ; un canton déjà dans le cycle n'en rajoute pas (on peut donc retirer
+      un village sans qu'il revienne) ;
+    - les parents des niveaux choisis (canton, commune... jusqu'à la région) sont ajoutés ;
+    - aucun niveau choisi : tous les niveaux du projet.
+    Auparavant, les niveaux hors du projet étaient écartés sans message et chaque canton du cycle remettait tous ses
+    villages : l'enregistrement annonçait un succès sans rien changer."""
     class Meta:
         model = Cycle
         exclude = FORM_FIELDS_TO_EXCLUDE
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-    
+        # niveaux ajoutés d'office, et sélection vide remplacée par tout le projet : signalés après l'enregistrement
+        self.auto_added_levels = []
+        self.whole_project_assigned = False
+        if 'administrative_levels' in self.fields:
+            self.fields['administrative_levels'].help_text = _(
+                "Only the administrative levels of the project. A canton added to the cycle brings all its villages; "
+                "the parents of the chosen levels are added automatically. No level chosen: all the levels of the project.")
+
     def clean_administrative_levels(self):
-        project = self.cleaned_data['project']
+        project = self.cleaned_data.get('project')
         administrative_levels = self.cleaned_data['administrative_levels']
+        if project is None:
+            return administrative_levels  # erreur déjà signalée sur le projet
 
         project_administrative_levels = set(project.administrative_levels.values_list('id', flat=True))
+        if not project_administrative_levels:
+            raise forms.ValidationError(_(
+                "The project %(project)s has no administrative level: add its administrative levels to the project "
+                "first, then to the cycle."), params={'project': project.name})
 
-        common_cycle_adl_ids = []
-        if administrative_levels:
-            descendant_ids, ancestor_ids, level_ids = get_multiple_administrative_hierarchies_ids([o.id for o in administrative_levels])
-            cycle_administrative_levels = set(descendant_ids + ancestor_ids + level_ids) #set(get_cascade_villages_ids_by_administrative_level_id([o.id for o in administrative_levels]))
+        if not administrative_levels:
+            self.whole_project_assigned = True
+            return AdministrativeLevel.objects.filter(id__in=project_administrative_levels)
 
-            # Identifier les ID présents dans le cycle mais pas dans le projet
-            common_cycle_adl_ids = project_administrative_levels & cycle_administrative_levels
-        else:
-            common_cycle_adl_ids = project_administrative_levels
+        selected_ids = {o.id for o in administrative_levels}
+        outside = [o for o in administrative_levels if o.id not in project_administrative_levels]
+        if outside:
+            names = ', '.join(f'{o.name} ({o.type})' for o in sorted(outside, key=lambda o: o.name)[:15])
+            raise forms.ValidationError(_(
+                "%(count)s administrative level(s) are not part of the project %(project)s: %(names)s. Add them to the "
+                "project first, or remove them from the cycle."),
+                params={'count': len(outside), 'project': project.name, 'names': names + (' …' if len(outside) > 15 else '')})
 
-        return AdministrativeLevel.objects.filter(id__in=common_cycle_adl_ids)
+        previous_ids = set(self.instance.administrative_levels.values_list('id', flat=True)) if self.instance.pk else set()
+        added_cantons = [o.id for o in administrative_levels if o.type == 'Canton' and o.id not in previous_ids]
+        villages_of_added_cantons = get_multiple_administrative_hierarchies_ids(added_cantons)[0] if added_cantons else []
+        ancestor_ids = get_multiple_administrative_hierarchies_ids(list(selected_ids), search_descendants_for=[])[1]
+
+        cycle_ids = (selected_ids | set(villages_of_added_cantons) | set(ancestor_ids)) & project_administrative_levels
+        self.auto_added_levels = sorted(cycle_ids - selected_ids)
+        return AdministrativeLevel.objects.filter(id__in=cycle_ids)
 
 class CycleFormAdmin(admin.ModelAdmin):
     form = CycleForm
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ("name", "description", "project", "administrative_levels"),
+            # `order` : unique par projet (Cycle.Meta.unique_together) ; absent du formulaire, il valait toujours 1 et un
+            # deuxième cycle du projet provoquait une erreur 500 au lieu d'un message
+            'fields': ("name", "description", "project", "order", "administrative_levels"),
         }),
     )
     fieldsets = (
         (None, {
-            'fields': ("name", "description", "project", "administrative_levels")
+            'fields': ("name", "description", "project", "order", "administrative_levels")
         }),
     )
     list_display = ("name", "description", "project")
@@ -135,6 +168,15 @@ class CycleFormAdmin(admin.ModelAdmin):
         if db_field.name == "administrative_levels":
             kwargs["queryset"] = AdministrativeLevel.objects.all().order_by('name')
         return super().formfield_for_manytomany(db_field, request, **kwargs)
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        if getattr(form, 'whole_project_assigned', False):
+            messages.info(request, _("No administrative level chosen: all the administrative levels of the project "
+                                     "%(project)s were assigned to the cycle.") % {'project': form.instance.project.name})
+        elif getattr(form, 'auto_added_levels', None):
+            messages.info(request, _("%(count)s administrative level(s) added automatically: villages of the added "
+                                     "cantons and parents of the chosen levels.") % {'count': len(form.auto_added_levels)})
 
 """
 wording = models.CharField(max_length=200, verbose_name=_("Wording"))
@@ -196,9 +238,38 @@ admin.site.register([
     VillageObstacle,
     VillageGoal,
     Financier,
-    SubprojectSector,
-    SubprojectType
 ])
+
+
+class SubprojectReferenceValueAdmin(admin.ModelAdmin):
+    """Listes de référence des sous-projets : renommer une valeur la renomme sur ses sous-projets ; une valeur
+    utilisée ne peut pas être supprimée."""
+    exclude = FORM_FIELDS_TO_EXCLUDE
+    search_fields = ('name',)
+    list_display = ('name', 'subprojects_count')
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(_subprojects_count=Count('subprojects'))
+
+    @admin.display(description=_("Subprojects"), ordering='_subprojects_count')
+    def subprojects_count(self, obj):
+        return obj._subprojects_count
+
+
+class SubprojectSectorAdmin(SubprojectReferenceValueAdmin):
+    list_display = ('name', 'color', 'subprojects_count')
+
+
+class SubprojectTypeAdmin(SubprojectReferenceValueAdmin):
+    list_display = ('name', 'sector', 'color', 'subprojects_count')
+    list_filter = ('sector',)
+    list_select_related = ('sector',)
+
+
+admin.site.register(SubprojectSector, SubprojectSectorAdmin)
+admin.site.register(SubprojectType, SubprojectTypeAdmin)
+admin.site.register(WorksType, SubprojectReferenceValueAdmin)
+admin.site.register(SubprojectTypeDesignation, SubprojectReferenceValueAdmin)
 
 admin.site.register(Project, ProjectFormAdmin)
 admin.site.register(Cycle, CycleFormAdmin)
