@@ -9,6 +9,7 @@ from authentication.models import Facilitator
 from usermanager.tokens.jwt import get_user_id_from_jwt
 from cosomis.functions_base import model_has_field
 from usermanager.models import UserToken
+from usermanager.platform_tokens import account_from_token as platform_account_from_token, is_platform_token
 
 #Login User Serialization
 class CheckUserSerializer(serializers.Serializer):
@@ -26,6 +27,17 @@ class CheckUserSerializer(serializers.Serializer):
 		if not password and not token:
 			raise serializers.ValidationError(_("Password is required"))
 				
+		# Jeton de session du mobile DCC (délivré par le DCC à la connexion, valable sur le DCC, le SIG et le MGP)
+		if is_platform_token(token):
+			account = platform_account_from_token(token)
+			if account is None:
+				# `token_invalid` : le mobile ferme la session et redemande la connexion
+				raise serializers.ValidationError({
+					'non_field_errors': [_("Your session has expired. Please log in again.")],
+					'token_invalid': True,
+				})
+			return account
+
 		# Try to find user by token first
 		if token:
 			print(token)
