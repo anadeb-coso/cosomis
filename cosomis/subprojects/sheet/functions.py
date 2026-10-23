@@ -1,9 +1,13 @@
 import re
 import datetime
 
+from django.utils.translation import gettext as _
+
+from subprojects.models import Subproject
 from .utils import (
     subproject_fk_fields_names,
     subproject_m2m_fields_names,
+    reference_fields,
 )
 
 def get_date(value: str):
@@ -82,8 +86,13 @@ def normalize_subproject_dict(data: dict) -> dict:
 
     for key, value in data.items():
 
+        # Cas : secteur, type d'ouvrage, type de travaux, désignation (valeur texte d'une liste de référence)
+        if key in reference_fields:
+            value = value.strip() if isinstance(value, str) else value
+            CLEANED[key + "_id"] = value if value not in (None, "") else None
+
         # Cas : les champs FK habituels
-        if key.endswith("_id") or key in subproject_fk_fields_names:
+        elif key.endswith("_id") or key in subproject_fk_fields_names:
             CLEANED[key + "_id"] = normalize_foreign_key(value)
 
         # Si c’est list_of_villages (many-to-many)
@@ -109,3 +118,15 @@ def normalize_subproject_dict(data: dict) -> dict:
             CLEANED[key] = value
 
     return CLEANED
+
+
+def unknown_reference_values(data: dict) -> list:
+    """Messages d'erreur pour les valeurs (dictionnaire normalisé) absentes de leur liste de référence."""
+    errors = []
+    for field, Model in reference_fields.items():
+        value = data.get(field + "_id")
+        if value is not None and not Model.objects.filter(name=value).exists():
+            errors.append(_("“%(value)s” is not in the list of values of the field “%(field)s”.") % {
+                'value': value, 'field': Subproject._meta.get_field(field).verbose_name
+            })
+    return errors

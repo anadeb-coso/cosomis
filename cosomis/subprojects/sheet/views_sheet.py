@@ -2,11 +2,10 @@ from cosomis import FORM_FIELDS_TO_EXCLUDE, TABLE_SHEET_FIELDS_TO_EXCLUDE
 
 from rest_framework import serializers
 from subprojects import (
-    WORKS_TYPE_OF_SUB_PROJECT,
     LEVEL_OF_ACHIEVEMENT_DONATION_CERTIFICATE_OF_SUB_PROJECT, 
-    CURRENT_STATUS_OF_THE_SITE, SUB_PROJECT_TYPE_DESIGNATION
+    CURRENT_STATUS_OF_THE_SITE
 )
-from subprojects.vars import VAR_SUB_PROJECT_SECTORS, VAR_TYPES_OF_SUB_PROJECT
+from subprojects.models import SubprojectSector, SubprojectType, WorksType, SubprojectTypeDesignation
 
 
 # app_name/serializers.py
@@ -56,8 +55,12 @@ class OptionsAPIView(APIView):
 # app_name/serializers.py
 from rest_framework import serializers
 from subprojects.models import Subproject
+from cosomis.serializers_base import ReferenceValueField
 
 class SubprojectSerializer(serializers.ModelSerializer):
+    # secteur, type d'ouvrage, type de travaux, désignation : texte de la valeur, sans requête
+    serializer_related_to_field = ReferenceValueField
+
     class Meta:
         model = Subproject
         # Incluez tous les champs que vous voulez pouvoir modifier
@@ -82,14 +85,16 @@ class SubprojectViewSet(viewsets.ModelViewSet):
 # Assuming your model is defined in an application named 'my_app' (adjust as needed)
 from django.shortcuts import render
 
-choices_datas = {
-    'subproject_sector': VAR_SUB_PROJECT_SECTORS,
-    'type_of_subproject': VAR_TYPES_OF_SUB_PROJECT,
-    'works_type': WORKS_TYPE_OF_SUB_PROJECT,
-    'level_of_achievement_donation_certificate': LEVEL_OF_ACHIEVEMENT_DONATION_CERTIFICATE_OF_SUB_PROJECT,
-    'current_status_of_the_site': CURRENT_STATUS_OF_THE_SITE,
-    'subproject_type_designation': SUB_PROJECT_TYPE_DESIGNATION,
-}
+def get_choices_datas():
+    """Valeurs proposées dans les listes déroulantes de la feuille (listes de référence lues à chaque affichage)."""
+    return {
+        'subproject_sector': SubprojectSector.choices(),
+        'type_of_subproject': SubprojectType.choices(),
+        'works_type': WorksType.choices(empty=False),
+        'level_of_achievement_donation_certificate': LEVEL_OF_ACHIEVEMENT_DONATION_CERTIFICATE_OF_SUB_PROJECT,
+        'current_status_of_the_site': CURRENT_STATUS_OF_THE_SITE,
+        'subproject_type_designation': SubprojectTypeDesignation.choices(empty=False),
+    }
 
 def get_subproject_metadata(request):
 
@@ -98,6 +103,7 @@ def get_subproject_metadata(request):
     """
     
     meta = Subproject._meta
+    choices_datas = get_choices_datas()
     
     field_metadata = []
     for field in meta.get_fields(include_parents=False):# meta.concrete_fields:#meta.get_fields(include_parents=False): # linked_subprojects, subprojectstep, subprojectfile, list_of_beneficiary_villages, list_of_villages_crossed_by_the_track_or_electrification, priorities, projects, financiers

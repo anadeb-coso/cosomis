@@ -99,7 +99,7 @@ class DashboardSubprojectsMixin:
             Q(location_subproject_realized__id__in=adls) | 
             Q(canton__id__in=adls)
         ).get_actifs()
-        sectors = sorted(list(set(list(subprojects.values_list('subproject_sector')))))
+        sectors = sorted(set(subprojects.values_list('subproject_sector')), key=lambda row: row[0] or '')
         
         
         administrative_level = administrative_levels.first()
@@ -161,8 +161,8 @@ class DashboardSubprojectsDisplayGroupedBySectorsListView(DashboardSubprojectsMi
         all_subprojects = all_subprojects.order_by('number', 'joint_subproject_number')
         
         for subproject in all_subprojects:
-            if not datas.get(subproject.subproject_sector):
-                datas[subproject.subproject_sector] = {
+            if not datas.get(subproject.subproject_sector_id):
+                datas[subproject.subproject_sector_id] = {
                     _("N°"): {},
                     _("Region"): {},
                     _("Commune"): {},
@@ -175,7 +175,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListView(DashboardSubprojectsMi
                     _("Level of realization") + " %": {},
                     _("Physical level"): {},
                 }
-                datas_on_liste[subproject.subproject_sector] = []
+                datas_on_liste[subproject.subproject_sector_id] = []
 
             obj = {
                 'number': None,
@@ -190,57 +190,57 @@ class DashboardSubprojectsDisplayGroupedBySectorsListView(DashboardSubprojectsMi
                 'realization_level': None,
                 'physical_level': None
             }
-            datas[subproject.subproject_sector][_("N°")][count] = subproject.number
+            datas[subproject.subproject_sector_id][_("N°")][count] = subproject.number
             obj['number'] = subproject.number
             canton = None
             try:
                 canton = subproject.get_canton()
-                datas[subproject.subproject_sector][_("Region")][count] = canton.parent.parent.parent.name if canton else "-"
-                datas[subproject.subproject_sector][_("Commune")][count] = canton.parent.name if canton else "-"
+                datas[subproject.subproject_sector_id][_("Region")][count] = canton.parent.parent.parent.name if canton else "-"
+                datas[subproject.subproject_sector_id][_("Commune")][count] = canton.parent.name if canton else "-"
             except:
-                datas[subproject.subproject_sector][_("Region")][count] = "-"
-                datas[subproject.subproject_sector][_("Commune")][count] = "-"
-            obj['region'] = datas[subproject.subproject_sector][_("Region")][count]
-            obj['commune'] = datas[subproject.subproject_sector][_("Commune")][count]
+                datas[subproject.subproject_sector_id][_("Region")][count] = "-"
+                datas[subproject.subproject_sector_id][_("Commune")][count] = "-"
+            obj['region'] = datas[subproject.subproject_sector_id][_("Region")][count]
+            obj['commune'] = datas[subproject.subproject_sector_id][_("Commune")][count]
 
             village = subproject.get_village()
-            datas[subproject.subproject_sector][_("Sites")][count] = village.name if village and village != "CCD" else (f'{canton.name} ({_("Canton")})' if village == "CCD" and canton else "-")
-            obj['sites'] = datas[subproject.subproject_sector][_("Sites")][count]
+            datas[subproject.subproject_sector_id][_("Sites")][count] = village.name if village and village != "CCD" else (f'{canton.name} ({_("Canton")})' if village == "CCD" and canton else "-")
+            obj['sites'] = datas[subproject.subproject_sector_id][_("Sites")][count]
             
-            datas[subproject.subproject_sector][_("Structures")][count] = subproject.full_title_of_approved_subproject 
+            datas[subproject.subproject_sector_id][_("Structures")][count] = subproject.full_title_of_approved_subproject 
             # (
             #     subproject.full_title_of_approved_subproject \
             #         if subproject.subproject_type_designation != "Infrastructure" else \
             #         subproject.type_of_subproject
             # )
-            obj['structures'] = datas[subproject.subproject_sector][_("Structures")][count]
+            obj['structures'] = datas[subproject.subproject_sector_id][_("Structures")][count]
 
-            datas[subproject.subproject_sector][_("Type")][count] = subproject.type_of_subproject
-            obj['type'] = subproject.type_of_subproject
+            datas[subproject.subproject_sector_id][_("Type")][count] = subproject.type_of_subproject_id
+            obj['type'] = subproject.type_of_subproject_id
 
-            datas[subproject.subproject_sector][_("Companies")][count] = subproject.name_of_the_awarded_company_works_companies if subproject.name_of_the_awarded_company_works_companies else "-"
-            obj['companies'] = datas[subproject.subproject_sector][_("Companies")][count]
+            datas[subproject.subproject_sector_id][_("Companies")][count] = subproject.name_of_the_awarded_company_works_companies if subproject.name_of_the_awarded_company_works_companies else "-"
+            obj['companies'] = datas[subproject.subproject_sector_id][_("Companies")][count]
             
-            datas[subproject.subproject_sector][_("Estimated cost") + " FCFA"][count] = subproject.estimated_cost if subproject.estimated_cost else 0
-            obj['estimated_cost'] = datas[subproject.subproject_sector][_("Estimated cost") + " FCFA"][count]
+            datas[subproject.subproject_sector_id][_("Estimated cost") + " FCFA"][count] = subproject.estimated_cost if subproject.estimated_cost else 0
+            obj['estimated_cost'] = datas[subproject.subproject_sector_id][_("Estimated cost") + " FCFA"][count]
             
-            datas[subproject.subproject_sector][_("Amount FCFA TTC")][count] = subproject.exact_amount_spent if subproject.exact_amount_spent else 0
-            obj['amount_ttc'] = datas[subproject.subproject_sector][_("Amount FCFA TTC")][count]
+            datas[subproject.subproject_sector_id][_("Amount FCFA TTC")][count] = subproject.exact_amount_spent if subproject.exact_amount_spent else 0
+            obj['amount_ttc'] = datas[subproject.subproject_sector_id][_("Amount FCFA TTC")][count]
 
             step_level = subproject.get_current_subproject_step_and_level_object
             
-            datas[subproject.subproject_sector][_("Level of realization") + " %"][count] = step_level.percent if step_level and step_level.percent else 0 #str(int(step_level.percent)).rjust(characters_length,'0') if step_level and step_level.percent else 0
-            obj['realization_level'] = datas[subproject.subproject_sector][_("Level of realization") + " %"][count]
+            datas[subproject.subproject_sector_id][_("Level of realization") + " %"][count] = step_level.percent if step_level and step_level.percent else 0 #str(int(step_level.percent)).rjust(characters_length,'0') if step_level and step_level.percent else 0
+            obj['realization_level'] = datas[subproject.subproject_sector_id][_("Level of realization") + " %"][count]
             
-            datas[subproject.subproject_sector][_("Physical level")][count] = subproject.get_current_subproject_step_and_level_without_percent
-            obj['physical_level'] = datas[subproject.subproject_sector][_("Physical level")][count]
+            datas[subproject.subproject_sector_id][_("Physical level")][count] = subproject.get_current_subproject_step_and_level_without_percent
+            obj['physical_level'] = datas[subproject.subproject_sector_id][_("Physical level")][count]
 
 
             count += 1
 
-            datas[subproject.subproject_sector][_("N°")][count] = _("Total")
+            datas[subproject.subproject_sector_id][_("N°")][count] = _("Total")
 
-            datas_on_liste[subproject.subproject_sector].append(obj)
+            datas_on_liste[subproject.subproject_sector_id].append(obj)
 
         # All sum
         columns_skip = [
@@ -326,8 +326,8 @@ class DashboardSubprojectsDisplayGroupedBySectorsListSubView(DashboardSubproject
         all_subprojects = all_subprojects.order_by('number', 'joint_subproject_number')
         
         for subproject in all_subprojects:
-            if not datas.get(subproject.subproject_sector):
-                datas[subproject.subproject_sector] = {
+            if not datas.get(subproject.subproject_sector_id):
+                datas[subproject.subproject_sector_id] = {
                     _("N°"): {},
                     _("Region"): {},
                     _("Commune"): {},
@@ -340,7 +340,7 @@ class DashboardSubprojectsDisplayGroupedBySectorsListSubView(DashboardSubproject
                     _("Level of realization") + " %": {},
                     _("Physical level"): {},
                 }
-                datas_on_liste[subproject.subproject_sector] = []
+                datas_on_liste[subproject.subproject_sector_id] = []
 
             obj = {
                 'number': None,
@@ -355,57 +355,57 @@ class DashboardSubprojectsDisplayGroupedBySectorsListSubView(DashboardSubproject
                 'realization_level': None,
                 'physical_level': None
             }
-            datas[subproject.subproject_sector][_("N°")][count] = subproject.number
+            datas[subproject.subproject_sector_id][_("N°")][count] = subproject.number
             obj['number'] = subproject.number
             canton = None
             try:
                 canton = subproject.get_canton()
-                datas[subproject.subproject_sector][_("Region")][count] = canton.parent.parent.parent.name if canton else "-"
-                datas[subproject.subproject_sector][_("Commune")][count] = canton.parent.name if canton else "-"
+                datas[subproject.subproject_sector_id][_("Region")][count] = canton.parent.parent.parent.name if canton else "-"
+                datas[subproject.subproject_sector_id][_("Commune")][count] = canton.parent.name if canton else "-"
             except:
-                datas[subproject.subproject_sector][_("Region")][count] = "-"
-                datas[subproject.subproject_sector][_("Commune")][count] = "-"
-            obj['region'] = datas[subproject.subproject_sector][_("Region")][count]
-            obj['commune'] = datas[subproject.subproject_sector][_("Commune")][count]
+                datas[subproject.subproject_sector_id][_("Region")][count] = "-"
+                datas[subproject.subproject_sector_id][_("Commune")][count] = "-"
+            obj['region'] = datas[subproject.subproject_sector_id][_("Region")][count]
+            obj['commune'] = datas[subproject.subproject_sector_id][_("Commune")][count]
 
             village = subproject.get_village()
-            datas[subproject.subproject_sector][_("Sites")][count] = village.name if village and village != "CCD" else (f'{canton.name} ({_("Canton")})' if village == "CCD" and canton else "-")
-            obj['sites'] = datas[subproject.subproject_sector][_("Sites")][count]
+            datas[subproject.subproject_sector_id][_("Sites")][count] = village.name if village and village != "CCD" else (f'{canton.name} ({_("Canton")})' if village == "CCD" and canton else "-")
+            obj['sites'] = datas[subproject.subproject_sector_id][_("Sites")][count]
 
-            datas[subproject.subproject_sector][_("Structures")][count] = subproject.full_title_of_approved_subproject
+            datas[subproject.subproject_sector_id][_("Structures")][count] = subproject.full_title_of_approved_subproject
             # (
             #     subproject.full_title_of_approved_subproject \
             #         if subproject.subproject_type_designation != "Infrastructure" else \
             #         subproject.type_of_subproject
             # )
-            obj['structures'] = datas[subproject.subproject_sector][_("Structures")][count]
+            obj['structures'] = datas[subproject.subproject_sector_id][_("Structures")][count]
 
-            datas[subproject.subproject_sector][_("Type")][count] = subproject.type_of_subproject
-            obj['type'] = subproject.type_of_subproject
+            datas[subproject.subproject_sector_id][_("Type")][count] = subproject.type_of_subproject_id
+            obj['type'] = subproject.type_of_subproject_id
 
-            datas[subproject.subproject_sector][_("Companies")][count] = subproject.name_of_the_awarded_company_works_companies if subproject.name_of_the_awarded_company_works_companies else "-"
-            obj['companies'] = datas[subproject.subproject_sector][_("Companies")][count]
+            datas[subproject.subproject_sector_id][_("Companies")][count] = subproject.name_of_the_awarded_company_works_companies if subproject.name_of_the_awarded_company_works_companies else "-"
+            obj['companies'] = datas[subproject.subproject_sector_id][_("Companies")][count]
             
-            datas[subproject.subproject_sector][_("Estimated cost") + " FCFA"][count] = subproject.estimated_cost if subproject.estimated_cost else 0
-            obj['estimated_cost'] = datas[subproject.subproject_sector][_("Estimated cost") + " FCFA"][count]
+            datas[subproject.subproject_sector_id][_("Estimated cost") + " FCFA"][count] = subproject.estimated_cost if subproject.estimated_cost else 0
+            obj['estimated_cost'] = datas[subproject.subproject_sector_id][_("Estimated cost") + " FCFA"][count]
             
-            datas[subproject.subproject_sector][_("Amount FCFA TTC")][count] = subproject.exact_amount_spent if subproject.exact_amount_spent else 0
-            obj['amount_ttc'] = datas[subproject.subproject_sector][_("Amount FCFA TTC")][count]
+            datas[subproject.subproject_sector_id][_("Amount FCFA TTC")][count] = subproject.exact_amount_spent if subproject.exact_amount_spent else 0
+            obj['amount_ttc'] = datas[subproject.subproject_sector_id][_("Amount FCFA TTC")][count]
 
             step_level = subproject.get_current_subproject_step_and_level_object
             
-            datas[subproject.subproject_sector][_("Level of realization") + " %"][count] = step_level.percent if step_level and step_level.percent else 0 #str(int(step_level.percent)).rjust(characters_length,'0') if step_level and step_level.percent else 0
-            obj['realization_level'] = datas[subproject.subproject_sector][_("Level of realization") + " %"][count]
+            datas[subproject.subproject_sector_id][_("Level of realization") + " %"][count] = step_level.percent if step_level and step_level.percent else 0 #str(int(step_level.percent)).rjust(characters_length,'0') if step_level and step_level.percent else 0
+            obj['realization_level'] = datas[subproject.subproject_sector_id][_("Level of realization") + " %"][count]
             
-            datas[subproject.subproject_sector][_("Physical level")][count] = subproject.get_current_subproject_step_and_level_without_percent
-            obj['physical_level'] = datas[subproject.subproject_sector][_("Physical level")][count]
+            datas[subproject.subproject_sector_id][_("Physical level")][count] = subproject.get_current_subproject_step_and_level_without_percent
+            obj['physical_level'] = datas[subproject.subproject_sector_id][_("Physical level")][count]
 
 
             count += 1
 
-            datas[subproject.subproject_sector][_("N°")][count] = _("Total")
+            datas[subproject.subproject_sector_id][_("N°")][count] = _("Total")
 
-            datas_on_liste[subproject.subproject_sector].append(obj)
+            datas_on_liste[subproject.subproject_sector_id].append(obj)
 
         # All sum
         columns_skip = [
@@ -490,8 +490,8 @@ class DashboardSubprojectsDisplayGroupedByTypeListSubView(DashboardSubprojectsMi
         all_subprojects = all_subprojects.order_by('number', 'joint_subproject_number')
         
         for subproject in all_subprojects:
-            if not datas.get(subproject.type_of_subproject):
-                datas[subproject.type_of_subproject] = {
+            if not datas.get(subproject.type_of_subproject_id):
+                datas[subproject.type_of_subproject_id] = {
                     _("N°"): {},
                     _("Region"): {},
                     _("Commune"): {},
@@ -504,7 +504,7 @@ class DashboardSubprojectsDisplayGroupedByTypeListSubView(DashboardSubprojectsMi
                     _("Level of realization") + " %": {},
                     _("Physical level"): {},
                 }
-                datas_on_liste[subproject.type_of_subproject] = []
+                datas_on_liste[subproject.type_of_subproject_id] = []
 
             obj = {
                 'number': None,
@@ -519,57 +519,57 @@ class DashboardSubprojectsDisplayGroupedByTypeListSubView(DashboardSubprojectsMi
                 'realization_level': None,
                 'physical_level': None
             }
-            datas[subproject.type_of_subproject][_("N°")][count] = subproject.number
+            datas[subproject.type_of_subproject_id][_("N°")][count] = subproject.number
             obj['number'] = subproject.number
             canton = None
             try:
                 canton = subproject.get_canton()
-                datas[subproject.type_of_subproject][_("Region")][count] = canton.parent.parent.parent.name if canton else "-"
-                datas[subproject.type_of_subproject][_("Commune")][count] = canton.parent.name if canton else "-"
+                datas[subproject.type_of_subproject_id][_("Region")][count] = canton.parent.parent.parent.name if canton else "-"
+                datas[subproject.type_of_subproject_id][_("Commune")][count] = canton.parent.name if canton else "-"
             except:
-                datas[subproject.type_of_subproject][_("Region")][count] = "-"
-                datas[subproject.type_of_subproject][_("Commune")][count] = "-"
-            obj['region'] = datas[subproject.type_of_subproject][_("Region")][count]
-            obj['commune'] = datas[subproject.type_of_subproject][_("Commune")][count]
+                datas[subproject.type_of_subproject_id][_("Region")][count] = "-"
+                datas[subproject.type_of_subproject_id][_("Commune")][count] = "-"
+            obj['region'] = datas[subproject.type_of_subproject_id][_("Region")][count]
+            obj['commune'] = datas[subproject.type_of_subproject_id][_("Commune")][count]
 
             village = subproject.get_village()
-            datas[subproject.type_of_subproject][_("Sites")][count] = village.name if village and village != "CCD" else (f'{canton.name} ({_("Canton")})' if village == "CCD" and canton else "-")
-            obj['sites'] = datas[subproject.type_of_subproject][_("Sites")][count]
+            datas[subproject.type_of_subproject_id][_("Sites")][count] = village.name if village and village != "CCD" else (f'{canton.name} ({_("Canton")})' if village == "CCD" and canton else "-")
+            obj['sites'] = datas[subproject.type_of_subproject_id][_("Sites")][count]
 
-            datas[subproject.type_of_subproject][_("Structures")][count] = subproject.full_title_of_approved_subproject
+            datas[subproject.type_of_subproject_id][_("Structures")][count] = subproject.full_title_of_approved_subproject
             # (
             #     subproject.full_title_of_approved_subproject \
             #         if subproject.subproject_type_designation != "Infrastructure" else \
             #         subproject.type_of_subproject
             # )
-            obj['structures'] = datas[subproject.type_of_subproject][_("Structures")][count]
+            obj['structures'] = datas[subproject.type_of_subproject_id][_("Structures")][count]
 
-            datas[subproject.type_of_subproject][_("Type")][count] = subproject.type_of_subproject
-            obj['type'] = datas[subproject.type_of_subproject][_("Type")][count]
+            datas[subproject.type_of_subproject_id][_("Type")][count] = subproject.type_of_subproject_id
+            obj['type'] = datas[subproject.type_of_subproject_id][_("Type")][count]
 
-            datas[subproject.type_of_subproject][_("Companies")][count] = subproject.name_of_the_awarded_company_works_companies if subproject.name_of_the_awarded_company_works_companies else "-"
-            obj['companies'] = datas[subproject.type_of_subproject][_("Companies")][count]
+            datas[subproject.type_of_subproject_id][_("Companies")][count] = subproject.name_of_the_awarded_company_works_companies if subproject.name_of_the_awarded_company_works_companies else "-"
+            obj['companies'] = datas[subproject.type_of_subproject_id][_("Companies")][count]
             
-            datas[subproject.type_of_subproject][_("Estimated cost") + " FCFA"][count] = subproject.estimated_cost if subproject.estimated_cost else 0
-            obj['estimated_cost'] = datas[subproject.type_of_subproject][_("Estimated cost") + " FCFA"][count]
+            datas[subproject.type_of_subproject_id][_("Estimated cost") + " FCFA"][count] = subproject.estimated_cost if subproject.estimated_cost else 0
+            obj['estimated_cost'] = datas[subproject.type_of_subproject_id][_("Estimated cost") + " FCFA"][count]
             
-            datas[subproject.type_of_subproject][_("Amount FCFA TTC")][count] = subproject.exact_amount_spent if subproject.exact_amount_spent else 0
-            obj['amount_ttc'] = datas[subproject.type_of_subproject][_("Amount FCFA TTC")][count]
+            datas[subproject.type_of_subproject_id][_("Amount FCFA TTC")][count] = subproject.exact_amount_spent if subproject.exact_amount_spent else 0
+            obj['amount_ttc'] = datas[subproject.type_of_subproject_id][_("Amount FCFA TTC")][count]
 
             step_level = subproject.get_current_subproject_step_and_level_object
             
-            datas[subproject.type_of_subproject][_("Level of realization") + " %"][count] = step_level.percent if step_level and step_level.percent else 0 #str(int(step_level.percent)).rjust(characters_length,'0') if step_level and step_level.percent else 0
-            obj['realization_level'] = datas[subproject.type_of_subproject][_("Level of realization") + " %"][count]
+            datas[subproject.type_of_subproject_id][_("Level of realization") + " %"][count] = step_level.percent if step_level and step_level.percent else 0 #str(int(step_level.percent)).rjust(characters_length,'0') if step_level and step_level.percent else 0
+            obj['realization_level'] = datas[subproject.type_of_subproject_id][_("Level of realization") + " %"][count]
             
-            datas[subproject.type_of_subproject][_("Physical level")][count] = subproject.get_current_subproject_step_and_level_without_percent
-            obj['physical_level'] = datas[subproject.type_of_subproject][_("Physical level")][count]
+            datas[subproject.type_of_subproject_id][_("Physical level")][count] = subproject.get_current_subproject_step_and_level_without_percent
+            obj['physical_level'] = datas[subproject.type_of_subproject_id][_("Physical level")][count]
 
 
             count += 1
 
-            datas[subproject.type_of_subproject][_("N°")][count] = _("Total")
+            datas[subproject.type_of_subproject_id][_("N°")][count] = _("Total")
 
-            datas_on_liste[subproject.type_of_subproject].append(obj)
+            datas_on_liste[subproject.type_of_subproject_id].append(obj)
 
         # All sum
         columns_skip = [

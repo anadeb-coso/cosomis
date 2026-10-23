@@ -782,11 +782,11 @@ class AdministrativeLevelPrioritiesComponent(AdministrativeLevelMixin, AJAXReque
         summary_subprojects = {}
         
         for subp in subprojects:
-            if not priorities_by_sector.get(subp.subproject_sector):
-                priorities_by_sector[subp.subproject_sector] = {"number": 1, "percent": (1/length_subprojects)*100}
+            if not priorities_by_sector.get(subp.subproject_sector_id):
+                priorities_by_sector[subp.subproject_sector_id] = {"number": 1, "percent": (1/length_subprojects)*100}
             else:
-                priorities_by_sector[subp.subproject_sector]['number'] += 1
-                priorities_by_sector[subp.subproject_sector]['percent'] = (priorities_by_sector[subp.subproject_sector]['number']/length_subprojects) * 100
+                priorities_by_sector[subp.subproject_sector_id]['number'] += 1
+                priorities_by_sector[subp.subproject_sector_id]['percent'] = (priorities_by_sector[subp.subproject_sector_id]['number']/length_subprojects) * 100
 
             if not summary_subprojects.get(subp.full_title_of_approved_subproject):
                 summary_subprojects[subp.full_title_of_approved_subproject] = {

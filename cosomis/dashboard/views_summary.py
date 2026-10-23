@@ -215,7 +215,7 @@ class DashboardSubprojectsMixin(ModalListMixin):
 
         return {
             'subprojects': subprojects,
-            'sectors': sorted(list(sectors)),
+            'sectors': sorted(sectors, key=lambda sector: sector or ''),
             'administrative_level_type': adl_type,
             'columns_tuples': list(columns_tuples),
             'ald_filter_ids': ald_filter_ids,
@@ -447,7 +447,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                 _("Comments"): {}
             }
 
-            recap_sectors = [s.upper() for s in sectors]
+            recap_sectors = [(s or '').upper() for s in sectors]
 
             # The counts of every (sector, type of structure) in one GROUP BY
             # instead of two queries per sector. The sectors are matched in upper
@@ -498,7 +498,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                 agg_dict = recap_by_sector.get(sector, {})
 
                 # Récupérer les types distincts de sous-projets dans ce secteur
-                types_in_sector = sorted(agg_dict)
+                types_in_sector = sorted(agg_dict, key=lambda type_name: type_name or '')
 
                 # Nom du secteur dans toutes les colonnes
                 for k in datas.keys():
@@ -589,8 +589,8 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
                 for sector in sectors:
                     rows = by_sector_type.get(sector, {})
                     types = {}
-                    for t in sorted(t for t, row in rows.items() if row[status_key]):
-                        types[t.capitalize()] = rows[t][status_key]
+                    for t in sorted((t for t, row in rows.items() if row[status_key]), key=lambda type_name: type_name or ''):
+                        types[(t or '').capitalize()] = rows[t][status_key]
                     infrastructures_count = sum(row[status_key] for row in rows.values())
                     if subprojects_from_joint_numbers:
                         subprojects_count = subprojects_by_status[status_key].get(sector, 0)

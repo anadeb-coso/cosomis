@@ -106,13 +106,13 @@
 
                         <div class="clearfix pb-1">
                             <span class="font-weight-bold">{% translate 'Sector' %}:
-                            </span><span>{{ object.subproject_sector }}</span>
+                            </span><span>{{ object.subproject_sector_id }}</span>
                         </div>
 
                         <div class="clearfix pb-1">
                             <span class="font-weight-bold">{% translate 'Type' %}:
-                            </span><span>{{ object.type_of_subproject }} |
-                                {{ object.subproject_type_designation }}</span>
+                            </span><span>{{ object.type_of_subproject_id }} |
+                                {{ object.subproject_type_designation_id }}</span>
                         </div>
 
                         <div class="clearfix pb-1">
@@ -161,7 +161,7 @@
                                     <a href="{% url 'subprojects:detail' sub_sub.pk %}" class="font-weight-bold"
                                         style="font-size: 9px !important;">{{ forloop.counter }}-/
                                         N{{ sub_sub.number }}.{{ sub_sub.joint_subproject_number }}
-                                        {{ sub_sub.type_of_subproject }}</a>
+                                        {{ sub_sub.type_of_subproject_id }}</a>
                                     &nbsp;
                                     {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Infra" %}
                                     <a href="{% url 'subprojects:update_without_link_heavy_object' sub_sub.pk %}"
@@ -199,7 +199,7 @@
                                     <a href="{% url 'subprojects:detail' sub_sub.pk %}" class="font-weight-bold"
                                         style="font-size: 9px !important;">{{ forloop.counter }}-/
                                         N{{ sub_sub.number }}.{{ sub_sub.joint_subproject_number }}
-                                        {{ sub_sub.type_of_subproject }}</a>
+                                        {{ sub_sub.type_of_subproject_id }}</a>
                                     &nbsp;
                                     {% if user.is_superuser or user|has_group:"Admin" or user|has_group:"Evaluator" or user|has_group:"Infra" %}
                                     <a href="{% url 'subprojects:update_without_link_heavy_object' sub_sub.pk %}"

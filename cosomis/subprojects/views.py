@@ -109,11 +109,11 @@ def get_subprojects_search_q(search):
         Q(canton__parent__parent__parent__name__icontains=search) |
         Q(linked_subprojects__canton__parent__parent__parent__name__icontains=search) |
 
-        Q(subproject_sector__icontains=search) |
-        Q(type_of_subproject__icontains=search) |
-        Q(linked_subprojects__type_of_subproject__icontains=search) |
-        Q(works_type__icontains=search) |
-        Q(linked_subprojects__works_type__icontains=search) |
+        Q(subproject_sector__name__icontains=search) |
+        Q(type_of_subproject__name__icontains=search) |
+        Q(linked_subprojects__type_of_subproject__name__icontains=search) |
+        Q(works_type__name__icontains=search) |
+        Q(linked_subprojects__works_type__name__icontains=search) |
         Q(facilitator_name__icontains=search)
     )
 
@@ -161,7 +161,7 @@ class SubprojectsListView(PageMixin, LoginRequiredMixin, SubprojectDatatableRows
             DatatableColumn(_('Sites')),
             DatatableColumn(_('Region'), get_subproject_region_ordering()),
             DatatableColumn(_('Project Name'), 'full_title_of_approved_subproject'),
-            DatatableColumn(_('Type'), 'type_of_subproject'),
+            DatatableColumn(_('Type'), 'type_of_subproject_id'),
             DatatableColumn(_('Status')),
             DatatableColumn(_('Estimated cost'), 'estimated_cost'),
             DatatableColumn(_('Action'), switchable=False),
@@ -212,7 +212,7 @@ class InfrastructuresListView(PageMixin, LoginRequiredMixin, SubprojectDatatable
             DatatableColumn(_('Region'), get_subproject_region_ordering()),
             DatatableColumn(_('Sites')),
             DatatableColumn(_('Project Name'), 'full_title_of_approved_subproject'),
-            DatatableColumn(_('Type'), 'type_of_subproject'),
+            DatatableColumn(_('Type'), 'type_of_subproject_id'),
             DatatableColumn(_('Status')),
             DatatableColumn(_('Estimated cost'), 'estimated_cost'),
             DatatableColumn('CT', 'photos_count'),
@@ -914,9 +914,9 @@ class SubprojectUpdateView(PageMixin, LoginRequiredMixin, InfraPermissionRequire
         context = super().get_context_data(**kwargs)
         _object = self.get_object()
         
-        if _object.subproject_type_designation == "Infrastructure":
+        if _object.subproject_type_designation_id == "Infrastructure":
             context['title'] = f"{_('Update the infrastructure')} / {_object.location_subproject_realized.name}" if _object.location_subproject_realized else _('Update the infrastructure')
-        elif _object.subproject_type_designation == "Subproject":
+        elif _object.subproject_type_designation_id == "Subproject":
             context['title'] = f"{_('Update the subproject')} / {_object.location_subproject_realized.name}" if _object.location_subproject_realized else _('Update the subproject')
         context['breadcrumb'][1]['title'] = context['title']
 
@@ -959,9 +959,9 @@ class SubprojectUpdateWithoutLinkHeavyObjectsView(PageMixin, LoginRequiredMixin,
         context = super().get_context_data(**kwargs)
         _object = self.get_object()
         
-        if _object.subproject_type_designation == "Infrastructure":
+        if _object.subproject_type_designation_id == "Infrastructure":
             context['title'] = f"{_('Update the infrastructure')} / {_object.location_subproject_realized.name}" if _object.location_subproject_realized else _('Update the infrastructure')
-        elif _object.subproject_type_designation == "Subproject":
+        elif _object.subproject_type_designation_id == "Subproject":
             context['title'] = f"{_('Update the subproject')} / {_object.location_subproject_realized.name}" if _object.location_subproject_realized else _('Update the subproject')
         context['breadcrumb'][1]['title'] = context['title']
 
@@ -1015,7 +1015,7 @@ class SubSubprojectCreateView(PageMixin, LoginRequiredMixin, EvaluatorPermission
                 obj.id = None
                 obj.pk = None
                 obj.canton = None
-                obj.type_of_subproject = None
+                obj.type_of_subproject_id = None
                 obj.number = None
                 obj.estimated_cost = None
                 obj.link_to_subproject = Subproject.objects.get(id=self.kwargs['subproject_id'])

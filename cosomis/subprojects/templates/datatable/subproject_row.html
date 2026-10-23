@@ -9,7 +9,7 @@
 {% enddatatable_cell %}
 {% datatable_cell %}{{ subproject.get_canton.parent.parent.parent.name }}{% enddatatable_cell %}
 {% datatable_cell %}<div class="dt-title" title="{{ subproject.full_title_of_approved_subproject }}">{{ subproject.full_title_of_approved_subproject }}</div>{% enddatatable_cell %}
-{% datatable_cell %}<span class="dt-pill">{{ subproject.type_of_subproject }}</span>{% enddatatable_cell %}
+{% datatable_cell %}<span class="dt-pill">{{ subproject.type_of_subproject_id }}</span>{% enddatatable_cell %}
 {% datatable_cell %}
     {% if subproject.get_current_subproject_step_and_level %}
         {{ subproject.get_current_subproject_step_and_level }}

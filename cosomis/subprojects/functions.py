@@ -9,7 +9,7 @@ from sys import platform
 
 from administrativelevels.libraries import functions as libraries_functions
 from administrativelevels.models import AdministrativeLevel, CVD
-from subprojects.models import Subproject, Project, Component
+from subprojects.models import Subproject, Project, Component, SubprojectSector, SubprojectType, WorksType
 from cosomis.utils import (
     link_infrastures_to_subproject, copy_cvd_to_list_of_beneficiary_villages,
     # attribute_project_to_subprojects, 
@@ -478,16 +478,17 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                         subproject.wave = wave
                     if lot:
                         subproject.lot = lot
+                    # secteur, type d'ouvrage, type de travaux : valeur du fichier ajoutée à sa liste de référence au besoin
                     if subproject_sector:
-                        subproject.subproject_sector = subproject_sector
+                        subproject.subproject_sector_id = SubprojectSector.ensure(subproject_sector)
                     if type_of_subproject:
-                        subproject.type_of_subproject = type_of_subproject
+                        subproject.type_of_subproject_id = SubprojectType.ensure(type_of_subproject)
                     if full_title_of_approved_subproject:
                         if subproject.id and str(full_title_of_approved_subproject).upper() != str(subproject.full_title_of_approved_subproject).upper():
                             subproject.infrastructure_changed = True
                         subproject.full_title_of_approved_subproject = full_title_of_approved_subproject
                     if works_type:
-                        subproject.works_type = works_type
+                        subproject.works_type_id = WorksType.ensure(works_type)
                     if estimated_cost:
                         subproject.estimated_cost = estimated_cost
                     if level_of_achievement_donation_certificate:
@@ -1063,8 +1064,8 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         datas["NOM DE L'AC"][count] = elt.facilitator_name
         datas["VAGUE"][count] = elt.wave
         datas["LOT"][count] = elt.lot
-        datas["SECTEUR BENEFICIAIRE–SP"][count] = elt.subproject_sector
-        datas["TYPE D'OUVRAGE (INFRASTRUCTURE)"][count] = elt.type_of_subproject
+        datas["SECTEUR BENEFICIAIRE–SP"][count] = elt.subproject_sector_id
+        datas["TYPE D'OUVRAGE (INFRASTRUCTURE)"][count] = elt.type_of_subproject_id
 
         list_of_villages_crossed_by_the_track_or_electrification_str = ""
         list_of_villages_crossed_by_the_track_or_electrification = elt.list_of_villages_crossed_by_the_track_or_electrification.all()
@@ -1078,7 +1079,7 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
         datas["LISTE DE VILLAGES TRAVERSÉ PAR LA PISTE OU L'ÉLECTRIFICATION"][count] = list_of_villages_crossed_by_the_track_or_electrification_str
 
         datas["INTITULE COMPLET DU SOUS-PROJET APPROUVES (Description)"][count] = elt.full_title_of_approved_subproject
-        datas["TYPE DE TRAVAUX"][count] = elt.works_type
+        datas["TYPE DE TRAVAUX"][count] = elt.works_type_id
         datas["COUT ESTIMATIF"][count] = elt.estimated_cost
         datas["NIVEAU D'OBTENTION ATTESTATION DE DONATION"][count] = elt.level_of_achievement_donation_certificate
         datas["DATE D'APPROBATION CORA"][count] = elt.approval_date_cora

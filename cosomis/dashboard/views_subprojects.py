@@ -182,7 +182,7 @@ class DashboardSubprojectsMixin:
 
         return {
             'subprojects': subprojects,
-            'sectors': sorted(list(sectors)),
+            'sectors': sorted(sectors, key=lambda sector: sector or ''),
             'administrative_level_type': adl_type,
             'columns_tuples': list(columns_tuples),
             'ald_filter_ids': ald_filter_ids,
@@ -558,8 +558,8 @@ class DashboardSubprojectsSectorsAndStepsListView(DashboardSubprojectsMixin, AJA
 
             datas[_("Structures")][count] = (
                 subproject.full_title_of_approved_subproject \
-                    if subproject.subproject_type_designation != "Infrastructure" else \
-                    subproject.type_of_subproject
+                    if subproject.subproject_type_designation_id != "Infrastructure" else \
+                    subproject.type_of_subproject_id
             )
             datas[_("Companies")][count] = subproject.name_of_the_awarded_company_works_companies if subproject.name_of_the_awarded_company_works_companies else "-"
             datas[_("Estimated cost") + " FCFA"][count] = subproject.estimated_cost if subproject.estimated_cost else 0

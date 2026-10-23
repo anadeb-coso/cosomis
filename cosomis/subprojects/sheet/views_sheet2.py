@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.utils.translation import gettext_lazy as _
 import json
 from subprojects.models import Subproject
-from subprojects.sheet.functions import normalize_subproject_dict
+from subprojects.sheet.functions import normalize_subproject_dict, unknown_reference_values
 from .utils import *
 from cosomis.utils import save_subproject_tracking
 
@@ -82,9 +82,14 @@ def subproject_create_or_update(request):
             data = normalize_subproject_dict(data)
 
             # Vérification des champs obligatoires
-            missing_fields = [verbose_name for field, verbose_name in subproject_required_fields if field not in data or data[field] in [None, "", []]]
+            missing_fields = [verbose_name for field, verbose_name in subproject_required_fields if data.get(f"{field}_id" if field in reference_fields else field) in [None, "", []]]
             if missing_fields:
                 return JsonResponse({'error': f'{_("Required fields are missing or empty:")} {", ".join(str(f) for f in missing_fields)}'}, status=400)
+
+            # secteur, type d'ouvrage, type de travaux, désignation : valeurs de leur liste de référence uniquement
+            unknown_values = unknown_reference_values(data)
+            if unknown_values:
+                return JsonResponse({'error': ' '.join(unknown_values)}, status=400)
 
             m2m_data = {k: data.pop(k, []) for k in subproject_m2m_fields_names if k in data}
 
@@ -103,12 +108,12 @@ def subproject_create_or_update(request):
             
             if any(item for item in ['link_to_subproject', 'subproject_type_designation', 'joint_subproject_number'] if item in update_data):
                 
-                if subproject.link_to_subproject and subproject.subproject_type_designation == 'Subproject':
+                if subproject.link_to_subproject and subproject.subproject_type_designation_id == 'Subproject':
                     subproject.link_to_subproject = None
                     edit = True
                 else:
-                    subproject.subproject_type_designation = "Infrastructure"
-                    if subproject.joint_subproject_number and subproject.subproject_type_designation != 'Subproject':
+                    subproject.subproject_type_designation_id = "Infrastructure"
+                    if subproject.joint_subproject_number and subproject.subproject_type_designation_id != 'Subproject':
                         related_subproject = Subproject.objects.filter(
                             joint_subproject_number=subproject.joint_subproject_number,
                             infrastructure_deleted=False,
@@ -117,7 +122,7 @@ def subproject_create_or_update(request):
                         if related_subproject:
                             subproject.link_to_subproject = related_subproject
                             edit = True
-                    elif subproject.link_to_subproject and subproject.subproject_type_designation != 'Subproject':
+                    elif subproject.link_to_subproject and subproject.subproject_type_designation_id != 'Subproject':
                         related_subproject = Subproject.objects.filter(
                             link_to_subproject_id=subproject.link_to_subproject.id,
                             infrastructure_deleted=False,

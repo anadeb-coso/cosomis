@@ -1,11 +1,20 @@
 from django.db.models.fields.related import ForeignKey, ManyToManyField
 from django.db.models import Field, NOT_PROVIDED
 from django.apps import apps
-from subprojects.models import Subproject
+from subprojects.models import Subproject, SubprojectReferenceValue
 from cosomis import TABLE_SHEET_FIELDS_TO_EXCLUDE, FORM_FIELDS_TO_EXCLUDE
 
 
 subproject_fields = Subproject._meta.get_fields()
+
+# Secteur, type d'ouvrage, type de travaux, désignation : clés étrangères vers le NOM d'une liste de référence. Dans la
+# feuille, ce sont des listes déroulantes de valeurs (texte), comme les champs simples.
+reference_fields = {
+    f.name: f.related_model for f in subproject_fields
+    if isinstance(f, ForeignKey) and issubclass(f.related_model, SubprojectReferenceValue)
+}
+# secteur et type d'ouvrage restent obligatoires dans la feuille (ils l'étaient avant de devenir des listes)
+REQUIRED_REFERENCE_FIELDS = ('subproject_sector', 'type_of_subproject')
 
 # Récupération des champs obligatoires
 
@@ -14,7 +23,7 @@ subproject_required_fields = [
     if isinstance(f, Field) and (
         (
             f.blank is False and f.null is False and f.default in [NOT_PROVIDED, None]
-        ) 
+        ) or f.name in REQUIRED_REFERENCE_FIELDS
         # or (
         #     f.name in [
         #         'number',
@@ -32,7 +41,7 @@ subproject_required_fields = [
 ]
 
 # Récupération des champs ForeignKey
-fk_fields = [(f.name, f.related_model.__name__, 'ForeignKey') for f in subproject_fields if isinstance(f, ForeignKey) and f.name not in TABLE_SHEET_FIELDS_TO_EXCLUDE]
+fk_fields = [(f.name, f.related_model.__name__, 'ForeignKey') for f in subproject_fields if isinstance(f, ForeignKey) and f.name not in TABLE_SHEET_FIELDS_TO_EXCLUDE and f.name not in reference_fields]
 subproject_fk_fields_names = [f_name_fk[0] for f_name_fk in fk_fields]
 
 # Récupération des champs ManyToManyField
@@ -40,7 +49,7 @@ m2m_fields = [(f.name, f.related_model.__name__, 'ManyToManyField') for f in sub
 subproject_m2m_fields_names = [f_name_m2m[0] for f_name_m2m in m2m_fields]
 
 # On garde les noms des champs FK ID
-base_fields_to_include = [f.name for f in Subproject._meta.concrete_fields if not isinstance(f, ForeignKey) and f.name not in (TABLE_SHEET_FIELDS_TO_EXCLUDE+FORM_FIELDS_TO_EXCLUDE)]
+base_fields_to_include = [f.name for f in Subproject._meta.concrete_fields if (not isinstance(f, ForeignKey) or f.name in reference_fields) and f.name not in (TABLE_SHEET_FIELDS_TO_EXCLUDE+FORM_FIELDS_TO_EXCLUDE)]
 
 # ['location_subproject_realized', 'cvd', 'canton', 'link_to_subproject', 'component']
 # # Liste des champs liés à ajouter

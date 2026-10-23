@@ -120,7 +120,7 @@ def process_priority_for_subprojects(administrative_level, priority, type_group:
     similarity_threshold = 60 # Seuil de confiance
     priority_clean_value = normalize_text(extract_priority_description(priority['besoinSelectionne']))
     for subproject in subprojects:
-        ref_value = normalize_text(extract_priority_description(str(subproject.type_of_subproject).strip()))
+        ref_value = normalize_text(extract_priority_description(str(subproject.type_of_subproject_id).strip()))
         if priority_clean_value:
             score = fuzz.token_set_ratio(priority_clean_value, ref_value)
             if score >= similarity_threshold:
@@ -138,7 +138,7 @@ def process_priority_for_subprojects(administrative_level, priority, type_group:
                 
                 subproject.save()
 
-                print(f"Matched Priority: '{priority['besoinSelectionne']}' with Subproject: '{subproject.type_of_subproject}' (Score: {score}). Administrative Level ID: {administrative_level.name} ; {subproject.location_subproject_realized.name}")
+                print(f"Matched Priority: '{priority['besoinSelectionne']}' with Subproject: '{subproject.type_of_subproject_id}' (Score: {score}). Administrative Level ID: {administrative_level.name} ; {subproject.location_subproject_realized.name}")
 
 
 def update_or_create_priorities_document(priorities_document):

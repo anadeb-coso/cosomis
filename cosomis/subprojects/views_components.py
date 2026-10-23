@@ -68,11 +68,11 @@ class SubprojectsBySectorANdAdministrativeLevelComponent(SubprojectsByAdministra
         subprojects_by_sector = {}
         
         for subp in self.subprojects:
-            if not subprojects_by_sector.get(subp.subproject_sector):
-                subprojects_by_sector[subp.subproject_sector] = {"number": 1, "percent": float("%.2f"%((1/length_subprojects)*100))}
+            if not subprojects_by_sector.get(subp.subproject_sector_id):
+                subprojects_by_sector[subp.subproject_sector_id] = {"number": 1, "percent": float("%.2f"%((1/length_subprojects)*100))}
             else:
-                subprojects_by_sector[subp.subproject_sector]['number'] += 1
-                subprojects_by_sector[subp.subproject_sector]['percent'] = float("%.2f"%((subprojects_by_sector[subp.subproject_sector]['number']/length_subprojects) * 100))
+                subprojects_by_sector[subp.subproject_sector_id]['number'] += 1
+                subprojects_by_sector[subp.subproject_sector_id]['percent'] = float("%.2f"%((subprojects_by_sector[subp.subproject_sector_id]['number']/length_subprojects) * 100))
 
         return subprojects_by_sector
     

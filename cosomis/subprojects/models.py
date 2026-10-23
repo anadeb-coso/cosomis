@@ -72,11 +72,13 @@ class Subproject(BaseModel):
     wave = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Arbitrage wave"))
     lot = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Lot"))
     market_name = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Market name"))
-    subproject_sector = models.CharField(max_length=100, verbose_name=_("Subproject sector"))
-    type_of_subproject = models.CharField(max_length=150, verbose_name=_("Type of structure"))
-    subproject_type_designation = models.CharField(max_length=100, choices=SUB_PROJECT_TYPE_DESIGNATION, default='Subproject', verbose_name=_("Subproject type designation (Subproject or Infrastructure)"))
+    # Listes de référence (SubprojectSector, SubprojectType, SubprojectTypeDesignation, WorksType) : la colonne garde
+    # le texte de la valeur (clé étrangère vers `name`, même colonne qu'avant) ; `<champ>_id` donne ce texte sans requête.
+    subproject_sector = models.ForeignKey('SubprojectSector', to_field='name', db_column='subproject_sector', null=True, on_delete=models.PROTECT, related_name='subprojects', verbose_name=_("Subproject sector"))
+    type_of_subproject = models.ForeignKey('SubprojectType', to_field='name', db_column='type_of_subproject', null=True, on_delete=models.PROTECT, related_name='subprojects', verbose_name=_("Type of structure"))
+    subproject_type_designation = models.ForeignKey('SubprojectTypeDesignation', to_field='name', db_column='subproject_type_designation', default='Subproject', on_delete=models.PROTECT, related_name='subprojects', verbose_name=_("Subproject type designation (Subproject or Infrastructure)"))
     full_title_of_approved_subproject = models.TextField(max_length=255, verbose_name=_("Full title of approved sub-project (description)"))
-    works_type = models.CharField(max_length=150, null=True, blank=True, verbose_name=_("Works type"))
+    works_type = models.ForeignKey('WorksType', to_field='name', db_column='works_type', null=True, blank=True, on_delete=models.PROTECT, related_name='subprojects', verbose_name=_("Works type"))
     estimated_cost = models.FloatField(null=True, blank=True, verbose_name=_("Estimated cost"))
     exact_amount_spent = models.FloatField(null=True, blank=True, verbose_name=_("Exact amount spent on the sub-project"))
     level_of_achievement_donation_certificate = models.CharField(max_length=100, null=True, blank=True, verbose_name=_("Level of donation certificate"))
@@ -1086,22 +1088,102 @@ class Cycle(BaseModel):
         return self.name
 
 
-class  SubprojectSector(BaseModel):
-    name = models.CharField(max_length=255)
-    name_fr = models.CharField(max_length=255)
-    color = models.CharField(max_length=50)
+class SubprojectReferenceValue(BaseModel):
+    """Valeur d'une liste de référence des sous-projets. `name` est le texte rangé sur le sous-projet (clé étrangère
+    `to_field='name'`, dans la colonne d'origine) : requêtes, exports, SQL et API du mobile lisent le même texte
+    qu'avant. Renommer une valeur renomme aussi celle des sous-projets qui la portent ; une valeur utilisée ne peut
+    pas être supprimée (PROTECT)."""
+    # champ du sous-projet qui porte la valeur (défini par chaque liste)
+    subproject_field = None
+
+    name = models.CharField(max_length=255, unique=True, verbose_name=_("Name"))
+
+    class Meta:
+        abstract = True
+        ordering = ['name']
 
     def __str__(self):
         return self.name
-    
-class SubprojectType(BaseModel):
-    name = models.CharField(max_length=255)
-    name_fr = models.CharField(max_length=255)
-    color = models.CharField(max_length=50)
-    sector = models.ForeignKey('SubprojectSector', null=True, blank=True, on_delete=models.SET_NULL)
 
-    def __str__(self):
-        return self.name
+    def save(self, *args, **kwargs):
+        from django.db import transaction
+
+        old_name = type(self).objects.filter(pk=self.pk).values_list('name', flat=True).first() if self.pk else None
+        with transaction.atomic():
+            result = super().save(*args, **kwargs)
+            if old_name is not None and old_name != self.name:
+                # contrainte de clé étrangère différée : vérifiée à la fin de la transaction
+                Subproject.objects.filter(**{f'{self.subproject_field}_id': old_name}).update(**{f'{self.subproject_field}_id': self.name})
+        return result
+
+    @classmethod
+    def choices(cls, empty=True):
+        """[(valeur, valeur)] pour les listes déroulantes, dans l'ordre alphabétique."""
+        values = [(name, name) for name in cls.objects.order_by('name').values_list('name', flat=True)]
+        return [('', '')] + values if empty else values
+
+    @classmethod
+    def ensure(cls, value):
+        """Valeur importée (fichier Excel) : texte nettoyé, ajouté à la liste s'il n'y est pas ; None si vide."""
+        value = (str(value).strip() if value is not None else '')
+        if not value:
+            return None
+        cls.objects.get_or_create(name=value)
+        return value
+
+
+class SubprojectSector(SubprojectReferenceValue):
+    """Secteur des sous-projets (`Subproject.subproject_sector`)."""
+    subproject_field = 'subproject_sector'
+
+    name_fr = models.CharField(max_length=255, null=True, blank=True)
+    color = models.CharField(max_length=50, null=True, blank=True, verbose_name=_("Color"))
+
+    class Meta(SubprojectReferenceValue.Meta):
+        verbose_name = _("Subproject sector")
+        verbose_name_plural = _("Subproject sectors")
+
+
+class SubprojectType(SubprojectReferenceValue):
+    """Type d'ouvrage (`Subproject.type_of_subproject`)."""
+    subproject_field = 'type_of_subproject'
+
+    name_fr = models.CharField(max_length=255, null=True, blank=True)
+    color = models.CharField(max_length=50, null=True, blank=True, verbose_name=_("Color"))
+    sector = models.ForeignKey('SubprojectSector', null=True, blank=True, on_delete=models.SET_NULL, verbose_name=_("Subproject sector"))
+
+    class Meta(SubprojectReferenceValue.Meta):
+        verbose_name = _("Type of structure")
+        verbose_name_plural = _("Types of structure")
+
+
+class WorksType(SubprojectReferenceValue):
+    """Type de travaux (`Subproject.works_type`)."""
+    subproject_field = 'works_type'
+
+    class Meta(SubprojectReferenceValue.Meta):
+        verbose_name = _("Works type")
+        verbose_name_plural = _("Works types")
+
+
+class SubprojectTypeDesignation(SubprojectReferenceValue):
+    """Désignation (`Subproject.subproject_type_designation`) : « Subproject » ou « Infrastructure », valeurs dont
+    dépend la logique de l'application (sous-projet principal et ses infrastructures)."""
+    subproject_field = 'subproject_type_designation'
+
+    class Meta(SubprojectReferenceValue.Meta):
+        verbose_name = _("Subproject type designation")
+        verbose_name_plural = _("Subproject type designations")
+
+    @classmethod
+    def choices(cls, empty=True):
+        """« Subproject » puis « Infrastructure » (ordre et libellés traduits de SUB_PROJECT_TYPE_DESIGNATION), puis
+        les éventuelles autres valeurs."""
+        labels = dict(SUB_PROJECT_TYPE_DESIGNATION)
+        known = list(labels)
+        names = sorted(cls.objects.values_list('name', flat=True), key=lambda name: (known.index(name) if name in known else len(known), name))
+        values = [(name, labels.get(name, name)) for name in names]
+        return [('', '')] + values if empty else values
 
 
 def update_step(sender, instance, **kwargs):

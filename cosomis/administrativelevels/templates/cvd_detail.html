@@ -308,10 +308,10 @@
                             <div class="clearfix">
                                 <div class="float-left">
                                     <p class=""><i class="fas fa-cog"></i> 
-                                        {% if structure.type_of_subproject|length > 40 %}
-                                            {{ structure.type_of_subproject|slice:":40" }}...
+                                        {% if structure.type_of_subproject_id|length > 40 %}
+                                            {{ structure.type_of_subproject_id|slice:":40" }}...
                                         {% else %}
-                                            {{ structure.type_of_subproject }}
+                                            {{ structure.type_of_subproject_id }}
                                         {% endif %}
                                     </p>
                                 </div>

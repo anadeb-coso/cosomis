@@ -76,7 +76,7 @@ def update_or_create_adm_document(client, population_document):
             if updated:
                 subproject.save()
 
-            print(f"Subproject: '{subproject.type_of_subproject}'. Administrative Level ID: {administrative_level.name} ; {subproject.location_subproject_realized.name}")
+            print(f"Subproject: '{subproject.type_of_subproject_id}'. Administrative Level ID: {administrative_level.name} ; {subproject.location_subproject_realized.name}")
 
 
 def extract_population_data(form):

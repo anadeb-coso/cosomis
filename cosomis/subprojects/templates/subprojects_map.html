@@ -217,7 +217,7 @@
 
                     marker = new mapboxgl.Marker({
                             scale: 0.35, 
-                            "color": "{{ subproject.type_of_subproject|get_type_sub_project_color }}"
+                            "color": "{{ subproject.type_of_subproject_id|get_type_sub_project_color }}"
                         })
                         .setLngLat(
                             [
@@ -279,7 +279,7 @@
                 {% elif subproject.canton %}
                     marker = new mapboxgl.Marker({ 
                             scale: 0.35, 
-                            "color": "{{ subproject.type_of_subproject|get_type_sub_project_color }}" 
+                            "color": "{{ subproject.type_of_subproject_id|get_type_sub_project_color }}" 
                         })
                         .setLngLat(
                             [

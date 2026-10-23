@@ -322,7 +322,7 @@ class UploadSubprojectStepUrlAttachmentAPIView(generics.GenericAPIView):
                 subproject_file.date_taken = datetime.strptime(data['date_taken'], '%Y-%m-%d').date()
                 subproject_step_current = subproject.get_current_subproject_step
                 subproject_file.description = data['description'] if 'description' in data else (subproject_step_current.step.wording if subproject_step_current else None)
-                subproject_file.name = step_object.wording if step_object else (subproject_file.description if subproject_file.description else subproject.type_of_subproject)
+                subproject_file.name = step_object.wording if step_object else (subproject_file.description if subproject_file.description else subproject.type_of_subproject_id)
                 subproject_file.special = data['special'] if 'special' in data else False
                 if 'principal' in data and (not principal and images):
                     if data['principal'] == True:

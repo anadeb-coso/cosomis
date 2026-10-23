@@ -164,7 +164,7 @@ def link_infrastures_to_subproject():
             _subproject = _subprojects.first()
             if _subproject.id != subproject.id:
                 subproject.link_to_subproject = _subproject
-                subproject.subproject_type_designation = "Infrastructure"
+                subproject.subproject_type_designation_id = "Infrastructure"
                 subproject.save()
                 
     # subprojects = Subproject.objects.all().get_actifs().order_by('number', 'joint_subproject_number')

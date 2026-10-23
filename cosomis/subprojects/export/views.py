@@ -194,7 +194,7 @@ def insufficient_subprojects_status_to_excel(request):
             subproject.location_subproject_realized.parent.parent.name,
             subproject.location_subproject_realized.parent.name,
             subproject.location_subproject_realized.name,
-            subproject.type_of_subproject,
+            subproject.type_of_subproject_id,
             subproject.full_title_of_approved_subproject,
             subproject.component.name if subproject.component else "",
         ])
@@ -237,7 +237,7 @@ def insufficient_subprojects_status_to_excel(request):
             subproject.location_subproject_realized.parent.parent.name,
             subproject.location_subproject_realized.parent.name,
             subproject.location_subproject_realized.name,
-            subproject.type_of_subproject,
+            subproject.type_of_subproject_id,
             subproject.full_title_of_approved_subproject,
             subproject.component.name if subproject.component else "",
         ])

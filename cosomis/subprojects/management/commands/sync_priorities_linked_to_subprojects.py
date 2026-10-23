@@ -99,7 +99,7 @@ def update_or_create_priorities_document(priorities_document):
                         priority_clean_value = normalize_text(extract_priority_description(priority["priorite"] if priority.get("priorite") != "Autre" else priority.get("siAutreVeuillezDecrire")))
                         for subproject in subprojects:
 
-                            ref_value = normalize_text(extract_priority_description(str(subproject.type_of_subproject).strip()))
+                            ref_value = normalize_text(extract_priority_description(str(subproject.type_of_subproject_id).strip()))
                             if priority_clean_value:
                                 score = fuzz.token_set_ratio(priority_clean_value, ref_value)
                                 if score >= similarity_threshold:
@@ -116,5 +116,5 @@ def update_or_create_priorities_document(priorities_document):
                                     if updated:
                                         subproject.save()
 
-                                        print(f"Matched Priority: '{priority['priorite']}' with Subproject: '{subproject.type_of_subproject}' (Score: {score}). Administrative Level ID: {administrative_level.name} ; {subproject.location_subproject_realized.name}")
+                                        print(f"Matched Priority: '{priority['priorite']}' with Subproject: '{subproject.type_of_subproject_id}' (Score: {score}). Administrative Level ID: {administrative_level.name} ; {subproject.location_subproject_realized.name}")
 

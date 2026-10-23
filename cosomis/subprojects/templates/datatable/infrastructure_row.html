@@ -16,11 +16,11 @@
         {% elif infrastructure.link_to_subproject %}
             {{ infrastructure.link_to_subproject.full_title_of_approved_subproject }}
         {% else %}
-            {{ infrastructure.type_of_subproject }}
+            {{ infrastructure.type_of_subproject_id }}
         {% endif %}
     </div>
 {% enddatatable_cell %}
-{% datatable_cell %}<span class="dt-pill">{{ infrastructure.type_of_subproject }}</span>{% enddatatable_cell %}
+{% datatable_cell %}<span class="dt-pill">{{ infrastructure.type_of_subproject_id }}</span>{% enddatatable_cell %}
 {% datatable_cell %}
     {% if infrastructure.get_current_subproject_step_and_level %}
         {{ infrastructure.get_current_subproject_step_and_level }}

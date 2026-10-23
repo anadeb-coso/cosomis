@@ -202,7 +202,7 @@ def generate_subproject_report(request):
         ).exclude(
             Q(url__icontains=".pdf") | Q(url__icontains=".doc")
         ).order_by('order'), to_attr='photos')
-    ).order_by('location_subproject_realized__parent__name', 'location_subproject_realized__name', 'component__id', 'subproject_sector', 'type_of_subproject', 'number')
+    ).order_by('location_subproject_realized__parent__name', 'location_subproject_realized__name', 'component__id', 'subproject_sector_id', 'type_of_subproject_id', 'number')
     
     # Groupement des sous-projets (La logique de regroupement est cruciale)
     grouped_data = {}
@@ -212,7 +212,7 @@ def generate_subproject_report(request):
             comp_name = sp.component.name if sp.component else _("Non-classé")
             
             # Le secteur est l'équivalent de la Sous-composante pour la structure du rapport
-            sector = sp.subproject_sector if sp.subproject_sector else _("Sans secteur")
+            sector = sp.subproject_sector_id if sp.subproject_sector_id else _("Sans secteur")
             
             if canton_name in grouped_data and comp_name in grouped_data[canton_name] and sector in grouped_data[canton_name][comp_name]:
                 grouped_data[canton_name][comp_name][sector].append(sp)
@@ -295,7 +295,7 @@ def generate_subproject_report(request):
                     # --- Fiche descriptive de l'ouvrage ---
                     
                     # Ouvrage 1 – Forage de Korbongou
-                    document.add_heading(f"{_('Ouvrage')} {sp.number or 'N/A'} – {sp.type_of_subproject}", 5) 
+                    document.add_heading(f"{_('Ouvrage')} {sp.number or 'N/A'} – {sp.type_of_subproject_id}", 5) 
                     
                     # Créer un tableau pour la fiche descriptive pour une meilleure mise en page
                     table = document.add_table(rows=9, cols=2)
@@ -318,7 +318,7 @@ def generate_subproject_report(request):
                         row_idx = add_data_row(table, row_idx, _("Canton"), _("Non spécifiée"))
                         row_idx = add_data_row(table, row_idx, _("Localité"), _("Non spécifiée"))
                     row_idx = add_data_row(table, row_idx, _("Sous-projet"), sp_title)
-                    row_idx = add_data_row(table, row_idx, _("Type d’ouvrage"), sp.type_of_subproject)
+                    row_idx = add_data_row(table, row_idx, _("Type d’ouvrage"), sp.type_of_subproject_id)
                     row_idx = add_data_row(table, row_idx, _("Bénéficiaires"), f"{sp.direct_beneficiaries_men or 0} M, {sp.direct_beneficiaries_women or 0} F")
                     row_idx = add_data_row(table, row_idx, _("Statut"), sp.current_status_of_the_site)
                     # row_idx = add_data_row(table, row_idx, _("Commentaires"), sp.comments or "")

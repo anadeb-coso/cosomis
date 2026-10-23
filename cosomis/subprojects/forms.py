@@ -2,14 +2,16 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 from datetime import date
 
-from .models import Subproject, VulnerableGroup, SubprojectStep, Level, Step, Component
+from .models import (
+    Subproject, VulnerableGroup, SubprojectStep, Level, Step, Component, SubprojectSector, SubprojectType, WorksType,
+    SubprojectTypeDesignation
+)
 from administrativelevels.models import AdministrativeLevel, CVD
 from subprojects import (
-    WORKS_TYPE_OF_SUB_PROJECT,
     LEVEL_OF_ACHIEVEMENT_DONATION_CERTIFICATE_OF_SUB_PROJECT,
     SUB_PROJECT_STEP_STANDART, CURRENT_STATUS_OF_THE_SITE
 )
-from subprojects.vars import VAR_SUB_PROJECT_SECTORS, VAR_TYPES_OF_SUB_PROJECT, VAR_COMPONENTS
+from subprojects.vars import VAR_COMPONENTS
 from cosomis import FORM_FIELDS_TO_EXCLUDE
 from cosomis.constants import (
     STRUCTURE_NOT_START_STATUS, FIRST_CONTRACT_RANKING, OTHERS_CONTRACT_RANKING, SELECTED_COMPANY_RANKING,
@@ -17,15 +19,51 @@ from cosomis.constants import (
     INTERRUPTED_RANKING, RESUME_IN_PROGRESS_RANKING
 )
 
-class SubprojectForm(forms.ModelForm):
+class SubprojectReferenceFieldsMixin:
+    """Secteur, type d'ouvrage, type de travaux et désignation : listes déroulantes de valeurs (texte) tirées des
+    listes de référence ; la valeur choisie est rangée sur le sous-projet comme clé étrangère vers cette liste."""
+    REFERENCE_FIELDS = {
+        'subproject_sector': SubprojectSector, 'type_of_subproject': SubprojectType, 'works_type': WorksType,
+        'subproject_type_designation': SubprojectTypeDesignation,
+    }
+
+    @staticmethod
+    def reference_choices():
+        return {
+            'subproject_sector': SubprojectSector.choices(),
+            'type_of_subproject': SubprojectType.choices(),
+            'works_type': WorksType.choices(empty=False),
+            'subproject_type_designation': SubprojectTypeDesignation.choices(empty=False),
+        }
+
+    def _clean_reference(self, name):
+        value = self.cleaned_data.get(name)
+        return self.REFERENCE_FIELDS[name].objects.filter(name=value).first() if value else None
+
+    def clean_subproject_sector(self):
+        return self._clean_reference('subproject_sector')
+
+    def clean_type_of_subproject(self):
+        return self._clean_reference('type_of_subproject')
+
+    def clean_works_type(self):
+        return self._clean_reference('works_type')
+
+    def clean_subproject_type_designation(self):
+        return self._clean_reference('subproject_type_designation')
+
+
+class SubprojectForm(SubprojectReferenceFieldsMixin, forms.ModelForm):
     subproject_sector = forms.ChoiceField(label=_("Subproject sector"), required=True)
     type_of_subproject = forms.ChoiceField(label=_("Type of subproject"), required=True)
     works_type = forms.ChoiceField(label=_("Works type"), required=True)
+    subproject_type_designation = forms.ChoiceField(label=_("Subproject type designation (Subproject or Infrastructure)"), required=True)
     level_of_achievement_donation_certificate = forms.ChoiceField(label=_("Level of donation certificate"), required=True)
     current_status_of_the_site = forms.ChoiceField(label=_("Current site status (Work in progress, Work stopped, Work abandoned, Technical acceptance, Provisional acceptance, etc.)"), required=True)
 
     def __init__(self, *args, **kwargs):
         super(SubprojectForm, self).__init__(*args, **kwargs)
+        reference_choices = self.reference_choices()
         __villages = AdministrativeLevel.objects.filter(type="Village")
         __cantons = AdministrativeLevel.objects.filter(type="Canton")
         for label, field in self.fields.items():
@@ -45,20 +83,19 @@ class SubprojectForm(forms.ModelForm):
                 self.fields[label].widget.attrs['class'] = 'form-control datetimepicker-input'
             
             choices_datas = {
-                'subproject_sector': VAR_SUB_PROJECT_SECTORS,
-                'type_of_subproject': VAR_TYPES_OF_SUB_PROJECT,
-                'works_type': WORKS_TYPE_OF_SUB_PROJECT,
+                **reference_choices,
                 'level_of_achievement_donation_certificate': LEVEL_OF_ACHIEVEMENT_DONATION_CERTIFICATE_OF_SUB_PROJECT,
                 'current_status_of_the_site': CURRENT_STATUS_OF_THE_SITE
             }
             instance_datas = {
-                'subproject_sector': self.instance.subproject_sector,
-                'type_of_subproject': self.instance.type_of_subproject,
-                'works_type': self.instance.works_type,
+                'subproject_sector': self.instance.subproject_sector_id,
+                'type_of_subproject': self.instance.type_of_subproject_id,
+                'works_type': self.instance.works_type_id,
+                'subproject_type_designation': self.instance.subproject_type_designation_id,
                 'level_of_achievement_donation_certificate': self.instance.level_of_achievement_donation_certificate,
                 'current_status_of_the_site': self.instance.current_status_of_the_site
             }
-            if label in ('subproject_sector', 'type_of_subproject', 'works_type', \
+            if label in ('subproject_sector', 'type_of_subproject', 'works_type', 'subproject_type_designation', \
                          'level_of_achievement_donation_certificate', 'current_status_of_the_site'):
                 self.fields[label].choices = choices_datas[label]
                 self.fields[label].widget.choices = choices_datas[label]
@@ -77,15 +114,17 @@ class SubprojectForm(forms.ModelForm):
         ] + FORM_FIELDS_TO_EXCLUDE
 
 
-class SubprojectWithoutLinkHeavyObjectsForm(forms.ModelForm):
+class SubprojectWithoutLinkHeavyObjectsForm(SubprojectReferenceFieldsMixin, forms.ModelForm):
     subproject_sector = forms.ChoiceField(label=_("Subproject sector"), required=True)
     type_of_subproject = forms.ChoiceField(label=_("Type of subproject"), required=True)
     works_type = forms.ChoiceField(label=_("Works type"), required=True)
+    subproject_type_designation = forms.ChoiceField(label=_("Subproject type designation (Subproject or Infrastructure)"), required=True)
     level_of_achievement_donation_certificate = forms.ChoiceField(label=_("Level of donation certificate"), required=True)
     current_status_of_the_site = forms.ChoiceField(label=_("Current site status (Work in progress, Work stopped, Work abandoned, Technical acceptance, Provisional acceptance, etc.)"), required=True)
 
     def __init__(self, *args, **kwargs):
         super(SubprojectWithoutLinkHeavyObjectsForm, self).__init__(*args, **kwargs)
+        reference_choices = self.reference_choices()
         for label, field in self.fields.items():
             self.fields[label].widget.attrs.update({'class' : 'form-control'})
             
@@ -93,20 +132,19 @@ class SubprojectWithoutLinkHeavyObjectsForm(forms.ModelForm):
                 self.fields[label].widget.attrs['class'] = 'form-control datetimepicker-input'
             
             choices_datas = {
-                'subproject_sector': VAR_SUB_PROJECT_SECTORS,
-                'type_of_subproject': VAR_TYPES_OF_SUB_PROJECT,
-                'works_type': WORKS_TYPE_OF_SUB_PROJECT,
+                **reference_choices,
                 'level_of_achievement_donation_certificate': LEVEL_OF_ACHIEVEMENT_DONATION_CERTIFICATE_OF_SUB_PROJECT,
                 'current_status_of_the_site': CURRENT_STATUS_OF_THE_SITE
             }
             instance_datas = {
-                'subproject_sector': self.instance.subproject_sector,
-                'type_of_subproject': self.instance.type_of_subproject,
-                'works_type': self.instance.works_type,
+                'subproject_sector': self.instance.subproject_sector_id,
+                'type_of_subproject': self.instance.type_of_subproject_id,
+                'works_type': self.instance.works_type_id,
+                'subproject_type_designation': self.instance.subproject_type_designation_id,
                 'level_of_achievement_donation_certificate': self.instance.level_of_achievement_donation_certificate,
                 'current_status_of_the_site': self.instance.current_status_of_the_site
             }
-            if label in ('subproject_sector', 'type_of_subproject', 'works_type', \
+            if label in ('subproject_sector', 'type_of_subproject', 'works_type', 'subproject_type_designation', \
                          'level_of_achievement_donation_certificate', 'current_status_of_the_site'):
                 self.fields[label].choices = choices_datas[label]
                 self.fields[label].widget.choices = choices_datas[label]
@@ -296,9 +334,9 @@ class SubprojectFilterForm(forms.Form):
         super().__init__(*args, **kwargs)
 
         init_list = [('', ''), ('All', _('All'))] if has_all else []
-        query_result_subproject_sectors = sorted(init_list + list(VAR_SUB_PROJECT_SECTORS))
-        query_result_subproject_types = sorted(init_list + list(VAR_TYPES_OF_SUB_PROJECT))
-        query_result_works_type_of_subproject = sorted(init_list + list(WORKS_TYPE_OF_SUB_PROJECT))
+        query_result_subproject_sectors = sorted(init_list + SubprojectSector.choices())
+        query_result_subproject_types = sorted(init_list + SubprojectType.choices())
+        query_result_works_type_of_subproject = sorted(init_list + WorksType.choices(empty=False))
         query_result_subproject_step = init_list + list(SUB_PROJECT_STEP_STANDART)
         query_result_components = init_list + list(VAR_COMPONENTS)
         

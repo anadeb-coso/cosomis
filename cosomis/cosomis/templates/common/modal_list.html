@@ -86,8 +86,8 @@
                                 </td>
                                 <td>{{ subproject.get_canton.parent.parent.parent.name }}</td>
                                 <td>{{ subproject.full_title_of_approved_subproject }}</td>
-                                <td>{{ subproject.type_of_subproject }}</td>
-                                <td>{{ subproject.works_type }}</td>
+                                <td>{{ subproject.type_of_subproject_id }}</td>
+                                <td>{{ subproject.works_type_id }}</td>
 
                                 {% comment %} {% if "infrastrutures-with-latrines-fences" in list_type_search or "latrines-and-fences" in list_type_search %}
                                 <td>{% if subproject.has_latrine_blocs == True %}{% translate "Yes" %}{% elif subproject.has_latrine_blocs == False %}{% translate "No" %}{% else %}-{% endif %}</td>
