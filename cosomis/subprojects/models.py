@@ -1196,6 +1196,14 @@ def update_step(sender, instance, **kwargs):
 
 def create_or_update_project(sender, instance, **kwargs):
     if not kwargs['created'] and instance.id:
+        sync_project_cycles(instance)
+
+
+def sync_project_cycles(instance):
+    """Cycles du projet alignés sur ses niveaux administratifs : un « Cycle 1 » est créé au premier niveau, les
+    niveaux retirés du projet sont retirés de ses cycles. Appelé au `post_save` du projet, et après l'enregistrement
+    des niveaux par les formulaires de projet (le `post_save` passe avant eux)."""
+    if instance.id:
         instance_administrative_levels = instance.administrative_levels.all()
         cycle = Cycle.objects.filter(project_id=instance.id).first()
 

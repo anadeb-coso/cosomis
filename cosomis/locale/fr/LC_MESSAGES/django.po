@@ -4924,3 +4924,41 @@ msgstr "Aucun niveau administratif choisi : tous les niveaux administratifs du p
 #, python-format
 msgid "%(count)s administrative level(s) added automatically: villages of the added cantons and parents of the chosen levels."
 msgstr "%(count)s niveau(x) administratif(s) ajouté(s) automatiquement : villages des cantons ajoutés et parents des niveaux choisis."
+
+#: .\subprojects\forms_project.py
+msgid "Users"
+msgstr "Utilisateurs"
+
+#: .\subprojects\forms_project.py
+msgid "Parent project"
+msgstr "Projet parent"
+
+#: .\subprojects\forms_project.py
+msgid "Facilitators working on this project (they see it in the DCC mobile app)."
+msgstr "Facilitateurs qui travaillent sur ce projet (ils le voient dans l'application mobile du DCC)."
+
+#: .\subprojects\forms_project.py
+msgid "Users who can select this project in the DCC and COSOMIS."
+msgstr "Utilisateurs qui peuvent choisir ce projet dans le DCC et dans COSOMIS."
+
+#: .\subprojects\forms_project.py
+msgid "Also link the facilitators and users of the parent project"
+msgstr "Lier aussi les facilitateurs et les utilisateurs du projet parent"
+
+#: .\subprojects\forms_project.py
+msgid "The villages of the chosen cantons and the parents of the chosen levels are added automatically; the cycles of the project follow these levels."
+msgstr "Les villages des cantons choisis et les parents des niveaux choisis sont ajoutés automatiquement ; les cycles du projet suivent ces niveaux."
+
+#: .\subprojects\forms_project.py
+msgid "Facilitators and users"
+msgstr "Facilitateurs et utilisateurs"
+
+#: .\subprojects\forms_project.py
+#, python-format
+msgid "%(facilitators)s facilitator(s) and %(users)s user(s) of the parent project were also linked."
+msgstr "%(facilitators)s facilitateur(s) et %(users)s utilisateur(s) du projet parent ont aussi été liés."
+
+#: .\subprojects\forms_project.py
+#, python-format
+msgid "The project %(name)s has been saved."
+msgstr "Le projet %(name)s a été enregistré."

@@ -1,6 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.contrib import messages
 from django.shortcuts import redirect
 from django.utils.translation import gettext_lazy as _
 from django.views import generic
@@ -16,6 +17,19 @@ from financial.models.supporting_document import SupportingDocument
 from financial.forms import ProjectForm
 from financial.aggregations import requests_indicators, activity_financial_summary, component_financial_breakdown, activity_sort_key
 from financial.exports import export_project_ida, export_project_ida_detail
+
+
+def save_project_form(request, form):
+    """Projet, puis ses champs multiples (financeurs, niveaux), ses facilitateurs, ses utilisateurs et ses cycles."""
+    obj = form.save(commit=False)
+    obj.save(user=request.user)
+    form.save_m2m()
+    form.save_links(obj)
+    if form.inherited['facilitators'] or form.inherited['users']:
+        messages.info(request, _("%(facilitators)s facilitator(s) and %(users)s user(s) of the parent project were also "
+                                 "linked.") % form.inherited)
+    messages.success(request, _("The project %(name)s has been saved.") % {'name': obj.name})
+    return obj
 
 
 class ProjectIDAListView(PageMixin, LoginRequiredMixin, generic.ListView):
@@ -55,8 +69,7 @@ class ProjectIDACreateView(PageMixin, LoginRequiredMixin, SuperAdminPermissionRe
     def post(self, request, *args, **kwargs):
         form = ProjectForm(request.POST)
         if form.is_valid():
-            obj = form.save(commit=False)
-            obj.save(user=request.user)
+            save_project_form(request, form)
             return redirect('financial:project_ida_list')
         self.form_mixin = form
         return super().get(request, *args, **kwargs)
@@ -81,8 +94,7 @@ class ProjectIDAUpdateView(PageMixin, LoginRequiredMixin, SuperAdminPermissionRe
     def post(self, request, *args, **kwargs):
         form = ProjectForm(request.POST, instance=self.get_object())
         if form.is_valid():
-            obj = form.save(commit=False)
-            obj.save(user=request.user)
+            save_project_form(request, form)
             return redirect('financial:project_ida_list')
         self.form_mixin = form
         return super().get(request, *args, **kwargs)

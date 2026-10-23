@@ -10,61 +10,21 @@ from administrativelevels.functions_adl import (
     get_multiple_administrative_hierarchies_ids
 )
 from cosomis import FORM_FIELDS_TO_EXCLUDE, FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
+from .forms_project import ProjectFullForm
 from django.db import connection
 from django.db.models import Count
 
 
-class ProjectForm(forms.ModelForm):
-    class Meta:
-        model = Project
-        exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # self.fields['administrative_levels'].widget = CustomAdminWidget()
-    
-    def clean_administrative_levels(self):
-        administrative_levels = self.cleaned_data['administrative_levels']
-        # villages_ids = []
-        if administrative_levels:
-            # villages_ids = get_cascade_villages_ids_by_administrative_level_id([o.id for o in administrative_levels])
-            administrative_levels = get_multiple_administrative_hierarchies([o.id for o in administrative_levels])
-        
-        # return AdministrativeLevel.objects.filter(id__in=villages_ids)
-        return administrative_levels
-
-    # def save(self, commit=True):
-    #     instance = super(ProjectForm, self).save(commit=False)
-
-    #     if commit:
-    #         self.save_m2m()
-    #     instance = instance.save_and_return_object()
-
-    #     if instance.id and instance.administrative_levels.all().exists():
-    #         cycle = Cycle.objects.filter(project_id=instance.id).first()
-    #         if not cycle:
-    #             cycle = Cycle.objects.create(
-    #                 name="Cycle 1",
-    #                 description=f"Cycle 1 du projet ({instance.name})",
-    #                 project_id=instance.id
-    #             )
-    #             cycle.administrative_levels.set(instance.administrative_levels.all())
-    #             cycle.save()
-
-    #     return instance
-    
-
 class ProjectFormAdmin(admin.ModelAdmin):
-    form = ProjectForm
-    add_fieldsets = (
-        (None, {
-            'classes': ('wide',),
-            'fields': ("name", "description", "parent", "financiers", "administrative_levels"),
-        }),
-    )
+    # Formulaire complet partagé avec la page « Projets IDA » (subprojects/forms_project.py) : statut,
+    # facilitateurs et utilisateurs liés en plus des champs du projet.
+    form = ProjectFullForm
     fieldsets = (
         (None, {
-            'fields': ("name", "description", "parent", "financiers", "administrative_levels")
+            'fields': ("name", "description", "parent", "status", "financiers", "administrative_levels")
+        }),
+        (_("Facilitators and users"), {
+            'fields': ("facilitators", "users", "inherit_from_parent")
         }),
     )
     list_display = ("name", "description", "parent")
@@ -79,9 +39,27 @@ class ProjectFormAdmin(admin.ModelAdmin):
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         if db_field.name == "administrative_levels":
-            kwargs["queryset"] = AdministrativeLevel.objects.all().order_by('name')
+            kwargs["queryset"] = AdministrativeLevel.objects.select_related('parent').order_by('name')
             # kwargs['label_from_instance '] = lambda obj: f"{obj.name} ({obj.name})"
         return super().formfield_for_manytomany(db_field, request, **kwargs)
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        # même sélecteur à deux listes que les niveaux administratifs (filter_horizontal)
+        from django.contrib.admin.widgets import FilteredSelectMultiple
+        import copy
+        for name in ('facilitators', 'users'):
+            # copie : le champ déclaré est partagé avec le formulaire de la page « Projets IDA »
+            field = form.base_fields[name] = copy.deepcopy(form.base_fields[name])
+            field.widget = FilteredSelectMultiple(field.label, False)
+        return form
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        form.save_links(form.instance)
+        if form.inherited['facilitators'] or form.inherited['users']:
+            messages.info(request, _("%(facilitators)s facilitator(s) and %(users)s user(s) of the parent project were "
+                                     "also linked.") % form.inherited)
 
 
 

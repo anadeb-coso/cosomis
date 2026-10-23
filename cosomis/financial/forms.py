@@ -217,18 +217,9 @@ class AccountForm(forms.ModelForm):
         exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID_AND_DELETED
 
 
-class ProjectForm(forms.ModelForm):
-    """IDA Project (subprojects.Project). financiers/administrative_levels keep
-    their existing cascade-aware workflow in subprojects/admin.py and aren't
-    exposed here."""
-
-    def __init__(self, *args, **kwargs):
-        super(ProjectForm, self).__init__(*args, **kwargs)
-        self.fields['parent'].queryset = Project.objects.all().order_by('name')
-
-    class Meta:
-        model = Project
-        exclude = ['financiers', 'administrative_levels'] + FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
+# Projet IDA : formulaire complet partagé avec l'admin (financeurs, niveaux administratifs, facilitateurs,
+# utilisateurs), cf. subprojects/forms_project.py.
+from subprojects.forms_project import ProjectFullForm as ProjectForm  # noqa: E402
 
 
 class FundingForm(forms.ModelForm):
