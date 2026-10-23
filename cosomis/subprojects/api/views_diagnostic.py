@@ -11,6 +11,8 @@ from assignments.functions import (
     combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id,
 )
 from .custom import CustomPagination
+from .prefetch import attach_current_steps, prefetch_subprojects_for_api, subprojects_without_current_level_image
+from cosomis.serializers_base import shared_representations
 from cosomis.constants import (
     STRUCTURE_IN_PROGRESS_STATUS,
     STRUCTURE_COMPLETED_STATUS,
@@ -45,12 +47,13 @@ def _resolve_zone(user, project):
     project_id = project.id if project else 1
 
     if hasattr(user, 'no_sql_user'):
-        subprojects = get_subprojects_by_facilitator_id_and_project_id(user.id, project_id)
-        cantons = list(combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id(
-            user, project_id, type_adl="Canton"
-        ))
+        # villages du facilitateur calculés une fois (ils l'étaient aussi pour ses sous-projets)
         villages = list(combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id(
             user, project_id, type_adl="Village"
+        ))
+        subprojects = get_subprojects_by_facilitator_id_and_project_id(user.id, project_id, adls=villages)
+        cantons = list(combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id(
+            user, project_id, type_adl="Canton"
         ))
     else:
         subprojects = Subproject.objects.filter(projects__in=[project_id]).get_actifs()
@@ -130,14 +133,11 @@ def _anomalies(base_qs):
         Q(latitude__isnull=True) | Q(latitude=0) | Q(latitude=0.0) | Q(longitude__isnull=True) | Q(longitude=0) | Q(longitude=0.0)
     ).count()
 
-    in_progress_missing_current_image_count = 0
-    stalled_in_progress_count = 0
-    for subproject in in_progress_qs:
-        current_level = subproject.get_current_level_object
-        if not (current_level and current_level.get_images().exists()):
-            in_progress_missing_current_image_count += 1
-        if subproject.is_delayed_update:
-            stalled_in_progress_count += 1
+    # niveau en cours sans image, étape en cours non mise à jour : lus pour tous les sous-projets en cours d'un coup
+    in_progress = list(in_progress_qs)
+    in_progress_missing_current_image_count = len(subprojects_without_current_level_image(in_progress))
+    attach_current_steps(in_progress)
+    stalled_in_progress_count = sum(1 for subproject in in_progress if subproject.is_delayed_update)
 
     invalidated_files_infrastructures_count = qualifying_qs.filter(
         subprojectfile__validated=False
@@ -254,10 +254,7 @@ class RestGetSubprojectsDiagnosticListByUser(APIView):
 
         elif filter_type == "in_progress_missing_current_image":
             qs = qs.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS)
-            ids = [
-                sp.id for sp in qs
-                if not (sp.get_current_level_object and sp.get_current_level_object.get_images().exists())
-            ]
+            ids = [sp.id for sp in subprojects_without_current_level_image(qs)]
             qs = Subproject.objects.filter(pk__in=ids)
 
         elif filter_type == "in_progress_missing_geoloc":
@@ -269,7 +266,8 @@ class RestGetSubprojectsDiagnosticListByUser(APIView):
             qs = qs.filter(subprojectfile__validated=False)
 
         elif filter_type == "stalled_in_progress":
-            qs = qs.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS)
+            qs = list(qs.filter(current_status_of_the_site__in=STRUCTURE_IN_PROGRESS_STATUS))
+            attach_current_steps(qs)
             ids = [sp.id for sp in qs if sp.is_delayed_update]
             qs = Subproject.objects.filter(pk__in=ids)
 
@@ -287,6 +285,8 @@ class RestGetSubprojectsDiagnosticListByUser(APIView):
 
         paginator = CustomPagination()
         paginated_data = paginator.paginate_queryset(qs.order_by("id").distinct(), request)
+        prefetch_subprojects_for_api(paginated_data, comments_count=False)
         serializer = SubprojectSerializerSimple(paginated_data, many=True)
 
-        return paginator.get_paginated_response(serializer.data)
+        with shared_representations():
+            return paginator.get_paginated_response(serializer.data)

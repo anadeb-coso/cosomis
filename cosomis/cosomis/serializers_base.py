@@ -1,11 +1,61 @@
+from contextlib import contextmanager
+import contextvars
+
 from rest_framework import serializers
 import datetime
 from cosomis.base_functions import model_to_full_dict, format_value, model_or_dict_to_serializable, make_json_serializable
 
 
+_SHARED_REPRESENTATIONS = contextvars.ContextVar('shared_representations', default=None)
+
+
+@contextmanager
+def shared_representations():
+    """Pendant la construction d'une réponse d'API : la représentation d'un même objet de référence (niveau
+    administratif et ses parents, CVD, projet, composante), répété d'un élément à l'autre, n'est calculée qu'une fois
+    puis réutilisée telle quelle (les données ne changent pas pendant la réponse). Sans ce bloc, rien n'est gardé."""
+    token = _SHARED_REPRESENTATIONS.set({})
+    try:
+        yield
+    finally:
+        _SHARED_REPRESENTATIONS.reset(token)
+
+
+def shared_representation(serializer, instance, build):
+    """Représentation de `instance` par `serializer` : build() la première fois dans la réponse, puis la même.
+    Le résultat ne doit plus être modifié par l'appelant (il peut être repris ailleurs dans la réponse)."""
+    cache = _SHARED_REPRESENTATIONS.get()
+    if cache is None or instance is None or instance.pk is None:
+        return build()
+    key = (type(serializer), instance.pk)
+    if key not in cache:
+        cache[key] = build()
+    return cache[key]
+
+
+class SharedRepresentationMixin:
+    """Sérialiseur d'objet de référence sans paramètre propre : sa représentation est partagée dans la réponse
+    (voir shared_representations)."""
+
+    def to_representation(self, instance):
+        return shared_representation(self, instance, lambda: super(SharedRepresentationMixin, self).to_representation(instance))
+
+
+class ReferenceValueField(serializers.SlugRelatedField):
+    """Clé étrangère vers le nom d'une liste de référence (`to_field='name'`, ex. Subproject.subproject_sector) : la
+    valeur rangée dans la colonne est déjà le nom, lu sans requête ; en écriture, le nom doit exister dans la liste."""
+
+    def use_pk_only_optimization(self):
+        return True
+
+    def to_representation(self, value):
+        return value.pk
+
+
 # Create your models here.
 class BaseModelSerializerCustomer(serializers.ModelSerializer):
-    pass
+    # relations `to_field` (listes de référence des sous-projets) : texte de la valeur, comme avant
+    serializer_related_to_field = ReferenceValueField
     # def save(self, **kwargs):
     #     return self.users_history(**kwargs)
 

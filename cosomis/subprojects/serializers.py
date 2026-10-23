@@ -6,7 +6,7 @@ from administrativelevels.serializers import (
 	AdministrativeLevelSerializerSimple, CVDSerializerSimple
 )
 from usermanager.api.auth.login import CheckUserSerializer
-from cosomis.serializers_base import BaseModelSerializerCustomer
+from cosomis.serializers_base import BaseModelSerializerCustomer, SharedRepresentationMixin
 from cosomis.__init__ import FORM_FIELDS_TO_EXCLUDE, FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 from cosomis.constants import STRUCTURE_COMPLETED_ALL_STATUS, STRUCTURE_IN_PROGRESS_ALL_STATUS
 from usermanager.serializers import UserSerializer
@@ -33,7 +33,9 @@ class SubprojectFileSerializer(BaseModelSerializerCustomer):
 		else:
 			data['description'] = None
 
-		data['comments_count'] = instance.comments.count()
+		# nombre chargé avec les fichiers de la page (subprojects.api.prefetch), sinon compté ici
+		comments_count = instance.__dict__.get('_comments_count')
+		data['comments_count'] = instance.comments.count() if comments_count is None else comments_count
 
 		return data
   
@@ -83,7 +85,7 @@ class SubprojectFileSerializerSimple(BaseModelSerializerCustomer):
 		return data
 	
 
-class ComponentSerializer(BaseModelSerializerCustomer):
+class ComponentSerializer(SharedRepresentationMixin, BaseModelSerializerCustomer):
 	class Meta:
 		"""docstring for Meta"""
 		model = Component
@@ -98,7 +100,7 @@ class FinancierSerializer(BaseModelSerializerCustomer):
 		exclude = FORM_FIELDS_TO_EXCLUDE
 
 
-class ProjectSerializer(BaseModelSerializerCustomer):
+class ProjectSerializer(SharedRepresentationMixin, BaseModelSerializerCustomer):
 	financiers = FinancierSerializer(many=True)
 	class Meta:
 		"""docstring for Meta"""
@@ -106,7 +108,7 @@ class ProjectSerializer(BaseModelSerializerCustomer):
 		# fields = '__all__'
 		exclude = FORM_FIELDS_TO_EXCLUDE_WITH_EXTERNAL_ID
 
-class ProjectSerializerSimple(BaseModelSerializerCustomer):
+class ProjectSerializerSimple(SharedRepresentationMixin, BaseModelSerializerCustomer):
 	financiers = FinancierSerializer(many=True)
 	class Meta:
 		"""docstring for Meta"""
@@ -230,20 +232,29 @@ class SubprojectSerializer(BaseModelSerializerCustomer):
 		data = super().to_representation(instance)
 			
 		data['current_subproject_step_and_level'] = instance.get_current_subproject_step_and_level
-		files = instance.photos if hasattr(instance, "photos") else instance.get_files().annotate(
-			validated_order=Case(
-				When(validated=False, then=Value(1)),
-				When(validated=True, then=Value(2)),
-				When(validated=None, then=Value(3)),
-				default=Value(4),
-				output_field=IntegerField(),
-			)
-		).order_by("validated_order", "-updated_date")
+		if hasattr(instance, "photos"):
+			files = instance.photos
+		elif '_api_files' in instance.__dict__:
+			# fichiers chargés pour toute la page, dans le même ordre (subprojects.api.prefetch)
+			files = instance._api_files
+		else:
+			files = instance.get_files().annotate(
+				validated_order=Case(
+					When(validated=False, then=Value(1)),
+					When(validated=True, then=Value(2)),
+					When(validated=None, then=Value(3)),
+					default=Value(4),
+					output_field=IntegerField(),
+				)
+			).order_by("validated_order", "-updated_date")
 		data['files'] = SubprojectFileSerializer(files, many=True).data
-		try:
-			data['files_invalidated_count'] = files.filter(validated=False).count()
-		except:
-			pass
+		if not hasattr(instance, "photos") and '_api_files' in instance.__dict__:
+			data['files_invalidated_count'] = sum(1 for file in files if file.validated is False)
+		else:
+			try:
+				data['files_invalidated_count'] = files.filter(validated=False).count()
+			except:
+				pass
 
 		return data
 	
@@ -265,20 +276,29 @@ class SubprojectSerializerSimple(BaseModelSerializerCustomer):
 		data = super().to_representation(instance)
 			
 		data['current_subproject_step_and_level'] = instance.get_current_subproject_step_and_level
-		files = instance.photos if hasattr(instance, "photos") else instance.get_files().annotate(
-			validated_order=Case(
-				When(validated=False, then=Value(1)),
-				When(validated=True, then=Value(2)),
-				When(validated=None, then=Value(3)),
-				default=Value(4),
-				output_field=IntegerField(),
-			)
-		).order_by("validated_order", "-updated_date")
+		if hasattr(instance, "photos"):
+			files = instance.photos
+		elif '_api_files' in instance.__dict__:
+			# fichiers chargés pour toute la page, dans le même ordre (subprojects.api.prefetch)
+			files = instance._api_files
+		else:
+			files = instance.get_files().annotate(
+				validated_order=Case(
+					When(validated=False, then=Value(1)),
+					When(validated=True, then=Value(2)),
+					When(validated=None, then=Value(3)),
+					default=Value(4),
+					output_field=IntegerField(),
+				)
+			).order_by("validated_order", "-updated_date")
 		data['files'] = SubprojectFileSerializerSimple(files, many=True).data
-		try:
-			data['files_invalidated_count'] = files.filter(validated=False).count()
-		except:
-			pass
+		if not hasattr(instance, "photos") and '_api_files' in instance.__dict__:
+			data['files_invalidated_count'] = sum(1 for file in files if file.validated is False)
+		else:
+			try:
+				data['files_invalidated_count'] = files.filter(validated=False).count()
+			except:
+				pass
 
 		return data
 
@@ -288,6 +308,11 @@ class SubprojectStandardSerializer(BaseModelSerializerCustomer):
 		model = Subproject
 		# fields = '__all__'
 		exclude = FORM_FIELDS_TO_EXCLUDE
+		# secteur et type d'ouvrage restent obligatoires à l'enregistrement (comme avant les listes de référence)
+		extra_kwargs = {
+			'subproject_sector': {'required': True, 'allow_null': False},
+			'type_of_subproject': {'required': True, 'allow_null': False},
+		}
 	
 
 class SubprojectWithParentLinkSerializer(SubprojectSerializer):

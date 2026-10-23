@@ -1,3 +1,5 @@
+from django.db.models import prefetch_related_objects
+
 from .models import AssignAdministrativeLevelToFacilitator
 from administrativelevels.models import AdministrativeLevel
 from subprojects.models import Subproject
@@ -8,7 +10,9 @@ import grm_client
 from authentication.models import Facilitator
 from administrativelevels.functions_adl import get_cascade_adls_by_administrative_level_id
 
-def get_subprojects_by_facilitator_id_and_project_id(facilitator_id, project_id) -> _QS:
+def get_subprojects_by_facilitator_id_and_project_id(facilitator_id, project_id, adls=None) -> _QS:
+    """Sous-projets actifs du projet rattachés aux CVD des villages du facilitateur. `adls` : ses villages s'ils sont
+    déjà calculés (combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id, type Village)."""
     # assigns_to_facilitator = AssignAdministrativeLevelToFacilitator.objects.filter(
     #     facilitator_id=facilitator_id, project_id=project_id, activated=True
     # )
@@ -28,12 +32,26 @@ def get_subprojects_by_facilitator_id_and_project_id(facilitator_id, project_id)
     #     for subproject in adl.get_list_subprojects():
     #         if project_id in subproject.get_projects_ids():
     #             subprojects.append(subproject)
-    adls = combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id(
-        Facilitator.objects.using('cdd').get(id=facilitator_id), project_id
-    )
-    subprojects = [subproject for adl in adls for subproject in adl.get_list_subprojects() if project_id in subproject.get_projects_ids()]
+    if adls is None:
+        adls = combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id(
+            Facilitator.objects.using('cdd').get(id=facilitator_id), project_id
+        )
+    # Ce que faisait [s for adl in adls for s in adl.get_list_subprojects() if project_id in s.get_projects_ids()]
+    # (2 requêtes par village + 1 par sous-projet), en 2 requêtes : sous-projets actifs du CVD de chaque village,
+    # dans le projet ; même liste d'identifiants, village par village.
+    cvd_ids = {adl.cvd_id for adl in adls if adl.cvd_id}
+    subproject_ids_by_cvd = {}
+    for subproject_id, cvd_id in Subproject.objects.filter(cvd_id__in=cvd_ids).get_actifs().values_list('id', 'cvd_id'):
+        subproject_ids_by_cvd.setdefault(cvd_id, []).append(subproject_id)
+    in_project = set(Subproject.projects.through.objects.filter(
+        project_id=project_id, subproject_id__in=[i for ids in subproject_ids_by_cvd.values() for i in ids]
+    ).values_list('subproject_id', flat=True))
+    subproject_ids = [
+        subproject_id for adl in adls if adl.cvd_id
+        for subproject_id in subproject_ids_by_cvd.get(adl.cvd_id, []) if subproject_id in in_project
+    ]
 
-    return Subproject.objects.filter(pk__in=[s.pk for s in subprojects]).get_actifs()
+    return Subproject.objects.filter(pk__in=subproject_ids).get_actifs()
 
 
 # def get_subprojects_by_facilitator_id_and_project_id(facilitator_id, project_id) -> _QS:
@@ -53,9 +71,11 @@ def get_subprojects_by_facilitator_id_and_project_id(facilitator_id, project_id)
 
 
 def get_administrativelevels_by_facilitator_id_and_project_id(facilitator_id, project_id, type_adl="Village", parent_id=None) -> _QS:
-    assigns_to_facilitator = AssignAdministrativeLevelToFacilitator.objects.filter(
+    assigns_to_facilitator = list(AssignAdministrativeLevelToFacilitator.objects.filter(
         facilitator_id=facilitator_id, project_id=project_id, activated=True
-    )
+    ))
+    # niveaux affectés et leurs parents lus en une requête par relation, au lieu d'une par affectation
+    prefetch_related_objects(assigns_to_facilitator, 'administrative_level__parent__parent')
     
     administrativelevels = [assign.administrative_level for assign in assigns_to_facilitator if assign.administrative_level and (not parent_id or (parent_id and assign.administrative_level.parent and assign.administrative_level.parent_id==parent_id))]
     

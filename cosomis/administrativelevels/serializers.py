@@ -1,10 +1,8 @@
 from rest_framework import serializers
-from django.db.models import Q
 
 from administrativelevels.models import *
 from administrativelevels.functions_adl import get_cascade_villages_ids_by_administrative_level_id
-from assignments.functions import get_subprojects_by_facilitator_id_and_project_id
-from subprojects.models import Subproject, SubprojectFile
+from cosomis.serializers_base import SharedRepresentationMixin, shared_representation
 
 
 class GeographicalUnitSerializer(serializers.ModelSerializer):
@@ -20,7 +18,7 @@ class GeographicalUnitSerializerSimple(serializers.ModelSerializer):
 		fields = ['id', 'unique_code', 'attributed_number_in_canton']
 
 
-class CVDSerializer(serializers.ModelSerializer):
+class CVDSerializer(SharedRepresentationMixin, serializers.ModelSerializer):
 	geographical_unit = GeographicalUnitSerializer(many=False)
 	
 	class Meta:
@@ -28,7 +26,7 @@ class CVDSerializer(serializers.ModelSerializer):
 		model = CVD
 		fields = '__all__'
 
-class CVDSerializerSimple(serializers.ModelSerializer):
+class CVDSerializerSimple(SharedRepresentationMixin, serializers.ModelSerializer):
 	geographical_unit = GeographicalUnitSerializerSimple(many=False)
 	
 	class Meta:
@@ -51,6 +49,7 @@ class AdministrativeLevelSerializer(serializers.ModelSerializer):
 
 	user = None
 	project_id = None
+	_zone_counts = None
 
 	def __init__(self, *args, **kwargs):
 		super(AdministrativeLevelSerializer, self).__init__(*args, **kwargs)
@@ -65,35 +64,28 @@ class AdministrativeLevelSerializer(serializers.ModelSerializer):
 		fields = '__all__'
 
 	def to_representation(self, instance, *args, **kwargs):
+		if not self.user:
+			# sans compteurs (parents, villages d'un CVD, sites des sous-projets) : la même dans toute la réponse
+			return shared_representation(self, instance, lambda: self._representation_with_parent(instance))
+
+		data = self._representation_with_parent(instance)
+		# number_subprojects, number_infrastructures, number_subproject_files, files_invalidated_count : sous-projets
+		# de la zone de l'utilisateur sur ce niveau (site, parent du site ou canton)
+		data.update(self.zone_counts().for_administrative_level(instance.id))
+		return data
+
+	def _representation_with_parent(self, instance):
 		data = super().to_representation(instance)
 		if instance.parent:
 			data['parent'] = AdministrativeLevelSerializer(instance.parent).data
-		
-		if self.user:
-
-			if not hasattr(self.user, 'no_sql_user'):
-				subprojects = Subproject.objects.filter(projects__in=[self.project_id]).get_actifs()
-			else:
-				subprojects = get_subprojects_by_facilitator_id_and_project_id(self.user.id, self.project_id)
-				
-			data['number_subprojects'] = subprojects.filter(
-                Q(link_to_subproject=None, location_subproject_realized__id=instance.id) | 
-                Q(link_to_subproject=None, location_subproject_realized__parent__id=instance.id) | 
-                Q(link_to_subproject=None, canton__id=instance.id)
-            ).count()
-
-			infrastructures = subprojects.filter(
-                Q(location_subproject_realized__id=instance.id) | 
-                Q(location_subproject_realized__parent__id=instance.id) | 
-                Q(canton__id=instance.id)
-            )
-			data['number_infrastructures'] = infrastructures.count()
-
-			files = SubprojectFile.objects.filter(subproject__in=infrastructures)
-			data['number_subproject_files'] = files.count()
-			data['files_invalidated_count'] = files.filter(validated=False).count()
-
 		return data
+
+	def zone_counts(self):
+		"""Sous-projets de la zone de l'utilisateur, lus une fois pour toute la liste (voir ZoneSubprojectCounts)."""
+		from subprojects.api.prefetch import ZoneSubprojectCounts
+		if self._zone_counts is None:
+			self._zone_counts = ZoneSubprojectCounts(self.user, self.project_id)
+		return self._zone_counts
 
 
 class AdministrativeLevelSerializerSimple(serializers.ModelSerializer):
@@ -102,6 +94,7 @@ class AdministrativeLevelSerializerSimple(serializers.ModelSerializer):
 
 	user = None
 	project_id = None
+	_zone_counts = None
 
 	def __init__(self, *args, **kwargs):
 		super(AdministrativeLevelSerializerSimple, self).__init__(*args, **kwargs)
@@ -116,30 +109,26 @@ class AdministrativeLevelSerializerSimple(serializers.ModelSerializer):
 		fields = ['id', 'name', 'geographical_unit', 'cvd', 'parent', 'latitude', 'longitude']
 
 	def to_representation(self, instance, *args, **kwargs):
+		if not self.user:
+			# sans compteurs : la même dans toute la réponse
+			return shared_representation(self, instance, lambda: self._representation_with_parent(instance))
+
+		data = self._representation_with_parent(instance)
+		# number_subprojects, number_infrastructures : sous-projets de la zone de l'utilisateur sur ce niveau
+		data.update(self.zone_counts().for_administrative_level(instance.id, with_files=False))
+		return data
+
+	def _representation_with_parent(self, instance):
 		data = super().to_representation(instance)
 		if instance.parent:
 			data['parent'] = AdministrativeLevelSerializerSimple(instance.parent).data
-		
-		if self.user:
-
-			if not hasattr(self.user, 'no_sql_user'):
-				subprojects = Subproject.objects.filter(projects__in=[self.project_id]).get_actifs()
-			else:
-				subprojects = get_subprojects_by_facilitator_id_and_project_id(self.user.id, self.project_id)
-				
-			data['number_subprojects'] = subprojects.filter(
-                Q(link_to_subproject=None, location_subproject_realized__id=instance.id) | 
-                Q(link_to_subproject=None, location_subproject_realized__parent__id=instance.id) | 
-                Q(link_to_subproject=None, canton__id=instance.id)
-            ).count()
-			data['number_infrastructures'] = subprojects.filter(
-                Q(location_subproject_realized__id=instance.id) | 
-                Q(location_subproject_realized__parent__id=instance.id) | 
-                Q(canton__id=instance.id)
-            ).count()
-
-
 		return data
+
+	def zone_counts(self):
+		from subprojects.api.prefetch import ZoneSubprojectCounts
+		if self._zone_counts is None:
+			self._zone_counts = ZoneSubprojectCounts(self.user, self.project_id)
+		return self._zone_counts
 	
 
 class CVDWithAdministrativeLevelSerializer(serializers.ModelSerializer):
@@ -148,6 +137,7 @@ class CVDWithAdministrativeLevelSerializer(serializers.ModelSerializer):
 	
 	user = None
 	project_id = None
+	_zone_counts = None
 
 	def __init__(self, *args, **kwargs):
 		super(CVDWithAdministrativeLevelSerializer, self).__init__(*args, **kwargs)
@@ -166,23 +156,11 @@ class CVDWithAdministrativeLevelSerializer(serializers.ModelSerializer):
 		data = super().to_representation(instance)
 
 		if self.user:
-
-			if not hasattr(self.user, 'no_sql_user'):
-				subprojects = Subproject.objects.filter(projects__in=[self.project_id]).get_actifs()
-			else:
-				subprojects = get_subprojects_by_facilitator_id_and_project_id(self.user.id, self.project_id)
-				
-			data['number_subprojects'] = subprojects.filter(
-                Q(link_to_subproject=None, cvd__id=instance.id)
-            ).count()
-
-			infrastructures = subprojects.filter(
-                Q(cvd__id=instance.id)
-            )
-			data['number_infrastructures'] = infrastructures.count()
-
-			files = SubprojectFile.objects.filter(subproject__in=infrastructures)
-			data['number_subproject_files'] = files.count()
-			data['files_invalidated_count'] = files.filter(validated=False).count()
+			# number_subprojects, number_infrastructures, number_subproject_files, files_invalidated_count : sous-projets
+			# de la zone de l'utilisateur rattachés à ce CVD
+			if self._zone_counts is None:
+				from subprojects.api.prefetch import ZoneSubprojectCounts
+				self._zone_counts = ZoneSubprojectCounts(self.user, self.project_id)
+			data.update(self._zone_counts.for_cvd(instance.id))
 
 		return data

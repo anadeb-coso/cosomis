@@ -1,5 +1,6 @@
 from administrativelevels.models import AdministrativeLevel
 from django.db import connection
+from django.db.models import prefetch_related_objects
 
 
 def get_administrative_level_under_json(administrative_level):
@@ -197,6 +198,10 @@ def get_cascade_adls_by_administrative_level_id(_ids, __type="Village", parent_i
                 villages += datas["villages"]
 
         villages = list(set(villages))
+        # parents lus ci-dessous : une requête par niveau de parenté au lieu d'une par village
+        depth = {"Region": 4, "Prefecture": 4, "Commune": 3, "Canton": 2}.get(__type, 1 if parent_id else 0)
+        if depth:
+            prefetch_related_objects(villages, '__'.join(['parent'] * depth))
         if __type == "Region":
             return [
                 v.parent.parent.parent.parent for v in villages

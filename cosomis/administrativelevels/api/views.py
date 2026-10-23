@@ -14,6 +14,8 @@ from assignments.functions import (
     combine_administrativelevels_assigned_by_facilitator_stabilized_and_project_id
 )
 from subprojects.api.custom import CustomPagination
+from subprojects.api.prefetch import prefetch_administrative_levels_for_api, prefetch_cvds_for_api
+from cosomis.serializers_base import shared_representations
 from cosomis.types import _QS
 
 from subprojects.models import Project
@@ -66,9 +68,11 @@ class RestGetAdministrativeLevelByUser(APIView):
                 
         paginator = CustomPagination()
         paginated_data = paginator.paginate_queryset(administrative_levels, request)
+        prefetch_administrative_levels_for_api(paginated_data)
         serializer = AdministrativeLevelSerializer(paginated_data, many=True, initial= {'user': user, 'project_id': project.id if project else 1})
-        
-        return paginator.get_paginated_response(serializer.data)
+
+        with shared_representations():
+            return paginator.get_paginated_response(serializer.data)
     
 
 class RestGetAdministrativeLevel(APIView):
@@ -146,16 +150,18 @@ class RestGetACVDByUser(APIView):
                 )
         cvds = CVD.objects.filter(
             pk__in=[
-                adl.cvd.id for adl in administrative_levels if adl.cvd
+                adl.cvd_id for adl in administrative_levels if adl.cvd_id
             ]
         ).order_by('name')
 
 
         paginator = CustomPagination()
         paginated_data = paginator.paginate_queryset(cvds, request)
+        prefetch_cvds_for_api(paginated_data)
         serializer = CVDWithAdministrativeLevelSerializer(paginated_data, many=True, initial= {'user': user, 'project_id': project.id if project else 1})
-        
-        return paginator.get_paginated_response(serializer.data)
+
+        with shared_representations():
+            return paginator.get_paginated_response(serializer.data)
     
 
 class SaveAdministrativeLevelGeoLocation(APIView):

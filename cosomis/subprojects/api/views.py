@@ -14,6 +14,8 @@ from subprojects.serializers import (
 from subprojects.models import Subproject, Project, SubprojectFile
 from assignments.functions import get_subprojects_by_facilitator_id_and_project_id
 from .custom import CustomPagination
+from .prefetch import prefetch_subprojects_for_api
+from cosomis.serializers_base import shared_representations
 from cosomis.constants import STRUCTURE_NOT_START_STATUS, STRUCTURE_IN_PROGRESS_STATUS, STRUCTURE_COMPLETED_STATUS, STRUCTURE_COMPLETED_ALL_STATUS
 
 
@@ -48,9 +50,9 @@ class RestGetSubprojectsByUser(APIView):
                 subprojects = Subproject.objects.filter(
                         Q(full_title_of_approved_subproject__icontains=search) | 
                         Q(location_subproject_realized__name__icontains=search) | 
-                        Q(lsubproject_sector__icontains=search) | 
-                        Q(type_of_subproject__icontains=search) | 
-                        Q(works_type__icontains=search) | 
+                        Q(subproject_sector__name__icontains=search) | 
+                        Q(type_of_subproject__name__icontains=search) | 
+                        Q(works_type__name__icontains=search) | 
                         Q(cvd__name__icontains=search) | 
                         Q(facilitator_name__icontains=search),
                         projects__in=[project.id if project else 1]
@@ -87,9 +89,11 @@ class RestGetSubprojectsByUser(APIView):
         
         paginator = CustomPagination()
         paginated_data = paginator.paginate_queryset(subprojects.distinct(), request)
+        prefetch_subprojects_for_api(paginated_data, with_children=True)
         serializer = SubprojectWithChildrenLinkedSerializer(paginated_data, many=True)
-        
-        return paginator.get_paginated_response(serializer.data)
+
+        with shared_representations():
+            return paginator.get_paginated_response(serializer.data)
     
 
 
@@ -104,10 +108,13 @@ class RestGetSubprojectByUser(APIView):
         user = serializer.validated_data
 
         try:
-            return Response(
-                SubprojectWithChildrenLinkedSerializer(Subproject.objects.get(id=pk)).data, 
-                status=status.HTTP_200_OK
-            )
+            subproject = Subproject.objects.get(id=pk)
+            prefetch_subprojects_for_api([subproject], with_children=True)
+            with shared_representations():
+                return Response(
+                    SubprojectWithChildrenLinkedSerializer(subproject).data,
+                    status=status.HTTP_200_OK
+                )
         except Exception as exc:
             return Response(
                 {'error': exc.__str__()}, 
@@ -274,10 +281,12 @@ class RestGetSubprojectsByUserSimple(APIView):
         
         paginator = CustomPagination()
         paginated_data = paginator.paginate_queryset(subprojects, request)
+        prefetch_subprojects_for_api(paginated_data, comments_count=False)
 
         if user and hasattr(user, 'email') and user.email == settings.PURS_USER_DEV_EMAIL:
             serializer = SubprojectWithChildrenLinkedSerializerSimpleWithPriorities(paginated_data, many=True)
         else:
             serializer = SubprojectWithChildrenLinkedSerializerSimple(paginated_data, many=True)
-        
-        return paginator.get_paginated_response(serializer.data)
+
+        with shared_representations():
+            return paginator.get_paginated_response(serializer.data)
