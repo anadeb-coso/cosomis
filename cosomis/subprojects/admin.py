@@ -239,13 +239,28 @@ class SubprojectSectorAdmin(SubprojectReferenceValueAdmin):
 
 
 class SubprojectTypeAdmin(SubprojectReferenceValueAdmin):
-    list_display = ('name', 'sector', 'color', 'subprojects_count')
-    list_filter = ('sector',)
-    list_select_related = ('sector',)
+    list_display = ('name', 'sector', 'beneficiary_sector', 'regroup', 'estimated_cost', 'color', 'subprojects_count')
+    list_filter = ('sector', 'beneficiary_sector', 'regroup', 'donation_certificate')
+    list_select_related = ('sector', 'beneficiary_sector', 'regroup')
+    search_fields = ('name', 'name_fr', 'old_name')
+
+
+class SubprojectTypeRegroupAdmin(admin.ModelAdmin):
+    exclude = FORM_FIELDS_TO_EXCLUDE
+    search_fields = ('name',)
+    list_display = ('name', 'types_count')
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(_types_count=Count('subproject_types'))
+
+    @admin.display(description=_("Types of structure"), ordering='_types_count')
+    def types_count(self, obj):
+        return obj._types_count
 
 
 admin.site.register(SubprojectSector, SubprojectSectorAdmin)
 admin.site.register(SubprojectType, SubprojectTypeAdmin)
+admin.site.register(SubprojectTypeRegroup, SubprojectTypeRegroupAdmin)
 admin.site.register(WorksType, SubprojectReferenceValueAdmin)
 admin.site.register(SubprojectTypeDesignation, SubprojectReferenceValueAdmin)
 

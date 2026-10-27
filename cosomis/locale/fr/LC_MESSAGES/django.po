@@ -4962,3 +4962,27 @@ msgstr "%(facilitators)s facilitateur(s) et %(users)s utilisateur(s) du projet p
 #, python-format
 msgid "The project %(name)s has been saved."
 msgstr "Le projet %(name)s a été enregistré."
+
+#: subprojects/models.py
+msgid "Beneficiary sector"
+msgstr "Secteur bénéficiaire"
+
+#: subprojects/models.py
+msgid "Grouping"
+msgstr "Regroupement"
+
+#: subprojects/models.py
+msgid "Donation certificate"
+msgstr "Certificat de donation"
+
+#: subprojects/models.py
+msgid "Old names"
+msgstr "Anciens noms"
+
+#: subprojects/models.py
+msgid "Type of structure grouping"
+msgstr "Regroupement de types d'ouvrage"
+
+#: subprojects/models.py
+msgid "Type of structure groupings"
+msgstr "Regroupements de types d'ouvrage"

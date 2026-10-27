@@ -1144,6 +1144,19 @@ class SubprojectSector(SubprojectReferenceValue):
         verbose_name_plural = _("Subproject sectors")
 
 
+class SubprojectTypeRegroup(BaseModel):
+    """Regroupement de types d'ouvrage semblables (ex. « Clôture » pour toutes les clôtures)."""
+    name = models.CharField(max_length=255, unique=True, verbose_name=_("Name"))
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = _("Type of structure grouping")
+        verbose_name_plural = _("Type of structure groupings")
+
+    def __str__(self):
+        return self.name
+
+
 class SubprojectType(SubprojectReferenceValue):
     """Type d'ouvrage (`Subproject.type_of_subproject`)."""
     subproject_field = 'type_of_subproject'
@@ -1151,6 +1164,13 @@ class SubprojectType(SubprojectReferenceValue):
     name_fr = models.CharField(max_length=255, null=True, blank=True)
     color = models.CharField(max_length=50, null=True, blank=True, verbose_name=_("Color"))
     sector = models.ForeignKey('SubprojectSector', null=True, blank=True, on_delete=models.SET_NULL, verbose_name=_("Subproject sector"))
+    beneficiary_sector = models.ForeignKey('SubprojectSector', null=True, blank=True, on_delete=models.SET_NULL, related_name='beneficiary_subproject_types', verbose_name=_("Beneficiary sector"))
+    regroup = models.ForeignKey('SubprojectTypeRegroup', null=True, blank=True, on_delete=models.SET_NULL, related_name='subproject_types', verbose_name=_("Grouping"))
+    donation_certificate = models.BooleanField(null=True, blank=True, verbose_name=_("Donation certificate"))
+    estimated_cost = models.FloatField(null=True, blank=True, verbose_name=_("Estimated cost"))
+    unit = models.CharField(max_length=255, null=True, blank=True, verbose_name=_("Unit"))
+    # anciens noms (séparés par « ; ») des types fusionnés dans celui-ci
+    old_name = models.TextField(null=True, blank=True, verbose_name=_("Old names"))
 
     class Meta(SubprojectReferenceValue.Meta):
         verbose_name = _("Type of structure")
