@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy
 from subprojects.models import Project, Financier
 from datetime import datetime
 
-from cosomis.constants import SUB_PROJECT_STATUS_COLOR, TYPES_OF_SUB_PROJECT_COLOR
+from cosomis.constants import SUB_PROJECT_STATUS_COLOR
 from cosomis.functions import parse_date
 
 register = template.Library()
@@ -338,7 +338,9 @@ def get_step_color(key):
 
 @register.filter
 def get_type_sub_project_color(key):
-    return TYPES_OF_SUB_PROJECT_COLOR.get(key, '#00ffff') #Default e-Aqua f-Aqua
+    """Couleur du type d'ouvrage, lue en base (SubprojectType.color, sinon celle de son secteur)."""
+    from subprojects.models import SubprojectType, DEFAULT_TYPE_COLOR
+    return SubprojectType.cached_color_map().get(key, DEFAULT_TYPE_COLOR)
 
 @register.filter
 def format_id(value: str):

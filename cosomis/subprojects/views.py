@@ -18,7 +18,7 @@ from datetime import datetime
 from cosomis.datatables import (
     DATATABLE_EXPORT_BUTTONS_OPTIONS, DatatableColumn, ServerSideDatatableMixin, get_filter_badges
 )
-from subprojects.models import Subproject, VulnerableGroup, SubprojectFile, Project, Component
+from subprojects.models import Subproject, VulnerableGroup, SubprojectFile, Project, Component, SubprojectSector, SubprojectType
 from django import forms
 from subprojects import functions as subprojects_functions
 from administrativelevels.libraries import download_file
@@ -623,8 +623,8 @@ class SubprojectsMapViewPage(generic.TemplateView):
         context['en_bound'] = settings.DIAGNOSTIC_MAP_EN_BOUND
         context['country_iso_code'] = settings.DIAGNOSTIC_MAP_ISO_CODE
         context['sub_project_status_color_translation'] = SUB_PROJECT_STATUS_COLOR_TRANSLATE
-        context['types_of_sub_project_color'] = TYPES_OF_SUB_PROJECT_COLOR
-        context['sectors_of_sub_project_color'] = SUB_PROJECT_SECTORS_COLOR
+        context['types_of_sub_project_color'] = SubprojectType.color_map(used_only=True)
+        context['sectors_of_sub_project_color'] = SubprojectSector.color_map()
         context['hide_content_header'] = True
         context['form'] = AdministrativeLevelFilterForm(False)
         context['form_suproject'] = SubprojectFilterForm(False)
@@ -673,7 +673,7 @@ class SubprojectsMapWideViewPage(generic.TemplateView):
         context['en_bound'] = settings.DIAGNOSTIC_MAP_EN_BOUND
         context['country_iso_code'] = settings.DIAGNOSTIC_MAP_ISO_CODE
         context['sub_project_status_color_translation'] = SUB_PROJECT_STATUS_COLOR_TRANSLATE
-        context['types_of_sub_project_color'] = TYPES_OF_SUB_PROJECT_COLOR
+        context['types_of_sub_project_color'] = SubprojectType.color_map(used_only=True)
         context['hide_content_header'] = True
         context['form'] = AdministrativeLevelFilterForm(False)
         context['form_suproject'] = SubprojectFilterForm(False)
@@ -709,7 +709,7 @@ class SubprojectsMapView(generic.ListView):
         context['en_bound'] = settings.DIAGNOSTIC_MAP_EN_BOUND
         context['country_iso_code'] = settings.DIAGNOSTIC_MAP_ISO_CODE
         context['sub_project_status_color_translation'] = SUB_PROJECT_STATUS_COLOR_TRANSLATE
-        context['types_of_sub_project_color'] = TYPES_OF_SUB_PROJECT_COLOR
+        context['types_of_sub_project_color'] = SubprojectType.color_map(used_only=True)
         return context
 
     def filter_list_by_delete_empty(self, _list):

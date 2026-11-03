@@ -12,7 +12,7 @@ from django.db import connection
 import logging
 from django.http import Http404
 
-from subprojects.models import Subproject, Step, Component, Project, SubprojectStep, Level
+from subprojects.models import Subproject, Step, Component, Project, SubprojectStep, Level, SubprojectSector, SubprojectType
 from administrativelevels.models import AdministrativeLevel
 from financial.models.allocation import AdministrativeLevelAllocation
 from process_manager.models import AdministrativeLevelWave
@@ -396,7 +396,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
 
 
             #Structure Graphe
-            type_structures = list(TYPES_OF_SUB_PROJECT_COLOR.keys())
+            type_structures = list(SubprojectType.color_map(used_only=True).keys())
             ctx['type_structures'] = type_structures
 
             # Structures and completed structures by type of structure, one GROUP BY
@@ -634,7 +634,7 @@ class DashboardSubprojectsListView(DashboardSubprojectsMixin, AJAXRequestMixin, 
 
         ctx.update(self.get_datas_on_request_get())
 
-        ctx['SUB_PROJECT_SECTORS_COLOR'] = SUB_PROJECT_SECTORS_COLOR
+        ctx['SUB_PROJECT_SECTORS_COLOR'] = SubprojectSector.color_map()
         ctx['SUB_PROJECT_STATUS_COLOR_TRANSLATE'] = SUB_PROJECT_STATUS_COLOR_TRANSLATE
         return ctx
 
@@ -758,7 +758,7 @@ class DashboardFinancingListView(DashboardSubprojectsMixin, AJAXRequestMixin, Lo
         ctx.update(self.get_datas_on_request_get())
 
         ctx['FINANCING_COLOR'] = FINANCING_COLOR
-        ctx['SUB_PROJECT_SECTORS_COLOR'] = SUB_PROJECT_SECTORS_COLOR
+        ctx['SUB_PROJECT_SECTORS_COLOR'] = SubprojectSector.color_map()
 
         return ctx
 
@@ -862,7 +862,7 @@ class DashboardFinancingListView(DashboardSubprojectsMixin, AJAXRequestMixin, Lo
     #     administrative_level_type = self.request.GET.get('administrative_level_type', 'All').title()
     #     ctx['administrative_level_type'] = "All" if administrative_level_type in ("", "null", "undefined") else administrative_level_type
     #     ctx['FINANCING_COLOR'] = FINANCING_COLOR
-    #     ctx['SUB_PROJECT_SECTORS_COLOR'] = SUB_PROJECT_SECTORS_COLOR
+    #     ctx['SUB_PROJECT_SECTORS_COLOR'] = SubprojectSector.color_map()
     #     return ctx
 
 

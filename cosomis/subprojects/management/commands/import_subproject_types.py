@@ -12,13 +12,13 @@
 """
 import re
 import unicodedata
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import openpyxl
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+from django.db import models, transaction
 
 from subprojects.models import Subproject, SubprojectSector, SubprojectType, SubprojectTypeRegroup
 
@@ -33,7 +33,14 @@ SECTOR_RENAMES = {
     'Developpement–a–la–Base': 'Action–sociale',
 }
 
-STORAGE_CAPACITIES = (50, 75, 100, 150, 200, 250, 350)
+# couleur des secteurs qui n'en ont pas encore (carte, graphiques)
+NEW_SECTOR_COLORS = {
+    'Appui–economique': '#c71585',  # MediumVioletRed
+    'Securite': '#b22222',  # FireBrick
+    'Justice': '#4b0082',  # Indigo
+}
+
+STORAGE_CAPACITIES =(50, 75, 100, 150, 200, 250, 350)
 DEFAULT_COMMUNITY_CAPACITY = 100
 DEFAULT_MARKET_CAPACITY = 75
 
@@ -184,17 +191,19 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--file', default=str(DEFAULT_FILE), help="Fichier Excel des priorités définies")
         parser.add_argument('--dry-run', action='store_true', help="Affiche le résultat sans rien enregistrer")
+        parser.add_argument('--colors-only', action='store_true', help="Complète seulement les couleurs manquantes")
 
     def handle(self, *args, **options):
-        path = Path(options['file'])
-        if not path.exists():
-            raise CommandError(f"Fichier introuvable : {path}")
-        rows = self.read_rows(path)
-
         with transaction.atomic():
-            self.rename_sectors()
-            self.types_by_key = {normalize(t.name): t for t in self.import_types(rows)}
-            self.merge_old_types()
+            if not options['colors_only']:
+                path = Path(options['file'])
+                if not path.exists():
+                    raise CommandError(f"Fichier introuvable : {path}")
+                rows = self.read_rows(path)
+                self.rename_sectors()
+                self.types_by_key = {normalize(t.name): t for t in self.import_types(rows)}
+                self.merge_old_types()
+            self.assign_colors()
             if options['dry_run']:
                 transaction.set_rollback(True)
                 self.stdout.write(self.style.WARNING("Simulation (--dry-run) : rien n'a été enregistré."))
@@ -322,6 +331,32 @@ class Command(BaseCommand):
         if not target.color and old_type and old_type.color:
             target.color = old_type.color
         target.save(update_fields=['old_name', 'color', 'updated_date'])
+
+    # --- couleurs (carte, légende, graphiques) -------------------------------------------------------------------
+    def assign_colors(self):
+        """Donne une couleur aux secteurs et aux types qui n'en ont pas : un type prend la couleur la plus fréquente
+        de son regroupement, sinon celle de son secteur."""
+        for sector in SubprojectSector.objects.filter(models.Q(color__isnull=True) | models.Q(color='')):
+            sector.color = NEW_SECTOR_COLORS.get(sector.name)
+            if sector.color:
+                sector.save(update_fields=['color', 'updated_date'])
+                self.stdout.write(f"Couleur du secteur {sector.name} : {sector.color}")
+
+        regroup_colors = defaultdict(Counter)
+        for regroup_id, color in SubprojectType.objects.filter(regroup__isnull=False).exclude(color__isnull=True).exclude(color='').values_list('regroup_id', 'color'):
+            regroup_colors[regroup_id][color] += 1
+
+        colored = 0
+        for subproject_type in SubprojectType.objects.filter(models.Q(color__isnull=True) | models.Q(color='')).select_related('sector'):
+            color = (regroup_colors[subproject_type.regroup_id].most_common(1)[0][0] if regroup_colors.get(subproject_type.regroup_id)
+                     else subproject_type.sector.color if subproject_type.sector_id else None)
+            if color:
+                subproject_type.color = color
+                subproject_type.save(update_fields=['color', 'updated_date'])
+                colored += 1
+            else:
+                self.stdout.write(self.style.WARNING(f"Sans couleur (ni regroupement ni secteur coloré) : {subproject_type.name}"))
+        self.stdout.write(f"Couleurs attribuées à {colored} type(s).")
 
     # --- magasins de stockage --------------------------------------------------------------------------------------
     def storage_cost(self, capacity, place):

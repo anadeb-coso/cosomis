@@ -1143,6 +1143,16 @@ class SubprojectSector(SubprojectReferenceValue):
         verbose_name = _("Subproject sector")
         verbose_name_plural = _("Subproject sectors")
 
+    def save(self, *args, **kwargs):
+        result = super().save(*args, **kwargs)
+        clear_color_cache()
+        return result
+
+    @classmethod
+    def color_map(cls):
+        """{secteur: couleur} lu en base (cartes, graphiques)."""
+        return dict(cls.objects.exclude(color__isnull=True).exclude(color='').values_list('name', 'color'))
+
 
 class SubprojectTypeRegroup(BaseModel):
     """Regroupement de types d'ouvrage semblables (ex. « Clôture » pour toutes les clôtures)."""
@@ -1175,6 +1185,38 @@ class SubprojectType(SubprojectReferenceValue):
     class Meta(SubprojectReferenceValue.Meta):
         verbose_name = _("Type of structure")
         verbose_name_plural = _("Types of structure")
+
+    def save(self, *args, **kwargs):
+        result = super().save(*args, **kwargs)
+        clear_color_cache()
+        return result
+
+    def get_color(self):
+        """Couleur du type, sinon celle de son secteur."""
+        return self.color or (self.sector.color if self.sector_id else None) or DEFAULT_TYPE_COLOR
+
+    @classmethod
+    def color_map(cls, used_only=False):
+        """{type d'ouvrage: couleur} lu en base (carte, légende). `used_only` : seulement les types portés par au
+        moins un sous-projet."""
+        types = cls.objects.select_related('sector').order_by('name')
+        if used_only:
+            types = types.filter(subprojects__isnull=False).distinct()
+        return {t.name: t.get_color() for t in types}
+
+    @classmethod
+    def cached_color_map(cls):
+        from django.core.cache import cache
+        return cache.get_or_set(TYPE_COLOR_CACHE_KEY, cls.color_map, 300)
+
+
+DEFAULT_TYPE_COLOR = '#00ffff'
+TYPE_COLOR_CACHE_KEY = 'subproject_type_color_map'
+
+
+def clear_color_cache():
+    from django.core.cache import cache
+    cache.delete(TYPE_COLOR_CACHE_KEY)
 
 
 class WorksType(SubprojectReferenceValue):
