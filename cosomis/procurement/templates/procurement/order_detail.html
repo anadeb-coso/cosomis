@@ -1,0 +1,79 @@
+{% extends 'layouts/base.html' %}
+{% load i18n humanize %}
+
+{% block content %}
+<div class="mb-2 d-flex flex-wrap">
+    <a href="{% url 'procurement:overview' %}" class="btn btn-secondary btn-sm mr-2"><i class="fa fa-arrow-left"></i> {% translate "Back to procurement" %}</a>
+    {% if can_edit %}
+    <a href="{% url 'procurement:order_update' order.pk %}" class="btn btn-outline-primary btn-sm mr-2"><i class="fa fa-edit"></i> {% translate "Edit" %}</a>
+    <form method="post" action="{% url 'procurement:order_delete' order.pk %}" onsubmit="return confirm('{% translate "Delete this order?" %}');">{% csrf_token %}
+        <button class="btn btn-outline-danger btn-sm"><i class="fa fa-trash"></i> {% translate "Delete" %}</button></form>
+    {% endif %}
+</div>
+
+<div class="row">
+<div class="col-lg-4">
+    <div class="card card-outline card-primary"><div class="card-header"><b>{{ order.reference }}</b>
+        <span class="badge {% if order.is_late %}badge-danger{% else %}badge-info{% endif %} float-right">{{ order.get_status_display }}</span></div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item"><b>{% translate "Subject" %}</b><br>{{ order.subject }}</li>
+            <li class="list-group-item"><b>{% translate "Sub-project" %}</b><br><a href="{% url 'subprojects:detail' order.subproject_id %}">{{ order.subproject.full_title_of_approved_subproject }}</a></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Supplier" %}</b><span>{{ order.supplier }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Ordered on" %}</b><span>{{ order.order_date|date:"d/m/Y" }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Expected delivery" %}</b><span>{{ order.expected_delivery_date|date:"d/m/Y"|default:"-" }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Delivery place" %}</b><span>{{ order.delivery_place|default:"-" }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Amount (FCFA)" %}</b><span>{{ order.amount|floatformat:0|intcomma }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Delivered" %}</b><span>{% if order.delivery_rate is not None %}{{ order.delivery_rate }} %{% else %}-{% endif %}</span></li>
+            {% if order.notes %}<li class="list-group-item"><b>{% translate "Observations" %}</b><br>{{ order.notes|linebreaksbr }}</li>{% endif %}
+        </ul>
+    </div>
+</div>
+<div class="col-lg-8">
+    <div class="card"><div class="card-header"><b>{% translate "Ordered items" %}</b></div>
+        <div class="card-body p-0 table-responsive"><table class="table table-sm table-striped mb-0">
+            <thead><tr><th>{% translate "Designation" %}</th><th>{% translate "Unit" %}</th><th class="text-right">{% translate "Quantity" %}</th>
+                <th class="text-right">{% translate "Unit price" %}</th><th class="text-right">{% translate "Amount" %}</th>
+                <th class="text-right">{% translate "Delivered" %}</th><th class="text-right">{% translate "Accepted" %}</th><th class="text-right">{% translate "Remaining" %}</th><th></th></tr></thead>
+            <tbody>{% for l in lines %}<tr>
+                <td>{{ l.designation }}</td><td>{{ l.unit }}</td><td class="text-right">{{ l.quantity|floatformat:-2 }}</td>
+                <td class="text-right">{{ l.unit_price|floatformat:0|intcomma|default:"-" }}</td><td class="text-right">{{ l.amount|floatformat:0|intcomma }}</td>
+                <td class="text-right">{{ l.quantity_delivered|floatformat:-2 }}</td><td class="text-right">{{ l.quantity_accepted|floatformat:-2 }}</td>
+                <td class="text-right">{{ l.remaining|floatformat:-2 }}</td>
+                <td class="text-right text-nowrap">{% if can_edit %}
+                    <a href="{% url 'procurement:line_update' l.pk %}" class="btn btn-xs btn-outline-primary"><i class="fa fa-edit"></i></a>
+                    <form method="post" action="{% url 'procurement:line_delete' l.pk %}" class="d-inline" onsubmit="return confirm('{% translate "Delete this item?" %}');">{% csrf_token %}
+                        <button class="btn btn-xs btn-outline-danger"><i class="fa fa-trash"></i></button></form>{% endif %}</td>
+            </tr>{% empty %}<tr><td colspan="9" class="text-center text-muted p-3">{% translate "No item yet." %}</td></tr>{% endfor %}</tbody>
+        </table></div>
+        {% if can_edit %}
+        <form method="post" action="{% url 'procurement:line_create' order.pk %}" class="card-footer form-row align-items-end">{% csrf_token %}
+            <div class="col-md-4 mb-1"><label class="small font-weight-bold mb-0">{{ line_form.designation.label }}</label>{{ line_form.designation }}</div>
+            <div class="col-md-2 mb-1"><label class="small font-weight-bold mb-0">{{ line_form.unit.label }}</label>{{ line_form.unit }}</div>
+            <div class="col-md-2 mb-1"><label class="small font-weight-bold mb-0">{{ line_form.quantity.label }}</label>{{ line_form.quantity }}</div>
+            <div class="col-md-2 mb-1"><label class="small font-weight-bold mb-0">{{ line_form.unit_price.label }}</label>{{ line_form.unit_price }}</div>
+            <div class="col-md-2 mb-1"><button class="btn btn-primary btn-block"><i class="fa fa-plus"></i> {% translate "Add" %}</button></div>
+        </form>{% endif %}
+    </div>
+
+    <div class="card"><div class="card-header d-flex align-items-center"><b>{% translate "Deliveries and receptions" %}</b>
+        {% if can_edit and lines %}<a href="{% url 'procurement:delivery_create' order.pk %}" class="btn btn-primary btn-sm ml-auto"><i class="fa fa-truck"></i> {% translate "New delivery" %}</a>{% endif %}</div>
+        <div class="card-body p-0 table-responsive"><table class="table table-sm mb-0">
+            <thead><tr><th>{% translate "Delivered on" %}</th><th>{% translate "Delivery note" %}</th><th>{% translate "Items" %}</th>
+                <th>{% translate "Received on" %}</th><th>{% translate "Received by" %}</th><th>{% translate "Reservations" %}</th><th></th></tr></thead>
+            <tbody>{% for d in deliveries %}<tr>
+                <td>{{ d.delivery_date|date:"d/m/Y" }}</td>
+                <td>{{ d.delivery_note|default:"-" }}{% if d.document %} <a href="{{ d.document.url }}" target="_blank"><i class="fa fa-paperclip"></i></a>{% endif %}</td>
+                <td>{% for dl in d.lines.all %}{{ dl.order_line.designation }} : {{ dl.quantity_delivered|floatformat:-2 }}{% if dl.quantity_accepted is not None %} ({% translate "accepted" %} {{ dl.quantity_accepted|floatformat:-2 }}){% endif %}<br>{% endfor %}</td>
+                <td>{% if d.reception_date %}{{ d.reception_date|date:"d/m/Y" }}{% else %}<span class="badge badge-warning">{% translate "To receive" %}</span>{% endif %}</td>
+                <td>{{ d.received_by.get_full_name|default:d.received_by.username|default:"-" }}</td>
+                <td>{{ d.reservations|default:"-"|linebreaksbr }}</td>
+                <td class="text-right text-nowrap">{% if can_edit %}
+                    <a href="{% url 'procurement:delivery_update' order.pk d.pk %}" class="btn btn-xs btn-outline-primary"><i class="fa fa-edit"></i></a>
+                    <form method="post" action="{% url 'procurement:delivery_delete' d.pk %}" class="d-inline" onsubmit="return confirm('{% translate "Delete this delivery?" %}');">{% csrf_token %}
+                        <button class="btn btn-xs btn-outline-danger"><i class="fa fa-trash"></i></button></form>{% endif %}</td>
+            </tr>{% empty %}<tr><td colspan="7" class="text-center text-muted p-3">{% translate "No delivery yet." %}</td></tr>{% endfor %}</tbody>
+        </table></div>
+    </div>
+</div>
+</div>
+{% endblock %}

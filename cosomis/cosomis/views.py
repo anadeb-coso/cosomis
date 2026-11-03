@@ -131,52 +131,57 @@ class DeleteObjectFormView(AJAXRequestMixin, ModalFormMixin, AdminPermissionRequ
 
 @login_required
 def profile(request):
+    """Profile page of the logged-in user, served by the SIG itself (same content as the DCC one). Opened with a
+    GET; a POST (old link) is redirected to the GET page."""
+    from django.shortcuts import redirect
+
+    from usermanager.profile_details import build_profile_details
+    from usermanager.views_first_login import FirstLoginPasswordForm
+
     if request.method == 'POST':
-        try:
-            scheme = request.scheme
-            domain = request.get_host()
-            full_url = f"{scheme}://{domain}"
-            language = get_language()
+        return redirect('profile')
 
-            previous_url = request.headers.get('Referer', full_url)
-
-            #Recuperation de Token
-            session = requests.Session()
-            response = session.get(f"{settings.CDD_URL_BASE}/authentication/get-csrf-token/")
-
-            if response.status_code == 200:
-                data = response.json()
-                token = data.get("csrfToken")
-            else:
-                raise Http404
-            
-            cookies = session.cookies.get_dict()
-            headers = {
-                "X-CSRFToken": token,
-                "Referer": f"{settings.CDD_URL_BASE}/",
-                "Origin": settings.CDD_URL_BASE
-            }
-            post_data = {
-                'email': request.user.email,
-                'code': get_validation_code(request.user.email),
-                'redirection_url': full_url,
-                'csrfmiddlewaretoken': token,
-                'language': language,
-                'previous_url': previous_url
-            }
-            
-            response_post = session.post(f"{settings.CDD_URL_BASE}/{language}/user-manager/", headers=headers, cookies=cookies, data=post_data)
-
-            content = response_post.text\
-                .replace('/static/', f'{settings.CDD_URL_BASE}/static/')\
-                .replace(f'url: "/{language}/', f'url: "{settings.CDD_URL_BASE}/{language}/')\
-                .replace('action="/i18n/', f'action="{settings.CDD_URL_BASE}/i18n/')
+    return render(request, 'profile.html', {
+        'title': _('Profile'),
+        'breadcrumb': [{'url': '', 'title': _('Profile')}],
+        'hide_content_header': True,
+        'd': build_profile_details(request.user),
+        'password_form': FirstLoginPasswordForm(),
+        'open_password': request.GET.get('password') == '1',
+    })
 
 
-            return HttpResponse(content)
+@login_required
+def profile_change_password(request):
+    """New password for all the person's accounts (DCC, SIG, facilitator, MGP), applied by the DCC."""
+    from django.contrib.auth import update_session_auth_hash
+    from django.contrib.auth.models import User
+    from django.shortcuts import redirect
 
+    from usermanager.password_change import CHECKED_SESSION_KEY, change_password_on_all_platforms
+    from usermanager.profile_details import build_profile_details
+    from usermanager.views_first_login import FirstLoginPasswordForm
 
-        except Exception as e:
-            raise Http404
-        
-    raise Http404
+    if request.method != 'POST':
+        return redirect('profile')
+    form = FirstLoginPasswordForm(request.POST)
+    if form.is_valid():
+        data = form.cleaned_data
+        ok, message = change_password_on_all_platforms(
+            request.user.email or request.user.username, data['current_password'], data['new_password'],
+            data['new_password_confirm'], language=get_language(),
+        )
+        if ok:
+            # `auth_user` is shared with the DCC, which has just written the new password: keep this session open.
+            update_session_auth_hash(request, User.objects.get(pk=request.user.pk))
+            request.session[CHECKED_SESSION_KEY] = True
+            messages.success(request, message or _("The password has been changed on all the platforms."))
+            return redirect('profile')
+        form.add_error(None, message)
+    return render(request, 'profile.html', {
+        'title': _('Profile'),
+        'breadcrumb': [{'url': '', 'title': _('Profile')}],
+        'd': build_profile_details(request.user),
+        'password_form': form,
+        'open_password': True,
+    })

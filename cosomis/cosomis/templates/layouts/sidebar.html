@@ -108,29 +108,29 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href=""
-                       class="nav-link {% if active_level1 == 'procurement' %}active{% endif %} disabled" >
+                    <a href="{% url 'procurement:overview' %}"
+                       class="nav-link {% if active_level1 == 'procurement' %}active{% endif %}">
                         <i class="nav-icon fa fa-cart-plus"></i>
                         <p>{% translate "Procurement" %}</p>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href=""
-                       class="nav-link {% if active_level1 == 'facilitators' %}active{% endif %} disabled">
+                    <a href="{% url 'animateurs:list' %}"
+                       class="nav-link {% if active_level1 == 'facilitators' %}active{% endif %}">
                         <i class="nav-icon fa fa-user-friends"></i>
                         <p>{% translate "Facilitators" %}</p>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href=""
-                       class="nav-link {% if active_level1 == 'results_framework' %}active{% endif %} disabled">
+                    <a href="{% url 'results_framework:indicator_list' %}"
+                       class="nav-link {% if active_level1 == 'results_framework' %}active{% endif %}">
                         <i class="nav-icon fa fa-pie-chart"></i>
                         <p>{% translate "Results Framework" %}</p>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href=""
-                       class="nav-link {% if active_level1 == 'reports' %}active{% endif %} disabled">
+                    <a href="{% url 'rapports:home' %}"
+                       class="nav-link {% if active_level1 == 'reports' %}active{% endif %}">
                         <i class="nav-icon fa fa-area-chart"></i>
                         <p>{% translate "Reports" %}</p>
                     </a>
@@ -158,14 +158,10 @@
                     }
                 </style>
                 <li class="nav-item" id="nav-profile">
-                    <form action="{% url 'profile' %}" method="POST">
-                        {% csrf_token %}
-                        <button
-                            class="nav-link">
-                            <i class="nav-icon fa fa-user"></i>
-                            <p>{% translate "Profile" %}</p>
-                        </button>
-                    </form>
+                    <a href="{% url 'profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' or request.resolver_match.url_name == 'profile_change_password' %}active{% endif %}">
+                        <i class="nav-icon fa fa-user"></i>
+                        <p>{% translate "Profile" %}</p>
+                    </a>
                 </li>
 
 

@@ -1,0 +1,59 @@
+{% extends 'layouts/base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="mb-2"><a href="{% url 'animateurs:list' %}" class="btn btn-secondary btn-sm"><i class="fa fa-arrow-left"></i> {% translate "Back to facilitators" %}</a></div>
+<div class="row">
+<div class="col-lg-4">
+    <div class="card card-outline card-primary">
+        <div class="card-body text-center">
+            <div class="mb-2"><i class="fa fa-user-circle fa-5x text-primary"></i></div>
+            <h4 class="mb-0">{{ facilitator.name|default:facilitator.username }}</h4>
+            <div class="mb-2">{{ type_label }}</div>
+            {% if facilitator.active %}<span class="badge badge-success">{% translate "Active" %}</span>{% else %}<span class="badge badge-secondary">{% translate "Inactive" %}</span>{% endif %}
+        </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Code" %}</b><span>{{ facilitator.code }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Username" %}</b><span>{{ facilitator.username }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Email" %}</b>
+                <span>{% if facilitator.email %}<a href="mailto:{{ facilitator.email }}">{{ facilitator.email }}</a>{% else %}-{% endif %}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Phone" %}</b>
+                <span>{% if facilitator.phone %}<a href="tel:{{ facilitator.phone }}">{{ facilitator.phone }}</a>{% else %}-{% endif %}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Sex" %}</b><span>{{ sex_label }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Regions" %}</b><span class="text-right">{{ regions|join:", "|default:"-" }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Communes" %}</b><span class="text-right">{{ communes|join:", "|default:"-" }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Projects" %}</b><span class="text-right">{% for p in projects %}{{ p.name }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</span></li>
+        </ul>
+    </div>
+</div>
+<div class="col-lg-8">
+    <div class="row">
+        <div class="col-6 col-md-3"><div class="small-box bg-light p-3 mb-3"><h4 class="mb-0">{{ stats.villages }}</h4><div>{% translate "Villages" %}</div></div></div>
+        <div class="col-6 col-md-3"><div class="small-box bg-light p-3 mb-3"><h4 class="mb-0">{{ stats.stabilized }}</h4><div>{% translate "Stabilization villages" %}</div></div></div>
+        <div class="col-6 col-md-3"><div class="small-box bg-light p-3 mb-3"><h4 class="mb-0">{{ stats.active_assignments }}</h4><div>{% translate "Active assignments" %}</div></div></div>
+        <div class="col-6 col-md-3"><div class="small-box bg-light p-3 mb-3"><h4 class="mb-0">{{ stats.projects }}</h4><div>{% translate "Projects" %}</div></div></div>
+    </div>
+
+    <div class="card"><div class="card-header"><b>{% translate "Villages covered" %}</b></div>
+        <div class="card-body p-0 table-responsive"><table class="table table-sm table-striped mb-0">
+            <thead><tr><th>{% translate "Village" %}</th><th>{% translate "Canton" %}</th><th>{% translate "Commune" %}</th><th>{% translate "Region" %}</th><th>{% translate "CVD" %}</th><th></th></tr></thead>
+            <tbody>{% for v in villages %}<tr>
+                <td>{{ v.level.name }}</td><td>{{ v.canton.name|default:"-" }}</td><td>{{ v.commune.name|default:"-" }}</td>
+                <td>{{ v.region.name|default:"-" }}</td><td>{{ v.level.cvd.name|default:"-" }}</td>
+                <td class="text-right">{% if v.stabilized %}<span class="badge badge-info">{% translate "Stabilization" %}</span>{% endif %}
+                    {% if v.additional %}<span class="badge badge-warning">{% translate "Additional" %}</span>{% endif %}</td>
+            </tr>{% empty %}<tr><td colspan="6" class="text-center text-muted p-3">{% translate "No village." %}</td></tr>{% endfor %}</tbody>
+        </table></div></div>
+
+    <div class="card"><div class="card-header"><b>{% translate "Village assignments (MIS)" %}</b></div>
+        <div class="card-body p-0 table-responsive"><table class="table table-sm table-striped mb-0">
+            <thead><tr><th>{% translate "Village" %}</th><th>{% translate "Project" %}</th><th>{% translate "Assignment date" %}</th><th>{% translate "End date" %}</th><th>{% translate "Status" %}</th></tr></thead>
+            <tbody>{% for a in assignments %}<tr>
+                <td>{{ a.administrative_level.name }}</td><td>{{ a.project.name }}</td>
+                <td>{{ a.assign_date|date:"d/m/Y"|default:"-" }}</td><td>{{ a.unassign_date|date:"d/m/Y"|default:"-" }}</td>
+                <td>{% if a.activated %}<span class="badge badge-success">{% translate "Active" %}</span>{% else %}<span class="badge badge-secondary">{% translate "Inactive" %}</span>{% endif %}</td>
+            </tr>{% empty %}<tr><td colspan="5" class="text-center text-muted p-3">{% translate "No assignment." %}</td></tr>{% endfor %}</tbody>
+        </table></div></div>
+</div>
+</div>
+{% endblock %}

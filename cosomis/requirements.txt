@@ -44,3 +44,4 @@ python_docx==1.1.2
 fuzzywuzzy==0.18.0
 django-htmx>=1.19.0
 parameterized==0.9.0
+reportlab==4.2.5

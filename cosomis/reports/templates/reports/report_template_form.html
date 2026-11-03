@@ -1,0 +1,24 @@
+{% extends 'layouts/base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-9">
+<div class="card card-outline card-primary">
+    <div class="card-header d-flex align-items-center"><b>{{ title }}</b>
+        <a href="{% url 'rapports:home' %}" class="btn btn-secondary btn-sm ml-auto">{% translate "Back to reports" %}</a></div>
+    <form method="post" class="card-body">{% csrf_token %}
+        {% for error in form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+        <div class="row">{% for field in form %}
+            <div class="{% if field.name in 'introduction other_emails recipients' %}col-12{% else %}col-md-6{% endif %} mb-2">
+                {% if field.field.widget.input_type == 'checkbox' %}
+                    <div class="form-check mt-4">{{ field }} <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label></div>
+                {% else %}
+                    <label class="small font-weight-bold mb-0" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+                {% endif %}
+                {% if field.help_text %}<small class="text-muted">{{ field.help_text }}</small>{% endif %}
+                {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+            </div>{% endfor %}</div>
+        <button class="btn btn-primary"><i class="fa fa-save"></i> {% translate "Save" %}</button>
+    </form>
+</div></div></div>
+{% endblock %}

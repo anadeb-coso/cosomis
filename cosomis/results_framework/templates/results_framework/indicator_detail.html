@@ -1,0 +1,92 @@
+{% extends 'layouts/base.html' %}
+{% load i18n humanize static %}
+
+{% block content %}
+<div class="mb-2 d-flex flex-wrap">
+    <a href="{% url 'results_framework:indicator_list' %}" class="btn btn-secondary btn-sm mr-2"><i class="fa fa-arrow-left"></i> {% translate "Back to the results framework" %}</a>
+    {% if can_edit %}
+    <a href="{% url 'results_framework:indicator_update' indicator.pk %}" class="btn btn-outline-primary btn-sm mr-2"><i class="fa fa-edit"></i> {% translate "Edit" %}</a>
+    <form method="post" action="{% url 'results_framework:indicator_delete' indicator.pk %}" onsubmit="return confirm('{% translate "Delete this indicator?" %}');">{% csrf_token %}
+        <button class="btn btn-outline-danger btn-sm"><i class="fa fa-trash"></i> {% translate "Delete" %}</button></form>
+    {% endif %}
+</div>
+
+<div class="row">
+<div class="col-lg-4">
+    <div class="card card-outline card-primary">
+        <div class="card-header"><b>{% if indicator.code %}{{ indicator.code }} — {% endif %}{{ indicator.label }}</b></div>
+        <div class="card-body">
+            <div class="d-flex justify-content-between"><b>{% translate "Achievement" %}</b><span>{% if rate is not None %}{{ rate }} %{% else %}-{% endif %}</span></div>
+            <div class="progress mb-1" style="height:18px"><div class="progress-bar bg-{{ rate_class }}" style="width:{{ bar }}%"></div></div>
+            <small class="text-muted">{% translate "(Latest value − baseline) / (target − baseline)" %}</small>
+        </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "IDA project" %}</b><span>{{ indicator.project.name }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Component" %}</b><span class="text-right">{{ indicator.component.name|default:"-" }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Type" %}</b><span>{{ indicator.get_indicator_type_display }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Unit" %}</b><span>{{ indicator.unit|default:"-" }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Baseline" %}</b><span>{{ indicator.baseline_value|floatformat:-2|intcomma|default:"-" }}{% if indicator.baseline_year %} ({{ indicator.baseline_year }}){% endif %}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Target" %}</b><span>{{ indicator.target|floatformat:-2|intcomma|default:"-" }}{% if indicator.target_year %} ({{ indicator.target_year }}){% endif %}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Collection frequency" %}</b><span>{{ indicator.frequency|default:"-" }}</span></li>
+            <li class="list-group-item d-flex justify-content-between"><b>{% translate "Responsible for collection" %}</b><span class="text-right">{{ indicator.responsible|default:"-" }}</span></li>
+            {% if indicator.means_of_verification %}<li class="list-group-item"><b>{% translate "Means of verification" %}</b><br>{{ indicator.means_of_verification|linebreaksbr }}</li>{% endif %}
+            {% if indicator.description %}<li class="list-group-item"><b>{% translate "Definition" %}</b><br>{{ indicator.description|linebreaksbr }}</li>{% endif %}
+        </ul>
+    </div>
+</div>
+<div class="col-lg-8">
+    {% if chart|length > 1 %}
+    <div class="card"><div class="card-header"><b>{% translate "Evolution" %}</b></div>
+        <div class="card-body"><canvas id="indicator-chart" height="110"></canvas></div></div>
+    {% endif %}
+
+    <div class="card"><div class="card-header"><b>{% translate "Measurements" %}</b></div>
+        <div class="card-body p-0 table-responsive"><table class="table table-sm table-striped mb-0">
+            <thead><tr><th>{% translate "Date" %}</th><th class="text-right">{% translate "Value" %}</th><th>{% translate "Source" %}</th><th>{% translate "Comment" %}</th><th></th></tr></thead>
+            <tbody>{% for m in measurements %}<tr>
+                <td>{{ m.date|date:"d/m/Y" }}</td><td class="text-right">{{ m.value|floatformat:-2|intcomma }}</td>
+                <td>{{ m.source|default:"-"|linebreaksbr }}</td><td>{{ m.comment|default:"-"|linebreaksbr }}</td>
+                <td class="text-right text-nowrap">{% if can_edit %}
+                    <a href="{% url 'results_framework:measurement_update' m.pk %}" class="btn btn-xs btn-outline-primary"><i class="fa fa-edit"></i></a>
+                    <form method="post" action="{% url 'results_framework:measurement_delete' m.pk %}" class="d-inline" onsubmit="return confirm('{% translate "Delete this measurement?" %}');">{% csrf_token %}
+                        <button class="btn btn-xs btn-outline-danger"><i class="fa fa-trash"></i></button></form>{% endif %}</td>
+            </tr>{% empty %}<tr><td colspan="5" class="text-center text-muted p-3">{% translate "No measurement yet." %}</td></tr>{% endfor %}</tbody>
+        </table></div>
+        {% if can_edit %}
+        <form method="post" class="card-footer">{% csrf_token %}
+            <b class="d-block mb-2">{% translate "Add a measurement" %}</b>
+            {% for error in form.non_field_errors %}<div class="alert alert-danger py-1">{{ error }}</div>{% endfor %}
+            <div class="form-row">{% for field in form %}
+                <div class="col-md-{% if field.name == 'date' or field.name == 'value' %}3{% else %}6{% endif %} mb-2">
+                    <label class="small font-weight-bold mb-0">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}
+                    {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                </div>{% endfor %}</div>
+            <button class="btn btn-primary btn-sm"><i class="fa fa-plus"></i> {% translate "Add" %}</button>
+        </form>{% endif %}
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+{% if chart|length > 1 %}
+{{ chart|json_script:"indicator-chart-data" }}
+<script src="{% static 'AdminLTE/plugins/chart.js/Chart.min.js' %}"></script>
+<script>
+(function () {
+    var points = JSON.parse(document.getElementById('indicator-chart-data').textContent);
+    var datasets = [{label: '{{ _("Achieved value")|escapejs }}', data: points.map(function (p) { return p.value; }),
+                     borderColor: '#1f6fd1', backgroundColor: 'rgba(31,111,209,0.1)', fill: true, lineTension: 0.2}];
+    {% if indicator.target is not None %}
+    datasets.push({label: '{{ _("Target")|escapejs }}', data: points.map(function () { return {{ indicator.target|stringformat:"f" }}; }),
+                   borderColor: '#28a745', borderDash: [6, 4], fill: false, pointRadius: 0});
+    {% endif %}
+    new Chart(document.getElementById('indicator-chart'), {
+        type: 'line', data: {labels: points.map(function (p) { return p.date; }), datasets: datasets},
+        options: {legend: {position: 'bottom'}, scales: {yAxes: [{ticks: {beginAtZero: true}}]}}
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

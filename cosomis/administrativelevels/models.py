@@ -351,5 +351,5 @@ def delete_amd_couch(sender, instance, **kwargs):
     client = CddClient()
     client.delete_administrative_level(instance)
 
-post_save.connect(update_or_create_amd_couch, sender=AdministrativeLevel)
-post_delete.connect(delete_amd_couch, sender=AdministrativeLevel) # POST-DELETE method to delete the administrativelevel in the couchdb
+# post_save.connect(update_or_create_amd_couch, sender=AdministrativeLevel)
+# post_delete.connect(delete_amd_couch, sender=AdministrativeLevel) # POST-DELETE method to delete the administrativelevel in the couchdb

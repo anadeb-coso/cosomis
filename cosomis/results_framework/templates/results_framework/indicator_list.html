@@ -1,0 +1,53 @@
+{% extends 'layouts/base.html' %}
+{% load i18n humanize %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3 col-6"><div class="small-box bg-primary text-white p-3 mb-3"><h3 class="mb-0">{{ figures.total }}</h3><p class="mb-0">{% translate "Indicators" %}</p></div></div>
+    <div class="col-md-3 col-6"><div class="small-box bg-info text-white p-3 mb-3"><h3 class="mb-0">{{ figures.measured }}</h3><p class="mb-0">{% translate "With at least one measurement" %}</p></div></div>
+    <div class="col-md-3 col-6"><div class="small-box bg-success text-white p-3 mb-3"><h3 class="mb-0">{{ figures.achieved }}</h3><p class="mb-0">{% translate "Target reached" %}</p></div></div>
+    <div class="col-md-3 col-6"><div class="small-box bg-dark p-3 mb-3"><h3 class="mb-0">{% if figures.average is not None %}{{ figures.average }} %{% else %}-{% endif %}</h3><p class="mb-0">{% translate "Average achievement rate" %}</p></div></div>
+</div>
+
+<div class="card card-outline card-primary"><div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-end">
+        <form method="get" class="form-inline">
+            {% include 'common/_project_filter.html' %}
+            <select name="type" class="form-control form-control-sm mr-2 mb-1 no-select2">
+                <option value="">{% translate "All types" %}</option>
+                {% for code, label in types %}<option value="{{ code }}" {% if selected_type == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+            <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm mr-2 mb-1" placeholder="{% translate 'Code or label' %}">
+            <button class="btn btn-primary btn-sm mb-1"><i class="fa fa-search"></i> {% translate "Filter" %}</button>
+        </form>
+        {% if can_edit %}<a href="{% url 'results_framework:indicator_create' %}{% if scope_selected_id %}?project={{ scope_selected_id }}{% endif %}" class="btn btn-primary btn-sm mb-1"><i class="fa fa-plus"></i> {% translate "New indicator" %}</a>{% endif %}
+    </div>
+</div></div>
+
+{% for group in groups %}
+<div class="card">
+    <div class="card-header"><b>{{ group.project.name }}</b> <span class="badge badge-light">{{ group.rows|length }}</span></div>
+    <div class="card-body p-0 table-responsive"><table class="table table-sm table-striped table-hover mb-0">
+        <thead><tr><th>{% translate "Code" %}</th><th>{% translate "Indicator" %}</th><th>{% translate "Type" %}</th><th>{% translate "Component" %}</th><th>{% translate "Unit" %}</th>
+            <th class="text-right">{% translate "Baseline" %}</th><th class="text-right">{% translate "Target" %}</th><th class="text-right">{% translate "Latest value" %}</th>
+            <th style="min-width:150px">{% translate "Achievement" %}</th></tr></thead>
+        <tbody>{% for row in group.rows %}{% with i=row.indicator %}
+        <tr>
+            <td>{{ i.code|default:"-" }}</td>
+            <td><a href="{% url 'results_framework:indicator_detail' i.pk %}">{{ i.label }}</a></td>
+            <td>{{ i.get_indicator_type_display }}</td>
+            <td>{{ i.component.name|default:"-" }}</td>
+            <td>{{ i.unit|default:"-" }}</td>
+            <td class="text-right">{{ i.baseline_value|floatformat:-2|intcomma|default:"-" }}{% if i.baseline_year %} <small>({{ i.baseline_year }})</small>{% endif %}</td>
+            <td class="text-right">{{ i.target|floatformat:-2|intcomma|default:"-" }}{% if i.target_year %} <small>({{ i.target_year }})</small>{% endif %}</td>
+            <td class="text-right">{% if row.latest %}{{ row.latest.value|floatformat:-2|intcomma }} <small>({{ row.latest.date|date:"m/Y" }})</small>{% else %}-{% endif %}</td>
+            <td>{% if row.rate is not None %}
+                <div class="progress" style="height:16px"><div class="progress-bar bg-{{ row.rate_class }}" style="width:{{ row.bar }}%"></div></div>
+                <small>{{ row.rate }} %</small>{% else %}<small>-</small>{% endif %}</td>
+        </tr>{% endwith %}{% endfor %}</tbody>
+    </table></div>
+</div>
+{% empty %}
+<div class="card"><div class="card-body text-center text-muted">{% translate "No indicator. Add the indicators of the results framework of each IDA project." %}</div></div>
+{% endfor %}
+{% endblock %}

@@ -4986,3 +4986,1090 @@ msgstr "Regroupement de types d'ouvrage"
 #: subprojects/models.py
 msgid "Type of structure groupings"
 msgstr "Regroupements de types d'ouvrage"
+
+#: reports
+msgid "Summary of the financial situation"
+msgstr "Synthèse de la situation financière"
+
+#: reports
+msgid "Situation by IDA project"
+msgstr "Situation par projet IDA"
+
+#: reports
+msgid "Situation by credit / grant"
+msgstr "Situation par crédit / don"
+
+#: reports
+msgid "List of fund requests"
+msgstr "Liste des demandes de fonds"
+
+#: reports
+msgid "List of disbursements"
+msgstr "Liste des décaissements"
+
+#: reports
+msgid "List of bank transfers"
+msgstr "Liste des virements"
+
+#: reports
+msgid "Project: {value}"
+msgstr "Projet : {value}"
+
+#: reports
+msgid "Credit/Grant: {value}"
+msgstr "Crédit/Don : {value}"
+
+#: reports
+msgid "Year: {value}"
+msgstr "Année : {value}"
+
+#: reports
+msgid "All projects"
+msgstr "Ensemble des projets"
+
+#: reports
+msgid "Available on the project account"
+msgstr "Disponible sur le compte du projet"
+
+#: reports
+msgid "Amount justified"
+msgstr "Montant justifié"
+
+#: reports
+msgid "Requests"
+msgstr "Demandes"
+
+#: reports
+msgid "Available"
+msgstr "Disponible"
+
+#: reports
+msgid "IDA project"
+msgstr "Projet IDA"
+
+#: reports
+msgid "Credit / Grant"
+msgstr "Crédit / Don"
+
+#: reports
+msgid "Received"
+msgstr "Reçu"
+
+#: reports
+msgid "Sent"
+msgstr "Envoyé"
+
+#: reports
+msgid "Justified"
+msgstr "Justifié"
+
+#: reports
+msgid "Gap"
+msgstr "Écart"
+
+#: reports
+msgid "Justification"
+msgstr "Justification"
+
+#: reports
+msgid "Page {page}"
+msgstr "Page {page}"
+
+#: reports
+msgid "{scope} — situation as of {now:%d/%m/%Y %H:%M}"
+msgstr "{scope} — situation au {now:%d/%m/%Y %H:%M}"
+
+#: reports
+msgid "Key figures"
+msgstr "Chiffres clés"
+
+#: reports
+msgid "No data for this selection."
+msgstr "Aucune donnée pour cette sélection."
+
+#: reports
+msgid "Report"
+msgstr "Rapport"
+
+#: reports
+msgid "Year"
+msgstr "Année"
+
+#: reports
+msgid "Title (optional)"
+msgstr "Titre (facultatif)"
+
+#: reports
+msgid "Format"
+msgstr "Format"
+
+#: reports
+msgid "Generate a report"
+msgstr "Générer un rapport"
+
+#: reports
+msgid "Generate"
+msgstr "Générer"
+
+#: reports
+msgid "The report reflects the financial data as of today, on the COSO letterhead (PDF and Word)."
+msgstr "Le rapport reflète les données financières à la date du jour, sur papier à en-tête COSO (PDF et Word)."
+
+#: reports
+msgid "Predefined reports"
+msgstr "Rapports prédéfinis"
+
+#: reports
+msgid "On demand only"
+msgstr "À la demande uniquement"
+
+#: reports
+msgid "Weekly (every Monday)"
+msgstr "Hebdomadaire (chaque lundi)"
+
+#: reports
+msgid "Monthly (on the 1st)"
+msgstr "Mensuelle (le 1er du mois)"
+
+#: reports
+msgid "PDF"
+msgstr "PDF"
+
+#: reports
+msgid "Excel"
+msgstr "Excel"
+
+#: reports
+msgid "PDF and Excel"
+msgstr "PDF et Excel"
+
+#: reports
+msgid "Report title"
+msgstr "Titre du rapport"
+
+#: reports
+msgid "Report type"
+msgstr "Type de rapport"
+
+#: reports
+msgid "Introduction text"
+msgstr "Texte d'introduction"
+
+#: reports
+msgid "Recipient mention"
+msgstr "Mention du destinataire"
+
+#: reports
+msgid "E.g. “For the attention of the National Coordinator”."
+msgstr "Ex. « À l'attention de Monsieur le Coordonnateur national »."
+
+#: reports
+msgid "Signatory / issuing department"
+msgstr "Signataire / service émetteur"
+
+#: reports
+msgid "Limit to the IDA project"
+msgstr "Limiter au projet IDA"
+
+#: reports
+msgid "Limit to the credit / grant"
+msgstr "Limiter au crédit / don"
+
+#: reports
+msgid "Limit to the year"
+msgstr "Limiter à l'année"
+
+#: reports
+msgid "Periodicity"
+msgstr "Périodicité"
+
+#: reports
+msgid "Report language"
+msgstr "Langue du rapport"
+
+#: reports
+msgid "Recipients (accounts)"
+msgstr "Destinataires (comptes)"
+
+#: reports
+msgid "Other recipients (emails)"
+msgstr "Autres destinataires (courriels)"
+
+#: reports
+msgid "One email address per line."
+msgstr "Une adresse courriel par ligne."
+
+#: reports
+msgid "Last sent"
+msgstr "Dernier envoi"
+
+#: reports
+msgid "Report template"
+msgstr "Modèle de rapport"
+
+#: reports
+msgid "Report templates"
+msgstr "Modèles de rapports"
+
+#: reports
+msgid "Please find attached the report “{title}” as of {date:%d/%m/%Y}.\n\nThis message is sent automatically by the COSO MIS."
+msgstr "Veuillez trouver ci-joint le rapport « {title} » au {date:%d/%m/%Y}.\n\nCe message est envoyé automatiquement par le SIG COSO."
+
+#: reports
+msgid "The report template has been saved."
+msgstr "Le modèle de rapport a été enregistré."
+
+#: reports
+msgid "New report template"
+msgstr "Nouveau modèle de rapport"
+
+#: reports
+msgid "Edit report template"
+msgstr "Modifier le modèle de rapport"
+
+#: reports
+msgid "Sending failed: {error}"
+msgstr "Envoi impossible : {error}"
+
+#: reports
+msgid "Report sent to {count} recipient(s)."
+msgstr "Rapport envoyé à {count} destinataire(s)."
+
+#: reports
+msgid "No recipient is set for this template."
+msgstr "Aucun destinataire n'est renseigné pour ce modèle."
+
+#: reports
+msgid "The report template has been deleted."
+msgstr "Le modèle de rapport a été supprimé."
+
+#: reports
+msgid "Periodic reports"
+msgstr "Rapports périodiques"
+
+#: reports
+msgid "New template"
+msgstr "Nouveau modèle"
+
+#: reports
+msgid "Template"
+msgstr "Modèle"
+
+#: reports
+msgid "Recipients"
+msgstr "Destinataires"
+
+#: reports
+msgid "Preview"
+msgstr "Aperçu"
+
+#: reports
+msgid "Send now"
+msgstr "Envoyer maintenant"
+
+#: reports
+msgid "Delete this report template?"
+msgstr "Supprimer ce modèle de rapport ?"
+
+#: reports
+msgid "No template. Create one to receive a weekly or monthly report by email."
+msgstr "Aucun modèle. Créez-en un pour recevoir un rapport hebdomadaire ou mensuel par courriel."
+
+#: reports
+msgid "Back to reports"
+msgstr "Retour aux rapports"
+
+#: reports
+msgid "Word"
+msgstr "Word"
+
+#: reports
+msgid "PDF, Word and Excel"
+msgstr "PDF, Word et Excel"
+
+#: assignments
+msgid "Male"
+msgstr "Homme"
+
+#: assignments
+msgid "Female"
+msgstr "Femme"
+
+#: assignments
+msgid "Name, email, phone, code..."
+msgstr "Nom, courriel, téléphone, code..."
+
+#: assignments
+msgid "Inactive"
+msgstr "Inactif"
+
+#: assignments
+msgid "Filter"
+msgstr "Filtrer"
+
+#: assignments
+msgid "Username"
+msgstr "Nom d'utilisateur"
+
+#: assignments
+msgid "Phone"
+msgstr "Téléphone"
+
+#: assignments
+msgid "Sex"
+msgstr "Sexe"
+
+#: assignments
+msgid "Profile"
+msgstr "Profil"
+
+#: assignments
+msgid "No facilitator found."
+msgstr "Aucun animateur trouvé."
+
+#: assignments
+msgid "Page %(number)s of %(total)s"
+msgstr "Page %(number)s sur %(total)s"
+
+#: assignments
+msgid "Back to facilitators"
+msgstr "Retour aux animateurs"
+
+#: assignments
+msgid "Regions"
+msgstr "Régions"
+
+#: assignments
+msgid "Communes"
+msgstr "Communes"
+
+#: assignments
+msgid "Stabilization villages"
+msgstr "Villages de stabilisation"
+
+#: assignments
+msgid "Active assignments"
+msgstr "Affectations actives"
+
+#: assignments
+msgid "Villages covered"
+msgstr "Villages couverts"
+
+#: assignments
+msgid "Stabilization"
+msgstr "Stabilisation"
+
+#: assignments
+msgid "Additional"
+msgstr "Supplémentaire"
+
+#: assignments
+msgid "No village."
+msgstr "Aucun village."
+
+#: assignments
+msgid "Village assignments (MIS)"
+msgstr "Affectations aux villages (MIS)"
+
+#: assignments
+msgid "Assignment date"
+msgstr "Date d'affectation"
+
+#: assignments
+msgid "No assignment."
+msgstr "Aucune affectation."
+
+#: procurement results_framework
+msgid "Results framework"
+msgstr "Cadre de résultats"
+
+#: procurement results_framework
+msgid "Sub-project"
+msgstr "Sous-projet"
+
+#: procurement results_framework
+msgid "Purchase order reference"
+msgstr "Référence du bon de commande"
+
+#: procurement results_framework
+msgid "Subject"
+msgstr "Objet"
+
+#: procurement results_framework
+msgid "Supplier"
+msgstr "Fournisseur"
+
+#: procurement results_framework
+msgid "Order date"
+msgstr "Date de commande"
+
+#: procurement results_framework
+msgid "Expected delivery date"
+msgstr "Date de livraison prévue"
+
+#: procurement results_framework
+msgid "Delivery place"
+msgstr "Lieu de livraison"
+
+#: procurement results_framework
+msgid "Order cancelled"
+msgstr "Commande annulée"
+
+#: procurement results_framework
+msgid "Supply order"
+msgstr "Commande de fournitures"
+
+#: procurement results_framework
+msgid "Supply orders"
+msgstr "Commandes de fournitures"
+
+#: procurement results_framework
+msgid "The delivery cannot be expected before the order."
+msgstr "La livraison ne peut être prévue avant la commande."
+
+#: procurement results_framework
+msgid "Order"
+msgstr "Commande"
+
+#: procurement results_framework
+msgid "Designation"
+msgstr "Désignation"
+
+#: procurement results_framework
+msgid "Quantity ordered"
+msgstr "Quantité commandée"
+
+#: procurement results_framework
+msgid "Unit price (FCFA)"
+msgstr "Prix unitaire (FCFA)"
+
+#: procurement results_framework
+msgid "Order line"
+msgstr "Ligne de commande"
+
+#: procurement results_framework
+msgid "Order lines"
+msgstr "Lignes de commande"
+
+#: procurement results_framework
+msgid "The quantity must be positive."
+msgstr "La quantité doit être positive."
+
+#: procurement results_framework
+msgid "Delivery date"
+msgstr "Date de livraison"
+
+#: procurement results_framework
+msgid "Delivery note number"
+msgstr "N° du bordereau de livraison"
+
+#: procurement results_framework
+msgid "Delivery note or minutes (file)"
+msgstr "Bordereau ou procès-verbal (fichier)"
+
+#: procurement results_framework
+msgid "Reception date"
+msgstr "Date de réception"
+
+#: procurement results_framework
+msgid "To fill in once quantities and conformity have been checked."
+msgstr "À renseigner une fois les quantités et la conformité contrôlées."
+
+#: procurement results_framework
+msgid "Received by"
+msgstr "Réceptionnée par"
+
+#: procurement results_framework
+msgid "Reservations (non-conformities found)"
+msgstr "Réserves (non-conformités constatées)"
+
+#: procurement results_framework
+msgid "Delivery / reception"
+msgstr "Livraison / réception"
+
+#: procurement results_framework
+msgid "Deliveries and receptions"
+msgstr "Livraisons et réceptions"
+
+#: procurement results_framework
+msgid "Delivery of {date:%d/%m/%Y} - {reference}"
+msgstr "Livraison du {date:%d/%m/%Y} - {reference}"
+
+#: procurement results_framework
+msgid "The reception cannot precede the delivery."
+msgstr "La réception ne peut précéder la livraison."
+
+#: procurement results_framework
+msgid "Delivery"
+msgstr "Livraison"
+
+#: procurement results_framework
+msgid "Ordered item"
+msgstr "Article commandé"
+
+#: procurement results_framework
+msgid "Quantity delivered"
+msgstr "Quantité livrée"
+
+#: procurement results_framework
+msgid "Quantity accepted at reception"
+msgstr "Quantité acceptée à la réception"
+
+#: procurement results_framework
+msgid "Delivered item"
+msgstr "Article livré"
+
+#: procurement results_framework
+msgid "Delivered items"
+msgstr "Articles livrés"
+
+#: procurement results_framework
+msgid "The item must belong to the delivered order."
+msgstr "L'article doit appartenir à la commande livrée."
+
+#: procurement results_framework
+msgid "The delivered quantity must be positive."
+msgstr "La quantité livrée doit être positive."
+
+#: procurement results_framework
+msgid "You cannot accept more than the delivered quantity."
+msgstr "On ne peut accepter plus que la quantité livrée."
+
+#: procurement results_framework
+msgid "Delivery greater than the remaining quantity (%(remaining)s)."
+msgstr "Livraison supérieure au reste à livrer (%(remaining)s)."
+
+#: procurement results_framework
+msgid "Ordered"
+msgstr "Commandée"
+
+#: procurement results_framework
+msgid "Partially delivered"
+msgstr "Partiellement livrée"
+
+#: procurement results_framework
+msgid "Delivered, awaiting reception"
+msgstr "Livrée, en attente de réception"
+
+#: procurement results_framework
+msgid "New supply order"
+msgstr "Nouvelle commande de fournitures"
+
+#: procurement results_framework
+msgid "Edit supply order"
+msgstr "Modifier la commande de fournitures"
+
+#: procurement results_framework
+msgid "The order has been deleted."
+msgstr "La commande a été supprimée."
+
+#: procurement results_framework
+msgid "The item has been added."
+msgstr "L'article a été ajouté."
+
+#: procurement results_framework
+msgid "Edit item"
+msgstr "Modifier l'article"
+
+#: procurement results_framework
+msgid "This item has already been delivered and cannot be deleted."
+msgstr "Cet article a déjà été livré et ne peut être supprimé."
+
+#: procurement results_framework
+msgid "The item has been deleted."
+msgstr "L'article a été supprimé."
+
+#: procurement results_framework
+msgid "“%(value)s” is not a valid quantity."
+msgstr "« %(value)s » n'est pas une quantité valide."
+
+#: procurement results_framework
+msgid "Enter the delivered quantity of at least one item."
+msgstr "Saisissez la quantité livrée d'au moins un article."
+
+#: procurement results_framework
+msgid "The delivery has been saved."
+msgstr "La livraison a été enregistrée."
+
+#: procurement results_framework
+msgid "Edit delivery"
+msgstr "Modifier la livraison"
+
+#: procurement results_framework
+msgid "New delivery"
+msgstr "Nouvelle livraison"
+
+#: procurement results_framework
+msgid "The delivery has been deleted."
+msgstr "La livraison a été supprimée."
+
+#: procurement results_framework
+msgid "Back"
+msgstr "Retour"
+
+#: procurement results_framework
+msgid "Leave the accepted quantity empty if the delivery has not been received yet. Without reservations, everything delivered is accepted at reception."
+msgstr "Laissez la quantité acceptée vide si la livraison n'est pas encore réceptionnée. Sans réserve, tout ce qui est livré est accepté à la réception."
+
+#: procurement results_framework
+msgid "Item"
+msgstr "Article"
+
+#: procurement results_framework
+msgid "Quantity accepted"
+msgstr "Quantité acceptée"
+
+#: procurement results_framework
+msgid "Back to procurement"
+msgstr "Retour à l'approvisionnement"
+
+#: procurement results_framework
+msgid "Delete this order?"
+msgstr "Supprimer cette commande ?"
+
+#: procurement results_framework
+msgid "Ordered on"
+msgstr "Commandée le"
+
+#: procurement results_framework
+msgid "Expected delivery"
+msgstr "Livraison prévue"
+
+#: procurement results_framework
+msgid "Amount (FCFA)"
+msgstr "Montant (FCFA)"
+
+#: procurement results_framework
+msgid "Delivered"
+msgstr "Livré"
+
+#: procurement results_framework
+msgid "Ordered items"
+msgstr "Articles commandés"
+
+#: procurement results_framework
+msgid "Quantity"
+msgstr "Quantité"
+
+#: procurement results_framework
+msgid "Unit price"
+msgstr "Prix unitaire"
+
+#: procurement results_framework
+msgid "Accepted"
+msgstr "Accepté"
+
+#: procurement results_framework
+msgid "Delete this item?"
+msgstr "Supprimer cet article ?"
+
+#: procurement results_framework
+msgid "No item yet."
+msgstr "Aucun article pour l'instant."
+
+#: procurement results_framework
+msgid "Delivered on"
+msgstr "Livrée le"
+
+#: procurement results_framework
+msgid "Delivery note"
+msgstr "Bordereau"
+
+#: procurement results_framework
+msgid "Items"
+msgstr "Articles"
+
+#: procurement results_framework
+msgid "Received on"
+msgstr "Réceptionnée le"
+
+#: procurement results_framework
+msgid "Reservations"
+msgstr "Réserves"
+
+#: procurement results_framework
+msgid "accepted"
+msgstr "accepté"
+
+#: procurement results_framework
+msgid "To receive"
+msgstr "À réceptionner"
+
+#: procurement results_framework
+msgid "Delete this delivery?"
+msgstr "Supprimer cette livraison ?"
+
+#: procurement results_framework
+msgid "No delivery yet."
+msgstr "Aucune livraison pour l'instant."
+
+#: procurement results_framework
+msgid "Orders"
+msgstr "Commandes"
+
+#: procurement results_framework
+msgid "Awaiting delivery"
+msgstr "En attente de livraison"
+
+#: procurement results_framework
+msgid "Late"
+msgstr "En retard"
+
+#: procurement results_framework
+msgid "Amount ordered (FCFA)"
+msgstr "Montant commandé (FCFA)"
+
+#: procurement results_framework
+msgid "All statuses"
+msgstr "Tous les statuts"
+
+#: procurement results_framework
+msgid "Late delivery"
+msgstr "En retard de livraison"
+
+#: procurement results_framework
+msgid "New order"
+msgstr "Nouvelle commande"
+
+#: procurement results_framework
+msgid "Reference"
+msgstr "Référence"
+
+#: procurement results_framework
+msgid "late"
+msgstr "retard"
+
+#: procurement results_framework
+msgid "No supply order."
+msgstr "Aucune commande de fournitures."
+
+#: procurement results_framework
+msgid "Reference, subject, supplier, sub-project..."
+msgstr "Référence, objet, fournisseur, sous-projet..."
+
+#: procurement results_framework
+msgid "Baseline value"
+msgstr "Valeur de référence"
+
+#: procurement results_framework
+msgid "Baseline year"
+msgstr "Année de référence"
+
+#: procurement results_framework
+msgid "Target"
+msgstr "Cible"
+
+#: procurement results_framework
+msgid "Target year"
+msgstr "Année cible"
+
+#: procurement results_framework
+msgid "Means of verification"
+msgstr "Source de vérification"
+
+#: procurement results_framework
+msgid "Collection frequency"
+msgstr "Fréquence de collecte"
+
+#: procurement results_framework
+msgid "Responsible for collection"
+msgstr "Responsable de la collecte"
+
+#: procurement results_framework
+msgid "Definition"
+msgstr "Définition"
+
+#: procurement results_framework
+msgid "Results framework indicator"
+msgstr "Indicateur du cadre de résultats"
+
+#: procurement results_framework
+msgid "Results framework indicators"
+msgstr "Indicateurs du cadre de résultats"
+
+#: procurement results_framework
+msgid "Indicator"
+msgstr "Indicateur"
+
+#: procurement results_framework
+msgid "Measurement date"
+msgstr "Date de mesure"
+
+#: procurement results_framework
+msgid "Achieved value"
+msgstr "Valeur réalisée"
+
+#: procurement results_framework
+msgid "Source"
+msgstr "Source"
+
+#: procurement results_framework
+msgid "Indicator measurement"
+msgstr "Réalisation d'un indicateur"
+
+#: procurement results_framework
+msgid "Indicator measurements"
+msgstr "Réalisations des indicateurs"
+
+#: procurement results_framework
+msgid "Output indicator"
+msgstr "Indicateur de produit"
+
+#: procurement results_framework
+msgid "Outcome indicator"
+msgstr "Indicateur de résultat"
+
+#: procurement results_framework
+msgid "Impact indicator"
+msgstr "Indicateur d'impact"
+
+#: procurement results_framework
+msgid "The component must belong to the selected IDA project."
+msgstr "La composante doit appartenir au projet IDA choisi."
+
+#: procurement results_framework
+msgid "The measurement has been saved."
+msgstr "La réalisation a été enregistrée."
+
+#: procurement results_framework
+msgid "New indicator"
+msgstr "Nouvel indicateur"
+
+#: procurement results_framework
+msgid "Edit indicator"
+msgstr "Modifier l'indicateur"
+
+#: procurement results_framework
+msgid "The indicator has been deleted."
+msgstr "L'indicateur a été supprimé."
+
+#: procurement results_framework
+msgid "Edit measurement"
+msgstr "Modifier la réalisation"
+
+#: procurement results_framework
+msgid "The measurement has been deleted."
+msgstr "La réalisation a été supprimée."
+
+#: procurement results_framework
+msgid "Back to the results framework"
+msgstr "Retour au cadre de résultats"
+
+#: procurement results_framework
+msgid "Delete this indicator?"
+msgstr "Supprimer cet indicateur ?"
+
+#: procurement results_framework
+msgid "Achievement"
+msgstr "Taux d'atteinte"
+
+#: procurement results_framework
+msgid "(Latest value − baseline) / (target − baseline)"
+msgstr "(Dernière valeur − référence) / (cible − référence)"
+
+#: procurement results_framework
+msgid "Baseline"
+msgstr "Référence"
+
+#: procurement results_framework
+msgid "Evolution"
+msgstr "Évolution"
+
+#: procurement results_framework
+msgid "Measurements"
+msgstr "Réalisations"
+
+#: procurement results_framework
+msgid "Value"
+msgstr "Valeur"
+
+#: procurement results_framework
+msgid "Delete this measurement?"
+msgstr "Supprimer cette réalisation ?"
+
+#: procurement results_framework
+msgid "No measurement yet."
+msgstr "Aucune réalisation pour l'instant."
+
+#: procurement results_framework
+msgid "Add a measurement"
+msgstr "Ajouter une réalisation"
+
+#: procurement results_framework
+msgid "With at least one measurement"
+msgstr "Avec au moins une réalisation"
+
+#: procurement results_framework
+msgid "Target reached"
+msgstr "Cible atteinte"
+
+#: procurement results_framework
+msgid "Average achievement rate"
+msgstr "Taux d'atteinte moyen"
+
+#: procurement results_framework
+msgid "All IDA projects"
+msgstr "Tous les projets IDA"
+
+#: procurement results_framework
+msgid "All types"
+msgstr "Tous les types"
+
+#: procurement results_framework
+msgid "Latest value"
+msgstr "Dernière valeur"
+
+#: procurement results_framework
+msgid "No indicator. Add the indicators of the results framework of each IDA project."
+msgstr "Aucun indicateur. Ajoutez les indicateurs du cadre de résultats de chaque projet IDA."
+
+#: procurement results_framework
+msgid "Code or label"
+msgstr "Code ou libellé"
+
+#: common
+msgid "All linked projects (%(names)s)"
+msgstr "Tous les projets liés (%(names)s)"
+
+#: assignments
+msgid "Show"
+msgstr "Afficher"
+
+#: assignments
+msgid "facilitators per page"
+msgstr "animateurs par page"
+
+#: assignments
+msgid "%(start)s to %(end)s of %(total)s facilitators"
+msgstr "%(start)s à %(end)s sur %(total)s animateurs"
+
+#: assignments
+msgid "First page"
+msgstr "Première page"
+
+#: assignments
+msgid "Last page"
+msgstr "Dernière page"
+
+#: profile
+msgid "Super administrator"
+msgstr "Super administrateur"
+
+#: profile
+msgid "Change password"
+msgstr "Changer le mot de passe"
+
+#: profile
+msgid "Personal information"
+msgstr "Informations personnelles"
+
+#: profile
+msgid "Full Name"
+msgstr "Nom complet"
+
+#: profile
+msgid "Facilitator code"
+msgstr "Code facilitateur"
+
+#: profile
+msgid "Platform access"
+msgstr "Accès aux plateformes"
+
+#: profile
+msgid "Roles"
+msgstr "Rôles"
+
+#: profile
+msgid "No role assigned"
+msgstr "Aucun rôle attribué"
+
+#: profile
+msgid "Security"
+msgstr "Sécurité"
+
+#: profile
+msgid "The new password applies to all your accounts: DCC, MGP and SIG."
+msgstr "Le nouveau mot de passe s'applique à tous vos comptes : DCC, MGP et SIG."
+
+#: profile
+msgid "My projects"
+msgstr "Mes projets"
+
+#: profile
+msgid "Cycles"
+msgstr "Cycles"
+
+#: profile
+msgid "You are not assigned to any project yet."
+msgstr "Vous n'êtes encore affecté à aucun projet."
+
+#: profile
+msgid "Area of intervention"
+msgstr "Zone d'intervention"
+
+#: profile
+msgid "No locality assigned."
+msgstr "Aucune localité attribuée."
+
+#: profile
+msgid "Member since"
+msgstr "Membre depuis"
+
+#: profile
+msgid "Last login"
+msgstr "Dernière connexion"
+
+#: profile
+msgid "Mobile mode"
+msgstr "Mode mobile"
+
+#: profile
+msgid "Test mode"
+msgstr "Mode test"
+
+#: profile
+msgid "Production"
+msgstr "Production"
+
+#: profile
+msgid "Note: If you have accounts on the CDD, GRM and/or MIS platforms, their passwords will also be changed."
+msgstr "Remarque : si vous avez des comptes sur les plateformes DCC, MGP et/ou SIG, leurs mots de passe seront aussi changés."
+
+#: profile
+msgid "Profile picture"
+msgstr "Photo de profil"
+
+#: profile
+msgid "The MGP platform cannot be reached at the moment."
+msgstr "La plateforme MGP est injoignable pour le moment."
+
+#: profile
+msgid "Canton: %(name)s"
+msgstr "Canton : %(name)s"
+
+#: profile
+msgid "Web DCC"
+msgstr "DCC web"
+
+#: profile
+msgid "Mobile DCC"
+msgstr "DCC mobile"
+
+#: profile
+msgid "SIG (COSOMIS)"
+msgstr "SIG (COSOMIS)"
+
+#: profile
+msgid "MGP (GRM)"
+msgstr "MGP (GRM)"
+
+
+#: profile
+msgid "The password has been changed on all the platforms."
+msgstr "Le mot de passe a été changé sur toutes les plateformes."
+
+#: profile
+msgid "%(counter)s village"
+msgid_plural "%(counter)s villages"
+msgstr[0] "%(counter)s village"
+msgstr[1] "%(counter)s villages"

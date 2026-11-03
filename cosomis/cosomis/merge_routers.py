@@ -6,7 +6,7 @@ authentication[Facilitator = miroir CDD], usermanager, process_manager,
 planning, news, storeapp, supportmaterial, reports) est migré par CDD.
 """
 
-COSOMIS_MIGRATES = {"subprojects", "administrativelevels", "assignments", "financial", "custom_file", "kobotoolbox", "unicorn"}
+COSOMIS_MIGRATES = {"subprojects", "administrativelevels", "assignments", "financial", "custom_file", "kobotoolbox", "unicorn", "procurement", "results_framework"}
 
 
 class CosomisMergeRouter:

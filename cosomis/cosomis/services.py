@@ -41,6 +41,8 @@ def overall_variables(request):
         "PROJECTS_IDS": request.session.get('tree_structure_projects_ids'),
         "PROJECTS_NAMES": request.session.get('tree_structure_projects_names'),
         
-        "PROJECTS": Project.objects.filter(name__in=[p[1] for p in projects])
+        "PROJECTS": Project.objects.filter(name__in=[p[1] for p in projects]),
+
+        "VERSION_CUSTOM": settings.VERSION_CUSTOM,
     }
 

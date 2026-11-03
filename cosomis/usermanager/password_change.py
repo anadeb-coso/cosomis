@@ -54,3 +54,26 @@ def change_initial_password_on_cdd(login, current_password, new_password, confir
     except ValueError:
         return False, _("The password could not be changed (error %(status)s).") % {'status': response.status_code}
     return bool(data.get('ok')), data.get('message') or ''
+
+
+def change_password_on_all_platforms(login, current_password, new_password, confirmation, language=None):
+    """Password change from the Profile page, done by the DCC for all the person's accounts (DCC web and SIG, which
+    share `auth_user`, facilitator account, MGP account of the same e-mail). Returns (ok, message)."""
+    try:
+        response = requests.post(
+            f"{settings.CDD_URL_BASE}/authentication/api/change-password/",
+            json={
+                'secret': settings.GRM_SECRET_KEY_GENRATE, 'login': login, 'current_password': current_password,
+                'new_password': new_password, 'new_password_confirm': confirmation, 'platform': 'sig_web',
+                'language': language,
+            },
+            timeout=60,
+        )
+    except requests.RequestException as exc:
+        logger.warning("DCC unreachable for the password change: %s", exc)
+        return False, _("The password could not be changed: the DCC platform cannot be reached. Please try again later.")
+    try:
+        data = response.json()
+    except ValueError:
+        return False, _("The password could not be changed (error %(status)s).") % {'status': response.status_code}
+    return bool(data.get('ok')), data.get('message') or ''

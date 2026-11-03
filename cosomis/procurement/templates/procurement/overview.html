@@ -1,0 +1,49 @@
+{% extends 'layouts/base.html' %}
+{% load i18n humanize %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-2 col-md-4 col-6"><a href="?{% if scope_selected_id %}project={{ scope_selected_id }}{% endif %}" class="small-box bg-primary d-block text-white p-3 mb-3"><h3 class="mb-0">{{ figures.total|intcomma }}</h3><p class="mb-0">{% translate "Orders" %}</p></a></div>
+    <div class="col-lg-2 col-md-4 col-6"><a href="?status=ORDERED{% if scope_selected_id %}&project={{ scope_selected_id }}{% endif %}" class="small-box bg-info d-block text-white p-3 mb-3"><h3 class="mb-0">{{ figures.pending|intcomma }}</h3><p class="mb-0">{% translate "Awaiting delivery" %}</p></a></div>
+    <div class="col-lg-2 col-md-4 col-6"><a href="?status=LATE{% if scope_selected_id %}&project={{ scope_selected_id }}{% endif %}" class="small-box bg-danger d-block text-white p-3 mb-3"><h3 class="mb-0">{{ figures.late|intcomma }}</h3><p class="mb-0">{% translate "Late" %}</p></a></div>
+    <div class="col-lg-2 col-md-4 col-6"><a href="?status=DELIVERED{% if scope_selected_id %}&project={{ scope_selected_id }}{% endif %}" class="small-box bg-warning d-block p-3 mb-3"><h3 class="mb-0">{{ figures.to_receive|intcomma }}</h3><p class="mb-0">{% translate "To receive" %}</p></a></div>
+    <div class="col-lg-2 col-md-4 col-6"><a href="?status=RECEIVED{% if scope_selected_id %}&project={{ scope_selected_id }}{% endif %}" class="small-box bg-success d-block text-white p-3 mb-3"><h3 class="mb-0">{{ figures.received|intcomma }}</h3><p class="mb-0">{% translate "Received" %}</p></a></div>
+    <div class="col-lg-2 col-md-4 col-6"><div class="small-box bg-dark p-3 mb-3"><h3 class="mb-0" style="font-size:1.3rem">{{ figures.amount|floatformat:0|intcomma }}</h3><p class="mb-0">{% translate "Amount ordered (FCFA)" %}</p></div></div>
+</div>
+
+<div class="card card-outline card-primary"><div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-end mb-3">
+        <form method="get" class="form-inline">
+            {% include 'common/_project_filter.html' %}
+            <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm mr-2 mb-1" placeholder="{% translate 'Reference, subject, supplier, sub-project...' %}" style="min-width:280px">
+            <select name="status" class="form-control form-control-sm mr-2 mb-1 no-select2">
+                <option value="">{% translate "All statuses" %}</option>
+                <option value="LATE" {% if status == 'LATE' %}selected{% endif %}>{% translate "Late delivery" %}</option>
+                {% for code, label in statuses %}<option value="{{ code }}" {% if status == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+            <button class="btn btn-primary btn-sm mb-1"><i class="fa fa-search"></i> {% translate "Filter" %}</button>
+        </form>
+        {% if can_edit %}<a href="{% url 'procurement:order_create' %}" class="btn btn-primary btn-sm mb-1"><i class="fa fa-plus"></i> {% translate "New order" %}</a>{% endif %}
+    </div>
+    <div class="table-responsive">
+    <table class="table table-sm table-striped table-hover mb-0">
+        <thead><tr><th>{% translate "Reference" %}</th><th>{% translate "Subject" %}</th><th>{% translate "Sub-project" %}</th><th>{% translate "Supplier" %}</th>
+            <th>{% translate "Ordered on" %}</th><th>{% translate "Expected delivery" %}</th><th class="text-right">{% translate "Amount" %}</th>
+            <th class="text-right">{% translate "Delivered" %}</th><th>{% translate "Status" %}</th></tr></thead>
+        <tbody>{% for r in rows %}{% with o=r.order %}
+        <tr class="{% if r.late %}table-danger{% endif %}">
+            <td><a href="{% url 'procurement:order_detail' o.pk %}"><b>{{ o.reference }}</b></a></td>
+            <td>{{ o.subject }}</td>
+            <td><a href="{% url 'subprojects:detail' o.subproject_id %}">{{ o.subproject.full_title_of_approved_subproject|truncatechars:60 }}</a></td>
+            <td>{{ o.supplier }}</td>
+            <td>{{ o.order_date|date:"d/m/Y" }}</td>
+            <td>{{ o.expected_delivery_date|date:"d/m/Y"|default:"-" }}{% if r.late %} <span class="badge badge-danger">{% translate "late" %}</span>{% endif %}</td>
+            <td class="text-right">{{ r.amount|floatformat:0|intcomma }}</td>
+            <td class="text-right">{% if r.rate is not None %}{{ r.rate }} %{% else %}-{% endif %}</td>
+            <td>{{ r.status_label }}</td>
+        </tr>{% endwith %}{% empty %}
+        <tr><td colspan="9" class="text-center text-muted p-3">{% translate "No supply order." %}</td></tr>{% endfor %}</tbody>
+    </table>
+    </div>
+</div></div>
+{% endblock %}

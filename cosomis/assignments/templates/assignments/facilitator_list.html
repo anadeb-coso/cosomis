@@ -1,0 +1,88 @@
+{% extends 'layouts/base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="card card-outline card-primary">
+    <div class="card-header">
+        <ul class="nav nav-pills">
+            <li class="nav-item"><a class="nav-link {% if not selected_type %}active{% endif %}" href="?q={{ search|urlencode }}&status={{ status }}&project={{ scope_selected_id|default_if_none:'' }}&per_page={{ per_page }}">
+                {% translate "All" %} <span class="badge badge-light">{{ totals.all }}</span></a></li>
+            {% for code, label in types.items %}
+            <li class="nav-item"><a class="nav-link {% if selected_type == code %}active{% endif %}" href="?type={{ code }}&q={{ search|urlencode }}&status={{ status }}&project={{ scope_selected_id|default_if_none:'' }}&per_page={{ per_page }}">
+                {{ label }} <span class="badge badge-light">{% if code == 'community_facilitator' %}{{ totals.community_facilitator }}{% else %}{{ totals.technical_facilitator }}{% endif %}</span></a></li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="card-body">
+        <form method="get" class="form-row align-items-end mb-3">
+            <input type="hidden" name="type" value="{{ selected_type }}">
+            <input type="hidden" name="per_page" value="{{ per_page }}">
+            <div class="col-md-3 mb-2"><label class="small font-weight-bold mb-0">{% translate "Project" %}</label>
+                {% include 'common/_project_filter.html' %}</div>
+            <div class="col-md-4 mb-2"><label class="small font-weight-bold mb-0">{% translate "Search" %}</label>
+                <input type="text" name="q" value="{{ search }}" class="form-control" placeholder="{% translate 'Name, email, phone, code...' %}"></div>
+            <div class="col-md-3 mb-2"><label class="small font-weight-bold mb-0">{% translate "Status" %}</label>
+                <select name="status" class="form-control">
+                    <option value="">{% translate "All" %}</option>
+                    <option value="active" {% if status == 'active' %}selected{% endif %}>{% translate "Active" %}</option>
+                    <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>{% translate "Inactive" %}</option>
+                </select></div>
+            <div class="col-md-2 mb-2"><button class="btn btn-primary"><i class="fa fa-search"></i> {% translate "Filter" %}</button></div>
+        </form>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+            <div class="form-inline">
+                <label class="small mr-2 mb-0" for="per-page">{% translate "Show" %}</label>
+                <select id="per-page" class="form-control form-control-sm no-select2" onchange="window.location.search = '{{ base_query|escapejs }}' + ('{{ base_query|escapejs }}' ? '&' : '') + 'per_page=' + this.value;">
+                    {% for size in per_page_choices %}<option value="{{ size }}" {% if per_page == size|stringformat:'s' %}selected{% endif %}>{{ size }}</option>{% endfor %}
+                    <option value="all" {% if per_page == 'all' %}selected{% endif %}>{% translate "All" %}</option>
+                </select>
+                <span class="small ml-2">{% translate "facilitators per page" %}</span>
+            </div>
+            <div class="small">{% if page.paginator.count %}{% blocktranslate with start=page.start_index end=page.end_index total=page.paginator.count %}{{ start }} to {{ end }} of {{ total }} facilitators{% endblocktranslate %}{% endif %}</div>
+        </div>
+
+        <div class="table-responsive">
+        <table class="table table-sm table-hover table-striped mb-0">
+            <thead><tr>
+                <th>{% translate "Name" %}</th><th>{% translate "Type" %}</th><th>{% translate "Code" %}</th>
+                <th>{% translate "Username" %}</th><th>{% translate "Email" %}</th><th>{% translate "Phone" %}</th>
+                <th>{% translate "Sex" %}</th><th class="text-right">{% translate "Villages" %}</th>
+                <th>{% translate "Projects" %}</th><th>{% translate "Status" %}</th><th></th>
+            </tr></thead>
+            <tbody>
+            {% for row in rows %}{% with f=row.facilitator %}
+            <tr>
+                <td><a href="{% url 'animateurs:profile' f.pk %}"><b>{{ f.name|default:"-" }}</b></a></td>
+                <td>{{ row.type_label }}</td>
+                <td>{{ f.code }}</td>
+                <td>{{ f.username }}</td>
+                <td>{% if f.email %}<a href="mailto:{{ f.email }}">{{ f.email }}</a>{% else %}-{% endif %}</td>
+                <td>{% if f.phone %}<a href="tel:{{ f.phone }}">{{ f.phone }}</a>{% else %}-{% endif %}</td>
+                <td>{{ row.sex_label }}</td>
+                <td class="text-right">{{ row.village_count }}</td>
+                <td>{{ row.projects|join:", "|default:"-" }}</td>
+                <td>{% if f.active %}<span class="badge badge-success">{% translate "Active" %}</span>{% else %}<span class="badge badge-secondary">{% translate "Inactive" %}</span>{% endif %}</td>
+                <td class="text-right"><a href="{% url 'animateurs:profile' f.pk %}" class="btn btn-xs btn-outline-primary" title="{% translate 'Profile' %}"><i class="fa fa-user"></i></a></td>
+            </tr>
+            {% endwith %}{% empty %}
+            <tr><td colspan="11" class="text-center text-muted p-3">{% translate "No facilitator found." %}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+
+        {% if page.paginator.num_pages > 1 %}
+        <nav class="mt-3"><ul class="pagination pagination-sm mb-0">
+            {% if page.has_previous %}
+                <li class="page-item"><a class="page-link" href="?{{ query }}&page=1" title="{% translate 'First page' %}">&laquo;&laquo;</a></li>
+                <li class="page-item"><a class="page-link" href="?{{ query }}&page={{ page.previous_page_number }}">&laquo;</a></li>{% endif %}
+            <li class="page-item disabled"><span class="page-link">{% blocktranslate with number=page.number total=page.paginator.num_pages %}Page {{ number }} of {{ total }}{% endblocktranslate %}</span></li>
+            {% if page.has_next %}
+                <li class="page-item"><a class="page-link" href="?{{ query }}&page={{ page.next_page_number }}">&raquo;</a></li>
+                <li class="page-item"><a class="page-link" href="?{{ query }}&page={{ page.paginator.num_pages }}" title="{% translate 'Last page' %}">&raquo;&raquo;</a></li>{% endif %}
+        </ul></nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -39,6 +39,7 @@ DEBUG = env.bool('DEBUG', False)
 
 ALLOWED_HOSTS = env('ALLOWED_HOSTS', list, ['localhost'])
 
+VERSION_CUSTOM = env('VERSION_CUSTOM', default='2024.06.10.1')
 
 # Application definition
 
@@ -66,6 +67,8 @@ CREATED_APPS = [
     'custom_file',
     'attachments',
     'reports',
+    'procurement',
+    'results_framework',
 ]
 
 THIRD_PARTY_APPS = [
@@ -150,7 +153,7 @@ DATABASE_ROUTERS = ['cosomis.merge_routers.CosomisMergeRouter']
 # est créé/maintenu par CDD (ou par `migrate --run-syncdb` au chargement).
 _COSOMIS_OWNED_MIGRATIONS = {
     'subprojects', 'administrativelevels', 'assignments',
-    'financial', 'custom_file', 'kobotoolbox',
+    'financial', 'custom_file', 'kobotoolbox', 'procurement', 'results_framework',
 }
 MIGRATION_MODULES = {
     app.split('.')[-1]: None
@@ -341,3 +344,18 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 ]
 
 PURS_USER_DEV_EMAIL = env('PURS_USER_DEV_EMAIL', default="purs.dev@gmail.com")
+# Email (periodic reports). Without EMAIL_HOST, emails are printed to the console.
+EMAIL_HOST = env('EMAIL_HOST', default='')
+EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+EMAIL_BACKEND = ('django.core.mail.backends.smtp.EmailBackend' if EMAIL_HOST
+                 else 'django.core.mail.backends.console.EmailBackend')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER or 'noreply@coso.tg')
+
+# Celery beat: daily check of the periodic reports that are due.
+from celery.schedules import crontab  # noqa: E402
+CELERY_BEAT_SCHEDULE = {
+    'send-periodic-reports': {'task': 'reports.tasks.send_periodic_reports', 'schedule': crontab(hour=7, minute=0)},
+}

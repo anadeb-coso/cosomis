@@ -1,0 +1,43 @@
+{% extends 'layouts/base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="row">
+<div class="col-lg-5">
+    <div class="card card-outline card-primary"><div class="card-header"><b>{% translate "Generate a report" %}</b></div>
+    <form method="get" class="card-body" target="_blank">
+        {% for field in form %}<div class="mb-2"><label class="small font-weight-bold mb-0">{{ field.label }}</label>{{ field }}
+            {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}
+        <button class="btn btn-primary"><i class="fa fa-file"></i> {% translate "Generate" %}</button>
+        <p class="small text-muted mt-2 mb-0">{% translate "The report reflects the financial data as of today, on the COSO letterhead (PDF and Word)." %}</p>
+    </form></div>
+</div>
+<div class="col-lg-7">
+    <div class="card"><div class="card-header"><b>{% translate "Predefined reports" %}</b></div><div class="card-body p-0">
+        <table class="table table-sm mb-0">{% for code, label in types %}
+            <tr><td>{{ label }}</td><td class="text-right text-nowrap">
+                <a href="?report_type={{ code }}&format=pdf" target="_blank" class="btn btn-xs btn-outline-danger"><i class="fa fa-file-pdf-o"></i> PDF</a>
+                <a href="?report_type={{ code }}&format=docx" class="btn btn-xs btn-outline-primary"><i class="fa fa-file-word-o"></i> Word</a>
+                <a href="?report_type={{ code }}&format=xlsx" class="btn btn-xs btn-outline-success"><i class="fa fa-file-excel-o"></i> Excel</a></td></tr>
+        {% endfor %}</table>
+    </div></div>
+    {% if templates is not None %}
+    <div class="card"><div class="card-header d-flex justify-content-between align-items-center"><b>{% translate "Periodic reports" %}</b>
+        <a href="{% url 'rapports:template_create' %}" class="btn btn-primary btn-sm ml-auto"><i class="fa fa-plus"></i> {% translate "New template" %}</a></div>
+        <div class="card-body p-0"><table class="table table-sm mb-0">
+            <thead><tr><th>{% translate "Template" %}</th><th>{% translate "Periodicity" %}</th><th>{% translate "Recipients" %}</th><th>{% translate "Last sent" %}</th><th></th></tr></thead>
+            <tbody>{% for t in templates %}<tr class="{% if not t.is_active %}text-muted{% endif %}">
+                <td><a href="{% url 'rapports:template_update' t.pk %}">{{ t.title }}</a></td>
+                <td>{{ t.get_periodicity_display }}</td><td>{{ t.emails|length }}</td><td>{{ t.last_sent|date:"d/m/Y H:i"|default:"-" }}</td>
+                <td class="text-right text-nowrap">
+                    <a href="{% url 'rapports:template_preview' t.pk %}" target="_blank" class="btn btn-xs btn-outline-secondary" title="{% translate "Preview" %}"><i class="fa fa-eye"></i></a>
+                    <form method="post" action="{% url 'rapports:template_send' t.pk %}" class="d-inline">{% csrf_token %}
+                        <button class="btn btn-xs btn-outline-primary" title="{% translate "Send now" %}"><i class="fa fa-paper-plane"></i></button></form>
+                    <form method="post" action="{% url 'rapports:template_delete' t.pk %}" class="d-inline" onsubmit="return confirm('{% translate "Delete this report template?" %}');">{% csrf_token %}
+                        <button class="btn btn-xs btn-outline-danger" title="{% translate "Delete" %}"><i class="fa fa-trash"></i></button></form></td>
+            </tr>{% empty %}<tr><td colspan="5" class="text-muted text-center p-3">{% translate "No template. Create one to receive a weekly or monthly report by email." %}</td></tr>{% endfor %}</tbody>
+        </table></div></div>
+    {% endif %}
+</div>
+</div>
+{% endblock %}

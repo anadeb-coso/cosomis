@@ -121,3 +121,16 @@ def get_issue_stats_by_assignee():
     if response.status_code != 200:
         return []
     return response.json()
+
+
+def get_user_account(email):
+    """MGP account of this e-mail (`/api/service/users/account/`): dict with `exists`, username, groups...,
+    or None if the MGP cannot be reached."""
+    if not email:
+        return None
+    try:
+        response = requests.get(f"{_base_url()}/users/account/", params={'email': email},
+                                headers=_headers(), timeout=_TIMEOUT)
+        return response.json() if response.status_code == 200 else None
+    except (requests.RequestException, ValueError):
+        return None

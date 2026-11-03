@@ -39,6 +39,7 @@ urlpatterns = [
     path("health/", health),
     path('set-language/', views.set_language, name='set_language'),
     path('profile/', views.profile, name='profile'),
+    path('profile/change-password/', views.profile_change_password, name='profile_change_password'),
     path('api/', include('cosomis.urls_api')),
     path('reports/', include('reports.urls')),
     # path('api/administrative-levels/', include('administrativelevels.api.urls'))
@@ -65,4 +66,8 @@ urlpatterns += i18n_patterns(
     path('delete-object/<int:object_id>/<str:type>/', views.DeleteObjectFormView.as_view(), name='object_deletion_form'),
 
     path('process-manager/', include('process_manager.urls')),
+    path('rapports/', include('reports.page_urls')),
+    path('animateurs/', include('assignments.urls_facilitators')),
+    path('approvisionnement/', include('procurement.urls')),
+    path('cadre-de-resultats/', include('results_framework.urls')),
 )

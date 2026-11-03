@@ -1,0 +1,5 @@
+{% load i18n %}{# "Project" filter: linked projects of the selection that the user works on. #}
+<select name="project" class="form-control form-control-sm mr-2 mb-1 no-select2" title="{% translate 'Project' %}">
+    <option value="">{% blocktranslate with names=scope_all_names %}All linked projects ({{ names }}){% endblocktranslate %}</option>
+    {% for p in scope_projects %}<option value="{{ p.pk }}" {% if scope_selected_id == p.pk %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
+</select>
