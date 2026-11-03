@@ -105,7 +105,7 @@
                     success: function (data) {
                         for(let i=0; i < data.length; i++){
                             value_of_type_elt.innerHTML += `
-                            <option value="`+ data[i].id +`">`+ data[i].name +`</option>
+                            <option value="`+ data[i].id +`">`+ data[i].name + (data[i].parent_name ? ` (` + data[i].parent_name + `)` : ``) +`</option>
                             `;
                         }
                         

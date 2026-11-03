@@ -32,12 +32,23 @@ def save_csv_datas_cantons_allocations_in_db(datas_file: dict, project_id=1) -> 
     _is_object_error = False
     
     if datas_file:
+        from administrativelevels.functions_lookup import AdministrativeLevelResolver
+        resolver = AdministrativeLevelResolver()
+
+        def row_value(column):
+            try:
+                return get_value(datas_file[column][count])
+            except Exception:
+                return None
+
         count = 0
         long = len(list(datas_file.values())[0])
         while count < long:
-        
-            
+
+
             try:
+                administrative_level_canton = None
+                _is_object_error = False
                 _canton = get_value(datas_file["CANTON"][count])
                 if _canton:
                     canton_file_data = str(_canton).upper()
@@ -63,9 +74,16 @@ def save_csv_datas_cantons_allocations_in_db(datas_file: dict, project_id=1) -> 
                         6: {'dollars': allocation_1_3, 'cfa': allocation_1_3_cfa}
                     }
                     
-                    try:
-                        administrative_level_canton = AdministrativeLevel.objects.get(name=canton_file_data, type="Canton")
-                    except AdministrativeLevel.DoesNotExist as exc:
+                    # canton cherché avec sa commune, sa préfecture et sa région : un nom de canton peut exister
+                    # dans plusieurs communes (ex. LOKO à OTI 2 et à TANDJOUARE 1)
+                    _is_object_error = False
+                    result = resolver.find(
+                        canton_file_data, AdministrativeLevel.CANTON,
+                        commune=row_value("COMMUNE"), prefecture=row_value("PREFECTURE"), region=row_value("REGION"),
+                    )
+                    administrative_level_canton = AdministrativeLevel.objects.get(pk=result.level.pk) if result else None
+                    if result.error == "not_found":
+                        exc = result.describe(resolver)
                         _is_object_error = True
                         if canton_file_data not in list_cantons_not_found:
                             list_cantons_not_found.append(canton_file_data)
@@ -78,7 +96,8 @@ def save_csv_datas_cantons_allocations_in_db(datas_file: dict, project_id=1) -> 
                         text_errors += (f'\nLine N°{count} [{canton_file_data}]: {exc.__str__()}' if text_errors else f'Line N°{count} [{canton_file_data}]: {exc.__str__()}')
                         at_least_error_name = True
                         at_least_one_error = True
-                    except AdministrativeLevel.MultipleObjectsReturned as exc:
+                    elif result.error == "ambiguous":
+                        exc = result.describe(resolver)
                         _is_object_error = True
                         if canton_file_data not in list_cantons_multi_obj_found:
                             list_cantons_multi_obj_found.append(canton_file_data)

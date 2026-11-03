@@ -36,63 +36,25 @@ def exists_id(liste, id):
     return False
 
 
-def get_adminstrative_level_by_name(ad_name, canton_str: str):
-    try:
-        return AdministrativeLevel.objects.get(name=ad_name, type="Village", parent__name=canton_str)
-    except AdministrativeLevel.DoesNotExist as exc:
-        try:
-            return AdministrativeLevel.objects.get(
-                name=libraries_functions.strip_accents(ad_name), type="Village", parent__name=canton_str
-            )
-        except AdministrativeLevel.DoesNotExist as exc:
-            try:
-                return AdministrativeLevel.objects.get(name=ad_name.replace(" ", ""), type="Village", parent__name=canton_str)
-            except AdministrativeLevel.DoesNotExist as exc:
-                try:
-                    return AdministrativeLevel.objects.get(
-                        name=libraries_functions.strip_accents(ad_name.replace(" ", "")), type="Village", parent__name=canton_str
-                    )
-                except AdministrativeLevel.DoesNotExist as exc:
-                    try:
-                        return AdministrativeLevel.objects.get(
-                            name=libraries_functions.strip_accents(ad_name.replace("-", " ")), type="Village", parent__name=canton_str
-                        )
-                    except AdministrativeLevel.DoesNotExist as exc:
-                        try:
-                            return AdministrativeLevel.objects.get(
-                                name=libraries_functions.strip_accents(ad_name.replace(" ", "-")), type="Village", parent__name=canton_str
-                            )
-                        except AdministrativeLevel.DoesNotExist as exc:
-                            try:
-                                return AdministrativeLevel.objects.get(
-                                    name=libraries_functions.strip_accents(ad_name.replace(" ", "-")), type="Village", parent__name=canton_str
-                                )
-                            except AdministrativeLevel.DoesNotExist as exc:
-                                return None
-                            except AdministrativeLevel.MultipleObjectsReturned as exc:
-                                return None
-                        except AdministrativeLevel.MultipleObjectsReturned as exc:
-                            return None
-                    except AdministrativeLevel.MultipleObjectsReturned as exc:
-                        return None
-                
-                except AdministrativeLevel.MultipleObjectsReturned as exc:
-                    return None
+def get_adminstrative_level_by_name(ad_name, canton_str: str, commune=None, prefecture=None, region=None, resolver=None):
+    """Village `ad_name` du canton `canton_str` (accents, tirets et espaces ignorés). Le canton est départagé par
+    la commune / préfecture / région si elles sont données : un nom de canton n'est pas unique. None si introuvable
+    ou ambigu (jamais un village choisi au hasard)."""
+    from administrativelevels.functions_lookup import AdministrativeLevelResolver
+    resolver = resolver or AdministrativeLevelResolver()
+    result = resolver.find(
+        str(ad_name).strip(), AdministrativeLevel.VILLAGE,
+        canton=canton_str, commune=commune, prefecture=prefecture, region=region,
+    )
+    return AdministrativeLevel.objects.get(pk=result.level.pk) if result else None
 
-            except AdministrativeLevel.MultipleObjectsReturned as exc:
-                return None
-
-        except AdministrativeLevel.MultipleObjectsReturned as exc:
-            return None
-
-    except AdministrativeLevel.MultipleObjectsReturned as exc:
-        return None
-
-def get_adminstrative_level_by_name_with_slash(ad_name: str, canton_str: str):
+def get_adminstrative_level_by_name_with_slash(ad_name: str, canton_str: str, commune=None, prefecture=None, region=None, resolver=None):
     villages_name = re_module.split('[&,;/+]| Et ', ad_name.title()) #ad_name.split("/")
 
     for village_name in villages_name:
-        v = get_adminstrative_level_by_name(village_name.upper(), canton_str)
+        v = get_adminstrative_level_by_name(
+            village_name.upper(), canton_str, commune=commune, prefecture=prefecture, region=region, resolver=resolver
+        )
         if v:
             try:
                 return v.cvd.headquarters_village
@@ -132,7 +94,8 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
     default_project = Project.objects.filter(name="COSO").first()
 
     if datas_file:
-        
+        from administrativelevels.functions_lookup import AdministrativeLevelResolver
+        resolver = AdministrativeLevelResolver()
         count = 0
         long = len(list(datas_file.values())[0])
         while count < long:
@@ -140,6 +103,11 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
             
             try:
                 canton_file_data = str(datas_file["CANTON"][count]).upper()
+                # parents de la ligne, pour départager deux cantons / villages de même nom
+                location = {
+                    key: (get_value(datas_file[column][count]) if column in datas_file else None)
+                    for key, column in (("commune", "COMMUNE"), ("prefecture", "PREFECTURE"), ("region", "REGION"))
+                }
                 _village = str(datas_file["VILLAGE/CDV"][count])
                 __village = _village.upper()
                 id_village = get_value(datas_file["ID LOCALITE"][count])
@@ -264,78 +232,40 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                 elif village in ("CCD", "TOUTE LA COMMUNAUTE"):
                     pass
                 else:
-                    try:
-                        administrative_level = AdministrativeLevel.objects.get(name=village, type="Village", parent__name=canton_file_data)
-                    except AdministrativeLevel.DoesNotExist as exc:
-                        try:
-                            administrative_level = AdministrativeLevel.objects.get(
-                                name=libraries_functions.strip_accents(village), type="Village", parent__name=canton_file_data
-                            )
-                        except AdministrativeLevel.DoesNotExist as exc:
-                            try:
-                                administrative_level = AdministrativeLevel.objects.get(name=village.replace(" ", ""), type="Village", parent__name=canton_file_data)
-                            except AdministrativeLevel.DoesNotExist as exc:
-                                try:
-                                    administrative_level = AdministrativeLevel.objects.get(
-                                        name=libraries_functions.strip_accents(village.replace(" ", "")), type="Village", parent__name=canton_file_data
-                                    )
-                                except AdministrativeLevel.DoesNotExist as exc:
-                                    try:
-                                        administrative_level = AdministrativeLevel.objects.get(
-                                            name=libraries_functions.strip_accents(village.replace("-", " ")), type="Village", parent__name=canton_file_data
-                                        )
-                                    except AdministrativeLevel.DoesNotExist as exc:
-                                        try:
-                                            administrative_level = AdministrativeLevel.objects.get(
-                                                name=libraries_functions.strip_accents(village.replace(" ", "-")), type="Village", parent__name=canton_file_data
-                                            )
-                                        except AdministrativeLevel.DoesNotExist as exc:
-                                            _is_object_error = True
-                                            if _village not in list_villages_not_found:
-                                                list_villages_not_found.append(_village)
-                                                list_villages_not_found_full_infos.append({
-                                                    "REGION": get_value(datas_file["REGION"][count]),
-                                                    "PREFECTURE": get_value(datas_file["PREFECTURE"][count]),
-                                                    "COMMUNE": get_value(datas_file["COMMUNE"][count]),
-                                                    "CANTON": get_value(datas_file["CANTON"][count]),
-                                                    "VILLAGE/CDV": get_value(datas_file["VILLAGE/CDV"][count])
-                                                })
-                                            text_errors += (f'\nLine N°{count} [{_village}]: {exc.__str__()}' if text_errors else f'Line N°{count} [{_village}]: {exc.__str__()}')
-                                            at_least_error_name = True
-                                            at_least_one_error = True
-                                        except AdministrativeLevel.MultipleObjectsReturned as exc:
-                                            raise AdministrativeLevel.MultipleObjectsReturned()
-                                    except AdministrativeLevel.MultipleObjectsReturned as exc:
-                                        raise AdministrativeLevel.MultipleObjectsReturned()
-                                
-                                except AdministrativeLevel.MultipleObjectsReturned as exc:
-                                    raise AdministrativeLevel.MultipleObjectsReturned()
+                    # village cherché dans SON canton, départagé par la commune / préfecture / région de la ligne :
+                    # deux cantons peuvent porter le même nom (ex. LOKO à OTI 2 et à TANDJOUARE 1)
+                    result = resolver.find(village, AdministrativeLevel.VILLAGE, canton=canton_file_data, **location)
+                    if result.error == "not_found" and re_module.search(r"[&,;/+]| ET ", village):
+                        # plusieurs villages dans la cellule (« A / B ») : siège du CVD du premier trouvé
+                        administrative_level = get_adminstrative_level_by_name_with_slash(
+                            village, canton_file_data, resolver=resolver, **location
+                        )
+                    else:
+                        administrative_level = AdministrativeLevel.objects.get(pk=result.level.pk) if result else None
 
-                            except AdministrativeLevel.MultipleObjectsReturned as exc:
-                                raise AdministrativeLevel.MultipleObjectsReturned()
-
-                        except AdministrativeLevel.MultipleObjectsReturned as exc:
-                            raise AdministrativeLevel.MultipleObjectsReturned()
-
-                    except AdministrativeLevel.MultipleObjectsReturned as exc:
+                    if administrative_level is None and result.error == "ambiguous":
                         _is_object_error = True
                         if _village not in list_villages_multi_obj_found:
                             list_villages_multi_obj_found.append(_village)
                         at_least_error_name = True
                         at_least_one_error = True
-                        text_errors += (f'\nLine N°{count} [{_village}]: {exc.__str__()}' if text_errors else f'Line N°{count} [{_village}]: {exc.__str__()}')
-
-                    if _is_object_error and not administrative_level and \
-                        ("/" in village.title() or "," in village.title() or ";" in village.title() or " Et " in village.title() or "&" in village.title() or "+" in village.title()):
-
-                        administrative_level = get_adminstrative_level_by_name_with_slash(village, canton_file_data)
-
-                        if not administrative_level:
-                            _is_object_error = True
-                        else:
-                            del list_villages_not_found_full_infos[-1]
-                            del list_villages_not_found[-1]
-                            _is_object_error = False
+                        exc = result.describe(resolver)
+                        text_errors += (f'\nLine N°{count} [{_village}]: {exc}' if text_errors else f'Line N°{count} [{_village}]: {exc}')
+                    elif administrative_level is None:
+                        _is_object_error = True
+                        if _village not in list_villages_not_found:
+                            list_villages_not_found.append(_village)
+                            list_villages_not_found_full_infos.append({
+                                "REGION": get_value(datas_file["REGION"][count]),
+                                "PREFECTURE": get_value(datas_file["PREFECTURE"][count]),
+                                "COMMUNE": get_value(datas_file["COMMUNE"][count]),
+                                "CANTON": get_value(datas_file["CANTON"][count]),
+                                "VILLAGE/CDV": get_value(datas_file["VILLAGE/CDV"][count])
+                            })
+                        exc = result.describe(resolver)
+                        text_errors += (f'\nLine N°{count} [{_village}]: {exc}' if text_errors else f'Line N°{count} [{_village}]: {exc}')
+                        at_least_error_name = True
+                        at_least_one_error = True
                         
                 if not _is_object_error:
                     
@@ -367,59 +297,32 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                         
                         if canton:
                             canton = canton.upper()
-                            try:
-                                administrative_level_canton = AdministrativeLevel.objects.get(name=canton, type="Canton")
-                            except AdministrativeLevel.DoesNotExist as exc:
-                                try:
-                                    administrative_level_canton = AdministrativeLevel.objects.get(
-                                        name=libraries_functions.strip_accents(canton), type="Canton"
-                                    )
-                                except AdministrativeLevel.DoesNotExist as exc:
-                                    try:
-                                        administrative_level_canton = AdministrativeLevel.objects.get(name=canton.replace(" ", ""), type="Canton")
-                                    except AdministrativeLevel.DoesNotExist as exc:
-                                        try:
-                                            administrative_level_canton = AdministrativeLevel.objects.get(
-                                                name=libraries_functions.strip_accents(canton.replace(" ", "")), type="Canton"
-                                            )
-                                        except AdministrativeLevel.DoesNotExist as exc:
-                                            try:
-                                                administrative_level_canton = AdministrativeLevel.objects.get(
-                                                    name=libraries_functions.strip_accents(canton.replace("-", " ")), type="Canton"
-                                                )
-                                            except AdministrativeLevel.DoesNotExist as exc:
-                                                _is_object_error = True
-                                                if canton not in list_villages_not_found:
-                                                    list_villages_not_found.append(canton)
-                                                    list_villages_not_found_full_infos.append({
-                                                        "REGION": get_value(datas_file["REGION"][count]),
-                                                        "PREFECTURE": get_value(datas_file["PREFECTURE"][count]),
-                                                        "COMMUNE": get_value(datas_file["COMMUNE"][count]),
-                                                        "CANTON": get_value(datas_file["CANTON"][count]),
-                                                        "VILLAGE/CDV": get_value(datas_file["VILLAGE/CDV"][count])
-                                                    })
-                                                text_errors += (f'\nLine N°{count} [{canton}]: {exc.__str__()}' if text_errors else f'Line N°{count} [{canton}]: {exc.__str__()}')
-                                                at_least_error_name = True
-                                                at_least_one_error = True
-                                            except AdministrativeLevel.MultipleObjectsReturned as exc:
-                                                raise AdministrativeLevel.MultipleObjectsReturned()
-                                            
-                                        except AdministrativeLevel.MultipleObjectsReturned as exc:
-                                            raise AdministrativeLevel.MultipleObjectsReturned()
-
-                                    except AdministrativeLevel.MultipleObjectsReturned as exc:
-                                        raise AdministrativeLevel.MultipleObjectsReturned()
-
-                                except AdministrativeLevel.MultipleObjectsReturned as exc:
-                                    raise AdministrativeLevel.MultipleObjectsReturned()
-
-                            except AdministrativeLevel.MultipleObjectsReturned as exc:
+                            # canton départagé par la commune / préfecture / région de la ligne
+                            result = resolver.find(canton, AdministrativeLevel.CANTON, **location)
+                            administrative_level_canton = AdministrativeLevel.objects.get(pk=result.level.pk) if result else None
+                            if result.error == "not_found":
+                                _is_object_error = True
+                                if canton not in list_villages_not_found:
+                                    list_villages_not_found.append(canton)
+                                    list_villages_not_found_full_infos.append({
+                                        "REGION": get_value(datas_file["REGION"][count]),
+                                        "PREFECTURE": get_value(datas_file["PREFECTURE"][count]),
+                                        "COMMUNE": get_value(datas_file["COMMUNE"][count]),
+                                        "CANTON": get_value(datas_file["CANTON"][count]),
+                                        "VILLAGE/CDV": get_value(datas_file["VILLAGE/CDV"][count])
+                                    })
+                                exc = result.describe(resolver)
+                                text_errors += (f'\nLine N°{count} [{canton}]: {exc}' if text_errors else f'Line N°{count} [{canton}]: {exc}')
+                                at_least_error_name = True
+                                at_least_one_error = True
+                            elif result.error == "ambiguous":
                                 _is_object_error = True
                                 if canton not in list_villages_multi_obj_found:
                                     list_villages_multi_obj_found.append(canton)
                                 at_least_error_name = True
                                 at_least_one_error = True
-                                text_errors += (f'\nLine N°{count} [{canton}]: {exc.__str__()}' if text_errors else f'Line N°{count} [{canton}]: {exc.__str__()}')
+                                exc = result.describe(resolver)
+                                text_errors += (f'\nLine N°{count} [{canton}]: {exc}' if text_errors else f'Line N°{count} [{canton}]: {exc}')
                         
                         # for sub in subprojects:
                         #     if administrative_level_canton and not sub.link_to_subproject:
@@ -666,7 +569,7 @@ def save_csv_datas_subprojects_in_db(datas_file: dict, cvd_ids=[], canton_ids=[]
                         if list_of_villages_crossed_by_the_track_or_electrification:
                             liste = [word.strip() for word in re_module.split(r"/|,|;|\+|\bet\b|-", str(list_of_villages_crossed_by_the_track_or_electrification)) if word.strip()] #str(list_of_villages_crossed_by_the_track_or_electrification).split(";")
                             for ad_name in liste:
-                                ad = get_adminstrative_level_by_name(ad_name.strip(), canton_file_data)
+                                ad = get_adminstrative_level_by_name(ad_name.strip(), canton_file_data, resolver=resolver, **location)
                                 if ad:
                                     subproject.list_of_villages_crossed_by_the_track_or_electrification.add(ad)
                         
@@ -920,25 +823,25 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
     # if _type == "All":
     #     administratives_levels = AdministrativeLevel.objects.filter(type="Village")
     # elif _type == "Region":
-    #     for region in AdministrativeLevel.objects.filter(type=_type, name=value_of_type):
+    #     for region in AdministrativeLevel.objects.filter(type=_type, **level_filter):
     #         for prefecture in AdministrativeLevel.objects.filter(parent=region):
     #             for commune in AdministrativeLevel.objects.filter(parent=prefecture):
     #                 for canton in AdministrativeLevel.objects.filter(parent=commune):
     #                     [administratives_levels.append(village) for village in canton.administrativelevel_set.get_queryset()]
     # elif _type == "Prefecture":
-    #     for prefecture in AdministrativeLevel.objects.filter(type=_type, name=value_of_type):
+    #     for prefecture in AdministrativeLevel.objects.filter(type=_type, **level_filter):
     #         for commune in AdministrativeLevel.objects.filter(parent=prefecture):
     #             for canton in AdministrativeLevel.objects.filter(parent=commune):
     #                 [administratives_levels.append(village) for village in canton.administrativelevel_set.get_queryset()]
     # elif _type == "Commune":
-    #     for commune in AdministrativeLevel.objects.filter(type=_type, name=value_of_type):
+    #     for commune in AdministrativeLevel.objects.filter(type=_type, **level_filter):
     #         for canton in AdministrativeLevel.objects.filter(parent=commune):
     #             [administratives_levels.append(village) for village in canton.administrativelevel_set.get_queryset()]
     # elif _type == "Canton":
-    #     for canton in AdministrativeLevel.objects.filter(type=_type, name=value_of_type):
+    #     for canton in AdministrativeLevel.objects.filter(type=_type, **level_filter):
     #         [administratives_levels.append(village) for village in canton.administrativelevel_set.get_queryset()]
     # elif _type == "Village":
-    #     administratives_levels = AdministrativeLevel.objects.filter(type=_type, name=value_of_type)
+    #     administratives_levels = AdministrativeLevel.objects.filter(type=_type, **level_filter)
 
     # Subprojects = []
     # sector = params.get("sector")
@@ -959,32 +862,34 @@ def get_subprojects_under_file_excel_or_csv(file_type="excel", params={"type":"A
 
     cvds = []
     value_of_type = params.get("value_of_type").upper() if params.get("value_of_type") else ""
+    # la liste envoie l'identifiant (deux cantons peuvent porter le même nom) ; un nom reste accepté
+    level_filter = {"id": int(value_of_type)} if value_of_type.isdigit() else {"name": value_of_type}
     if _type == "All":
         cvds = CVD.objects.all()
     elif _type == "Region":
-        for region in AdministrativeLevel.objects.filter(type=_type, name=value_of_type):
+        for region in AdministrativeLevel.objects.filter(type=_type, **level_filter):
             for prefecture in AdministrativeLevel.objects.filter(parent=region):
                 for commune in AdministrativeLevel.objects.filter(parent=prefecture):
                     for canton in AdministrativeLevel.objects.filter(parent=commune):
                         for g in canton.geographicalunit_set.get_queryset():
                             [cvds.append(c) for c in g.cvd_set.get_queryset()]
     elif _type == "Prefecture":
-        for prefecture in AdministrativeLevel.objects.filter(type=_type, name=value_of_type):
+        for prefecture in AdministrativeLevel.objects.filter(type=_type, **level_filter):
             for commune in AdministrativeLevel.objects.filter(parent=prefecture):
                 for canton in AdministrativeLevel.objects.filter(parent=commune):
                     for g in canton.geographicalunit_set.get_queryset():
                         [cvds.append(c) for c in g.cvd_set.get_queryset()]
     elif _type == "Commune":
-        for commune in AdministrativeLevel.objects.filter(type=_type, name=value_of_type):
+        for commune in AdministrativeLevel.objects.filter(type=_type, **level_filter):
             for canton in AdministrativeLevel.objects.filter(parent=commune):
                 for g in canton.geographicalunit_set.get_queryset():
                     [cvds.append(c) for c in g.cvd_set.get_queryset()]
     elif _type == "Canton":
-        for canton in AdministrativeLevel.objects.filter(type=_type, name=value_of_type):
+        for canton in AdministrativeLevel.objects.filter(type=_type, **level_filter):
             for g in canton.geographicalunit_set.get_queryset():
                 [cvds.append(c) for c in g.cvd_set.get_queryset()]
     elif _type == "Village":
-        ads = AdministrativeLevel.objects.filter(type=_type, name=value_of_type)
+        ads = AdministrativeLevel.objects.filter(type=_type, **level_filter)
         [cvds.append(ad.cvd) for ad in ads]
 
     

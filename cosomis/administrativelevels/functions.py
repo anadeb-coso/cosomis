@@ -25,89 +25,89 @@ def exists_id(liste, id):
 
 
 def save_csv_file_datas_in_db(datas_file: dict) -> str:
-    """Function to save the CSV datas in database"""
-    
+    """Enregistre les niveaux administratifs d'un fichier (Région, Préfecture, Commune, Canton, Village/localité).
+
+    Chaque ligne est lue de haut en bas : chaque niveau est cherché SOUS le parent trouvé juste avant (jamais par son
+    seul nom : deux cantons « LOKO » existent dans deux communes différentes), puis créé s'il n'existe pas. Un nom
+    proche d'un niveau existant (accents, tirets, faute de frappe sur un parent) est rapproché de ce niveau au lieu
+    d'en créer un doublon ; une ligne ambiguë est signalée et n'est pas enregistrée."""
+    from administrativelevels.functions_lookup import AdministrativeLevelResolver
+
     at_least_one_save = False # Variable to determine if at least one is saved
     at_least_one_error = False # Variable to determine if at least one error is occurred
-    columns = ["Région", "Préfecture", "Commune", "Canton", "Village/localité"]
+    columns = (
+        ("Région", AdministrativeLevel.REGION), ("Préfecture", AdministrativeLevel.PREFECTURE),
+        ("Commune", AdministrativeLevel.COMMUNE), ("Canton", AdministrativeLevel.CANTON),
+        ("Village/localité", AdministrativeLevel.VILLAGE),
+    )
     list_name_errors = []
+    list_warnings = []
+    resolver = AdministrativeLevelResolver()
+
+    def cell(column, count):
+        try:
+            return get_value(datas_file[column][count])
+        except Exception:
+            return None
+
     if datas_file:
-        count = 0
         long = len(list(datas_file.values())[0])
-        while count < long:
-            for column in columns:
-                name = None
+        for count in range(long):
+            frontalier, rural, latitude, longitude = False, False, None, None
+            try:
+                frontalier = bool(cell("Village frontalier (1=oui, 0= non)", count))
+            except Exception:
+                pass
+            try:
+                rural = bool(cell("Localité (Rural=1, urbain=0)", count))
+            except Exception:
+                pass
+            try:
+                latitude = float(cell("Latitude", count))
+            except Exception:
+                pass
+            try:
+                longitude = float(cell("Longitude", count))
+            except Exception:
+                pass
+
+            parent = None
+            for column, _type in columns:
+                value = cell(column, count)
+                if value is None or not str(value).strip():
+                    break  # niveau vide : on s'arrête au dernier niveau renseigné de la ligne
+                name = str(value).upper().strip()
                 try:
-                    name = str(datas_file[column][count]).upper().strip()
-                    frontalier, rural, latitude, longitude = False, False, None, None
-                    try:
-                        frontalier = bool(get_value(datas_file["Village frontalier (1=oui, 0= non)"][count]))
-                    except Exception as exc:
-                        pass
-                    try:
-                        rural = bool(get_value(datas_file["Localité (Rural=1, urbain=0)"][count]))
-                    except Exception as exc:
-                        pass
-                    try:
-                        latitude = float(get_value(datas_file["Latitude"][count]))
-                    except Exception as exc:
-                        pass
-                    try:
-                        longitude = float(get_value(datas_file["Longitude"][count]))
-                    except Exception as exc:
-                        pass
+                    # tolérance aux fautes de frappe seulement pour les niveaux au-dessus du village
+                    result = resolver.child(parent, name, _type, fuzzy=_type != AdministrativeLevel.VILLAGE)
+                    if result.error == "ambiguous":
+                        raise ValueError(f"{_type} en double sous « {parent.name if parent else '-'} » : "
+                                         + ", ".join(f"id {c.id}" for c in result.candidates))
+                    list_warnings += [f"Ligne {count + 2} : {w}" for w in result.warnings]
+                    administrative_level = result.level
+                    created = administrative_level is None
+                    is_village = _type == AdministrativeLevel.VILLAGE
+                    if created:
+                        administrative_level = AdministrativeLevel(name=name, type=_type, parent=parent)
+                        at_least_one_save = True
+                    elif is_village:
+                        administrative_level = AdministrativeLevel.objects.get(pk=administrative_level.pk)
 
-                    _type = "Unknow"
-                    parent_type = ()
-                    if column == "Région":
-                        _type = "Region"
-                    elif column == "Préfecture":
-                        _type = "Prefecture"
-                        parent_type = ("Région", "Region")
-                    elif column == "Commune":
-                        _type = "Commune"
-                        parent_type = ("Préfecture", "Prefecture")
-                    elif column == "Canton":
-                        _type = "Canton"
-                        parent_type = ("Commune", "Commune")
-                    elif column == "Village/localité":
-                        _type = "Village"
-                        parent_type = ("Canton", "Canton")
-
-                    parent = None
-                    try:
-                        if _type not in ("Region", "Unknow"):
-                            parent = AdministrativeLevel.objects.filter(name=str(datas_file[parent_type[0]][count]).upper().strip(), type=parent_type[1]).first() # Get the parent object of the administrative level
-                    except Exception as exc:
-                        pass
-                    
-                    if (_type not in ("Region", "Unknow") and parent) or _type == "Region":
-                        administratives_levels = AdministrativeLevel.objects.filter(name=name, type=_type, parent=parent)
-                        if not administratives_levels: # If the administrative level is not already save
-                            administrative_level = AdministrativeLevel()
-                            administrative_level.name = name
-                            administrative_level.type = _type
-                            administrative_level.parent = parent
-                            # administrative_level.frontalier = frontalier
-                            # administrative_level.rural = rural
-                            # administrative_level.save(user={'is_superuser': True})
-                            at_least_one_save = True
-                        else: #If the administrative level is already save
-                            administrative_level = administratives_levels.first()
-                            
-
+                    if is_village:
+                        # coordonnées et caractéristiques de la ligne : celles du village, pas de ses parents
                         administrative_level.frontalier = frontalier
                         administrative_level.rural = rural
                         administrative_level.latitude = latitude
                         administrative_level.longitude = longitude
+                    if created or is_village:
                         administrative_level.save(user={'is_superuser': True})
-                    
+                    if created:
+                        resolver.add(administrative_level)
+                    parent = administrative_level
                 except Exception as exc:
                     at_least_one_error = True
-                    list_name_errors.append(f"{name} : {exc}")
-                    print(exc)
-
-            count += 1
+                    list_name_errors.append(f"Ligne {count + 2} - {name} : {exc}")
+                    break  # sans ce niveau, ceux du dessous seraient rattachés au mauvais parent
 
     message = ""
     if at_least_one_save and not at_least_one_error:
@@ -119,7 +119,7 @@ def save_csv_file_datas_in_db(datas_file: dict) -> str:
     elif at_least_one_save and at_least_one_error:
         message = _("Some element(s) have not been saved!")
 
-    message = message + "\n" + "\n".join(list_name_errors)
+    message = message + "\n" + "\n".join(list_name_errors + list_warnings)
 
     return message
 
@@ -267,6 +267,8 @@ def save_csv_datas_priorities_in_db(datas_file: dict, administrative_level_id=0,
     }
     
     if datas_file and type_object != "subproject_new":
+        from administrativelevels.functions_lookup import AdministrativeLevelResolver
+        resolver = AdministrativeLevelResolver()
         count = 0
         long = len(list(datas_file.values())[0])
         while count < long:
@@ -289,44 +291,30 @@ def save_csv_datas_priorities_in_db(datas_file: dict, administrative_level_id=0,
                         village = village.strip()
                         _is_object_error = False
                         administrative_level = None
-                        try:
-                            administrative_level = AdministrativeLevel.objects.get(name=village, type="Village")
-                        except AdministrativeLevel.DoesNotExist as exc:
-                            try:
-                                administrative_level = AdministrativeLevel.objects.get(
-                                    name=libraries_functions.strip_accents(village), type="Village"
-                                )
-                            except AdministrativeLevel.DoesNotExist as exc:
-                                try:
-                                    administrative_level = AdministrativeLevel.objects.get(name=village.replace(" ", ""), type="Village")
-                                except AdministrativeLevel.DoesNotExist as exc:
-                                    try:
-                                        administrative_level = AdministrativeLevel.objects.get(
-                                            name=libraries_functions.strip_accents(village.replace(" ", "")), type="Village"
-                                        )
-                                    except AdministrativeLevel.DoesNotExist as exc:
-                                        _is_object_error = True
-                                        if _village not in list_villages_not_found:
-                                            list_villages_not_found.append(_village)
-                                        text_errors += (f'\nLine N°{count} [{_village}]: {exc.__str__()}' if text_errors else f'Line N°{count}: {exc.__str__()}')
-                                        at_least_error_name = True
-                                        at_least_one_error = True
-                                    except AdministrativeLevel.MultipleObjectsReturned as exc:
-                                        raise AdministrativeLevel.MultipleObjectsReturned()
-
-                                except AdministrativeLevel.MultipleObjectsReturned as exc:
-                                    raise AdministrativeLevel.MultipleObjectsReturned()
-
-                            except AdministrativeLevel.MultipleObjectsReturned as exc:
-                                raise AdministrativeLevel.MultipleObjectsReturned()
-
-                        except AdministrativeLevel.MultipleObjectsReturned as exc:
+                        # village cherché dans son canton (et sa commune si le fichier la donne) : un nom de
+                        # village peut exister dans plusieurs cantons
+                        result = resolver.find(
+                            village, AdministrativeLevel.VILLAGE,
+                            canton=get_value(canton) if canton is not None else None,
+                            commune=get_value(datas_file["Commune"][count]) if "Commune" in datas_file else None,
+                        )
+                        administrative_level = result.level
+                        if result.error == "not_found":
+                            _is_object_error = True
+                            if _village not in list_villages_not_found:
+                                list_villages_not_found.append(_village)
+                            text_errors += f'\nLine N°{count} [{_village}]: {result.describe(resolver)}'
+                            at_least_error_name = True
+                            at_least_one_error = True
+                        elif result.error == "ambiguous":
                             _is_object_error = True
                             if _village not in list_villages_multi_obj_found:
                                 list_villages_multi_obj_found.append(_village)
                             at_least_error_name = True
                             at_least_one_error = True
-                            text_errors += f'\nLine N°{count} [{_village}]: {exc.__str__()}'
+                            text_errors += f'\nLine N°{count} [{_village}]: {result.describe(resolver)}'
+                        if administrative_level is not None:
+                            administrative_level = AdministrativeLevel.objects.get(pk=administrative_level.pk)
                         
                         if not _is_object_error:
                             

@@ -11,20 +11,43 @@ from kobotoolbox.form_id_kobo import (
 env = environ.Env()
 env.read_env()
 
+def find_kobo_village(answer, resolver):
+    """Village d'une réponse Kobo, départagé par le canton / la commune / la préfecture du formulaire s'ils y
+    figurent. None si introuvable ou ambigu : un nom de village existe dans plusieurs cantons, et les
+    coordonnées ne doivent jamais être écrites sur le mauvais village."""
+    def field(*keys):
+        for key in keys:
+            if answer.get(key):
+                return answer[key]
+        return None
+
+    result = resolver.find(
+        answer.get('Village'), AdministrativeLevel.VILLAGE,
+        canton=field('Canton', 'canton'), commune=field('Commune', 'commune'),
+        prefecture=field('Prefecture', 'Préfecture', 'prefecture'), region=field('Region', 'Région', 'region'),
+    )
+    return AdministrativeLevel.objects.get(pk=result.level.pk) if result else None
+
+
+def save_kobo_villages_coordinates(results):
+    from administrativelevels.functions_lookup import AdministrativeLevelResolver
+    resolver = AdministrativeLevelResolver()
+    for counter, a in enumerate(results or [], start=1):
+        try:
+            village_object = find_kobo_village(a, resolver) if a.get('Village') else None
+            if village_object:
+                coordinates = a['gps'].split(' ')
+                print(counter, village_object.name, a['Village'], coordinates)
+                village_object.latitude = coordinates[0]
+                village_object.longitude = coordinates[1]
+                village_object.save()
+        except Exception as exc:
+            print(counter, a.get('Village'), exc)
+
+
 def kobo_util():
     all_forms = get_all()
-    
-    counter = 1
-    for a in all_forms['results']:
-        village = AdministrativeLevel.objects.filter(name=a['Village'])
-        if village:
-            village_object = village.first()
-            coordinates = a['gps'].split(' ')
-            print(counter, village_object.name, a['Village'], coordinates)
-            village_object.latitude = coordinates[0]
-            village_object.longitude = coordinates[1]
-            village_object.save()
-        counter = counter + 1
+    save_kobo_villages_coordinates(all_forms.get('results'))
     
 
 

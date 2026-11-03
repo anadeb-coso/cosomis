@@ -1,27 +1,13 @@
 from cosomis.celery import app
 from kobotoolbox.api_call import get_all
-from administrativelevels.models import AdministrativeLevel
+from kobotoolbox.utils import save_kobo_villages_coordinates
 
 @app.task
 def kobo_request():
     all_forms = get_all()
     # print(all_forms)
-    counter = 1
-    results = all_forms.get('results')
-    if results:
-        for a in results:
-            try:
-                village = AdministrativeLevel.objects.filter(name=a['Village'])
-                if village:
-                    village_object = village.first()
-                    coordinates = a['gps'].split(' ')
-                    # print(counter, village_object.name, a['Village'], coordinates)
-                    village_object.latitude = coordinates[0]
-                    village_object.longitude = coordinates[1]
-                    village_object.save()
-            except Exception as exc:
-                pass
-            counter = counter + 1
+    # coordonnées écrites seulement sur un village identifié sans ambiguïté
+    save_kobo_villages_coordinates(all_forms.get('results'))
 
     return all_forms
     
