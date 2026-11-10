@@ -1,0 +1,38 @@
+{% load i18n %}
+{# One card of the gallery: preview (photo lazily loaded, icon for documents), Photo/Document badge, label, place and actions. The URLs are repeated in data-* attributes for the viewer. #}
+<article class="gallery-card"
+         data-url="{{ attachment.src }}" data-kind="{{ attachment.kind }}" data-name="{{ attachment.name }}"
+         data-place="{{ attachment.place }}" data-context="{{ attachment.context }}" data-context-url="{{ attachment.context_url }}"
+         data-open-url="{{ attachment.open_url }}" data-download-url="{{ attachment.download_url }}" data-raw-url="{{ attachment.url }}">
+    <div class="gallery-card__thumb" title="{% translate 'View full size' %}">
+        {% if attachment.kind == 'image' %}
+            <div class="gallery-card__media"><img src="{{ attachment.src }}" loading="lazy" alt="{{ attachment.name }}"></div>
+            <span class="gallery-card__badge"><i class="fas fa-image"></i> {% translate 'Photo' %}</span>
+        {% else %}
+            <div class="gallery-card__doc">
+                {% if attachment.kind == 'pdf' %}<i class="fas fa-file-pdf fa-3x text-danger"></i>
+                {% elif attachment.kind == 'word' %}<i class="fas fa-file-word fa-3x text-primary"></i>
+                {% elif attachment.kind == 'office' %}<i class="fas fa-file-excel fa-3x text-success"></i>
+                {% else %}<i class="fas fa-file-alt fa-3x text-secondary"></i>{% endif %}
+                {% if attachment.ext %}<div class="ext">{{ attachment.ext }}</div>{% endif %}
+            </div>
+            <span class="gallery-card__badge"><i class="fas fa-file-alt"></i> {% translate 'Document' %}</span>
+        {% endif %}
+        <div class="gallery-card__overlay">
+            {% if attachment.place %}<div class="font-weight-bold text-truncate"><i class="fas fa-map-marker-alt mr-1"></i>{{ attachment.place }}</div>{% endif %}
+            {% if attachment.context %}<div class="text-truncate">{{ attachment.context }}</div>{% endif %}
+        </div>
+    </div>
+    <div class="gallery-card__body">
+        <div class="gallery-card__title" title="{{ attachment.name }}">{{ attachment.name|default:"-" }}</div>
+        <div class="gallery-card__location text-truncate" title="{{ attachment.context }}">
+            {% if attachment.context_url %}<a href="{{ attachment.context_url }}">{{ attachment.place|default:attachment.context }}</a>{% else %}{{ attachment.place }}{% endif %}
+            {% if attachment.date %}<span class="text-muted"> · {{ attachment.date }}</span>{% endif %}
+        </div>
+        <div class="doc-card-actions">
+            <a href="javascript:void(0)" class="js-gallery-view" title="{% translate 'View full size' %}"><i class="fas fa-expand"></i></a>
+            {% if attachment.kind != 'image' %}<a href="{{ attachment.open_url }}" target="_blank" rel="noopener" title="{% translate 'Open in a new tab' %}"><i class="fas fa-external-link-alt"></i></a>{% endif %}
+            <a href="{{ attachment.download_url }}" title="{% translate 'Download' %}"><i class="fas fa-download"></i></a>
+        </div>
+    </div>
+</article>

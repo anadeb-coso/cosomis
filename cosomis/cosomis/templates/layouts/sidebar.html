@@ -100,6 +100,29 @@
                         <p>{% translate "Administrative levels" %}</p>
                     </a>
                 </li>
+                <li class="nav-item has-submenu">
+                    <a href="javascript:"
+                       class="nav-link {% if active_level1 == 'gallery' %}active{% endif %}">
+                        <i class="nav-icon fa fa-images"></i>
+                        <p>{% translate "Gallery" %}</p>
+                    </a>
+                    <ul class="submenu collapse {% if active_level1 == 'gallery' %}show{% endif %}">
+                        <li class="nav-item">
+                            <a href="{% url 'administrativelevels:gallery_cycle' %}"
+                            class="nav-link {% if active_level1 == 'gallery' and active_level2 == 'cycle' %}active text-dark{% endif %}">
+                                <i class="nav-icon fa fa-sync-alt"></i>
+                                <p>{% translate "Investment cycle" %}</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'administrativelevels:gallery_works' %}"
+                            class="nav-link {% if active_level1 == 'gallery' and active_level2 == 'works' %}active text-dark{% endif %}">
+                                <i class="nav-icon fa fa-hard-hat"></i>
+                                <p>{% translate "Infrastructures" %}</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
                 <li class="nav-item">
                     <a href="{% url 'financial:financial_dashboard' %}"
                        class="nav-link {% if active_level1 == 'financial' %}active{% endif %}">

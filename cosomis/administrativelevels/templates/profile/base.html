@@ -8,8 +8,10 @@
 {% endblock %}
 
 {% block content %}
-<div class="lp-card lp-hero">
+<div class="lp-card lp-hero" id="lp-hero">
     <div class="lp-hero-banner">
+        {# Up to 5 photos of the locality, loaded after the page (gallery_preview); the centre opens the gallery. #}
+        <div class="lp-hero-media" id="lp-hero-media"></div>
         <div class="lp-hero-icon"><i class="fas {{ profile.icon }}"></i></div>
         <div class="lp-hero-id">
             <div class="lp-kind">{{ profile.type_label }}</div>
@@ -29,6 +31,7 @@
                 {% include 'common/_project_filter.html' %}
             </form>
             {% endif %}
+            <a class="lp-btn" href="{{ gallery_cycle_url }}" id="lp-gallery-link"><i class="fas fa-images"></i>{% translate "Gallery" %}</a>
             {% block hero_actions %}{% endblock %}
         </div>
     </div>
@@ -71,6 +74,16 @@
         $('a[data-toggle="tab"][href="#' + tabId + '"]').on('shown.bs.tab', run);
     };
     $(function () {
+        // Header photos: the centre link follows the photo shown (each photo knows its gallery).
+        $.get("{% url 'administrativelevels:gallery_preview' %}?{{ gallery_query }}", function (html) {
+            if (!$.trim(html)) { return; }
+            $('#lp-hero-media').html(html);
+            $('#lp-hero').addClass('lp-has-photos');
+            $('#lp-hero-carousel').carousel().on('slid.bs.carousel', function (e) {
+                var url = $(e.relatedTarget).data('gallery-url');
+                if (url) { $('.lp-hero-center').attr('href', url); }
+            });
+        });
         $('.lp-hero-actions select[name="project"]').on('change', function () { this.form.submit(); });
         $('[data-lp-filter]').on('input', function () {
             var q = this.value.toLowerCase();

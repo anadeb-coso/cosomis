@@ -1,7 +1,7 @@
 from django.urls import path
 from django.conf.urls import include
 
-from administrativelevels import views, views_json
+from administrativelevels import views, views_gallery, views_json
 
 app_name = 'administrativelevels'
 
@@ -37,6 +37,12 @@ urlpatterns = [
     path('grm/', include('administrativelevels.grm.urls')),
 
 
+    # Gallery: investment cycle (DCC task attachments) and infrastructures (subproject files)
+    path('gallery/investment-cycle/', views_gallery.CycleGalleryView.as_view(), name='gallery_cycle'),
+    path('gallery/infrastructures/', views_gallery.WorksGalleryView.as_view(), name='gallery_works'),
+    path('gallery/file/', views_gallery.gallery_file, name='gallery_file'),
+    path('gallery/preview/', views_gallery.gallery_preview, name='gallery_preview'),
+    path('gallery/children/', views_gallery.gallery_children, name='gallery_children'),
     path('get-administrative-level-by-type-view/', views_json.GetAdministrativeLevelByTypeView.as_view(), name='get_administrative_level_by_type'), #Get AdministrativeLevel by type
 
 ]

@@ -25,6 +25,8 @@ from administrativelevels.functions import (
     get_administrative_level_ids_descendants,
 )
 from administrativelevels.functions_cvd import save_cvd_instead_of_csv_file_datas_in_db
+from urllib.parse import urlencode
+from administrativelevels.functions_gallery import CYCLE, gallery_url
 from administrativelevels.functions_profile import (
     administrative_level_profile, breadcrumb as profile_breadcrumb, cvd_profile, geographical_unit_profile,
     scope_project_ids,
@@ -57,11 +59,20 @@ def add_profile_context(request, context, build):
     """Profile figures of the page's locality (see functions_profile), for the projects of the page."""
     scope, project_ids = scope_project_ids(request)
     profile = build(context['object'], project_ids)
+    # Parameters that give the galleries the same locality (and project filter) as the page.
+    key = {'CVD': 'cvd', 'GeographicalUnit': 'unit'}.get(profile['kind'], 'level')
+    gallery_params = {key: context['object'].pk}
+    if scope.selected_id:
+        gallery_params['project'] = scope.selected_id
     context.update({
         'profile': profile, 'profile_project_ids': project_ids,
         # Dashboards and components read the projects from `all_projects[]`, only when 2 ids or more are sent.
         'ajax_project_ids': project_ids if len(project_ids) > 1 else project_ids * 2,
         'facilitators_groups': profile['facilitators']['groups'],
+        # The profile header replaces the page title, the breadcrumb and the locality shown in the top bar.
+        'hide_content_header': True,
+        'gallery_query': urlencode(gallery_params),
+        'gallery_cycle_url': gallery_url(CYCLE, None, **gallery_params),
         'title': f"{profile['type_label']} {profile['name']}",
         'breadcrumb': profile_breadcrumb(profile.get('chain', []), f"{profile['type_label']} {profile['name']}"),
         **scope.context(),
@@ -113,7 +124,6 @@ class AdministrativeLevelDetailView(PageMixin, LoginRequiredMixin, DetailView):
         self.template_name = (_type.lower() if _type.lower() in ('village', 'canton') else "administrativelevel") + "_detail.html"
         context['context_object_name'] = _type
         context['title'] = _type
-        context['administrativelevel_profile'] = context['object']
         add_profile_context(self.request, context, administrative_level_profile)
         if self.template_name == "administrativelevel_detail.html":
             context['financial_blocks'] = financial_blocks(context['object'])

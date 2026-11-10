@@ -6258,3 +6258,87 @@ msgstr "unités géographiques"
 
 msgid "villages"
 msgstr "villages"
+
+msgid "All localities"
+msgstr "Toutes les localités"
+
+msgid "Choose a locality"
+msgstr "Choisir une localité"
+
+msgid "Choose a locality to see the files of its investment cycle"
+msgstr "Choisissez une localité pour voir les fichiers de son cycle d'investissement"
+
+msgid "Could not load more files. Check your connection and try again."
+msgstr "Impossible de charger plus de fichiers. Vérifiez votre connexion et réessayez."
+
+msgid "Document"
+msgstr "Document"
+
+msgid "Documents"
+msgstr "Documents"
+
+msgid "File type"
+msgstr "Type de fichier"
+
+msgid "Filter the files"
+msgstr "Filtrer les fichiers"
+
+msgid "Investment cycle"
+msgstr "Cycle d'investissement"
+
+msgid "Loading more files…"
+msgstr "Chargement d'autres fichiers…"
+
+msgid "Missing file"
+msgstr "Fichier introuvable"
+
+msgid "More filters"
+msgstr "Plus de filtres"
+
+msgid "Next"
+msgstr "Suivant"
+
+msgid "No file matches your filters"
+msgstr "Aucun fichier ne correspond à vos filtres"
+
+msgid "No preview available for this file."
+msgstr "Aucun aperçu disponible pour ce fichier."
+
+msgid "Open the gallery"
+msgstr "Ouvrir la galerie"
+
+msgid "Photo"
+msgstr "Photo"
+
+msgid "Previous"
+msgstr "Précédent"
+
+msgid "Remove filter"
+msgstr "Retirer le filtre"
+
+msgid "Retry"
+msgstr "Réessayer"
+
+msgid "Search (label, task, subproject, place)"
+msgstr "Recherche (libellé, tâche, sous-projet, lieu)"
+
+msgid "The files are read from the facilitators’ tablets databases, locality by locality."
+msgstr "Les fichiers sont lus dans les bases des tablettes des animateurs, localité par localité."
+
+msgid "The image could not be loaded."
+msgstr "L'image n'a pas pu être chargée."
+
+msgid "Try clearing a filter or selecting a different type."
+msgstr "Essayez de retirer un filtre ou de choisir un autre type."
+
+msgid "Untick to choose another locality in the lists."
+msgstr "Décochez pour choisir une autre localité dans les listes."
+
+msgid "View full size"
+msgstr "Voir en grand"
+
+msgid "View the profile"
+msgstr "Voir la fiche"
+
+msgid "file(s)"
+msgstr "fichier(s)"

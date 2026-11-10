@@ -1,0 +1,25 @@
+{% load i18n %}
+{# Photos of a profile header (gallery_preview): up to 5 slides behind the header; the centre of the photo opens the gallery of the locality. Empty when there is no photo (the header keeps its colour). #}
+{% if photos %}
+<div id="lp-hero-carousel" class="carousel slide carousel-fade lp-hero-carousel" data-ride="carousel" data-interval="5000">
+    <div class="carousel-inner">
+        {% for photo in photos %}
+        <div class="carousel-item {% if forloop.first %}active{% endif %}" data-gallery-url="{{ photo.gallery_url }}">
+            <img src="{{ photo.src }}" alt="{{ photo.name }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
+                 onerror="this.closest('.carousel-item').classList.add('lp-photo-missing')">
+            <div class="lp-hero-caption"><i class="fas fa-camera mr-1"></i>{{ photo.name|default:photo.context|truncatechars:70 }}{% if photo.place %} · {{ photo.place }}{% endif %}{% if photo.date %} · {{ photo.date }}{% endif %}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% if photos|length > 1 %}
+    <ol class="carousel-indicators">
+        {% for photo in photos %}<li data-target="#lp-hero-carousel" data-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %}></li>{% endfor %}
+    </ol>
+    <a class="carousel-control-prev" href="#lp-hero-carousel" role="button" data-slide="prev" title="{% translate 'Previous' %}"><span class="carousel-control-prev-icon" aria-hidden="true"></span></a>
+    <a class="carousel-control-next" href="#lp-hero-carousel" role="button" data-slide="next" title="{% translate 'Next' %}"><span class="carousel-control-next-icon" aria-hidden="true"></span></a>
+    {% endif %}
+</div>
+<a class="lp-hero-center" href="{{ photos.0.gallery_url }}" title="{% translate 'Open the gallery' %}">
+    <span><i class="fas fa-images mr-1"></i>{% translate "Open the gallery" %}</span>
+</a>
+{% endif %}
