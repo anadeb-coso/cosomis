@@ -1,0 +1,26 @@
+{% load i18n %}
+{% comment %} Current stabilized AC/FC and FT of a locality. Expects `facilitators` = {'community': [...], 'technical': [...]} and `show_villages` (CVD). {% endcomment %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="font-weight-bold mb-0">{% translate "Stabilized facilitators" %}</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for label, items in facilitators_groups %}
+            <div class="col-md-6">
+                <h6 class="font-weight-bold text-muted">{{ label }}</h6>
+                {% for f in items %}
+                <div class="border rounded p-2 mb-2 bg-light">
+                    <a href="{% url 'animateurs:profile' f.pk %}" class="font-weight-bold">{{ f.name|default:f.username }}</a>
+                    {% if f.phone %}<br/><i class="fas fa-phone-alt"></i> {{ f.phone }}{% endif %}
+                    {% if f.email %}<br/><i class="fas fa-envelope"></i> {{ f.email }}{% endif %}
+                    {% if show_villages and f.stabilized_villages %}<br/><small><i class="fas fa-map-marker-alt"></i> {{ f.stabilized_villages|join:", " }}</small>{% endif %}
+                </div>
+                {% empty %}
+                <p class="text-muted mb-2">{% translate "No stabilized facilitator" %}</p>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>

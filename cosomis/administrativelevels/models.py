@@ -237,6 +237,12 @@ class AdministrativeLevel(BaseModel):
         return self.cvd.headquarters_village_id == self.id
 
     @property
+    def stabilized_facilitators(self):
+        """Current stabilized AC/FC and FT of this village (read live from CDD)."""
+        from administrativelevels.functions_facilitators import stabilized_facilitators
+        return stabilized_facilitators([self])
+
+    @property
     def cvd_villages(self):
         """Retourne la liste des villages associés au CVD dont ce niveau administratif est le siège."""
         if not self.cvd:
@@ -316,7 +322,13 @@ class CVD(BaseModel):
     
     def get_villages(self):
         return self.administrativelevel_set.get_queryset()
-    
+
+    @property
+    def stabilized_facilitators(self):
+        """Current stabilized AC/FC and FT of the villages of this CVD (read live from CDD)."""
+        from administrativelevels.functions_facilitators import stabilized_facilitators
+        return stabilized_facilitators(self.get_villages())
+
     def get_canton(self):
         if self.headquarters_village:
             return self.headquarters_village.parent

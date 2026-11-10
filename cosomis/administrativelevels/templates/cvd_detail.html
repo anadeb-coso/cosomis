@@ -33,26 +33,9 @@
         </div>
     </div>
     <div class="col-5">
+        {% include 'components/stabilized_facilitators.html' with show_villages=True %}
         <div class="card">
             <div class="card-body">
-
-                <div class="card">
-                    <div class="card-body">
-                        <div class="clearfix">
-                            <div class="float-left">
-                                <h5 class="font-weight-bold">{% translate 'Facilitator' %}</h5>
-                            </div>
-                            <div class="float-right">
-                                <a href="#" class="font-weight-bold">{% translate 'View' %}</a>
-                            </div>
-                        </div>
-                        <div class="card bg-light" style="height: 30px;">
-                            <div class="card-body">
-                                <h5 class="font-weight-bold">{% with object.headquarters_village|get_facilitator_with_ids:PROJECTS_IDS as facilitator %}{{facilitator.name}}{% endwith %}</h5>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <div class="card">
                     <div class="card-body">

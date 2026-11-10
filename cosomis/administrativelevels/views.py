@@ -25,6 +25,7 @@ from administrativelevels.functions import (
     get_administrative_level_ids_descendants,
 )
 from administrativelevels.functions_cvd import save_cvd_instead_of_csv_file_datas_in_db
+from administrativelevels.functions_facilitators import stabilized_facilitator_groups
 from administrativelevels.functions_adl import get_cascade_villages_ids_by_administrative_level_id
 from financial import function_allocation
 from financial.models.allocation import AdministrativeLevelAllocation
@@ -52,6 +53,7 @@ class VillageDetailView(PageMixin, LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super(VillageDetailView, self).get_context_data(**kwargs)
         if context.get("object") and context.get("object").type == "Village" : # Verify if the administrativeLevel type is Village
+            context['facilitators_groups'] = stabilized_facilitator_groups([context['object']])
             return context
         raise Http404
 
@@ -79,6 +81,8 @@ class AdministrativeLevelDetailView(PageMixin, LoginRequiredMixin, DetailView):
         context['title'] = _type
         context['hide_content_header'] = True
         context['administrativelevel_profile'] = context['object']
+        if context['object'].type == AdministrativeLevel.VILLAGE:
+            context['facilitators_groups'] = stabilized_facilitator_groups([context['object']])
         # context['breadcrumb'] = [
         #     {
         #         'url': '',
@@ -1670,6 +1674,7 @@ class CVDDetailView(PageMixin, LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['list_subprojects_kit'] = context['object'].get_list_subprojects_kit()
+        context['facilitators_groups'] = stabilized_facilitator_groups(context['object'].get_villages())
         context['list_subprojects'] = context['object'].get_list_subprojects()
 
         allocations_project = AdministrativeLevelAllocation.objects.filter(

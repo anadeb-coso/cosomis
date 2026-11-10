@@ -6073,3 +6073,23 @@ msgid "%(counter)s village"
 msgid_plural "%(counter)s villages"
 msgstr[0] "%(counter)s village"
 msgstr[1] "%(counter)s villages"
+
+#: cosomis/templates/profile.html
+msgid "My access token"
+msgstr "Mon jeton d'accès"
+
+#: cosomis/templates/profile.html
+msgid "View, copy or regenerate the token that gives access to the API."
+msgstr "Voir, copier ou régénérer le jeton qui donne accès à l'API."
+
+msgid "Stabilized facilitators"
+msgstr "Animateurs stabilisés"
+
+msgid "No stabilized facilitator"
+msgstr "Aucun animateur stabilisé"
+
+msgid "AC/FC (community facilitator)"
+msgstr "AC/FC (animateur communautaire)"
+
+msgid "FT (technical facilitator)"
+msgstr "FT (facilitateur technique)"
