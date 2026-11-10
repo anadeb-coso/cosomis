@@ -181,7 +181,7 @@
                     }
                 </style>
                 <li class="nav-item" id="nav-profile">
-                    <a href="{% url 'profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' or request.resolver_match.url_name == 'profile_change_password' %}active{% endif %}">
+                    <a href="{% url 'profile' %}" class="nav-link {% if not request.resolver_match.namespace %}{% if request.resolver_match.url_name == 'profile' or request.resolver_match.url_name == 'profile_change_password' %}active{% endif %}{% endif %}">
                         <i class="nav-icon fa fa-user"></i>
                         <p>{% translate "Profile" %}</p>
                     </a>
