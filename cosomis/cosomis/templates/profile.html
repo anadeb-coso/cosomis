@@ -54,6 +54,7 @@
         </div>
         <div class="pb-1">
             <button type="button" class="pf-btn" data-toggle="modal" data-target="#modal-password"><i class="fas fa-key"></i> {% translate "Change password" %}</button>
+            <a href="{% url 'usermanager:token' %}" class="pf-btn text-white text-decoration-none"><i class="fas fa-ticket-alt"></i> {% translate "My access token" %}</a>
         </div>
     </div>
 </div>
@@ -99,6 +100,11 @@
                 <span class="pf-badge pf-badge-strong" style="width:42px;height:42px;justify-content:center;border-radius:10px"><i class="fas fa-lock"></i></span>
                 <span><b class="d-block">{% translate "Change password" %}</b>
                     <small>{% translate "The new password applies to all your accounts: DCC, MGP and SIG." %}</small></span>
+            </a>
+            <a href="{% url 'usermanager:token' %}" class="d-flex align-items-center text-dark mt-3" style="gap:14px">
+                <span class="pf-badge pf-badge-strong" style="width:42px;height:42px;justify-content:center;border-radius:10px"><i class="fas fa-ticket-alt"></i></span>
+                <span><b class="d-block">{% translate "My access token" %}</b>
+                    <small>{% translate "View, copy or regenerate the token that gives access to the API." %}</small></span>
             </a>
         </div>
     </div>
