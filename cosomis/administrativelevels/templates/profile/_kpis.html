@@ -1,0 +1,13 @@
+{% load custom_tags %}
+<div class="lp-kpis">
+    {% for kpi in profile.kpis %}
+    <div class="lp-kpi">
+        <div class="lp-kpi-icon lp-tone-{{ kpi.tone }}"><i class="fas {{ kpi.icon }}"></i></div>
+        <div>
+            <div class="lp-kpi-label">{{ kpi.label }}</div>
+            <div class="lp-kpi-value">{% if kpi.money %}{{ kpi.value|separate_with_space|default:"0" }} <small>FCFA</small>{% else %}{{ kpi.value }}{% endif %}</div>
+            {% if kpi.hint %}<div class="lp-kpi-hint">{{ kpi.hint }}</div>{% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>

@@ -1,0 +1,26 @@
+{% load i18n %}
+{# Territory of a canton, commune, prefecture or region: sub-levels, villages' coverage and area status. #}
+<div class="lp-card">
+    <h2 class="lp-card-title"><i class="fas fa-map-marked-alt"></i>{% translate "Territory" %}</h2>
+    <div class="lp-card-body">
+        <ul class="lp-info">
+            {% for item in profile.level_counts %}
+            <li><span class="lp-key"><i class="fas {{ item.icon }}"></i>{{ item.label }}</span><span class="lp-value">{{ item.count }}</span></li>
+            {% endfor %}
+            <li><span class="lp-key"><i class="fas fa-users"></i>{% translate "CVD" %}</span><span class="lp-value">{{ profile.cvds_count }}</span></li>
+            <li><span class="lp-key"><i class="fas fa-object-group"></i>{% translate "Geographical units" %}</span><span class="lp-value">{{ profile.geographical_units }}</span></li>
+            <li><span class="lp-key"><i class="fas fa-crosshairs"></i>{% translate "Villages with GPS coordinates" %}</span>
+                <span class="lp-value">{{ profile.gps }} / {{ profile.villages_count }}</span></li>
+            <li><span class="lp-key"><i class="fas fa-border-style"></i>{% translate "Border villages" %}</span><span class="lp-value">{{ profile.frontalier }}</span></li>
+            <li><span class="lp-key"><i class="fas fa-tree"></i>{% translate "Rural villages" %}</span><span class="lp-value">{{ profile.rural }}</span></li>
+            <li><span class="lp-key"><i class="fas fa-hands-helping"></i>{% translate "Villages with a stabilized facilitator" %}</span>
+                <span class="lp-value">{{ profile.facilitators.covered }} / {{ profile.villages_count }}</span></li>
+        </ul>
+        {% if profile.area_statuses %}
+        <hr>
+        <div class="lp-section-title">{% translate "Area status of the villages" %}</div>
+        <div class="lp-stack">{% for s in profile.area_statuses %}<span class="bg-lp-{{ s.tone }}" style="width: {{ s.percent }}%" title="{{ s.label }} : {{ s.count }}"></span>{% endfor %}</div>
+        {% for s in profile.area_statuses %}<span class="lp-badge lp-{{ s.tone }} mr-1 mb-1">{{ s.label }} : {{ s.count }}</span>{% endfor %}
+        {% endif %}
+    </div>
+</div>

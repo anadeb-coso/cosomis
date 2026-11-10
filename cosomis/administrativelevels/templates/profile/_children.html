@@ -1,0 +1,40 @@
+{% load i18n custom_tags %}
+{# One line per direct sub-level of the locality, with its figures and a link to its profile. #}
+<div class="lp-card">
+    <h2 class="lp-card-title"><i class="fas fa-sitemap"></i>{{ profile.children_label }}<span class="lp-count">{{ profile.children|length }}</span></h2>
+    {% if profile.children %}
+    <div class="px-3 pt-3"><input type="search" class="form-control form-control-sm lp-search" placeholder="{% translate 'Search' %}…" data-lp-filter="#lp-children-table"></div>
+    <div class="lp-card-body lp-flush"><div class="lp-scroll">
+        <table class="lp-table" id="lp-children-table">
+            <thead><tr>
+                <th>{% translate "Name" %}</th>
+                {% if profile.children_type == 'Village' %}<th>{% translate "CVD" %}</th><th>{% translate "GPS" %}</th>{% else %}<th class="lp-num">{% translate "Villages" %}</th><th class="lp-num">{% translate "CVD" %}</th>{% endif %}
+                <th class="lp-num">{% translate "Subprojects" %}</th><th class="lp-num">{% translate "Structures" %}</th>
+                <th class="lp-num">{% translate "Estimated cost" %} (FCFA)</th><th class="lp-num">{% translate "Contract amount" %} (FCFA)</th>
+                <th class="lp-num" title="{% translate 'AC/FC (community facilitator)' %}">AC/FC</th><th class="lp-num" title="{% translate 'FT (technical facilitator)' %}">FT</th>
+                <th>{% translate "Area status" %}</th>
+            </tr></thead>
+            <tbody>
+            {% for child in profile.children %}
+                <tr>
+                    <td><a href="{{ child.url }}" class="font-weight-bold">{{ child.name }}</a></td>
+                    {% if profile.children_type == 'Village' %}
+                        <td>{% if child.cvd_id %}<a href="{% url 'administrativelevels:cvd_detail' child.cvd_id %}">{{ child.cvd_name|default:child.cvd_id }}</a>{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                        <td>{% if child.gps %}<i class="fas fa-check-circle text-success" title="{% translate 'GPS coordinates available' %}"></i>{% else %}<i class="far fa-circle text-muted" title="{% translate 'No GPS coordinates' %}"></i>{% endif %}</td>
+                    {% else %}
+                        <td class="lp-num">{{ child.villages }}</td><td class="lp-num">{{ child.cvds }}</td>
+                    {% endif %}
+                    <td class="lp-num">{{ child.kits }}</td><td class="lp-num">{{ child.structures }}</td>
+                    <td class="lp-num">{{ child.estimated|separate_with_space|default:"0" }}</td>
+                    <td class="lp-num">{{ child.contract|separate_with_space|default:"0" }}</td>
+                    <td class="lp-num">{{ child.ac }}</td><td class="lp-num">{{ child.ft }}</td>
+                    <td>{% if child.area_status %}<span class="lp-badge lp-{{ child.area_status.tone }}">{{ child.area_status.label }}</span>{% else %}<span class="text-muted">-</span>{% endif %}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div></div>
+    {% else %}
+    <div class="lp-card-body"><div class="lp-empty"><i class="fas fa-sitemap"></i>{% translate "No sub-level" %}</div></div>
+    {% endif %}
+</div>

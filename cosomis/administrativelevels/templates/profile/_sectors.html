@@ -1,0 +1,28 @@
+{% load i18n custom_tags %}
+{# Subprojects by sector and by site status (kits only, structures are counted with their kit). #}
+<div class="lp-card">
+    <h2 class="lp-card-title"><i class="fas fa-chart-bar"></i>{% translate "Subprojects by sector" %}<span class="lp-count">{{ profile.summary.kits }}</span></h2>
+    <div class="lp-card-body">
+        {% for sector in profile.summary.by_sector %}
+        <div class="lp-bar-row" title="{{ sector.cost|separate_with_space:'FCFA' }}">
+            <span class="text-truncate"><span class="lp-dot mr-1" style="background: {{ sector.color }}"></span>{{ sector.name }}</span>
+            <div class="lp-bar-track"><div class="lp-bar-fill" style="width: {{ sector.bar }}%; background: {{ sector.color }}"></div></div>
+            <span class="lp-num"><b>{{ sector.count }}</b> <small class="text-muted">({{ sector.percent }} %)</small></span>
+        </div>
+        {% empty %}
+        <div class="lp-empty"><i class="fas fa-chart-bar"></i>{% translate "No subproject for the projects of the page" %}</div>
+        {% endfor %}
+
+        {% if profile.summary.by_status %}
+        <hr>
+        <div class="lp-section-title">{% translate "Site status" %}</div>
+        {% for status in profile.summary.by_status %}
+        <div class="lp-bar-row">
+            <span class="text-truncate">{{ status.name }}</span>
+            <div class="lp-bar-track"><div class="lp-bar-fill" style="width: {{ status.percent }}%"></div></div>
+            <span class="lp-num"><b>{{ status.count }}</b> <small class="text-muted">({{ status.percent }} %)</small></span>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+</div>

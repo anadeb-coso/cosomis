@@ -1,373 +1,76 @@
-{% extends 'layouts/base.html' %}
+{% extends 'profile/base.html' %}
 {% load static i18n custom_tags %}
+{# Profile of a commune, prefecture or region. The financial and GRM blocks are loaded with AJAX when their tab is opened. #}
 
-{% block extracss %}
-{{ block.super }}
-<link rel="stylesheet" href="{% static 'plugins/datepicker/date-picker.css' %}" />
+{% block hero_actions %}
+    {% if user.is_superuser or user|has_group:"Admin" %}
+    <a class="lp-btn" href="{% url 'administrativelevels:update' object.pk %}"><i class="fas fa-pen"></i>{% translate "Edit" %}</a>
+    {% endif %}
 {% endblock %}
 
+{% block hero_meta %}
+    {% for item in profile.level_counts %}<span class="lp-badge"><i class="fas {{ item.icon }}"></i>{{ item.count }} {{ item.label|lower }}</span>{% endfor %}
+    <span class="lp-badge"><i class="fas fa-users"></i>{{ profile.cvds_count }} {% translate "CVD" %}</span>
+{% endblock %}
 
-{% block content %}
+{% block profile_content %}
 <div class="row">
-    <div class="col-7">
-        <div class="card">
-            <img class="card-img rounded" src="{% static 'images/village-image.jpg' %}" width="733" height="300"
-                alt="Card image">
-
-            <div class="card-img-overlay d-flex flex-column">
-                <div class="mt-auto">
-                    <div class="row">
-                        <div class="col-6">
-                            <div class="card rounded-3" style="background-color: wheat; opacity: 75% !important;">
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ object.name }}</h5>
-                                    <p class="card-text">{{ object.parent.parent.parent.parent.name|title }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-        </div>
-    </div>
-    <div class="col-5">
-        <div class="card">
-            <div class="card-body">
-
-                <div class="card">
-                    <div class="card-body">
-                        <div class="clearfix">
-                            <div class="float-left">
-                                <h5 class="font-weight-bold">{% translate 'Facilitator' %}</h5>
-                            </div>
-                            <div class="float-right">
-                                <a href="#" class="font-weight-bold">{% translate 'View' %}</a>
-                            </div>
-                        </div>
-                        <div class="card bg-light" style="height: 30px;">
-                            <div class="card-body">
-                                <h5 class="font-weight-bold">DJOLOUGUE Kanfiaguin</h5>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-body">
-                        <div class="clearfix">
-                            <div>
-                                <h5 class="font-weight-bold">{% translate 'Last Updated' %}</h5>
-                            </div>
-                        </div>
-                        <div class="card bg-light" style="height: 30px;">
-                            <div class="card-body">
-                                <h5 class="font-weight-bold">20/08/2022</h5>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
+    <div class="col-lg-4">{% include 'profile/_territory.html' %}</div>
+    <div class="col-lg-8">{% include 'profile/_sectors.html' %}</div>
 </div>
 
-<div class="row">
-    <div class="col-4">
-        <div class="card">
-            <div class="card-header">
-                <div class="clearfix">
-                    <div class="float-left">
-                        <h5 class="font-weight-bold">{% translate 'Financial' %}</h5>
-                    </div>
-                    <div class="float-right">
-                        <a href="#" class="font-weight-bold">{% translate 'Add Movement' %} 
-                        {% if user.is_superuser or user|has_group:"Admin" %}
-                        <i
-                                class="fas fa-plus"></i></a>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="card bg-light" style="height: 30px;">
-                    <div class="card-body">
-                        <h5 class="font-weight-bold">
-                            <div class="clearfix">
-                                <div class="float-left">
-                                    <h5 class="font-weight-bold">{% translate 'Remaining' %} </h5>
-                                </div>
-                                <div class="float-right"><a href="#" class="font-weight-bold text-primary">6000 USD</a>
-                                </div>
-                            </div>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="clearfix">
-                    <div class="float-left">
-                        <h6 class="font-weight-bold text-danger">- 550 USD</h6>
-                    </div>
-                    <div class="float-right">
-                        <span href="#">{% translate 'Lorem ipsum' %} </span>
-                    </div>
-                </div>
-                <hr>
-                <div class="clearfix">
-                    <div class="float-left">
-                        <h6 class="font-weight-bold text-danger">- 550 USD</h6>
-                    </div>
-                    <div class="float-right">
-                        <span href="#">{% translate 'Lorem ipsum' %} </span>
-                    </div>
-                </div>
-                <hr>
-                <div class="clearfix">
-                    <div class="float-left">
-                        <h6 class="font-weight-bold text-danger">- 550 USD</h6>
-                    </div>
-                    <div class="float-right">
-                        <span href="#">{% translate 'Lorem ipsum' %} </span>
-                    </div>
-                </div>
-                <hr>
-                <div class="clearfix">
-                    <div class="float-left">
-                        <h6 class="font-weight-bold text-danger">- 550 USD</h6>
-                    </div>
-                    <div class="float-right">
-                        <span href="#">{% translate 'Lorem ipsum' %} </span>
-                    </div>
-                </div>
-            </div>
-            <div class="card-footer d-flex justify-content-center">
-                <h6><a href="#" class="font-weight-bold text-primary">{% translate 'View All Movements' %}</a></h6>
-            </div>
-        </div>
-    </div>
-    <div class="col-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="clearfix">
-                    <div class="float-left">
-                        <h5 class="font-weight-bold">{% translate 'Activities' %}</h5>
-                    </div>
-                    <div class="float-right">
-                        <div class="">
-                            <!-- <input class="form-check-input" type="checkbox" id="flexSwitchCheckChecked" checked> -->
-                            <label class="form-check-label font-weight-bold" for="flexSwitchCheckChecked">{% translate 'Calendar' %}</label>
-                        </div>
-                    </div>
-                </div>
+{% include 'profile/_children.html' %}
 
-                <!-- white_card card_height_100 mb_30 
-                date_picker_wrapper 
-            default-datepicker-->
-                <div class="">
-                    <div class="">
-                        <div class="">
-                            <div class="datepicker-here" data-language='en'></div>
-                        </div>
-                    </div>
-                </div>
+{% include 'components/stabilized_facilitators.html' with show_villages=True %}
 
-            </div>
-        </div>
-    </div>
-    <div class="col-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="clearfix">
-                    <div>
-                        {% if object.geographical_unit or object.cvd %}
-                        <div>
-                            {% if object.cvd %}
-                            <h6 class="font-weight-bold" style="font-size: 12px;">CVD : {{ object.cvd.attributed_number_in_canton }} - {{ object.cvd.get_name }}</h6>
-                            {% endif %}
-                            {% if object.geographical_unit %}
-                            <h6 class="font-weight-bold" style="font-size: 12px;">Unit : {{ object.geographical_unit.attributed_number_in_canton }} - {{ object.geographical_unit.get_name }}</h6>
-                            {% endif %}
-                        </div>
-                        <hr />
-                        {% endif %}
-                        <h5 class="font-weight-bold">{% translate 'Subprojects' %} 
-                            {% if user.is_superuser or user|has_group:"Admin" %}
-                            &nbsp; &nbsp;  <a href="{% url 'subprojects:create' %}" class="font-weight-bold"> <i
-                                class="fas fa-plus"></i></a>
-                            {% endif %}
+{% include 'profile/_subprojects.html' %}
 
-                            {% if object.get_list_subprojects %}
-                                &nbsp; &nbsp;  <span>
-                                    {% with object.get_list_subprojects as subprojects %}
-                                        {% include "components/subprojects_modal.html" %}
-                                    {% endwith %}
-                                </span>
-                            {% endif %}
-                        </h5>
-                    </div>
-                </div>
-
-                {% if object.get_list_subprojects %}
-                    {% for subproject in object.get_list_subprojects %}
-                    <div class="card" style="height: 50px;">
-                        <div class="card-body">
-                            <div class="clearfix">
-                                <div class="float-left">
-                                    <p class=""><i class="fas fa-cog"></i> 
-                                        {% if subproject.full_title_of_approved_subproject|length > 30 %}
-                                            {{ subproject.full_title_of_approved_subproject|slice:":30" }}...
-                                        {% else %}
-                                            {{ subproject.full_title_of_approved_subproject }}
-                                        {% endif %}
-                                    </p>
-                                </div>
-                                <div class="float-right">
-                                    <a href="#" class="font-weight-bold">{% translate 'View' %}</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="card-body">
-                        <div class="font-weight-bold d-flex justify-content-center text-danger" >
-                            <p>{% translate 'Empty!' %}</p>
-                        </div>
-                    </div>
-                {% endif %}
-                {% comment %} <div class="card" style="height: 50px;">
-                    <div class="card-body">
-                        <div class="clearfix">
-                            <div class="float-left">
-                                <p class=""><i class="fas fa-cog"></i> Rural Marked Expansion</p>
-                            </div>
-                            <div class="float-right">
-                                <a href="#" class="font-weight-bold">{% translate 'View' %}</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card" style="height: 50px;">
-                    <div class="card-body">
-                        <div class="clearfix">
-                            <div class="float-left">
-                                <p class=""><i class="fas fa-cog"></i> School Rehabilitation</p>
-                            </div>
-                            <div class="float-right">
-                                <a href="#" class="font-weight-bold">{% translate 'View' %}</a>
-                            </div>
-                        </div>
-                    </div>
-                </div> {% endcomment %}
-
-            </div>
-        </div>
-    </div>
-</div>
-
-<div style="height: 15px;"></div>
-
-<div class="row">
-    <div class="col-4">
-        <h4 class="font-weight-bold d-flex justify-content-center" style="margin-bottom: 25px;">{% translate 'Village Mapping' %}</h4>
-        <div class="card">
-            <div class="card-body" style="height: 300px;">
-
-            </div>
-        </div>
-    </div>
-    <div class="col-4">
-        <h4 class="font-weight-bold d-flex justify-content-center" style="margin-bottom: 25px;">{% translate 'Village Priorities' %}
-            {% if user.is_superuser or user|has_group:"Admin" %}
-            &nbsp; <a href="{% url 'administrativelevels:priorities_priorities' object.id %}" class="font-weight-bold"> <i
-                class="fas fa-plus"></i></a>
-            {% else %}
-            &nbsp; <a href="{% url 'administrativelevels:priorities_priorities' object.id %}" class="font-weight-bold"> <i
-                class="fas fa-list"></i></a>
-            {% endif %}
-        </h4>
-        <div class="card">
-            {% if object.get_list_priorities %}
-            <div class="card-body">
-                {% for priority in object.get_list_priorities|slice:":5" %}<!-- limit to 5 -->
-                <div class="card">
-                    <div class="card-body">
-                        <div class="clearfix">
-                            <div class="float-left">
-                                {% if priority.component %}
-                                    {% with priority.name|add:" ("|add:priority.component.name|add:")" as namepriority_with_component %}
-                                    <p class="" title="{{ namepriority_with_component }}">
-                                        <i class="fas fa-project-diagram"></i> &nbsp; 
-                                        {% if namepriority_with_component|length > 30 %}
-                                            {{ namepriority_with_component|slice:":30" }}...
-                                        {% else %}
-                                            {{ namepriority_with_component }}
-                                        {% endif %}
-                                    </p>
-                                    {% endwith %}
-                                {% else %}
-                                <p class="" title="{{ priority.name }}">
-                                    <i class="fas fa-project-diagram"></i> &nbsp; 
-                                    {% if priority.name|length > 30 %}
-                                        {{ priority.name|slice:":30" }}...
-                                    {% else %}
-                                        {{ priority.name }}
-                                    {% endif %}
-                                </p>
-                                {% endif %}
-                            </div>
-                            <div class="float-right">
-                                <a href="#" class="font-weight-bold">{% translate 'View' %}</a>
-                            </div>
+<div class="lp-card">
+    <ul class="nav lp-tabs" role="tablist">
+        <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#financial_informations"><i class="fas fa-coins"></i>{% translate "Financial informations" %}</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#grm"><i class="fas fa-comments"></i>{% translate "GRM" %}</a></li>
+    </ul>
+    <div class="tab-content lp-tab-content">
+        <div id="financial_informations" class="tab-pane active">
+            <div id="accordion">
+                {% for block in financial_blocks %}
+                <div class="lp-card">
+                    <h3 class="lp-card-title"><button class="btn btn-link p-0 font-weight-bold text-left {% if not forloop.first %}collapsed{% endif %}" data-toggle="collapse" data-target="#collapse-{{ block.id }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}">{{ block.title }}</button></h3>
+                    <div id="collapse-{{ block.id }}" class="collapse {% if forloop.first %}show{% endif %}" data-parent="#accordion">
+                        <div class="lp-card-body position-relative lp-lazy" data-lp-url="{{ block.url }}" data-lp-title="{{ block.table_title }}">
+                            <div class="lp-loading"><i class="fas fa-sync-alt fa-spin mr-1"></i>{% translate "Loading" %}…</div>
                         </div>
                     </div>
                 </div>
                 {% endfor %}
             </div>
-            {% comment %} {% if object.get_list_priorities|length > 5 %} {% endcomment %}
-            <div class="card-footer d-flex justify-content-center">
-                {% with object.get_list_priorities as priorities %}
-                    {% include "components/priorities_modal.html" %}
-                {% endwith %}
-            </div>
-            {% comment %} {% endif %} {% endcomment %}
-            {% else %}
-            <div class="card-body">
-                <div class="font-weight-bold d-flex justify-content-center text-danger" >
-                    <p>{% translate 'Empty!' %}</p>
-                </div>
-            </div>
-            {% endif %}
         </div>
-    </div>
-    <div class="col-4">
-        <h4 class="font-weight-bold d-flex justify-content-center" style="margin-bottom: 25px;">{% translate 'Village Development Plan' %}</h4>
-        <div class="card">
-            <div class="card-body" style="height: 300px;">
-
+        <div id="grm" class="tab-pane fade">
+            <div class="position-relative lp-lazy">
+                <div id="grm-body"></div>
+                <div class="overlay" id="spin-grm"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
             </div>
         </div>
     </div>
 </div>
-
-
-
 {% endblock %}
 
-
-{% block javascript %}
-{{ block.super }}
-
-
-<script src="{% static 'plugins/datepicker/datepicker.js' %}"></script>
-<script src="{% static 'plugins/datepicker/datepicker.en.js' %}"></script>
-<script src="{% static 'plugins/datepicker/datepicker.custom.js' %}"></script>
-
+{% block profile_js %}
 <script type="text/javascript">
-    $(document).ready(function () {
-        {% get_current_language as lang %}
-
-
+    $(function () {
+        var levelData = {'administrative_level_id[]': [{{ object.pk }}], administrative_level_type: "{{ object.type }}"};
+        // A financial table is loaded the first time its panel is opened (they are large at region level).
+        function loadPanel($body) {
+            if ($body.data('lp-loaded')) { return; }
+            $body.data('lp-loaded', true);
+            lpLoad($body.data('lp-url'), $body, null, $.extend({table_title: $body.data('lp-title')}, levelData));
+        }
+        lpOnTab('financial_informations', function () { loadPanel($('#accordion .collapse.show [data-lp-url]')); });
+        $('#accordion .collapse').on('show.bs.collapse', function () { loadPanel($(this).find('[data-lp-url]')); });
+        $('#spin-grm').hide();
+        lpOnTab('grm', function () {
+            lpLoad("{% url 'administrativelevels:grm:review_issues' object.pk %}", '#grm-body', '#spin-grm');
+        });
     });
 </script>
 {% endblock %}

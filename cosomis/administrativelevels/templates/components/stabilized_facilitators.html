@@ -1,24 +1,43 @@
 {% load i18n %}
-{% comment %} Current stabilized AC/FC and FT of a locality. Expects `facilitators` = {'community': [...], 'technical': [...]} and `show_villages` (CVD). {% endcomment %}
-<div class="card">
-    <div class="card-header">
-        <h5 class="font-weight-bold mb-0">{% translate "Stabilized facilitators" %}</h5>
-    </div>
-    <div class="card-body">
+{% comment %}
+Current stabilized AC/FC and FT of a locality (read live from CDD).
+Expects `facilitators_groups` = [(label, facilitators), ...]; `show_villages` lists, for each person, the villages of the locality they are stabilized in.
+Up to 8 people per group are shown as cards, more as a table.
+{% endcomment %}
+<div class="lp-card">
+    <h2 class="lp-card-title"><i class="fas fa-hands-helping"></i>{% translate "Stabilized facilitators" %}
+        <span class="lp-title-extra text-muted font-weight-normal"><i class="fas fa-sync-alt mr-1"></i>{% translate "Live data from the DCC platform" %}</span></h2>
+    <div class="lp-card-body">
         <div class="row">
             {% for label, items in facilitators_groups %}
-            <div class="col-md-6">
-                <h6 class="font-weight-bold text-muted">{{ label }}</h6>
-                {% for f in items %}
-                <div class="border rounded p-2 mb-2 bg-light">
-                    <a href="{% url 'animateurs:profile' f.pk %}" class="font-weight-bold">{{ f.name|default:f.username }}</a>
-                    {% if f.phone %}<br/><i class="fas fa-phone-alt"></i> {{ f.phone }}{% endif %}
-                    {% if f.email %}<br/><i class="fas fa-envelope"></i> {{ f.email }}{% endif %}
-                    {% if show_villages and f.stabilized_villages %}<br/><small><i class="fas fa-map-marker-alt"></i> {{ f.stabilized_villages|join:", " }}</small>{% endif %}
+            <div class="col-lg-6 mb-2">
+                <div class="lp-group-title"><span class="lp-dot" style="background: {% if forloop.first %}#1f6fd1{% else %}#6f2ba3{% endif %}"></span>{{ label }} <span class="lp-badge lp-gray">{{ items|length }}</span></div>
+                {% if items|length > 8 %}
+                <div class="lp-scroll" style="max-height: 340px">
+                    <table class="lp-table">
+                        <thead><tr><th>{% translate "Name" %}</th><th>{% translate "Phone" %}</th>{% if show_villages %}<th class="lp-num">{% translate "Villages" %}</th>{% endif %}</tr></thead>
+                        <tbody>
+                        {% for f in items %}
+                            <tr><td><a href="{% url 'animateurs:profile' f.pk %}">{{ f.name|default:f.username }}</a></td>
+                                <td>{{ f.phone|default:"-" }}</td>
+                                {% if show_villages %}<td class="lp-num" title="{{ f.stabilized_villages|join:', ' }}">{{ f.stabilized_villages|length }}</td>{% endif %}</tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                {% empty %}
-                <p class="text-muted mb-2">{% translate "No stabilized facilitator" %}</p>
-                {% endfor %}
+                {% else %}
+                <div class="lp-people">
+                    {% for f in items %}
+                    <div class="lp-person {% if not forloop.parentloop.first %}lp-ft{% endif %}">
+                        <a href="{% url 'animateurs:profile' f.pk %}" class="lp-person-name">{{ f.name|default:f.username }}</a>
+                        {% if f.phone %}<div class="lp-person-line"><i class="fas fa-phone-alt"></i> <a href="tel:{{ f.phone }}" class="text-reset">{{ f.phone }}</a></div>{% endif %}
+                        {% if f.email %}<div class="lp-person-line text-truncate"><i class="fas fa-envelope"></i> <a href="mailto:{{ f.email }}" class="text-reset">{{ f.email }}</a></div>{% endif %}
+                        {% if show_villages and f.stabilized_villages %}<div class="lp-person-line"><i class="fas fa-map-marker-alt"></i> {{ f.stabilized_villages|join:", " }}</div>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if not items %}<div class="lp-empty"><i class="fas fa-user-slash"></i>{% translate "No stabilized facilitator" %}</div>{% endif %}
+                {% endif %}
             </div>
             {% endfor %}
         </div>

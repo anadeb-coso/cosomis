@@ -1,360 +1,73 @@
-{% extends 'layouts/base.html' %}
+{% extends 'profile/base.html' %}
 {% load static i18n custom_tags %}
+{# Geographical unit profile: its villages, CVDs, facilitators and subprojects. #}
 
-{% block extracss %}
-{{ block.super }}
-<link rel="stylesheet" href="{% static 'plugins/datepicker/date-picker.css' %}" />
+{% block hero_name %}{{ object.attributed_number_in_canton }} - {{ profile.name }}{% endblock %}
+
+{% block hero_actions %}
+    {% if user.is_superuser or user|has_group:'Admin' %}
+    <a class="lp-btn" href="{% url 'administrativelevels:geographical_unit_update' object.pk %}"><i class="fas fa-pen"></i>{% translate "Edit" %}</a>
+    {% endif %}
+    <a class="lp-btn" href="{% url 'administrativelevels:geographical_units_list' %}"><i class="fas fa-list"></i>{% translate "Geographical units" %}</a>
 {% endblock %}
 
+{% block hero_meta %}
+    <span class="lp-badge lp-gray"><i class="fas fa-barcode"></i>{{ object.unique_code }}</span>
+    <span class="lp-badge"><i class="fas fa-home"></i>{{ profile.villages|length }} {% translate "villages" %}</span>
+    <span class="lp-badge"><i class="fas fa-users"></i>{{ profile.cvds|length }} {% translate "CVD" %}</span>
+{% endblock %}
 
-{% block content %}
+{% block profile_content %}
+{% if object.description %}
+<div class="lp-card"><div class="lp-card-body"><i class="fas fa-info-circle text-primary mr-2"></i>{{ object.description|linebreaksbr }}</div></div>
+{% endif %}
+
 <div class="row">
-    <div class="col-7">
-        <div class="card">
-            <img class="card-img rounded" src="{% static 'images/village-image.jpg' %}" width="733" height="300"
-                alt="Card image">
-
-            <div class="card-img-overlay d-flex flex-column">
-                <div class="mt-auto">
-                    <div class="row">
-                        <div class="col-6">
-                            <div class="card rounded-3" style="background-color: wheat; opacity: 75% !important;">
-                                <div class="card-body">
-                                    <h5 class="card-title"><a href="{% if user.is_superuser or user|has_group:'Admin' %}{% url 'administrativelevels:geographical_unit_update' geographicalunit.pk %}{% else %}#!{% endif %}" style="color: black;">{{ object.attributed_number_in_canton}} - {{ object.get_name }}</a></h5>
-                                    <p class="card-text">{{ object.canton.parent.parent.parent.name|title }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
+    <div class="col-lg-6">
+        <div class="lp-card">
+            <h2 class="lp-card-title"><i class="fas fa-users"></i>{% translate "CVD" %}<span class="lp-count">{{ profile.cvds|length }}</span></h2>
+            {% if profile.cvds %}
+            <div class="lp-card-body lp-flush"><div class="lp-scroll" style="max-height: 360px">
+                <table class="lp-table">
+                    <thead><tr><th>N°</th><th>{% translate "CVD" %}</th><th>{% translate "Headquarters village" %}</th><th class="lp-num">{% translate "Villages" %}</th></tr></thead>
+                    <tbody>
+                    {% for item in profile.cvds %}
+                        <tr><td>{{ item.object.attributed_number_in_canton|default:"-" }}</td>
+                            <td><a href="{% url 'administrativelevels:cvd_detail' item.object.pk %}" class="font-weight-bold">{{ item.object.get_name }}</a></td>
+                            <td>{% if item.object.headquarters_village %}<a href="{% url 'administrativelevels:village_detail' item.object.headquarters_village.pk %}">{{ item.object.headquarters_village.name }}</a>{% else %}-{% endif %}</td>
+                            <td class="lp-num">{{ item.villages }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div></div>
+            {% else %}<div class="lp-card-body"><div class="lp-empty"><i class="fas fa-users"></i>{% translate "No CVD" %}</div></div>{% endif %}
         </div>
     </div>
-    <div class="col-5">
-        <div class="card">
-            <div class="card-body">
-
-                <div class="card">
-                    <div class="card-body">
-                        <div class="clearfix">
-                            <div class="float-left">
-                                <h5 class="font-weight-bold">{% translate 'Facilitator' %}</h5>
-                            </div>
-                            <div class="float-right">
-                                <a href="#" class="font-weight-bold">{% translate 'View' %}</a>
-                            </div>
-                        </div>
-                        <div class="card bg-light" style="height: 30px;">
-                            <div class="card-body">
-                                <h5 class="font-weight-bold">DJOLOUGUE Kanfiaguin</h5>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-body">
-                        <div class="clearfix">
-                            <div>
-                                <h5 class="font-weight-bold">{% translate 'Last Updated' %}</h5>
-                            </div>
-                        </div>
-                        <div class="card bg-light" style="height: 30px;">
-                            <div class="card-body">
-                                <h5 class="font-weight-bold">20/08/2022</h5>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
+    <div class="col-lg-6">
+        <div class="lp-card">
+            <h2 class="lp-card-title"><i class="fas fa-home"></i>{% translate "Villages" %}<span class="lp-count">{{ profile.villages|length }}</span></h2>
+            {% if profile.villages %}
+            <div class="lp-card-body lp-flush"><div class="lp-scroll" style="max-height: 360px">
+                <table class="lp-table">
+                    <thead><tr><th>{% translate "Village" %}</th><th>{% translate "CVD" %}</th><th>{% translate "GPS" %}</th></tr></thead>
+                    <tbody>
+                    {% for village in profile.villages %}
+                        <tr><td><a href="{% url 'administrativelevels:village_detail' village.pk %}" class="font-weight-bold">{{ village.name }}</a></td>
+                            <td>{% if village.cvd %}<a href="{% url 'administrativelevels:cvd_detail' village.cvd.pk %}">{{ village.cvd.get_name }}</a>{% else %}-{% endif %}</td>
+                            <td>{% if village.latitude and village.longitude %}<i class="fas fa-check-circle text-success" title="{{ village.latitude }}, {{ village.longitude }}"></i>{% else %}<i class="far fa-circle text-muted"></i>{% endif %}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div></div>
+            {% else %}<div class="lp-card-body"><div class="lp-empty"><i class="fas fa-home"></i>{% translate "No village" %}</div></div>{% endif %}
         </div>
     </div>
 </div>
 
+{% include 'components/stabilized_facilitators.html' with show_villages=True %}
+
 <div class="row">
-    {% comment %} <div class="col-4">
-        <div class="card">
-            <div class="card-header">
-                <div class="clearfix">
-                    <div class="float-left">
-                        <h5 class="font-weight-bold">{% translate 'Financial' %}</h5>
-                    </div>
-                    <div class="float-right">
-                        <a href="#" class="font-weight-bold">{% translate 'Add Movement' %} <i
-                                class="fas fa-plus"></i></a>
-                    </div>
-                </div>
-                <div class="card bg-light" style="height: 30px;">
-                    <div class="card-body">
-                        <div class="font-weight-bold">
-                             <div class="clearfix">
-                                <div class="float-left">
-                                    <h5 class="font-weight-bold">{% translate 'Remaining' %} </h5>
-                                </div>
-                                <div class="float-right"><a href="#" class="font-weight-bold text-primary">6000 USD</a></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body">
-
-                 <div class="clearfix">
-                    <div class="float-left">
-                        <h6 class="font-weight-bold text-danger">- 550 USD</h6>
-                    </div>
-                    <div class="float-right">
-                        <span href="#">{% translate 'Lorem ipsum' %} </span>
-                    </div>
-                </div>
-                <hr>
-
-            </div>
-            <div class="card-footer d-flex justify-content-center">
-                <h6><a href="#" class="font-weight-bold text-primary">{% translate 'View All Movements' %}</a></h6>
-            </div>
-        </div>
-    </div> {% endcomment %}
-    {% comment %} <div class="col-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="clearfix">
-                    <div class="float-left">
-                        <h5 class="font-weight-bold">{% translate 'Activities' %}</h5>
-                    </div>
-                    <div class="float-right">
-                        <div class="">
-                            <label class="form-check-label font-weight-bold" for="flexSwitchCheckChecked">{% translate 'Calendar' %}</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="">
-                    <div class="">
-                        <div class="">
-                            <div class="datepicker-here" data-language='en'></div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div> {% endcomment %}
-    
-    <div class="col-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="clearfix">
-                    <div class="">
-                        <h5 class="font-weight-bold">{% translate 'CVD' %}</h5>
-                    </div>
-                </div>
-
-                <div class="card-body">
-                    {% for cvd in object.get_cvds %}
-                    <div class="clearfix">
-                        <div class="float-left">
-                            <h6 class="font-weight-bold text-danger">{{ cvd.attributed_number_in_canton }} - {{ cvd.get_name }}</h6>
-                        </div>
-                        <div class="float-right">
-                            <a target="_blank" href="{% url 'administrativelevels:cvd_detail' cvd.pk %}">{% translate 'Detail' %} </a>
-                        </div>
-                    </div>
-                    <hr>
-                    {% empty %}
-                        <div class="font-weight-bold d-flex justify-content-center text-danger" >
-                            <p>{% translate 'Empty!' %}</p>
-                        </div>
-                    {% endfor %}
-                </div>
-
-            </div>
-        </div>
-    </div>
-    <div class="col-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="clearfix">
-                    <div class="">
-                        <h5 class="font-weight-bold">{% translate 'Villages' %}</h5>
-                    </div>
-                </div>
-
-                <div class="card-body">
-                    {% for village in object.get_villages %}
-                    <div class="clearfix">
-                        <div class="float-left">
-                            <h6 class="font-weight-bold text-danger">{{ village.name }} {% if village.cvd %}<span style="font-size: 9px;">({{ village.cvd.attributed_number_in_canton }} - {{ village.cvd.get_name }})</span>{% endif %}</h6>
-                        </div>
-                        <div class="float-right">
-                            <a target="_blank" href="{% url 'administrativelevels:village_detail' village.pk %}">{% translate 'Detail' %} </a>
-                        </div>
-                    </div>
-                    <hr>
-                    {% empty %}
-                        <div class="font-weight-bold d-flex justify-content-center text-danger" >
-                            <p>{% translate 'Empty!' %}</p>
-                        </div>
-                    {% endfor %}
-                </div>
-
-            </div>
-        </div>
-    </div>
-    {% comment %} <div class="col-4">
-        <div class="card">
-            <div class="card-body">
-                <div class="clearfix">
-                    <div>
-                        <h5 class="font-weight-bold">{% translate 'Subprojects' %} 
-                         &nbsp; &nbsp;  <a href="{% url 'subprojects:create' %}" class="font-weight-bold"> <i
-                            class="fas fa-plus"></i></a>
-                        {% if object.get_list_subprojects %}
-                             &nbsp; &nbsp;  <span>
-                                {% with object.get_list_subprojects as subprojects %}
-                                    {% include "components/subprojects_modal.html" %}
-                                {% endwith %}
-                            </span>
-                        {% endif %}
-                        </h5>
-                    </div>
-                </div>
-
-                {% if object.get_list_subprojects %}
-                    {% for subproject in object.get_list_subprojects %}
-                    <div class="card" style="height: 50px;">
-                        <div class="card-body">
-                            <div class="clearfix">
-                                <div class="float-left">
-                                    <p class=""><i class="fas fa-cog"></i> 
-                                        {% if subproject.full_title_of_approved_subproject|length > 40 %}
-                                            {{ subproject.full_title_of_approved_subproject|slice:":40" }}...
-                                        {% else %}
-                                            {{ subproject.full_title_of_approved_subproject }}
-                                        {% endif %}
-                                    </p>
-                                </div>
-                                <div class="float-right">
-                                    <a href="#" class="font-weight-bold">{% translate 'View' %}</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="card-body">
-                        <div class="font-weight-bold d-flex justify-content-center text-danger" >
-                            <p>{% translate 'Empty!' %}</p>
-                        </div>
-                    </div>
-                {% endif %}
-
-            </div>
-        </div>
-    </div> {% endcomment %}
+    <div class="col-lg-5">{% include 'profile/_sectors.html' %}</div>
+    <div class="col-lg-7">{% include 'profile/_subprojects.html' %}</div>
 </div>
-
-{% comment %} 
-<div style="height: 15px;"></div>
-
-<div class="row">
-    <div class="col-4">
-        <h4 class="font-weight-bold d-flex justify-content-center" style="margin-bottom: 25px;">{% translate 'Village Mapping' %}</h4>
-        <div class="card">
-            <div class="card-body" style="height: 300px;">
-
-            </div>
-        </div>
-    </div>
-    <div class="col-4">
-        <h4 class="font-weight-bold d-flex justify-content-center" style="margin-bottom: 25px;">{% translate 'Village Priorities' %}
-            &nbsp; <a href="{% url 'administrativelevels:priorities_priorities' object.id %}" class="font-weight-bold"> <i
-                class="fas fa-plus"></i></a>
-        </h4>
-        <div class="card">
-            {% if object.get_list_priorities %}
-            <div class="card-body">
-                {% for priority in object.get_list_priorities|slice:":5" %}
-                <div class="card">
-                    <div class="card-body">
-                        <div class="clearfix">
-                            <div class="float-left">
-                                {% if priority.component %}
-                                    {% with priority.name|add:" ("|add:priority.component.name|add:")" as namepriority_with_component %}
-                                    <p class="" title="{{ namepriority_with_component }}">
-                                        <i class="fas fa-project-diagram"></i> &nbsp; 
-                                        {% if namepriority_with_component|length > 40 %}
-                                            {{ namepriority_with_component|slice:":40" }}...
-                                        {% else %}
-                                            {{ namepriority_with_component }}
-                                        {% endif %}
-                                    </p>
-                                    {% endwith %}
-                                {% else %}
-                                <p class="" title="{{ priority.name }}">
-                                    <i class="fas fa-project-diagram"></i> &nbsp; 
-                                    {% if priority.name|length > 40 %}
-                                        {{ priority.name|slice:":40" }}...
-                                    {% else %}
-                                        {{ priority.name }}
-                                    {% endif %}
-                                </p>
-                                {% endif %}
-                            </div>
-                            <div class="float-right">
-                                <a href="#" class="font-weight-bold">{% translate 'View' %}</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            
-            <div class="card-footer d-flex justify-content-center">
-                {% with object.get_list_priorities as priorities %}
-                    {% include "components/priorities_modal.html" %}
-                {% endwith %}
-            </div>
-            {% else %}
-            <div class="card-body">
-                <div class="font-weight-bold d-flex justify-content-center text-danger" >
-                    <p>{% translate 'Empty!' %}</p>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    <div class="col-4">
-        <h4 class="font-weight-bold d-flex justify-content-center" style="margin-bottom: 25px;">{% translate 'Village Development Plan' %}</h4>
-        <div class="card">
-            <div class="card-body" style="height: 300px;">
-
-            </div>
-        </div>
-    </div>
-</div> {% endcomment %}
-
-
-
-{% endblock %}
-
-
-{% block javascript %}
-{{ block.super }}
-
-
-<script src="{% static 'plugins/datepicker/datepicker.js' %}"></script>
-<script src="{% static 'plugins/datepicker/datepicker.en.js' %}"></script>
-<script src="{% static 'plugins/datepicker/datepicker.custom.js' %}"></script>
-
-<script type="text/javascript">
-    $(document).ready(function () {
-        {% get_current_language as lang %}
-
-
-    });
-</script>
 {% endblock %}

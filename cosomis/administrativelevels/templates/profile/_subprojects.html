@@ -1,0 +1,36 @@
+{% load i18n custom_tags %}
+{# Subprojects (kits) of the locality for the projects of the page, with a link to each one. #}
+<div class="lp-card">
+    <h2 class="lp-card-title"><i class="fas fa-project-diagram"></i>{% translate "Subprojects" %}<span class="lp-count">{{ profile.subprojects.total }}</span></h2>
+    {% if profile.subprojects.rows %}
+    <div class="px-3 pt-3 d-flex flex-wrap align-items-center" style="gap: 10px">
+        <input type="search" class="form-control form-control-sm lp-search" placeholder="{% translate 'Search' %}…" data-lp-filter="#lp-subprojects-table">
+        {% if profile.subprojects.limited %}<small class="text-muted">{% blocktranslate with shown=profile.subprojects.rows|length total=profile.subprojects.total %}The first {{ shown }} of {{ total }} subprojects are listed.{% endblocktranslate %}</small>{% endif %}
+    </div>
+    <div class="lp-card-body lp-flush"><div class="lp-scroll">
+        <table class="lp-table" id="lp-subprojects-table">
+            <thead><tr>
+                <th>{% translate "Subproject" %}</th><th>{% translate "Sector" %}</th><th>{% translate "Location" %}</th>
+                <th>{% translate "Site status" %}</th><th class="lp-num">{% translate "Progress" %}</th>
+                <th class="lp-num">{% translate "Estimated cost" %} (FCFA)</th><th class="lp-num">{% translate "Contract amount" %} (FCFA)</th>
+            </tr></thead>
+            <tbody>
+            {% for sp in profile.subprojects.rows %}
+                <tr>
+                    <td><a href="{% url 'subprojects:detail' sp.id %}" title="{{ sp.full_title_of_approved_subproject }}">{{ sp.full_title_of_approved_subproject|truncatechars:70 }}</a>
+                        {% if sp.type_of_subproject %}<div class="small text-muted">{{ sp.type_of_subproject }}</div>{% endif %}</td>
+                    <td>{{ sp.subproject_sector|default:"-" }}</td>
+                    <td>{{ sp.location_subproject_realized__name|default:"-" }}</td>
+                    <td>{% if sp.current_status_of_the_site %}<span class="lp-badge lp-gray">{{ sp.current_status_of_the_site }}</span>{% else %}-{% endif %}</td>
+                    <td class="lp-num">{% if sp.current_level_of_physical_realization_of_the_work_percent is not None %}{{ sp.current_level_of_physical_realization_of_the_work_percent|floatformat:0 }} %{% else %}-{% endif %}</td>
+                    <td class="lp-num">{{ sp.estimated_cost|separate_with_space|default:"-" }}</td>
+                    <td class="lp-num">{{ sp.contract_amount_work_companies|separate_with_space|default:"-" }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div></div>
+    {% else %}
+    <div class="lp-card-body"><div class="lp-empty"><i class="fas fa-folder-open"></i>{% translate "No subproject for the projects of the page" %}</div></div>
+    {% endif %}
+</div>

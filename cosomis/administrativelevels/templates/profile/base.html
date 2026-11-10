@@ -1,0 +1,84 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n custom_tags %}
+{# Common frame of the locality profiles: header (name, hierarchy, project filter), KPI tiles, then the page blocks. #}
+
+{% block extracss %}
+{{ block.super }}
+{% include 'profile/_styles.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="lp-card lp-hero">
+    <div class="lp-hero-banner">
+        <div class="lp-hero-icon"><i class="fas {{ profile.icon }}"></i></div>
+        <div class="lp-hero-id">
+            <div class="lp-kind">{{ profile.type_label }}</div>
+            <h1>{% block hero_name %}{{ profile.name }}{% endblock %}</h1>
+            {% if profile.chain %}
+            <nav class="lp-chain" aria-label="{% translate 'Hierarchy' %}">
+                {% for item in profile.chain %}
+                    <a href="{{ item.url }}" title="{{ item.type_label }}"><i class="fas {{ item.icon }} mr-1"></i>{{ item.name }}</a>
+                    {% if not forloop.last %}<i class="fas fa-chevron-right lp-sep"></i>{% endif %}
+                {% endfor %}
+            </nav>
+            {% endif %}
+        </div>
+        <div class="lp-hero-actions">
+            {% if scope_projects|length > 1 %}
+            <form method="get">
+                {% include 'common/_project_filter.html' %}
+            </form>
+            {% endif %}
+            {% block hero_actions %}{% endblock %}
+        </div>
+    </div>
+    <div class="lp-hero-meta">
+        {% if profile.area_status %}<span class="lp-badge lp-{{ profile.area_status.tone }}"><i class="fas fa-shield-alt"></i>{{ profile.area_status.label }}</span>{% endif %}
+        {% block hero_meta %}{% endblock %}
+        <span class="lp-badge lp-gray"><i class="fas fa-folder-open"></i>{% if scope_selected_id %}{% for p in scope_projects %}{% if p.pk == scope_selected_id %}{{ p.name }}{% endif %}{% endfor %}{% else %}{{ scope_all_names|default:"-" }}{% endif %}</span>
+        {% if profile.updated %}<span class="lp-badge lp-gray"><i class="far fa-clock"></i>{% translate "Updated on" %} {{ profile.updated|date:"d/m/Y" }}</span>{% endif %}
+    </div>
+</div>
+
+{% include 'profile/_kpis.html' %}
+
+{% block profile_content %}{% endblock %}
+{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+<script type="text/javascript">
+    {# Loads an HTML block into `target` (selector); shows the spinner `spinner` while it loads and a message if it fails. #}
+    window.lpProjects = [{% for pid in ajax_project_ids %}{{ pid }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+    window.lpLoad = function (url, target, spinner, data) {
+        var $target = $(target), $spinner = spinner ? $(spinner) : $();
+        $spinner.show();
+        return $.ajax({
+            type: 'GET', url: url,
+            data: $.extend({'all_projects[]': window.lpProjects}, data || {}),
+            success: function (html) { $target.html(html); },
+            error: function (xhr) {
+                var message = "{% translate 'This block could not be loaded.' as msg %}{{ msg|escapejs }}";
+                $target.html('<div class="lp-error"><i class="fas fa-exclamation-triangle mr-1"></i>' + message + ' (' + xhr.status + ')</div>');
+            },
+            complete: function () { $spinner.hide(); }
+        });
+    };
+    {# Blocks of a tab are loaded the first time the tab is opened. #}
+    window.lpOnTab = function (tabId, loader) {
+        var done = false, run = function () { if (!done) { done = true; loader(); } };
+        if ($('#' + tabId).hasClass('active')) { run(); }
+        $('a[data-toggle="tab"][href="#' + tabId + '"]').on('shown.bs.tab', run);
+    };
+    $(function () {
+        $('.lp-hero-actions select[name="project"]').on('change', function () { this.form.submit(); });
+        $('[data-lp-filter]').on('input', function () {
+            var q = this.value.toLowerCase();
+            $(this.getAttribute('data-lp-filter')).find('tbody tr').each(function () {
+                this.style.display = this.textContent.toLowerCase().indexOf(q) === -1 ? 'none' : '';
+            });
+        });
+    });
+</script>
+{% block profile_js %}{% endblock %}
+{% endblock %}

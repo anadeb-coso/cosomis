@@ -1,558 +1,183 @@
-{% extends 'layouts/base.html' %}
+{% extends 'profile/base.html' %}
 {% load static i18n custom_tags %}
+{# Village profile. The population, planning, priorities, GRM and financial blocks are loaded with AJAX into the ids below. #}
 
-{% block extracss %}
-{{ block.super }}
-<link rel="stylesheet" href="{% static 'plugins/datepicker/date-picker.css' %}" />
+{% block hero_actions %}
+    {% if object.latitude and object.longitude %}
+    <a class="lp-btn" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat={{ object.latitude|stringformat:'s' }}&mlon={{ object.longitude|stringformat:'s' }}#map=15/{{ object.latitude|stringformat:'s' }}/{{ object.longitude|stringformat:'s' }}"><i class="fas fa-map-marked-alt"></i>{% translate "Map" %}</a>
+    {% endif %}
+    <a class="lp-btn" href="{% url 'administrativelevels:priorities_priorities' object.pk %}"><i class="fas fa-list-ol"></i>{% translate "Priorities" %}</a>
+    {% if user.is_superuser or user|has_group:"Admin" %}
+    <a class="lp-btn" href="{% url 'administrativelevels:update' object.pk %}"><i class="fas fa-pen"></i>{% translate "Edit" %}</a>
+    {% endif %}
 {% endblock %}
 
-
-{% block content %}
-<div class="row">
-    <div class="col-4">
-        <div class="card">
-            
-            <div class="card-body">
-                <div class="clearfix"  id="attachments_images"></div>
-
-                <div class="overlay" id="spin-attachments-images">
-                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                </div>
-
-            </div>
-        </div>
-    </div>
-    <div class="col-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="font-weight-bold">{% translate "Planning status" %}</h5>
-            </div>
-            <div class="card-body">
-                <div class="clearfix" id="planning_status"></div>
-
-                <div class="overlay" id="spin-spin-planning-status">
-                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                </div>
-
-            </div>
-        </div>
-    </div>
-    <div class="col-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="font-weight-bold">{% translate "Population" %}</h5>
-            </div>
-            <div class="card-body">
-                <div class="clearfix" id="overview"></div>
-
-                <div class="overlay spin">
-                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                </div>
-
-            </div>
-        </div>
-    </div>
-    
-</div>
-
-<div class="row">
-    <div class="col-12">
-        {% include 'components/stabilized_facilitators.html' %}
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <style>
-                .nav-tabs .nav-item a {
-                    font-size: 12px !important;
-                }
-                .nav-tabs .nav-item {
-                    width: 14% !important;
-                }
-            </style>
-            <div class="card-body table-responsive">
-                <div class="container">
-                    <ul class="nav nav-tabs">
-                        <li class="nav-item btn"><a class="nav-link active" data-toggle="tab" href="#priorities">{% translate "Priorities" %}</a></li>
-                        <li class="nav-item btn"><a class="nav-link" data-toggle="tab" href="#village_population">{% translate "Village population" %}</a></li>
-                        <li class="nav-item btn"><a class="nav-link" data-toggle="tab" href="#infrastructure_services">{% translate "Infrastructure and Services" %}</a></li>
-                        <li class="nav-item btn"><a class="nav-link" data-toggle="tab" href="#planning_cycle">{% translate "Planning Cycle" %}</a></li>
-                        <li class="nav-item btn"><a class="nav-link" data-toggle="tab" href="#financial_informations">{% translate "Financial informations" %}</a></li>
-                        <li class="nav-item btn"><a class="nav-link" data-toggle="tab" href="#grm">{% translate "GRM" %}</a></li>
-                        <li class="nav-item btn"><a class="nav-link" data-toggle="tab" href="#diagnostics">{% translate "Diagnostics" %}</a></li>
-                    </ul>
-
-                    <div class="tab-content">
-                        <div id="priorities" class="tab-pane active">
-                            <div class="row">
-                                <div class="col-12"></div>
-                            </div>
-                            <div class="row">
-                                <div class="col-12"></div>
-                            </div>
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="row">
-                                        {% comment %} <div class="col-12">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h5 class="text-center">{% translate "Priority needs" %}</h5>
-                                                    <div id=""></div>
-                                                    <span>{% translate "In construction" %}</span>
-                                                </div>
-                                                
-                                                <div class="overlay" id="spin-priority-needs">
-                                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-12">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h5 class="text-center">{% translate "Sub-component priorities" %}</h5>
-                                                    <div id=""></div>
-                                                    <span>{% translate "In construction" %}</span>
-                                                </div>
-                                                
-                                                <div class="overlay" id="spin-Subcomponent-priorities">
-                                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-12">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h5 class="text-center">{% translate "Vision and Obstacles" %}</h5>
-                                                    <div id=""></div>
-                                                    <span>{% translate "In construction" %}</span>
-                                                </div>
-                                                
-                                                <div class="overlay" id="spin-vision-obstacles">
-                                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                                                </div>
-                                            </div>
-                                        </div> {% endcomment %}
-                                        <div id="accordion">
-                                            <div class="card">
-                                                <div class="card-header" id="headingOne">
-                                                <h5 class="mb-0">
-                                                    <button class="btn btn-link" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                                                        {% translate "Priority needs" %} <span style="font-size:11px;">({% translate "Priorities by sub-component (1.1, 1.2 and 1.3) for CCD discussion at cantonal arbitration meeting" %})</span>
-                                                    </button>
-                                                </h5>
-                                                </div>
-
-                                                <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
-                                                <div class="card-body">
-                                                    <div id="priority_needs"></div>
-                                                </div>
-                                                </div>
-                                                
-                                                <div class="overlay" id="spin-priority-needs">
-                                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                                                </div>
-                                            </div>
-                                            <div class="card">
-                                                <div class="card-header" id="headingTwo">
-                                                <h5 class="mb-0">
-                                                    <button class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                                                    {% translate "Sub-component priorities" %}
-                                                    </button>
-                                                </h5>
-                                                </div>
-                                                <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
-                                                <div class="card-body">
-                                                    <div id="subcomponent_priorities"></div>
-                                                </div>
-                                                </div>
-                                                
-                                                <div class="overlay" id="spin-Subcomponent-priorities">
-                                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                                                </div>
-                                            </div>
-                                            <div class="card">
-                                                <div class="card-header" id="headingThree">
-                                                <h5 class="mb-0">
-                                                    <button class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                                                    {% translate "Vision and Obstacles" %}
-                                                    </button>
-                                                </h5>
-                                                </div>
-                                                <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordion">
-                                                <div class="card-body">
-                                                    <div id="vision_obstacles"></div>
-                                                </div>
-                                                </div>
-                                                
-                                                <div class="overlay" id="spin-vision-obstacles">
-                                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-
-
-
-
-
-                                        
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-12">
-                                            <h5 class="text-center">{% translate "Subprojects" %}</h5>
-                                            <div id="summary_subprojects"></div>
-                                        </div>
-                                    </div>
-
-                                    <div class="overlay" id="spin-summary-subprojects">
-                                        <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="village_population" class="tab-pane fade">
-                            <div class="row">
-                                <div class="col-12"></div>
-                            </div>
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-12">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h5>{% translate "Population and community details" %}</h5>
-                                                    <div id="population_and_community_details"></div>
-                                                </div>
-                                                
-                                                <div class="overlay" id="spin-population-community-details">
-                                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-12">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h5>{% translate "Civil servants and associations in the village" %}</h5>
-                                                    <div id="civil_servants_associations"></div>
-                                                </div>
-                                                
-                                                <div class="overlay" id="spin-civil-servants-associations">
-                                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="infrastructure_services" class="tab-pane fade">
-                            <div class="row">
-                                <div class="col-12"></div>
-                            </div>
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-12">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h5>{% translate "Infrastructure and Services" %}</h5>
-                                                    <div id="infrastructure_and_services"></div>
-                                                </div>
-                                                
-                                                <div class="overlay" id="spin-infrastructure-services">
-                                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="planning_cycle" class="tab-pane fade">
-                            <div class="row">
-                                <div class="col-12"></div>
-                            </div>
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-12">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <div id="planning-cycle-informations">
-                                                        <h5>{% translate "Planning Cycle" %}</h5>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div class="overlay" id="spin-planning-cycle-informations">
-                                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="financial_informations" class="tab-pane fade">
-                            <div class="row">
-                                <div class="col-12"></div>
-                            </div>
-                            <div class="card">
-                                <div class="card-body panel-heading" id="accordion" >
-                                    <div class="card">
-                                        
-                                        <div class="card">
-                                            <div class="card-header" >
-                                                <h5 class="mb-0">
-                                                    <button id="heading-financial-informations" style="width: 100%;"
-                                                        class="btn btn-link accordion-toggle" data-toggle="collapse" data-target="#collapse-financial-informations" 
-                                                        data-parent="#accordion" aria-expanded="false" aria-controls="collapse-financial-informations">
-                                                        <span style="float: left;">{% translate "Financed subprojects" %}</span>
-                                                    </button>
-                                                </h5>
-                                            </div>
-                                            <div id="collapse-financial-informations" class="collapse" aria-labelledby="heading-financial-informations" data-parent="#accordion">
-                                                <div class="card-body">
-                                                    <div id="financial-informations">
-                                                        <h5>{% translate "Financed subprojects" %}</h5>
-                                                    </div>
-                                                </div>
-                                                    
-                                                <div class="overlay" id="spin-financial-informations">
-                                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="card">
-                                            <div class="card-header" >
-                                                <h5 class="mb-0">
-                                                    <button id="heading-allocation-cvd" style="width: 100%;"
-                                                        class="btn btn-link accordion-toggle" data-toggle="collapse" data-target="#collapse-allocation-cvd" 
-                                                        data-parent="#accordion" aria-expanded="false" aria-controls="collapse-allocation-cvd">
-                                                        <span style="float: left;">{% translate "CVD Financial informations" %}</span>
-                                                    </button>
-                                                </h5>
-                                            </div>
-                                            <div id="collapse-allocation-cvd" class="collapse" aria-labelledby="heading-allocation-cvd" data-parent="#accordion">
-                                                <div class="card-body">
-                                                    <div id="allocation-cvd">
-                                                        <h5>{% translate "CVD Financial informations" %}</h5>
-                                                    </div>
-                                                </div>
-                                                    
-                                                <div class="overlay" id="spin-allocation-cvd">
-                                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="grm" class="tab-pane fade">
-                            <div class="row">
-                                <div class="col-12"></div>
-                            </div>
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-12">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <div id="grm-body">
-                                                        <h5>{% translate "Grievance Redress Mechanism" %}</h5>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div class="overlay" id="spin-grm">
-                                                    <i class="fas fa-2x fa-sync-alt fa-spin"></i>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="diagnostics" class="tab-pane fade">
-                            <h3>{% translate "In construction" %}</h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</div>
-
-
+{% block hero_meta %}
+    {% if profile.cvd %}<a href="{% url 'administrativelevels:cvd_detail' profile.cvd.pk %}" class="lp-badge text-decoration-none"><i class="fas fa-users"></i>{% translate "CVD" %} {% if profile.cvd.attributed_number_in_canton %}{{ profile.cvd.attributed_number_in_canton }} - {% endif %}{{ profile.cvd.get_name }}</a>{% endif %}
+    {% if object.is_headquarters %}<span class="lp-badge lp-success"><i class="fas fa-star"></i>{% translate "Headquarters of the CVD" %}</span>{% endif %}
+    {% if profile.geographical_unit %}<a href="{% url 'administrativelevels:geographical_unit_detail' profile.geographical_unit.pk %}" class="lp-badge text-decoration-none"><i class="fas fa-object-group"></i>{% translate "Unit" %} {{ profile.geographical_unit.attributed_number_in_canton }}</a>{% endif %}
+    <span class="lp-badge lp-gray"><i class="fas fa-tree"></i>{% if object.rural %}{% translate "Rural" %}{% else %}{% translate "Urban" %}{% endif %}</span>
+    {% if object.frontalier %}<span class="lp-badge lp-warning"><i class="fas fa-border-style"></i>{% translate "Border village" %}</span>{% endif %}
 {% endblock %}
 
+{% block profile_content %}
+<div class="row">
+    <div class="col-lg-4">
+        <div class="lp-card">
+            <h2 class="lp-card-title"><i class="fas fa-id-card"></i>{% translate "Identity" %}</h2>
+            <div class="lp-card-body"><ul class="lp-info">
+                {% for item in profile.chain reversed %}
+                <li><span class="lp-key"><i class="fas {{ item.icon }}"></i>{{ item.type_label }}</span><span class="lp-value"><a href="{{ item.url }}">{{ item.name }}</a></span></li>
+                {% endfor %}
+                <li><span class="lp-key"><i class="fas fa-users"></i>{% translate "CVD" %}</span><span class="lp-value">
+                    {% if profile.cvd %}<a href="{% url 'administrativelevels:cvd_detail' profile.cvd.pk %}">{% if profile.cvd.attributed_number_in_canton %}{{ profile.cvd.attributed_number_in_canton }} - {% endif %}{{ profile.cvd.get_name }}</a>{% else %}-{% endif %}</span></li>
+                {% if profile.cvd_villages|length > 1 %}
+                <li><span class="lp-key"><i class="fas fa-home"></i>{% translate "Villages of the CVD" %}</span><span class="lp-value">
+                    {% for v in profile.cvd_villages %}{% if v.pk == object.pk %}{{ v.name }}{% else %}<a href="{% url 'administrativelevels:village_detail' v.pk %}">{{ v.name }}</a>{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</span></li>
+                {% endif %}
+                <li><span class="lp-key"><i class="fas fa-object-group"></i>{% translate "Geographical unit" %}</span><span class="lp-value">
+                    {% if profile.geographical_unit %}<a href="{% url 'administrativelevels:geographical_unit_detail' profile.geographical_unit.pk %}">{{ profile.geographical_unit.attributed_number_in_canton }} - {{ profile.geographical_unit.get_name }}</a>{% else %}-{% endif %}</span></li>
+                <li><span class="lp-key"><i class="fas fa-crosshairs"></i>{% translate "GPS coordinates" %}</span><span class="lp-value">
+                    {% if object.latitude and object.longitude %}{{ object.latitude }}, {{ object.longitude }}{% else %}<span class="text-muted">{% translate "Not provided" %}</span>{% endif %}</span></li>
+                <li><span class="lp-key"><i class="fas fa-list-ol"></i>{% translate "Priorities" %}</span><span class="lp-value"><a href="{% url 'administrativelevels:priorities_priorities' object.pk %}">{{ profile.priorities_count }}</a></span></li>
+                <li><span class="lp-key"><i class="fas fa-folder-open"></i>{% translate "Projects benefited" %}</span><span class="lp-value">
+                    {% for p in object.administrative_levels_projects.all %}<span class="lp-badge mr-1">{{ p.name }}</span>{% empty %}-{% endfor %}</span></li>
+            </ul></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="lp-card">
+            <h2 class="lp-card-title"><i class="fas fa-users"></i>{% translate "Population" %}</h2>
+            <div class="lp-card-body">
+                <div class="clearfix lp-lazy" id="overview"></div>
+                <div class="overlay spin"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="lp-card">
+            <h2 class="lp-card-title"><i class="fas fa-tasks"></i>{% translate "Planning status" %}</h2>
+            <div class="lp-card-body">
+                <div class="clearfix lp-lazy" id="planning_status"></div>
+                <div class="overlay" id="spin-spin-planning-status"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
+            </div>
+        </div>
+        <div class="lp-card">
+            <h2 class="lp-card-title"><i class="fas fa-images"></i>{% translate "Photos" %}</h2>
+            <div class="lp-card-body">
+                <div class="clearfix lp-lazy" id="attachments_images"></div>
+                <div class="overlay" id="spin-attachments-images"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
 
-{% block javascript %}
-{{ block.super }}
+{% include 'components/stabilized_facilitators.html' %}
 
+<div class="row">
+    <div class="col-lg-5">{% include 'profile/_sectors.html' %}</div>
+    <div class="col-lg-7">{% include 'profile/_subprojects.html' %}</div>
+</div>
 
-<script src="{% static 'plugins/datepicker/datepicker.js' %}"></script>
-<script src="{% static 'plugins/datepicker/datepicker.en.js' %}"></script>
-<script src="{% static 'plugins/datepicker/datepicker.custom.js' %}"></script>
+<div class="lp-card">
+    <ul class="nav lp-tabs" role="tablist">
+        <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#priorities"><i class="fas fa-list-ol"></i>{% translate "Priorities" %}</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#village_population"><i class="fas fa-users"></i>{% translate "Village population" %}</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#infrastructure_services"><i class="fas fa-school"></i>{% translate "Infrastructure and Services" %}</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#planning_cycle"><i class="fas fa-sync-alt"></i>{% translate "Planning Cycle" %}</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#financial_informations"><i class="fas fa-coins"></i>{% translate "Financial informations" %}</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#grm"><i class="fas fa-comments"></i>{% translate "GRM" %}</a></li>
+    </ul>
+    <div class="tab-content lp-tab-content">
+        <div id="priorities" class="tab-pane active">
+            <div id="accordion">
+                <div class="lp-card">
+                    <h3 class="lp-card-title"><button class="btn btn-link p-0 font-weight-bold text-left" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true">
+                        {% translate "Priority needs" %} <small class="text-muted font-weight-normal">({% translate "Priorities by sub-component (1.1, 1.2 and 1.3) for CCD discussion at cantonal arbitration meeting" %})</small></button></h3>
+                    <div id="collapseOne" class="collapse show" data-parent="#accordion"><div class="lp-card-body"><div id="priority_needs" class="lp-lazy"></div></div></div>
+                    <div class="overlay" id="spin-priority-needs"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
+                </div>
+                <div class="lp-card">
+                    <h3 class="lp-card-title"><button class="btn btn-link p-0 font-weight-bold collapsed" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false">{% translate "Sub-component priorities" %}</button></h3>
+                    <div id="collapseTwo" class="collapse" data-parent="#accordion"><div class="lp-card-body"><div id="subcomponent_priorities" class="lp-lazy"></div></div></div>
+                    <div class="overlay" id="spin-Subcomponent-priorities"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
+                </div>
+                <div class="lp-card">
+                    <h3 class="lp-card-title"><button class="btn btn-link p-0 font-weight-bold collapsed" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false">{% translate "Vision and Obstacles" %}</button></h3>
+                    <div id="collapseThree" class="collapse" data-parent="#accordion"><div class="lp-card-body"><div id="vision_obstacles" class="lp-lazy"></div></div></div>
+                    <div class="overlay" id="spin-vision-obstacles"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
+                </div>
+            </div>
+            <div class="lp-section-title mt-2">{% translate "Summary of the subprojects" %}</div>
+            <div class="position-relative lp-lazy">
+                <div id="summary_subprojects"></div>
+                <div class="overlay" id="spin-summary-subprojects"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
+            </div>
+        </div>
+        <div id="village_population" class="tab-pane fade">
+            <div class="lp-section-title">{% translate "Population and community details" %}</div>
+            <div class="position-relative lp-lazy mb-4">
+                <div id="population_and_community_details"></div>
+                <div class="overlay" id="spin-population-community-details"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
+            </div>
+            <div class="lp-section-title">{% translate "Civil servants and associations in the village" %}</div>
+            <div class="position-relative lp-lazy">
+                <div id="civil_servants_associations"></div>
+                <div class="overlay" id="spin-civil-servants-associations"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
+            </div>
+        </div>
+        <div id="infrastructure_services" class="tab-pane fade">
+            <div class="position-relative lp-lazy">
+                <div id="infrastructure_and_services"></div>
+                <div class="overlay" id="spin-infrastructure-services"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
+            </div>
+        </div>
+        <div id="planning_cycle" class="tab-pane fade">
+            <div class="position-relative lp-lazy">
+                <div id="planning-cycle-informations"></div>
+                <div class="overlay" id="spin-planning-cycle-informations"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
+            </div>
+        </div>
+        <div id="financial_informations" class="tab-pane fade">
+            <div class="lp-section-title">{% translate "Financed subprojects" %}</div>
+            <div class="position-relative lp-lazy mb-4">
+                <div id="financial-informations"></div>
+                <div class="overlay" id="spin-financial-informations"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
+            </div>
+            <div class="lp-section-title">{% translate "CVD Financial informations" %}</div>
+            <div class="position-relative lp-lazy">
+                <div id="allocation-cvd"></div>
+                <div class="overlay" id="spin-allocation-cvd"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
+            </div>
+        </div>
+        <div id="grm" class="tab-pane fade">
+            <div class="position-relative lp-lazy">
+                <div id="grm-body"></div>
+                <div class="overlay" id="spin-grm"><i class="fas fa-2x fa-sync-alt fa-spin"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block profile_js %}
 <script type="text/javascript">
-    $(document).ready(function () {
-        {% get_current_language as lang %}
-        let spin_suprojects_financing = $('#spin-suprojects-financing');
-        spin_suprojects_financing.show();
-
-        let spin = $('.spin');
-
-        spin.show();
-        $.ajax({
-            type: 'GET',
-            url: "{% url 'administrativelevels:components:overview' object.pk %}",
-            data: {
-
-            },
-            success: function (data) {
-                spin.hide();
-                $("#overview").html(data);
-            },
-            error: function (data) {
-                alert(error_server_message + "Error " + data.status);
-            }
-        }).done(function () {
-                spin.hide();
-            }
-        );
-
-
-        //Priorities Sector
-        let spin_sector_priorities = $('#spin-sector-priorities');
-        spin_sector_priorities.show();
-        $.ajax({
-            type: 'GET',
-            url: "{% url 'subprojects:components:by_sector_and_administrative_level' object.pk %}",
-            data: {
-
-            },
-            success: function (data) {
-                spin_sector_priorities.hide();
-                $('#priorities_by_sector').html(data);
-            },
-            error: function (data) {
-                spin_sector_priorities.hide();
-                alert(error_server_message + "Error " + data.status);
-            }
-        }).done(function () {
-                spin_sector_priorities.hide();
-            }
-        );
-        //End priorities Sector
-
-
-        //Summary Subprojects
-        let spin_summary_subprojects = $('#spin-summary-subprojects');
-        spin_summary_subprojects.show();
-        $.ajax({
-            type: 'GET',
-            url: "{% url 'subprojects:components:by_administrative_level' object.pk %}",
-            data: {
-
-            },
-            success: function (data_summary) {
-                spin_summary_subprojects.hide();
-                $('#summary_subprojects').html(data_summary);
-            },
-            error: function (data_summary) {
-                spin_summary_subprojects.hide();
-                alert(error_server_message + "Error " + data_summary.status);
-            }
-            }).done(function () {
-                    spin_summary_subprojects.hide();
-                }
-            );
-        //End Summary Subprojects
-
-
-        //Summary GRM
-        let spin_grm = $("#spin-grm");
-        let grm_body = $("#grm-body");
-        spin_grm.show();
-        $.ajax({
-            type: 'GET',
-            url: "{% url 'administrativelevels:grm:review_issues' object.pk %}",
-            data: {
-
-            },
-            success: function (data_summary) {
-                spin_grm.hide();
-                grm_body.html(data_summary);
-            },
-            error: function (data_summary) {
-                spin_grm.hide();
-                alert(error_server_message + "Error " + data_summary.status);
-            }
-            }).done(function () {
-                    spin_grm.hide();
-                }
-            );
-        //End Summary GRM
-
-
-        //Financial Informations
-        let subprojects_sectors_steps_number_spin = $("#spin-financial-informations");
-        let subprojects_sectors_steps_number = $("#financial-informations");
-        subprojects_sectors_steps_number_spin.show();
-        $.ajax({
-            type: "GET",
-            url: "{% url 'dashboard:dashboard_subprojects_sectors_and_steps' %}",
-            data: {
-                administrative_level_id: [parseInt("{{ object.pk }}")],
-                administrative_level_type: "{{ object.type }}",
-                table_title: "{% translate 'Information summary' %}"
-            },
-            success: function (response) {
-                subprojects_sectors_steps_number_spin.hide();
-                subprojects_sectors_steps_number.html(response);
-            },
-            error: function (data) {
-                subprojects_sectors_steps_number_spin.hide();
-                alert(error_server_message + "Error " + data.status);
-            }
+    $(function () {
+        var levelData = {'administrative_level_id[]': [{{ object.pk }}], administrative_level_type: "{{ object.type }}"};
+        // The overview also fills the planning status, photos, priorities, population and planning cycle blocks.
+        lpLoad("{% url 'administrativelevels:components:overview' object.pk %}", '#overview', '.spin')
+            .fail(function () { $('.overlay').not('#spin-summary-subprojects').hide(); });
+        lpLoad("{% url 'subprojects:components:by_administrative_level' object.pk %}", '#summary_subprojects', '#spin-summary-subprojects');
+        lpOnTab('financial_informations', function () {
+            lpLoad("{% url 'dashboard:dashboard_subprojects_sectors_and_steps' %}", '#financial-informations', '#spin-financial-informations',
+                   $.extend({table_title: "{% translate 'Information summary' as t %}{{ t|escapejs }}"}, levelData));
+            lpLoad("{% url 'dashboard:dashboard_summary_allocation_cvd' %}", '#allocation-cvd', '#spin-allocation-cvd',
+                   $.extend({table_title: "{% translate 'CVD Allocations' as t %}{{ t|escapejs }}"}, levelData));
         });
-
-        
-        let allocation_cvd_spin = $("#spin-allocation-cvd");
-        let allocation_cvd = $("#allocation-cvd");
-        allocation_cvd_spin.show();
-        $.ajax({
-            type: "GET",
-            url: "{% url 'dashboard:dashboard_summary_allocation_cvd' %}",
-            data: {
-                administrative_level_id: [parseInt("{{ object.pk }}")],
-                administrative_level_type: "{{ object.type }}",
-                table_title: "{% translate 'CVD Allocations' %}"
-            },
-            success: function (response) {
-                allocation_cvd_spin.hide();
-                allocation_cvd.html(response);
-            },
-            error: function (data) {
-                allocation_cvd_spin.hide();
-                alert(error_server_message + "Error " + data.status);
-            }
+        lpOnTab('grm', function () {
+            lpLoad("{% url 'administrativelevels:grm:review_issues' object.pk %}", '#grm-body', '#spin-grm');
         });
-        //End Financial Informations
-
+        $('#spin-financial-informations, #spin-allocation-cvd, #spin-grm').hide();
     });
 </script>
 {% endblock %}

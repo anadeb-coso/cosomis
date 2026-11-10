@@ -25,7 +25,10 @@ from administrativelevels.functions import (
     get_administrative_level_ids_descendants,
 )
 from administrativelevels.functions_cvd import save_cvd_instead_of_csv_file_datas_in_db
-from administrativelevels.functions_facilitators import stabilized_facilitator_groups
+from administrativelevels.functions_profile import (
+    administrative_level_profile, breadcrumb as profile_breadcrumb, cvd_profile, geographical_unit_profile,
+    scope_project_ids,
+)
 from administrativelevels.functions_adl import get_cascade_villages_ids_by_administrative_level_id
 from financial import function_allocation
 from financial.models.allocation import AdministrativeLevelAllocation
@@ -33,6 +36,37 @@ from dashboard.forms import AdministrativeLevelFilterForm, ADMIN_LEVEL_FILTER_LA
 from cosomis.datatables import (
     DATATABLE_EXPORT_BUTTONS_OPTIONS, DatatableColumn, ServerSideDatatableMixin, get_filter_badges
 )
+
+
+def financial_blocks(level):
+    """Dashboard tables shown on a commune, prefecture or region profile. The table per CVD is left out
+    at region level: it holds every CVD of the region (about 15 MB of HTML)."""
+    blocks = [
+        {'id': 'sectors', 'title': _("Financed subprojects"), 'table_title': _("Information summary"),
+         'url': reverse_lazy('dashboard:dashboard_subprojects_sectors_and_steps')},
+        {'id': 'allocations', 'title': _("Allocations by sub-level"), 'table_title': _("Canton Allocations"),
+         'url': reverse_lazy('dashboard:dashboard_summary_allocation')},
+    ]
+    if level.type != AdministrativeLevel.REGION:
+        blocks.append({'id': 'allocations-cvd', 'title': _("CVD Financial informations"), 'table_title': _("CVD Allocations"),
+                       'url': reverse_lazy('dashboard:dashboard_summary_allocation_cvd')})
+    return blocks
+
+
+def add_profile_context(request, context, build):
+    """Profile figures of the page's locality (see functions_profile), for the projects of the page."""
+    scope, project_ids = scope_project_ids(request)
+    profile = build(context['object'], project_ids)
+    context.update({
+        'profile': profile, 'profile_project_ids': project_ids,
+        # Dashboards and components read the projects from `all_projects[]`, only when 2 ids or more are sent.
+        'ajax_project_ids': project_ids if len(project_ids) > 1 else project_ids * 2,
+        'facilitators_groups': profile['facilitators']['groups'],
+        'title': f"{profile['type_label']} {profile['name']}",
+        'breadcrumb': profile_breadcrumb(profile.get('chain', []), f"{profile['type_label']} {profile['name']}"),
+        **scope.context(),
+    })
+    return context
 
 
 class VillageDetailView(PageMixin, LoginRequiredMixin, DetailView):
@@ -53,7 +87,7 @@ class VillageDetailView(PageMixin, LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super(VillageDetailView, self).get_context_data(**kwargs)
         if context.get("object") and context.get("object").type == "Village" : # Verify if the administrativeLevel type is Village
-            context['facilitators_groups'] = stabilized_facilitator_groups([context['object']])
+            add_profile_context(self.request, context, administrative_level_profile)
             return context
         raise Http404
 
@@ -79,10 +113,10 @@ class AdministrativeLevelDetailView(PageMixin, LoginRequiredMixin, DetailView):
         self.template_name = (_type.lower() if _type.lower() in ('village', 'canton') else "administrativelevel") + "_detail.html"
         context['context_object_name'] = _type
         context['title'] = _type
-        context['hide_content_header'] = True
         context['administrativelevel_profile'] = context['object']
-        if context['object'].type == AdministrativeLevel.VILLAGE:
-            context['facilitators_groups'] = stabilized_facilitator_groups([context['object']])
+        add_profile_context(self.request, context, administrative_level_profile)
+        if self.template_name == "administrativelevel_detail.html":
+            context['financial_blocks'] = financial_blocks(context['object'])
         # context['breadcrumb'] = [
         #     {
         #         'url': '',
@@ -1365,7 +1399,10 @@ class GeographicalUnitDetailView(PageMixin, LoginRequiredMixin, DetailView):
             'title': title
         },
     ]
-    
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return add_profile_context(self.request, context, geographical_unit_profile)
 
 
 
@@ -1673,12 +1710,14 @@ class CVDDetailView(PageMixin, LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['list_subprojects_kit'] = context['object'].get_list_subprojects_kit()
-        context['facilitators_groups'] = stabilized_facilitator_groups(context['object'].get_villages())
-        context['list_subprojects'] = context['object'].get_list_subprojects()
+        add_profile_context(self.request, context, cvd_profile)
+        # Same projects as the rest of the page (linked projects of the selection, or the "Project" filter).
+        project_ids = context['profile_project_ids']
+        context['list_subprojects'] = context['object'].get_list_subprojects().filter(projects__in=project_ids).distinct()
+        context['list_structures'] = context['list_subprojects'].exclude(subproject_type_designation='Subproject').order_by('full_title_of_approved_subproject')
 
         allocations_project = AdministrativeLevelAllocation.objects.filter(
-            project_id=self.request.session.get('project_id'), 
+            project_id__in=project_ids,
             cvd_id=context['object'].id, 
             administrative_level=None
         )

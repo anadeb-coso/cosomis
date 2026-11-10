@@ -6093,3 +6093,168 @@ msgstr "AC/FC (animateur communautaire)"
 
 msgid "FT (technical facilitator)"
 msgstr "FT (facilitateur technique)"
+
+msgid "%(ac)s AC/FC · %(ft)s FT"
+msgstr "%(ac)s AC/FC · %(ft)s FT"
+
+msgid "%(count)s structure(s)"
+msgstr "%(count)s ouvrage(s)"
+
+msgid "Allocation: amounts allocated to the CVD for the selected project. Spent: contract amounts of the works companies. Residual: allocation minus spent."
+msgstr "Allocation : montants alloués au CVD pour les projets de la page. Dépensé : montants des contrats des entreprises de travaux. Reliquat : allocation moins dépensé."
+
+msgid "Allocations by sub-level"
+msgstr "Allocations par sous-niveau"
+
+msgid "Area status of the villages"
+msgstr "Statut de zone des villages"
+
+msgid "Average physical progress"
+msgstr "Avancement physique moyen"
+
+msgid "Bank account"
+msgstr "Compte bancaire"
+
+msgid "Border village"
+msgstr "Village frontalier"
+
+msgid "Border villages"
+msgstr "Villages frontaliers"
+
+msgid "CVD allocations"
+msgstr "Allocations CVD"
+
+msgid "CVD office"
+msgstr "Bureau du CVD"
+
+msgid "Canton allocations"
+msgstr "Allocations cantons"
+
+msgid "Cantons"
+msgstr "Cantons"
+
+msgid "Contract amount"
+msgstr "Montant des contrats"
+
+msgid "Financing"
+msgstr "Financement"
+
+msgid "GPS"
+msgstr "GPS"
+
+msgid "GPS coordinates"
+msgstr "Coordonnées GPS"
+
+msgid "GPS coordinates available"
+msgstr "Coordonnées GPS renseignées"
+
+msgid "Headquarters"
+msgstr "Siège"
+
+msgid "Headquarters of the CVD"
+msgstr "Siège du CVD"
+
+msgid "Hierarchy"
+msgstr "Hiérarchie"
+
+msgid "Identity"
+msgstr "Identité"
+
+msgid "Live data from the DCC platform"
+msgstr "Données en direct de la plateforme DCC"
+
+msgid "Map"
+msgstr "Carte"
+
+msgid "No CVD"
+msgstr "Aucun CVD"
+
+msgid "No GPS coordinates"
+msgstr "Pas de coordonnées GPS"
+
+msgid "No geographical unit"
+msgstr "Aucune unité géographique"
+
+msgid "No structure"
+msgstr "Aucun ouvrage"
+
+msgid "No sub-level"
+msgstr "Aucun sous-niveau"
+
+msgid "No subproject for the projects of the page"
+msgstr "Aucun sous-projet pour les projets de la page"
+
+msgid "No village"
+msgstr "Aucun village"
+
+msgid "Not provided"
+msgstr "Non renseignées"
+
+msgid "Not specified"
+msgstr "Non précisé"
+
+msgid "Photos"
+msgstr "Photos"
+
+msgid "Prefectures"
+msgstr "Préfectures"
+
+msgid "President"
+msgstr "Président"
+
+msgid "Progress"
+msgstr "Avancement"
+
+msgid "Rural villages"
+msgstr "Villages ruraux"
+
+msgid "Secretary"
+msgstr "Secrétaire"
+
+msgid "Site status"
+msgstr "Statut du chantier"
+
+msgid "Structure"
+msgstr "Ouvrage"
+
+msgid "Sub-levels"
+msgstr "Sous-niveaux"
+
+msgid "Subprojects by sector"
+msgstr "Sous-projets par secteur"
+
+msgid "Summary of the subprojects"
+msgstr "Récapitulatif des sous-projets"
+
+msgid "Territory"
+msgstr "Territoire"
+
+msgid "The first %(shown)s of %(total)s subprojects are listed."
+msgstr "Les %(shown)s premiers sous-projets sur %(total)s sont listés."
+
+msgid "This block could not be loaded."
+msgstr "Ce bloc n'a pas pu être chargé."
+
+msgid "Treasurer"
+msgstr "Trésorier"
+
+msgid "Updated on"
+msgstr "Mis à jour le"
+
+msgid "Urban"
+msgstr "Urbain"
+
+msgid "Villages of the CVD"
+msgstr "Villages du CVD"
+
+msgid "Villages with GPS coordinates"
+msgstr "Villages avec coordonnées GPS"
+
+msgid "Villages with a stabilized facilitator"
+msgstr "Villages avec un animateur stabilisé"
+
+msgid "geographical units"
+msgstr "unités géographiques"
+
+msgid "villages"
+msgstr "villages"
