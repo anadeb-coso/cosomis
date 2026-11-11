@@ -1,0 +1,99 @@
+{% load i18n %}
+<script type="text/javascript">
+    {% comment %}Viewer of the gallery cards (#gallery-root .gallery-card, data-* attributes): photos, PDF, Office documents,
+       previous / next (buttons and arrow keys). window.galleryViewer.extraFooter(card, $footer) may add buttons.{% endcomment %}
+    $(function () {
+        var root = document.getElementById('gallery-root');
+        var $root = $(root);
+        var strings = {
+            missingFile: "{% translate 'Missing file' as s %}{{ s|escapejs }}",
+            missingFileHint: "{% translate 'The image could not be loaded.' as s %}{{ s|escapejs }}",
+            openInNewTab: "{% translate 'Open in a new tab' as s %}{{ s|escapejs }}",
+            download: "{% translate 'Download' as s %}{{ s|escapejs }}",
+            noPreview: "{% translate 'No preview available for this file.' as s %}{{ s|escapejs }}"
+        };
+        var officeViewerUrl = 'https://view.officeapps.live.com/op/embed.aspx?src=';
+        if (root) {
+            /* Photos that cannot be loaded: "missing file" panel (also for the cards added by the infinite scroll). */
+            var markImageMissing = function (img) {
+                var media = img.closest('.gallery-card__media');
+                if (!media || media.dataset.missing === '1') return;
+                media.dataset.missing = '1';
+                media.className = 'gallery-card__missing';
+                $(media).empty().append('<i class="fas fa-image"></i>').append($('<div class="label">').text(strings.missingFile));
+            };
+            root.addEventListener('error', function (e) {
+                if (e.target && e.target.tagName === 'IMG' && e.target.closest('.gallery-card__media')) markImageMissing(e.target);
+            }, true);
+            root.querySelectorAll('.gallery-card__media img').forEach(function (img) {
+                if (img.complete && img.naturalWidth === 0) markImageMissing(img);
+            });
+            $root.on('click', '.js-gallery-view, .gallery-card__thumb', function (e) {
+                e.preventDefault();
+                openLightbox($(this).closest('.gallery-card')[0]);
+            });
+        }
+
+        /* Viewer */
+        var $modal = $('#attachmentModal'), cards = [], index = -1;
+        function button(href, icon, label, primary, newTab) {
+            var $a = $('<a class="btn btn-sm">').addClass(primary ? 'btn-primary' : 'btn-outline-primary').attr('href', href)
+                .append($('<i>').addClass('fas ' + icon)).append(document.createTextNode(' ' + label));
+            if (newTab) $a.attr({target: '_blank', rel: 'noopener'});
+            return $a;
+        }
+        function render() {
+            var card = cards[index]; if (!card) return;
+            var d = card.dataset;
+            var $header = $('<div class="lightbox-header">');
+            if (d.place) {
+                var $place = d.contextUrl ? $('<a class="lightbox-header__location">').attr('href', d.contextUrl) : $('<span class="lightbox-header__location">');
+                $header.append($place.append('<i class="fas fa-map-marker-alt"></i>').append(document.createTextNode(' ' + d.place)));
+            }
+            var text = [d.context, d.name].filter(Boolean).join(' — ');
+            if (text) $header.append($('<span class="lightbox-header__task">').text(text));
+            $modal.find('.lightbox-header-slot').empty().append($header);
+            var $media;
+            if (d.kind === 'image') {
+                $media = $('<div class="lightbox-photo">').append($('<img class="img-fluid mx-auto d-block">').attr({src: d.url, alt: d.name || ''})
+                    .on('error', function () {
+                        $(this).closest('.lightbox-photo').replaceWith($('<div class="lightbox-missing__panel">').append('<i class="fas fa-image fa-3x"></i>')
+                            .append($('<div class="mt-2 font-weight-bold">').text(strings.missingFile)).append($('<div class="small text-muted">').text(strings.missingFileHint)));
+                    }));
+            } else if (d.kind === 'pdf') {
+                $media = $('<iframe class="lightbox-frame">').attr('src', d.openUrl);
+            } else if (d.kind === 'word' || d.kind === 'office') {
+                $media = $('<iframe class="lightbox-frame" frameborder="0">').attr('src', officeViewerUrl + encodeURIComponent(d.rawUrl));
+            } else {
+                $media = $('<div class="lightbox-doc">').append('<i class="fas fa-file-alt fa-5x text-secondary"></i>')
+                    .append($('<div class="mt-3 font-weight-bold">').text(d.name || '')).append($('<div class="small text-muted mt-2">').text(strings.noPreview));
+            }
+            $modal.find('.lightbox-media').empty().append($media);
+            var $footer = $modal.find('.lightbox-footer').empty();
+            $footer.append(button(d.openUrl, 'fa-external-link-alt', strings.openInNewTab, false, true));
+            $footer.append(button(d.downloadUrl, 'fa-download', strings.download, true, false));
+            if (window.galleryViewer && window.galleryViewer.extraFooter) { window.galleryViewer.extraFooter(card, $footer); }
+            $modal.find('.lightbox-counter').text((index + 1) + ' / ' + cards.length);
+            $modal.find('.lightbox-prev').prop('disabled', index <= 0);
+            $modal.find('.lightbox-next').prop('disabled', index >= cards.length - 1);
+        }
+        function openLightbox(card) {
+            cards = $root.find('.gallery-card').toArray();
+            index = cards.indexOf(card);
+            render();
+            $modal.modal('show');
+        }
+        function move(step) { var next = index + step; if (next >= 0 && next < cards.length) { index = next; render(); } }
+        $modal.find('.lightbox-prev').on('click', function () { move(-1); });
+        $modal.find('.lightbox-next').on('click', function () { move(1); });
+        $(document).on('keydown', function (e) {
+            if (!$modal.hasClass('show')) return;
+            if (e.key === 'ArrowLeft') move(-1);
+            if (e.key === 'ArrowRight') move(1);
+        });
+        $modal.on('hidden.bs.modal', function () { $modal.find('.lightbox-header-slot, .lightbox-media, .lightbox-footer').empty(); });
+
+        window.galleryViewer = window.galleryViewer || {};
+        window.galleryViewer.open = openLightbox;
+    });
+</script>

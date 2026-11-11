@@ -1,0 +1,20 @@
+{% load i18n %}
+<div class="modal fade" id="attachmentModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="lightbox-counter"></span>
+                <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="lightbox-header-slot"></div>
+                <div class="lightbox-stage">
+                    <button type="button" class="lightbox-nav lightbox-prev" title="{% translate 'Previous' %}" aria-label="{% translate 'Previous' %}"><i class="fas fa-chevron-left"></i></button>
+                    <div class="lightbox-media"></div>
+                    <button type="button" class="lightbox-nav lightbox-next" title="{% translate 'Next' %}" aria-label="{% translate 'Next' %}"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="lightbox-footer"></div>
+            </div>
+        </div>
+    </div>
+</div>

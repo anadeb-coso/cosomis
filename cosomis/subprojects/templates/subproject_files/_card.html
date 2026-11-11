@@ -1,0 +1,61 @@
+{% load i18n %}
+{% comment %}
+    One file of a subproject (gallery card) with its review state: coloured top edge (validated / invalidated / not
+    reviewed), main and special badges, comments, and for the reviewers the Validate / Invalidate / Main / Special
+    buttons. Rendered again alone (file_card) after each action.
+{% endcomment %}
+<article class="gallery-card sf-card sf-{{ attachment.status }}" id="sf-card-{{ attachment.id }}" data-file-id="{{ attachment.id }}"
+         data-url="{{ attachment.src }}" data-kind="{{ attachment.kind }}" data-name="{{ attachment.label|default:attachment.name }}"
+         data-place="{{ attachment.subproject.location_subproject_realized.name|default:'' }}"
+         data-context="{% if attachment.subproject.number %}{{ attachment.subproject.number }} - {% endif %}{{ attachment.subproject.full_title_of_approved_subproject }}"
+         data-context-url="{% url 'subprojects:detail' attachment.subproject_id %}"
+         data-open-url="{{ attachment.open_url }}" data-download-url="{{ attachment.download_url }}" data-raw-url="{{ attachment.raw_url }}"
+         data-subproject="{{ attachment.subproject_id }}" data-status="{{ attachment.status }}" data-principal="{{ attachment.principal|yesno:'1,0' }}" data-special="{{ attachment.special|yesno:'1,0' }}">
+    <div class="gallery-card__thumb" title="{% translate 'View full size' %}">
+        {% if attachment.kind == 'image' %}
+            <div class="gallery-card__media"><img src="{{ attachment.src }}" loading="lazy" alt="{{ attachment.label }}"></div>
+            <span class="gallery-card__badge"><i class="fas fa-image"></i> {% translate 'Photo' %}</span>
+        {% else %}
+            <div class="gallery-card__doc">
+                {% if attachment.kind == 'pdf' %}<i class="fas fa-file-pdf fa-3x text-danger"></i>
+                {% elif attachment.kind == 'word' %}<i class="fas fa-file-word fa-3x text-primary"></i>
+                {% elif attachment.kind == 'office' %}<i class="fas fa-file-excel fa-3x text-success"></i>
+                {% else %}<i class="fas fa-file-alt fa-3x text-secondary"></i>{% endif %}
+                {% if attachment.ext %}<div class="ext">{{ attachment.ext }}</div>{% endif %}
+            </div>
+            <span class="gallery-card__badge"><i class="fas fa-file-alt"></i> {% translate 'Document' %}</span>
+        {% endif %}
+        <div class="sf-flags">
+            {% if attachment.principal %}<span class="sf-flag sf-flag-principal" title="{% translate 'Main file' %}"><i class="fas fa-star"></i> {% translate 'Main' %}</span>{% endif %}
+            {% if attachment.special %}<span class="sf-flag sf-flag-special" title="{% translate 'Special file (used in the important documents)' %}"><i class="fas fa-gem"></i> {% translate 'Special' %}</span>{% endif %}
+        </div>
+        <div class="gallery-card__overlay">
+            {% if attachment.description %}<div class="text-truncate">{{ attachment.description }}</div>{% endif %}
+            {% if attachment.taken_by %}<div class="text-truncate"><i class="fas fa-user mr-1"></i>{{ attachment.taken_by }}</div>{% endif %}
+        </div>
+    </div>
+    <div class="gallery-card__body">
+        <div class="sf-status sf-status-{{ attachment.status }}">
+            {% if attachment.status == 'validated' %}<i class="fas fa-check-circle"></i> {% translate 'Validated' %}
+            {% elif attachment.status == 'invalidated' %}<i class="fas fa-times-circle"></i> {% translate 'Invalidated' %}
+            {% else %}<i class="far fa-clock"></i> {% translate 'Not reviewed' %}{% endif %}
+        </div>
+        <div class="gallery-card__title" title="{{ attachment.label }}">{{ attachment.label|default:"-" }}</div>
+        {% if attachment.is_structure %}<div class="gallery-card__location text-truncate"><a href="{% url 'subprojects:files:files' attachment.subproject_id %}" title="{{ attachment.subproject.full_title_of_approved_subproject }}"><i class="fas fa-cube mr-1"></i>{{ attachment.subproject.full_title_of_approved_subproject }}</a></div>{% endif %}
+        <div class="gallery-card__location text-truncate"><i class="far fa-calendar-alt mr-1"></i>{% translate 'Taken on' %} {{ attachment.date|default:"-" }}{% if attachment.taken_by %} · {{ attachment.taken_by }}{% endif %}</div>
+        <div class="doc-card-actions">
+            <a href="javascript:void(0)" class="js-gallery-view" title="{% translate 'View full size' %}"><i class="fas fa-expand"></i></a>
+            {% if attachment.kind != 'image' %}<a href="{{ attachment.open_url }}" target="_blank" rel="noopener" title="{% translate 'Open in a new tab' %}"><i class="fas fa-external-link-alt"></i></a>{% endif %}
+            <a href="{{ attachment.download_url }}" title="{% translate 'Download' %}"><i class="fas fa-download"></i></a>
+            <a href="javascript:void(0)" class="js-sf-comments ml-auto" title="{% translate 'Comments and actions history' %}"><i class="fas fa-comments"></i>{% if attachment.comments_count %} <span class="sf-count">{{ attachment.comments_count }}</span>{% endif %}</a>
+        </div>
+        {% if can_review %}
+        <div class="sf-review">
+            <button type="button" class="js-sf-validate {% if attachment.status == 'validated' %}active{% endif %}" title="{% translate 'Validate' %}"><i class="fas fa-check"></i> {% translate 'Validate' %}</button>
+            <button type="button" class="js-sf-invalidate {% if attachment.status == 'invalidated' %}active{% endif %}" title="{% translate 'Invalidate' %}"><i class="fas fa-times"></i> {% translate 'Invalidate' %}</button>
+            <button type="button" class="js-sf-principal {% if attachment.principal %}active{% endif %}" title="{% if attachment.principal %}{% translate 'Remove the main file status' %}{% else %}{% translate 'Make it the main file' %}{% endif %}"{% if attachment.status == 'invalidated' and not attachment.principal %} disabled{% endif %}><i class="fas fa-star"></i></button>
+            <button type="button" class="js-sf-special {% if attachment.special %}active{% endif %}" title="{% if attachment.special %}{% translate 'Remove the special file mark' %}{% else %}{% translate 'Mark as special file' %}{% endif %}"><i class="fas fa-gem"></i></button>
+        </div>
+        {% endif %}
+    </div>
+</article>

@@ -6342,3 +6342,88 @@ msgstr "Voir la fiche"
 
 msgid "file(s)"
 msgstr "fichier(s)"
+
+msgid "Add a comment or tick “Invalidate without comment”."
+msgstr "Ajoutez un commentaire ou cochez « Invalider sans commentaire »."
+
+msgid "All steps"
+msgstr "Toutes les étapes"
+
+msgid "Back to the subproject"
+msgstr "Retour au sous-projet"
+
+msgid "Files of the subproject"
+msgstr "Fichiers du sous-projet"
+
+msgid "Files that could not be downloaded:"
+msgstr "Fichiers qui n'ont pas pu être téléchargés :"
+
+msgid "Invalidate the file"
+msgstr "Invalider le fichier"
+
+#, python-format
+msgid "Limited to the first %(max)s files"
+msgstr "Limité aux %(max)s premiers fichiers"
+
+msgid "Main"
+msgstr "Principale"
+
+msgid "Main file"
+msgstr "Fichier principal"
+
+msgid "Make it the main file"
+msgstr "En faire le fichier principal"
+
+msgid "Mark as special file"
+msgstr "Marquer comme fichier spécial"
+
+msgid "No comments found"
+msgstr "Aucun commentaire trouvé"
+
+msgid "Not reviewed"
+msgstr "Non vérifié"
+
+msgid "Reason (comment)"
+msgstr "Motif (commentaire)"
+
+msgid "Remove the main file status"
+msgstr "Retirer le statut de fichier principal"
+
+msgid "Remove the special file mark"
+msgstr "Retirer la marque de fichier spécial"
+
+msgid "Review"
+msgstr "Vérification"
+
+msgid "Review your request"
+msgstr "Vérifiez votre requête"
+
+msgid "Special"
+msgstr "Spécial"
+
+msgid "Special file (used in the important documents)"
+msgstr "Fichier spécial (utilisé dans les documents importants)"
+
+msgid "Subproject and all its structures"
+msgstr "Sous-projet et tous ses ouvrages"
+
+msgid "Subproject only"
+msgstr "Sous-projet seulement"
+
+msgid "Taken on"
+msgstr "Pris le"
+
+msgid "The action failed. Try again."
+msgstr "L'action a échoué. Réessayez."
+
+msgid "This file is no longer the main file."
+msgstr "Ce fichier n'est plus le fichier principal."
+
+msgid "You can't put this file invalidated principal"
+msgstr "Un fichier invalidé ne peut pas être le fichier principal"
+
+msgid "not reviewed"
+msgstr "non vérifiés"
+
+msgid "photo(s)"
+msgstr "photo(s)"

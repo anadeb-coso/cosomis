@@ -1,0 +1,311 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n %}
+{% comment %}
+    Files of a subproject or a structure (subprojects.files.views.FilesListView): same presentation as the "Gallery"
+    menu (cards, infinite scroll, viewer) with the review actions: validate / invalidate with a comment, main file,
+    special file, comments history; download of one file or of all the files shown (ZIP).
+{% endcomment %}
+
+{% block extracss %}
+{{ block.super }}
+{% include 'gallery/_styles.html' %}
+<style>
+    .sf-head { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; background: #fff; border: 1px solid #e5e9ee; border-radius: 12px; padding: 16px 20px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(16, 24, 40, .05); }
+    .sf-head__icon { width: 52px; height: 52px; border-radius: 14px; background: #e3eefb; color: #1a4f99; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+    .sf-head__id { flex: 1; min-width: 240px; }
+    .sf-head__kind { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #5f6b76; font-weight: 700; }
+    .sf-head__title { font-size: 18px; font-weight: 700; color: #212529; line-height: 1.3; }
+    .sf-head__meta { font-size: 13px; color: #5f6b76; margin-top: 2px; }
+    .sf-head__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .sf-stats { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; padding-top: 10px; border-top: 1px solid #eef1f4; }
+    .sf-stat { border-radius: 999px; padding: 3px 12px; font-size: 12px; font-weight: 600; background: #eef1f4; color: #455a73; }
+    .sf-stat.ok { background: #e3f5ea; color: #1e7b45; } .sf-stat.ko { background: #fde4e4; color: #a12424; } .sf-stat.wait { background: #fff3d6; color: #8a5a00; }
+    .sf-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .sf-filters select { max-width: 280px; }
+    .sf-card { border-top: 4px solid #f0b429; }
+    .sf-card.sf-validated { border-top-color: #3aa56a; } .sf-card.sf-invalidated { border-top-color: #d64545; }
+    .sf-card.sf-invalidated .gallery-card__media img { filter: grayscale(.6); }
+    .sf-flags { position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+    .sf-flag { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; color: #fff; font-weight: 700; }
+    .sf-flag-principal { background: #e0a100; } .sf-flag-special { background: #6f2ba3; }
+    .sf-status { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
+    .sf-status-validated { color: #1e7b45; } .sf-status-invalidated { color: #a12424; } .sf-status-pending { color: #8a5a00; }
+    .sf-count { font-size: 11px; font-weight: 700; }
+    .sf-review { display: flex; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e5e9ee; }
+    .sf-review button { border: 1px solid #d6dde6; background: #fff; color: #455a73; border-radius: 6px; font-size: 11px; font-weight: 600; padding: 3px 7px; line-height: 1.4; }
+    .sf-review button:hover:not(:disabled) { background: #f3f6fa; }
+    .sf-review button:disabled { opacity: .4; cursor: not-allowed; }
+    .sf-review .js-sf-validate.active { background: #3aa56a; border-color: #3aa56a; color: #fff; }
+    .sf-review .js-sf-invalidate.active { background: #d64545; border-color: #d64545; color: #fff; }
+    .sf-review .js-sf-principal { margin-left: auto; }
+    .sf-review .js-sf-principal.active { background: #e0a100; border-color: #e0a100; color: #fff; }
+    .sf-review .js-sf-special.active { background: #6f2ba3; border-color: #6f2ba3; color: #fff; }
+    .sf-card.sf-busy { opacity: .55; pointer-events: none; }
+    .sf-comment { border-bottom: 1px solid #eef1f4; padding: 10px 0; }
+    .sf-comment:last-child { border-bottom: 0; }
+    .sf-comment__head { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+    .sf-comment__type.ok { color: #1e7b45; } .sf-comment__type.ko { color: #a12424; }
+    .sf-comment__text { white-space: pre-wrap; margin-top: 4px; font-size: 13px; color: #212529; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sf-head">
+    <div class="sf-head__icon"><i class="fas {% if subproject.subproject_type_designation_id == 'Infrastructure' %}fa-cube{% else %}fa-project-diagram{% endif %}"></i></div>
+    <div class="sf-head__id">
+        <div class="sf-head__kind">{% if subproject.subproject_type_designation_id == 'Infrastructure' %}{% translate 'Structure' %}{% else %}{% translate 'Subproject' %}{% endif %} · {% translate 'Files' %}</div>
+        <div class="sf-head__title"><a href="{% url 'subprojects:detail' subproject.pk %}" class="text-reset">{% if subproject.number %}{{ subproject.number }} - {% endif %}{{ subproject.full_title_of_approved_subproject }}</a></div>
+        <div class="sf-head__meta">
+            {% if subproject.type_of_subproject_id %}<i class="fas fa-tag mr-1"></i>{{ subproject.type_of_subproject_id }}{% endif %}
+            {% if subproject.location_subproject_realized %} · <i class="fas fa-map-marker-alt mr-1"></i><a href="{% url 'administrativelevels:village_detail' subproject.location_subproject_realized.pk %}">{{ subproject.location_subproject_realized.name }}</a>{% endif %}
+            {% if subproject.link_to_subproject %} · <i class="fas fa-level-up-alt mr-1"></i><a href="{% url 'subprojects:files:files' subproject.link_to_subproject_id %}">{% translate 'Files of the subproject' %}</a>{% endif %}
+        </div>
+    </div>
+    <div class="sf-head__actions">
+        <a href="{% url 'subprojects:detail' subproject.pk %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-arrow-left mr-1"></i>{% translate 'Back to the subproject' %}</a>
+        <a href="javascript:window.location.reload()" class="btn btn-sm btn-outline-secondary" title="{% translate 'Refresh' %}"><i class="fas fa-sync-alt"></i></a>
+        {% if total_count %}
+        <a href="{{ zip_url }}" class="btn btn-sm btn-primary js-sf-zip" title="{% if total_count > zip_max_files %}{% blocktranslate with max=zip_max_files %}Limited to the first {{ max }} files{% endblocktranslate %}{% endif %}">
+            <i class="fas fa-file-archive mr-1"></i>{% translate 'Download all' %} ({{ total_count }})</a>
+        {% endif %}
+    </div>
+    <div class="sf-stats">
+        <span class="sf-stat">{{ stats.total }} {% translate 'file(s)' %}</span>
+        <span class="sf-stat">{{ stats.photos }} {% translate 'photo(s)' %}</span>
+        <span class="sf-stat ok"><i class="fas fa-check-circle mr-1"></i>{{ stats.validated }} {% translate 'validated' %}</span>
+        <span class="sf-stat ko"><i class="fas fa-times-circle mr-1"></i>{{ stats.invalidated }} {% translate 'invalidated' %}</span>
+        <span class="sf-stat wait"><i class="far fa-clock mr-1"></i>{{ stats.pending }} {% translate 'not reviewed' %}</span>
+    </div>
+</div>
+
+<div class="gallery-toolbar d-flex flex-wrap align-items-center mb-2">
+    <div class="btn-group flex-wrap" role="group" aria-label="{% translate 'File type' %}">
+        {% for link in type_links %}<a href="{{ link.url }}" class="btn btn-outline-secondary {% if link.active %}active{% endif %}">{% if link.icon %}<i class="fas {{ link.icon }}"></i> {% endif %}{{ link.label }}</a>{% endfor %}
+    </div>
+    <div class="btn-group flex-wrap" role="group" aria-label="{% translate 'Review' %}">
+        {% for link in status_links %}<a href="{{ link.url }}" class="btn btn-outline-secondary {% if link.active %}active{% endif %}">{{ link.label }}</a>{% endfor %}
+    </div>
+    <form method="get" class="sf-filters ml-auto" id="sf-filter-form">
+        {% for key, value in request.GET.items %}{% if key != 'step' and key != 'structure' and key != 'page' %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+        {% if steps %}
+        <select name="step" class="form-control form-control-sm no-select2" title="{% translate 'Step' %}">
+            <option value="">{% translate 'All steps' %}</option>
+            {% for pk, wording in steps %}<option value="{{ pk }}" {% if selected_step == pk|stringformat:'s' %}selected{% endif %}>{{ wording }}</option>{% endfor %}
+        </select>
+        {% endif %}
+        {% if structures %}
+        <select name="structure" class="form-control form-control-sm no-select2" title="{% translate 'Structure' %}">
+            <option value="">{% translate 'Subproject and all its structures' %}</option>
+            <option value="{{ subproject.pk }}" {% if selected_structure == subproject.pk|stringformat:'s' %}selected{% endif %}>{% translate 'Subproject only' %}</option>
+            {% for pk, title in structures %}<option value="{{ pk }}" {% if selected_structure == pk|stringformat:'s' %}selected{% endif %}>{{ title|truncatechars:60 }}</option>{% endfor %}
+        </select>
+        {% endif %}
+    </form>
+</div>
+
+<p class="gallery-summary mb-3">{{ total_count }} {% translate 'file(s)' %}</p>
+<div id="gallery-root">{% include 'subproject_files/_grid.html' %}</div>
+<div id="gallery-loading" class="gallery-loading" role="status" aria-live="polite">
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    <span>{% translate 'Loading more files…' %}</span>
+</div>
+<div id="gallery-error" class="gallery-error" role="alert" hidden>
+    <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+    <span>{% translate 'Could not load more files. Check your connection and try again.' %}</span>
+    <button type="button" class="btn btn-sm btn-outline-danger" id="gallery-retry">{% translate 'Retry' %}</button>
+</div>
+
+{% include 'gallery/_viewer.html' %}
+
+<div class="modal fade" id="sfInvalidateModal" tabindex="-1" role="dialog" aria-labelledby="sfInvalidateLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <form class="modal-content" id="sf-invalidate-form">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sfInvalidateLabel">{% translate 'Invalidate the file' %}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="sf-comment">{% translate 'Reason (comment)' %}</label>
+                    <textarea id="sf-comment" class="form-control" rows="3" maxlength="65000" placeholder="{% translate 'Add Comment' %}"></textarea>
+                </div>
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" id="sf-no-comment">
+                    <label class="custom-control-label" for="sf-no-comment">{% translate 'Invalidate without comment' %}</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">{% translate 'Cancel' %}</button>
+                <button type="submit" class="btn btn-danger"><i class="fas fa-times mr-1"></i>{% translate 'Invalidate' %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="sfCommentsModal" tabindex="-1" role="dialog" aria-labelledby="sfCommentsLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sfCommentsLabel">{% translate 'Comments and actions history' %}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body" id="sf-comments-body"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+<script type="text/javascript" src="{% static 'js/htmx.min.js' %}"></script>
+<script src="{% static 'js/notifications.js' %}"></script>
+{% include 'gallery/_viewer_js.html' %}
+<script type="text/javascript">
+    $(function () {
+        var $root = $('#gallery-root');
+        var csrf = "{{ csrf_token }}";
+        var urls = {
+            card: "{% url 'subprojects:files:file_card' 0 %}",
+            validation: "{% url 'subprojects:files:toggle_validation_file_view' %}",
+            principal: "{% url 'subprojects:files:toggle_principal_file_view' %}",
+            special: "{% url 'subprojects:files:toggle_special_file_view' %}",
+            comments: "{% url 'subprojects:files:file_comments_view' %}"
+        };
+        var t = {
+            validated: "{% translate 'File validated' as s %}{{ s|escapejs }}",
+            invalidated: "{% translate 'File invalidated' as s %}{{ s|escapejs }}",
+            principalOn: "{% translate 'This file has become the main file.' as s %}{{ s|escapejs }}",
+            principalOff: "{% translate 'This file is no longer the main file.' as s %}{{ s|escapejs }}",
+            specialOn: "{% translate 'This file is known to be used in important documents.' as s %}{{ s|escapejs }}",
+            specialOff: "{% translate 'This file is no longer a special file.' as s %}{{ s|escapejs }}",
+            commentRequired: "{% translate 'Add a comment or tick “Invalidate without comment”.' as s %}{{ s|escapejs }}",
+            noComments: "{% translate 'No comments found' as s %}{{ s|escapejs }}",
+            validationAction: "{% translate 'Validation action' as s %}{{ s|escapejs }}",
+            invalidationAction: "{% translate 'Invalidation action' as s %}{{ s|escapejs }}",
+            error: "{% translate 'The action failed. Try again.' as s %}{{ s|escapejs }}",
+            validate: "{% translate 'Validate' as s %}{{ s|escapejs }}",
+            invalidate: "{% translate 'Invalidate' as s %}{{ s|escapejs }}",
+            comments: "{% translate 'Comments' as s %}{{ s|escapejs }}"
+        };
+        var canReview = {{ can_review|yesno:"true,false" }};
+
+        function notify(message, type) {
+            if (window.pushNotify) { pushNotify(message, type); } else { alert(message); }
+        }
+        function errorOf(xhr) {
+            return (xhr.responseJSON && (xhr.responseJSON.error || xhr.responseJSON.detail)) || t.error;
+        }
+        // The card is rendered again by the server after each action (state, buttons, badges).
+        function reloadCard(fileId) {
+            var $card = $('#sf-card-' + fileId);
+            return $.get(urls.card.replace('/0/', '/' + fileId + '/'), {subproject: "{{ subproject.pk }}"}).done(function (html) {
+                $card.replaceWith(html);
+            });
+        }
+        function post(url, fileId, data, extra) {
+            var $card = $('#sf-card-' + fileId).addClass('sf-busy');
+            return $.ajax({type: 'POST', url: url + '?' + $.param($.extend({file_id: fileId}, extra || {})),
+                           data: $.extend({csrfmiddlewaretoken: csrf}, data || {})})
+                .fail(function (xhr) { notify(errorOf(xhr), 'error'); $card.removeClass('sf-busy'); });
+        }
+        function cardId(el) { return $(el).closest('.gallery-card').data('file-id'); }
+
+        function validate(fileId) {
+            post(urls.validation, fileId, {}, {action: 'validated'}).done(function () {
+                notify(t.validated, 'success'); reloadCard(fileId);
+            });
+        }
+        var invalidating = null;
+        function askInvalidation(fileId) {
+            invalidating = fileId;
+            $('#sf-comment').val('').prop('disabled', false);
+            $('#sf-no-comment').prop('checked', false);
+            $('#sfInvalidateModal').modal('show');
+        }
+        $('#sf-no-comment').on('change', function () { $('#sf-comment').prop('disabled', this.checked); });
+        $('#sf-invalidate-form').on('submit', function (e) {
+            e.preventDefault();
+            var comment = $.trim($('#sf-comment').val()), noComment = $('#sf-no-comment').prop('checked');
+            if (!comment && !noComment) { notify(t.commentRequired, 'error'); return; }
+            var fileId = invalidating;
+            post(urls.validation, fileId, {invalidation_comment: comment, no_comment: noComment ? 'true' : 'false'}, {action: 'invalidated'})
+                .done(function () { $('#sfInvalidateModal').modal('hide'); notify(t.invalidated, 'success'); reloadCard(fileId); });
+        });
+
+        $root.on('click', '.js-sf-validate', function () { if (!$(this).hasClass('active')) validate(cardId(this)); });
+        $root.on('click', '.js-sf-invalidate', function () { if (!$(this).hasClass('active')) askInvalidation(cardId(this)); });
+        $root.on('click', '.js-sf-principal', function () {
+            var fileId = cardId(this), on = !$(this).hasClass('active');
+            post(urls.principal, fileId, {principal: on ? 'true' : 'false'}).done(function () {
+                notify(on ? t.principalOn : t.principalOff, 'success');
+                // Only one main file per subproject or structure: the other cards of the same one lose the status.
+                var owner = $('#sf-card-' + fileId).data('subproject');
+                if (on) { $root.find('.gallery-card[data-principal="1"][data-subproject="' + owner + '"]').each(function () { if ($(this).data('file-id') != fileId) reloadCard($(this).data('file-id')); }); }
+                reloadCard(fileId);
+            });
+        });
+        $root.on('click', '.js-sf-special', function () {
+            var fileId = cardId(this), on = !$(this).hasClass('active');
+            post(urls.special, fileId, {special: on ? 'true' : 'false'}).done(function () {
+                notify(on ? t.specialOn : t.specialOff, 'success'); reloadCard(fileId);
+            });
+        });
+
+        function showComments(fileId) {
+            var $body = $('#sf-comments-body').html('<div class="text-center text-muted py-3"><i class="fas fa-sync-alt fa-spin"></i></div>');
+            $('#sfCommentsModal').modal('show');
+            $.ajax({type: 'POST', url: urls.comments + '?file_id=' + fileId, data: {csrfmiddlewaretoken: csrf}})
+                .done(function (comments) {
+                    $body.empty();
+                    if (!comments.length) { $body.append($('<div class="text-center text-muted py-3">').text(t.noComments)); return; }
+                    comments.forEach(function (c) {
+                        var user = c.user ? [c.user.last_name, c.user.first_name].filter(Boolean).join(' ') || c.user.username : '';
+                        var date = c.created_date ? new Date(c.created_date).toLocaleString() : '';
+                        var $type = $('<span class="sf-comment__type">');
+                        if (c.type === 'comment_validated') { $type.addClass('ok').text('(' + t.validationAction + ')'); }
+                        else if (c.type === 'comment_invalidated') { $type.addClass('ko').text('(' + t.invalidationAction + ')'); }
+                        $body.append($('<div class="sf-comment">')
+                            .append($('<div class="sf-comment__head">').append($('<b>').text(user).append(' ').append($type)).append($('<span class="text-muted">').text(date)))
+                            .append($('<div class="sf-comment__text">').text(c.comment || '')));
+                    });
+                })
+                .fail(function (xhr) { $body.empty().append($('<div class="text-danger">').text(errorOf(xhr))); });
+        }
+        $root.on('click', '.js-sf-comments', function () { showComments(cardId(this)); });
+
+        // Viewer: comments and review buttons for the file shown.
+        window.galleryViewer = window.galleryViewer || {};
+        window.galleryViewer.extraFooter = function (card, $footer) {
+            var fileId = $(card).data('file-id'), status = card.dataset.status;
+            $footer.append($('<button type="button" class="btn btn-sm btn-outline-secondary">').html('<i class="fas fa-comments"></i> ').append(document.createTextNode(t.comments))
+                .on('click', function () { $('#attachmentModal').modal('hide'); showComments(fileId); }));
+            if (!canReview) return;
+            if (status !== 'validated') {
+                $footer.append($('<button type="button" class="btn btn-sm btn-success">').html('<i class="fas fa-check"></i> ').append(document.createTextNode(t.validate))
+                    .on('click', function () { $('#attachmentModal').modal('hide'); validate(fileId); }));
+            }
+            if (status !== 'invalidated') {
+                $footer.append($('<button type="button" class="btn btn-sm btn-outline-danger">').html('<i class="fas fa-times"></i> ').append(document.createTextNode(t.invalidate))
+                    .on('click', function () { $('#attachmentModal').modal('hide'); askInvalidation(fileId); }));
+            }
+        };
+
+        // Step / structure lists: only the filled fields go in the URL.
+        $('#sf-filter-form select').on('change', function () {
+            var fields = $(this.form).serializeArray().filter(function (f) { return f.value !== ''; });
+            window.location = window.location.pathname + (fields.length ? '?' + $.param(fields) : '');
+        });
+
+        var galleryError = document.getElementById('gallery-error'), lastFailed = null;
+        ['htmx:responseError', 'htmx:sendError', 'htmx:timeout'].forEach(function (name) {
+            document.body.addEventListener(name, function (e) {
+                if (e.target && e.target.closest && e.target.closest('#gallery-root')) { lastFailed = e.target; galleryError.hidden = false; }
+            });
+        });
+        document.getElementById('gallery-retry').addEventListener('click', function () {
+            galleryError.hidden = true;
+            if (lastFailed && window.htmx) window.htmx.trigger(lastFailed, 'revealed');
+        });
+    });
+</script>
+{% endblock %}
