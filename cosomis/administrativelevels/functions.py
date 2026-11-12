@@ -27,87 +27,13 @@ def exists_id(liste, id):
 def save_csv_file_datas_in_db(datas_file: dict) -> str:
     """Enregistre les niveaux administratifs d'un fichier (Région, Préfecture, Commune, Canton, Village/localité).
 
-    Chaque ligne est lue de haut en bas : chaque niveau est cherché SOUS le parent trouvé juste avant (jamais par son
-    seul nom : deux cantons « LOKO » existent dans deux communes différentes), puis créé s'il n'existe pas. Un nom
-    proche d'un niveau existant (accents, tirets, faute de frappe sur un parent) est rapproché de ce niveau au lieu
-    d'en créer un doublon ; une ligne ambiguë est signalée et n'est pas enregistrée."""
-    from administrativelevels.functions_lookup import AdministrativeLevelResolver
+    Même traitement que l'import avec aperçu (`functions_import_admin_levels.process_rows`) : chaque niveau est cherché
+    sous le parent trouvé juste avant, créé s'il n'existe pas ; une ligne ambiguë est signalée et arrêtée."""
+    from administrativelevels.functions_import_admin_levels import process_rows, rows_from_columns
 
-    at_least_one_save = False # Variable to determine if at least one is saved
-    at_least_one_error = False # Variable to determine if at least one error is occurred
-    columns = (
-        ("Région", AdministrativeLevel.REGION), ("Préfecture", AdministrativeLevel.PREFECTURE),
-        ("Commune", AdministrativeLevel.COMMUNE), ("Canton", AdministrativeLevel.CANTON),
-        ("Village/localité", AdministrativeLevel.VILLAGE),
-    )
-    list_name_errors = []
-    list_warnings = []
-    resolver = AdministrativeLevelResolver()
-
-    def cell(column, count):
-        try:
-            return get_value(datas_file[column][count])
-        except Exception:
-            return None
-
-    if datas_file:
-        long = len(list(datas_file.values())[0])
-        for count in range(long):
-            frontalier, rural, latitude, longitude = False, False, None, None
-            try:
-                frontalier = bool(cell("Village frontalier (1=oui, 0= non)", count))
-            except Exception:
-                pass
-            try:
-                rural = bool(cell("Localité (Rural=1, urbain=0)", count))
-            except Exception:
-                pass
-            try:
-                latitude = float(cell("Latitude", count))
-            except Exception:
-                pass
-            try:
-                longitude = float(cell("Longitude", count))
-            except Exception:
-                pass
-
-            parent = None
-            for column, _type in columns:
-                value = cell(column, count)
-                if value is None or not str(value).strip():
-                    break  # niveau vide : on s'arrête au dernier niveau renseigné de la ligne
-                name = str(value).upper().strip()
-                try:
-                    # tolérance aux fautes de frappe seulement pour les niveaux au-dessus du village
-                    result = resolver.child(parent, name, _type, fuzzy=_type != AdministrativeLevel.VILLAGE)
-                    if result.error == "ambiguous":
-                        raise ValueError(f"{_type} en double sous « {parent.name if parent else '-'} » : "
-                                         + ", ".join(f"id {c.id}" for c in result.candidates))
-                    list_warnings += [f"Ligne {count + 2} : {w}" for w in result.warnings]
-                    administrative_level = result.level
-                    created = administrative_level is None
-                    is_village = _type == AdministrativeLevel.VILLAGE
-                    if created:
-                        administrative_level = AdministrativeLevel(name=name, type=_type, parent=parent)
-                        at_least_one_save = True
-                    elif is_village:
-                        administrative_level = AdministrativeLevel.objects.get(pk=administrative_level.pk)
-
-                    if is_village:
-                        # coordonnées et caractéristiques de la ligne : celles du village, pas de ses parents
-                        administrative_level.frontalier = frontalier
-                        administrative_level.rural = rural
-                        administrative_level.latitude = latitude
-                        administrative_level.longitude = longitude
-                    if created or is_village:
-                        administrative_level.save(user={'is_superuser': True})
-                    if created:
-                        resolver.add(administrative_level)
-                    parent = administrative_level
-                except Exception as exc:
-                    at_least_one_error = True
-                    list_name_errors.append(f"Ligne {count + 2} - {name} : {exc}")
-                    break  # sans ce niveau, ceux du dessous seraient rattachés au mauvais parent
+    result = process_rows(rows_from_columns(datas_file), apply=True)
+    at_least_one_save = bool(result['counts']['new'])
+    at_least_one_error = bool(result['errors'])
 
     message = ""
     if at_least_one_save and not at_least_one_error:
@@ -119,7 +45,7 @@ def save_csv_file_datas_in_db(datas_file: dict) -> str:
     elif at_least_one_save and at_least_one_error:
         message = _("Some element(s) have not been saved!")
 
-    message = message + "\n" + "\n".join(list_name_errors + list_warnings)
+    message = message + "\n" + "\n".join(result['errors'] + result['warnings'])
 
     return message
 

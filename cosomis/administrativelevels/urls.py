@@ -1,7 +1,7 @@
 from django.urls import path
 from django.conf.urls import include
 
-from administrativelevels import views, views_gallery, views_json
+from administrativelevels import views, views_gallery, views_import_admin_levels, views_import_ug_cvd, views_json
 
 app_name = 'administrativelevels'
 
@@ -12,6 +12,7 @@ urlpatterns = [
     path('area-status/', views.AdministrativeLevelAreaStatusView.as_view(), name='area_status'), # Bulk area status assignment path
     path('village-detail/<int:pk>/', views.VillageDetailView.as_view(), name='village_detail'), #The path of the detail of village
     path('detail/<int:pk>/', views.AdministrativeLevelDetailView.as_view(), name='detail'), #The path of the detail
+    path('import/', views_import_admin_levels.AdministrativeLevelImportView.as_view(), name='administrative_levels_import'), # Import administrative levels from a file (preview, then confirmation and link to the project)
     path('upload/', views.UploadCSVView.as_view(), name='upload'), #The path to download CSV/Excel file from db
     path('download/', views.DownloadCSVView.as_view(), name='download'), #The path to upload CSV file and save in db
     path('download-cvd/', views.DownloadCVDCSVView.as_view(), name='download_cvd'), #The path to upload CVD on CSV file and save in db
@@ -26,6 +27,7 @@ urlpatterns = [
     path('geographical-unit/create', views.GeographicalUnitCreateView.as_view(), name='geographical_unit_create'), #The path to create Geographical unit
     path('geographical-unit-detail/<int:pk>/', views.GeographicalUnitDetailView.as_view(), name='geographical_unit_detail'), #The path of the detail of Geographical unit
     path('geographical-unit-update/<int:pk>/', views.GeographicalUnitUpdateView.as_view(), name='geographical_unit_update'), #The path of to update Geographical unit
+    path('geographical-units-cvds/import/', views_import_ug_cvd.GeographicalUnitCvdImportView.as_view(), name='geographical_unit_cvd_import'), # Import geographical units and CVD from a file (preview, then confirmation)
 
     path('cvds', views.CVDListView.as_view(), name='cvds_list'), # CVD list path    
     path('cvd/create', views.CVDCreateView.as_view(), name='cvd_create'), #The path to create cvd

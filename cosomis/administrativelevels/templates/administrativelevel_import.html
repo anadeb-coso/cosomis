@@ -1,0 +1,259 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n %}
+
+{% block extracss %}
+{{ block.super }}
+<style>
+    .adl-import .stat { border: 1px solid #e3e6ea; border-radius: 6px; padding: 10px 14px; height: 100%; }
+    .adl-import .stat .num { font-size: 1.5rem; font-weight: 600; line-height: 1.2; }
+    .adl-import .stat .lbl { font-size: .85rem; color: #6c757d; }
+    .adl-import table td, .adl-import table th { vertical-align: middle; }
+    .adl-import .table-scroll { max-height: 420px; overflow: auto; }
+    .adl-import .table-scroll thead th { position: sticky; top: 0; z-index: 1; }
+    .adl-import .confirm-bar { position: sticky; bottom: 0; background: #fff; border-top: 1px solid #e3e6ea; padding: 12px 0; z-index: 5; }
+    .adl-import .renamed { border-bottom: 1px dotted #856404; cursor: help; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="adl-import">
+
+    {% if not result %}
+    {# ---------------------------------------------------------------- Étape 1 : envoi du fichier #}
+    <div class="card">
+        <div class="card-header"><h5 class="mb-0">{% translate 'Load the file' %}</h5></div>
+        <div class="card-body">
+            <p>{% translate 'The file must have one line per village with the columns below (other columns are ignored):' %}</p>
+            <ul>
+                <li><strong>{{ level_columns|join:", " }}</strong> : {% translate 'each level is searched under the level of the column before it, and created if it does not exist' %}</li>
+                <li><strong>Latitude, Longitude, {{ frontalier_column }}, {{ rural_column }}</strong> : {% translate 'optional, saved on the village of the line' %}</li>
+            </ul>
+            <p class="text-muted">{% translate 'Nothing is saved before you confirm the preview.' %}</p>
+
+            <form method="post" enctype="multipart/form-data" action="{% url 'administrativelevels:administrative_levels_import' %}">
+                {% csrf_token %}
+                <div class="form-row align-items-end">
+                    <div class="form-group col-md-5">
+                        <label for="adl-file">{% translate 'File (Excel or CSV)' %}</label>
+                        <input type="file" class="form-control-file" name="file" id="adl-file" required
+                               accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" />
+                    </div>
+                    <div class="form-group col-md-4" id="adl-sheet-group" style="display: none;">
+                        <label for="adl-sheet">{% translate 'Sheet Name' %}</label>
+                        <select class="form-control" name="sheet_name" id="adl-sheet"></select>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-eye"></i> {% translate 'Preview' %}</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% else %}
+    {# ---------------------------------------------------------------- Étape 2 : aperçu #}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        {% blocktranslate with file=stored.file_name %}Preview of the file « {{ file }} »: nothing has been saved yet. Check the result, then confirm or cancel.{% endblocktranslate %}
+        {% if stored.sheet_name %}({% translate 'Sheet Name' %} : {{ stored.sheet_name }}){% endif %}
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-6 col-md-2 mb-2"><div class="stat"><div class="num">{{ counts.rows }}</div><div class="lbl">{% translate 'Lines read' %}</div></div></div>
+        <div class="col-6 col-md-2 mb-2"><div class="stat"><div class="num">{{ counts.total }}</div><div class="lbl">{% translate 'Administrative levels in the file' %}</div></div></div>
+        <div class="col-6 col-md-2 mb-2"><div class="stat"><div class="num text-success">{{ counts.new }}</div><div class="lbl">{% translate 'To create' %}</div></div></div>
+        <div class="col-6 col-md-2 mb-2"><div class="stat"><div class="num">{{ counts.existing }}</div><div class="lbl">{% translate 'Already existing' %}</div></div></div>
+        <div class="col-6 col-md-2 mb-2"><div class="stat"><div class="num">{{ counts.villages_updated }}</div><div class="lbl">{% translate 'Existing villages updated' %}</div></div></div>
+        <div class="col-6 col-md-2 mb-2"><div class="stat"><div class="num {% if counts.rows_error %}text-danger{% endif %}">{{ counts.rows_error }}</div><div class="lbl">{% translate 'Lines in error' %}</div></div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-5 mb-3">
+            <div class="card h-100">
+                <div class="card-header"><h5 class="mb-0">{% translate 'By type' %}</h5></div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <thead class="thead-light"><tr>
+                            <th>{% translate 'Type' %}</th><th class="text-right">{% translate 'In the file' %}</th>
+                            <th class="text-right">{% translate 'To create' %}</th><th class="text-right">{% translate 'Already existing' %}</th>
+                        </tr></thead>
+                        <tbody>
+                        {% for row in result.by_type %}
+                        <tr>
+                            <td>{% translate row.type %}</td>
+                            <td class="text-right">{{ row.total }}</td>
+                            <td class="text-right {% if row.new %}text-success font-weight-bold{% endif %}">{{ row.new }}</td>
+                            <td class="text-right">{{ row.existing }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7 mb-3">
+            <div class="card h-100">
+                <div class="card-header"><h5 class="mb-0">{% translate 'Administrative levels to create' %} ({{ counts.new }})</h5></div>
+                <div class="card-body table-scroll">
+                    {% for type, paths in result.created_by_type %}
+                        <h6 class="mb-1">{% translate type %} ({{ paths|length }})</h6>
+                        <ul class="small mb-3">{% for path in paths %}<li>{{ path }}</li>{% endfor %}</ul>
+                    {% empty %}
+                        <p class="text-muted mb-0">{% translate 'No new administrative level: all the levels of the file already exist.' %}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if result.errors %}
+    <div class="card border-danger mb-3">
+        <div class="card-header"><h5 class="mb-0 text-danger"><i class="fas fa-exclamation-triangle"></i> {% translate 'Lines in error (stopped at the level in error)' %} ({{ result.errors|length }})</h5></div>
+        <div class="card-body table-scroll">
+            <ul class="mb-0">{% for error in result.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if result.warnings %}
+    <div class="card border-warning mb-3">
+        <div class="card-header"><h5 class="mb-0 text-warning"><i class="fas fa-exclamation-circle"></i> {% translate 'Points to check' %} ({{ result.warnings|length }})</h5></div>
+        <div class="card-body table-scroll">
+            <p class="text-muted small">{% translate 'Names of the file matched with a close existing name (no duplicate is created):' %}</p>
+            <ul class="mb-0">{% for warning in result.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card mb-3">
+        <div class="card-header d-flex flex-wrap justify-content-between align-items-center">
+            <h5 class="mb-0">{% translate 'Lines of the file' %}</h5>
+            <div class="btn-group btn-group-sm btn-group-toggle mt-1 mt-md-0" data-toggle="buttons" id="adl-lines-filter">
+                <label class="btn btn-outline-secondary active"><input type="radio" name="lines_filter" value="all" checked> {% translate 'All' %} ({{ counts.rows }})</label>
+                <label class="btn btn-outline-secondary"><input type="radio" name="lines_filter" value="new"> {% translate 'With a level to create' %}</label>
+                <label class="btn btn-outline-secondary"><input type="radio" name="lines_filter" value="error"> {% translate 'In error' %} ({{ counts.rows_error }})</label>
+            </div>
+        </div>
+        <div class="card-body p-0 table-scroll">
+            <table class="table table-sm table-bordered mb-0" id="adl-lines">
+                <thead class="thead-light"><tr>
+                    <th>{% translate 'Line' %}</th>
+                    <th>{% translate 'Region' %}</th><th>{% translate 'Prefecture' %}</th><th>{% translate 'Commune' %}</th>
+                    <th>{% translate 'Canton' %}</th><th>{% translate 'Village' %}</th>
+                    <th>{% translate 'Latitude' %}</th><th>{% translate 'Longitude' %}</th>
+                    <th>{% translate 'Frontalier' %}</th><th>{% translate 'Rural' %}</th>
+                </tr></thead>
+                <tbody>
+                {% for line in result.lines %}
+                <tr data-new="{% for cell in line.cells %}{% if cell.status == 'new' %}1{% endif %}{% endfor %}" data-error="{% if line.error %}1{% endif %}" {% if line.error %}class="table-danger"{% endif %}>
+                    <td>{{ line.line }}</td>
+                    {% for cell in line.cells %}
+                    <td>
+                        {% if cell.renamed %}<span class="renamed" title="{% translate 'In the file' %} : {{ cell.file_name }}">{{ cell.name }}</span>{% else %}{{ cell.name }}{% endif %}
+                        {% if cell.status == 'new' %}<span class="badge badge-success">{% translate 'new' %}</span>{% endif %}
+                    </td>
+                    {% endfor %}
+                    {% for name in line.skipped %}<td class="text-danger">{% if name %}<s>{{ name }}</s>{% endif %}</td>{% endfor %}
+                    {% for i in line.padding %}<td></td>{% endfor %}
+                    {% if line.village %}
+                    <td>{{ line.village.latitude|default_if_none:"—" }}</td>
+                    <td>{{ line.village.longitude|default_if_none:"—" }}</td>
+                    <td>{{ line.village.frontalier|yesno:_("yes,no,maybe") }}</td>
+                    <td>{{ line.village.rural|yesno:_("yes,no,maybe") }}</td>
+                    {% else %}
+                    <td colspan="4" class="text-muted small">{% if line.error %}{{ line.error }}{% endif %}</td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <form method="post" id="adl-confirm-form" action="{% url 'administrativelevels:administrative_levels_import' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="confirm" />
+        <div class="card mb-3 border-primary">
+            <div class="card-header"><h5 class="mb-0"><i class="fa fa-project-diagram"></i> {% translate 'Link to the project' %}</h5></div>
+            <div class="card-body">
+                {% if project %}
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input" name="link_to_project" id="adl-link-project" value="1" checked>
+                    <label class="custom-control-label" for="adl-link-project">
+                        {% blocktranslate with project=project.name total=counts.total %}Link the {{ total }} administrative level(s) of the file to the project « {{ project }} »{% endblocktranslate %}
+                    </label>
+                </div>
+                <p class="text-muted small mb-0 mt-2">
+                    {% blocktranslate with linked=link_counts.already_linked to_link=link_counts.to_link %}{{ linked }} already linked to the project, {{ to_link }} to link. The levels already linked to the project stay linked; the cycles of the project are updated as when the levels are chosen on the project form.{% endblocktranslate %}
+                    {% translate 'Without this link, the levels created are not shown in the lists of the project.' %}
+                </p>
+                {% else %}
+                <p class="text-muted mb-0">{% translate 'No project selected: the administrative levels will not be linked to a project.' %}</p>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+
+    <div class="confirm-bar d-flex flex-wrap align-items-center">
+        <button type="submit" form="adl-confirm-form" class="btn btn-success mr-2" {% if not counts.total %}disabled{% endif %}
+                onclick="this.disabled = true; document.getElementById('adl-confirm-form').submit();">
+            <i class="fas fa-check"></i> {% translate 'Confirm and save' %}
+        </button>
+        <form method="post" class="mr-3" action="{% url 'administrativelevels:administrative_levels_import' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="cancel" />
+            <button type="submit" class="btn btn-secondary"><i class="fas fa-times"></i> {% translate 'Cancel' %}</button>
+        </form>
+        {% if not counts.total %}<span class="text-danger">{% translate 'Nothing can be imported from this file.' %}</span>
+        {% elif counts.rows_error %}<span class="text-muted">{% translate 'The lines in error stop at the level in error; the levels above it are saved.' %}</span>{% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+{% if not result %}
+<script>
+    (function () {
+        var file = document.getElementById('adl-file');
+        var group = document.getElementById('adl-sheet-group');
+        var select = document.getElementById('adl-sheet');
+        file.onchange = function () {
+            select.innerHTML = '';
+            group.style.display = 'none';
+            if (!this.files.length || /\.csv$/i.test(this.files[0].name)) { return; }
+            var data = new FormData();
+            data.append('file', this.files[0]);
+            data.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            fetch("{% url 'services:get_excel_sheets_names' %}", { method: 'POST', body: data })
+                .then(function (response) { return response.json(); })
+                .then(function (datas) {
+                    (datas.names || []).forEach(function (name) {
+                        var option = document.createElement('option');
+                        option.value = name;
+                        option.textContent = name;
+                        select.appendChild(option);
+                    });
+                    group.style.display = select.options.length ? 'block' : 'none';
+                })
+                .catch(function (error) { console.log(error); });
+        };
+    })();
+</script>
+{% else %}
+<script>
+    (function () {
+        var rows = document.querySelectorAll('#adl-lines tbody tr');
+        $('#adl-lines-filter input').on('change', function () {
+            var value = this.value;
+            rows.forEach(function (row) {
+                var show = value === 'all' || (value === 'new' && row.dataset.new) || (value === 'error' && row.dataset.error);
+                row.style.display = show ? '' : 'none';
+            });
+        });
+    })();
+</script>
+{% endif %}
+{% endblock %}

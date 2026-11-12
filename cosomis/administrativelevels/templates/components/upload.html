@@ -12,7 +12,7 @@
         <div class="modal-content">
 
             <form method="post" enctype="multipart/form-data"
-                action="{% url 'administrativelevels:upload' %}">
+                action="{% url 'administrativelevels:administrative_levels_import' %}">
                 {% csrf_token %}
                 <div class="modal-header">
                     <h5 class="modal-title" id="exampleModalLongTitle">
@@ -24,6 +24,7 @@
                 </div>
                 <div class="modal-body">
 
+                    <p class="text-muted small">{% translate 'Nothing is saved before you confirm the preview.' %}</p>
                     <div class="file-field big">
                         <a class="btn-floating btn-lg amber darken-2 mt-0 float-left">
                             <i class="fas fa-cloud-upload-alt" aria-hidden="true"></i>
@@ -38,7 +39,7 @@
                     <button type="button" class="btn btn-secondary" data-dismiss="modal"
                         style="display: inline-block !important;">{% translate 'Close' %}</button>
                     <button type="submit" class="btn btn-primary" style="display: inline-block !important;">
-                        {% translate 'Upload' %}
+                        <i class="fas fa-eye"></i> {% translate 'Preview' %}
                     </button>
                 </div>
 
