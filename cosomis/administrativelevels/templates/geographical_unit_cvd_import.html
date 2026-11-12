@@ -1,0 +1,235 @@
+{% extends 'layouts/base.html' %}
+{% load static i18n %}
+
+{% block extracss %}
+{{ block.super }}
+<style>
+    .ugcvd-import .stat { border: 1px solid #e3e6ea; border-radius: 6px; padding: 10px 14px; height: 100%; }
+    .ugcvd-import .stat .num { font-size: 1.5rem; font-weight: 600; line-height: 1.2; }
+    .ugcvd-import .stat .lbl { font-size: .85rem; color: #6c757d; }
+    .ugcvd-import .unit-card { border-left: 4px solid #28a745; }
+    .ugcvd-import .unit-card.invalid { border-left-color: #dc3545; }
+    .ugcvd-import table td, .ugcvd-import table th { vertical-align: middle; }
+    .ugcvd-import .table-scroll { max-height: 420px; overflow: auto; }
+    .ugcvd-import .confirm-bar { position: sticky; bottom: 0; background: #fff; border-top: 1px solid #e3e6ea; padding: 12px 0; z-index: 5; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ugcvd-import">
+
+    {% if not plan %}
+    {# ---------------------------------------------------------------- Étape 1 : envoi du fichier #}
+    <div class="card">
+        <div class="card-header"><h5 class="mb-0">{% translate 'Load the file' %}</h5></div>
+        <div class="card-body">
+            <p>{% translate 'The file must have one line per village with the columns below (other columns are ignored):' %}</p>
+            <ul>
+                <li><strong>{% translate 'Region' %}, {% translate 'Prefecture' %}, {% translate 'Commune' %}, {% translate 'Canton' %}</strong> : {% translate 'locate the village (the canton is required)' %}</li>
+                <li><strong>Village/Quartier</strong> ({% translate 'or' %} Village/localité) : {% translate 'the village, which must already exist' %}</li>
+                <li><strong>CVD</strong> : {% translate 'villages of the same canton with the same CVD name are in the same CVD' %}</li>
+                <li><strong>Siège CVD</strong> : {% translate 'OUI / NON for the village of the line, or the name of the headquarters village of the CVD' %}</li>
+                <li><strong>Unité géographique</strong> : {% translate 'number of the geographical unit in the canton; villages of the same canton with the same number are in the same geographical unit' %}</li>
+            </ul>
+            <p class="text-muted">{% translate 'Lines without CVD or geographical unit are ignored. Nothing is saved before you confirm the preview.' %}</p>
+
+            <form method="post" enctype="multipart/form-data" action="{% url 'administrativelevels:geographical_unit_cvd_import' %}">
+                {% csrf_token %}
+                <div class="form-row align-items-end">
+                    <div class="form-group col-md-5">
+                        <label for="ugcvd-file">{% translate 'File (Excel or CSV)' %}</label>
+                        <input type="file" class="form-control-file" name="file" id="ugcvd-file" required
+                               accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" />
+                    </div>
+                    <div class="form-group col-md-4" id="ugcvd-sheet-group" style="display: none;">
+                        <label for="ugcvd-sheet">{% translate 'Sheet Name' %}</label>
+                        <select class="form-control" name="sheet_name" id="ugcvd-sheet"></select>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-eye"></i> {% translate 'Preview' %}</button>
+                    </div>
+                </div>
+            </form>
+            <a href="?action=template"><i class="fas fa-file-excel"></i> {% translate 'Download the template' %}</a>
+        </div>
+    </div>
+
+    {% else %}
+    {# ---------------------------------------------------------------- Étape 2 : aperçu #}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        {% blocktranslate with file=stored.file_name %}Preview of the file « {{ file }} »: nothing has been saved yet. Check the result, then confirm or cancel.{% endblocktranslate %}
+        {% if stored.sheet_name %}({% translate 'Sheet Name' %} : {{ stored.sheet_name }}){% endif %}
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-6 col-md-2 mb-2"><div class="stat"><div class="num">{{ counts.rows }}</div><div class="lbl">{% translate 'Lines read' %}</div></div></div>
+        <div class="col-6 col-md-2 mb-2"><div class="stat"><div class="num">{{ counts.units }}</div><div class="lbl">{% translate 'Geographical units' %} ({{ counts.units_to_create }} {% translate 'new' %})</div></div></div>
+        <div class="col-6 col-md-2 mb-2"><div class="stat"><div class="num">{{ counts.cvds }}</div><div class="lbl">CVD ({{ counts.cvds_to_create }} {% translate 'new' %})</div></div></div>
+        <div class="col-6 col-md-2 mb-2"><div class="stat"><div class="num">{{ counts.villages }}</div><div class="lbl">{% translate 'Villages attached' %}</div></div></div>
+        <div class="col-6 col-md-2 mb-2"><div class="stat"><div class="num {% if counts.missing_villages %}text-danger{% endif %}">{{ counts.missing_villages }}</div><div class="lbl">{% translate 'Villages not found' %}</div></div></div>
+        <div class="col-6 col-md-2 mb-2"><div class="stat"><div class="num {% if counts.invalid_units %}text-danger{% endif %}">{{ counts.invalid_units }}</div><div class="lbl">{% translate 'Geographical units excluded' %}</div></div></div>
+    </div>
+    {% if counts.ignored_rows %}<p class="text-muted">{% blocktranslate with n=counts.ignored_rows %}{{ n }} line(s) without CVD or geographical unit are ignored.{% endblocktranslate %}</p>{% endif %}
+
+    {% if plan.missing_villages %}
+    <div class="card border-danger mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-danger"><i class="fas fa-exclamation-triangle"></i> {% translate 'Villages of the file that do not exist' %} ({{ plan.missing_villages|length }})</h5>
+            <a class="btn btn-sm btn-outline-secondary" href="?action=missing_villages"><i class="fas fa-download"></i> {% translate 'Download' %}</a>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-2">{% translate 'These lines are ignored: create the villages (or fix their name in the file) and import again.' %}</p>
+            <div class="table-scroll">
+            <table class="table table-sm table-bordered mb-0">
+                <thead class="thead-light"><tr>
+                    <th>{% translate 'Line' %}</th><th>{% translate 'Region' %}</th><th>{% translate 'Prefecture' %}</th><th>{% translate 'Commune' %}</th>
+                    <th>{% translate 'Canton' %}</th><th>Village</th><th>CVD</th><th>{% translate 'GU' %}</th><th>{% translate 'Reason' %}</th><th>{% translate 'Close names in the canton' %}</th>
+                </tr></thead>
+                <tbody>
+                {% for row in plan.missing_villages %}
+                <tr>
+                    <td>{{ row.line }}</td><td>{{ row.region }}</td><td>{{ row.prefecture }}</td><td>{{ row.commune }}</td><td>{{ row.canton }}</td>
+                    <td><strong>{{ row.village }}</strong></td><td>{{ row.cvd }}</td><td>{{ row.unit }}</td><td>{{ row.reason }}</td><td>{{ row.suggestions }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if plan.row_errors %}
+    <div class="card border-danger mb-3">
+        <div class="card-header"><h5 class="mb-0 text-danger">{% translate 'Incomplete lines (ignored)' %} ({{ plan.row_errors|length }})</h5></div>
+        <div class="card-body table-scroll">
+            <table class="table table-sm table-bordered mb-0">
+                <thead class="thead-light"><tr><th>{% translate 'Line' %}</th><th>Village</th><th>{% translate 'Problem' %}</th></tr></thead>
+                <tbody>{% for row in plan.row_errors %}<tr><td>{{ row.line }}</td><td>{{ row.village }}</td><td>{{ row.message }}</td></tr>{% endfor %}</tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if plan.invalid_units %}
+    <div class="card border-danger mb-3">
+        <div class="card-header"><h5 class="mb-0 text-danger">{% translate 'Geographical units excluded from the import (inconsistent lines)' %} ({{ plan.invalid_units|length }})</h5></div>
+        <div class="card-body">
+            {% for unit in plan.invalid_units %}
+            <div class="mb-2">
+                <strong>{{ unit.canton_path }} — {% translate 'GU' %} {{ unit.number }}</strong>
+                <ul class="mb-0">{% for error in unit.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if plan.warnings or plan.emptied_cvds or plan.emptied_units %}
+    <div class="card border-warning mb-3">
+        <div class="card-header"><h5 class="mb-0 text-warning"><i class="fas fa-exclamation-circle"></i> {% translate 'Points to check' %}</h5></div>
+        <div class="card-body table-scroll">
+            <ul class="mb-0">
+                {% for warning in plan.warnings %}<li>{{ warning }}</li>{% endfor %}
+                {% for cvd in plan.emptied_cvds %}<li>{% blocktranslate with name=cvd.name canton=cvd.geographical_unit.canton.name %}Existing CVD « {{ name }} » ({{ canton }}) will no longer have any village (it is not deleted).{% endblocktranslate %}</li>{% endfor %}
+                {% for unit in plan.emptied_units %}<li>{% blocktranslate with code=unit.unique_code number=unit.attributed_number_in_canton canton=unit.canton.name %}Existing geographical unit {{ code }} (GU {{ number }}, {{ canton }}) will no longer have any village (it is not deleted).{% endblocktranslate %}</li>{% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if plan.valid_units %}
+    <h5 class="mt-4 mb-3">{% translate 'Geographical units and CVD to save' %}</h5>
+    {% for unit in plan.valid_units %}
+    <div class="card unit-card mb-3">
+        <div class="card-header">
+            <strong>{{ unit.canton_path }}</strong> — {% translate 'GU' %} {{ unit.number }}
+            {% if unit.existing %}<span class="badge badge-secondary">{% translate 'existing' %} · {{ unit.existing.unique_code }}</span>{% else %}<span class="badge badge-success">{% translate 'new' %}</span>{% endif %}
+            {% if unit.remaining_villages %}
+            <div class="small text-warning mt-1">{% translate 'Already in this geographical unit and not in the file (they stay in it):' %} {% for v in unit.remaining_villages %}{{ v.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+            {% endif %}
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-sm mb-0">
+                <thead class="thead-light"><tr><th style="width: 28%;">CVD</th><th style="width: 22%;">{% translate 'Headquarters village' %}</th><th>{% translate 'Villages' %}</th></tr></thead>
+                <tbody>
+                {% for cvd in unit.cvds.values %}
+                <tr>
+                    <td>
+                        {{ cvd.name }}
+                        {% if cvd.existing %}<span class="badge badge-secondary">{% translate 'existing' %}</span>{% else %}<span class="badge badge-success">{% translate 'new' %}</span>{% endif %}
+                    </td>
+                    <td>{{ cvd.headquarters.name|default:"—" }}</td>
+                    <td>
+                        {% for entry in cvd.entries %}
+                        <span class="mr-2 text-nowrap" title="{% translate 'Line' %} {{ entry.line }}">
+                            {{ entry.village.name }}
+                            {% if entry.status == 'new' %}<span class="badge badge-success">{% translate 'new' %}</span>
+                            {% elif entry.status == 'moved' %}<span class="badge badge-warning" title="{% translate 'Currently' %} : {{ entry.current_cvd.name|default:'—' }} / {% translate 'GU' %} {{ entry.current_unit.attributed_number_in_canton|default:'—' }}">{% translate 'moved' %}</span>
+                            {% else %}<span class="badge badge-light">{% translate 'unchanged' %}</span>{% endif %}
+                        </span>
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="confirm-bar d-flex flex-wrap align-items-center">
+        <form method="post" class="mr-2" action="{% url 'administrativelevels:geographical_unit_cvd_import' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="confirm" />
+            <button type="submit" class="btn btn-success" {% if not plan.can_be_applied %}disabled{% endif %}
+                    onclick="this.disabled = true; this.form.submit();">
+                <i class="fas fa-check"></i> {% translate 'Confirm and save' %}
+            </button>
+        </form>
+        <form method="post" class="mr-3" action="{% url 'administrativelevels:geographical_unit_cvd_import' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="cancel" />
+            <button type="submit" class="btn btn-secondary"><i class="fas fa-times"></i> {% translate 'Cancel' %}</button>
+        </form>
+        {% if not plan.can_be_applied %}<span class="text-danger">{% translate 'Nothing can be imported from this file.' %}</span>
+        {% elif plan.invalid_units or plan.missing_villages or plan.row_errors %}<span class="text-muted">{% translate 'Only the geographical units listed above will be saved.' %}</span>{% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+{% if not plan %}
+<script>
+    (function () {
+        var file = document.getElementById('ugcvd-file');
+        var group = document.getElementById('ugcvd-sheet-group');
+        var select = document.getElementById('ugcvd-sheet');
+        file.onchange = function () {
+            select.innerHTML = '';
+            group.style.display = 'none';
+            if (!this.files.length || /\.csv$/i.test(this.files[0].name)) { return; }
+            var data = new FormData();
+            data.append('file', this.files[0]);
+            data.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            fetch("{% url 'services:get_excel_sheets_names' %}", { method: 'POST', body: data })
+                .then(function (response) { return response.json(); })
+                .then(function (datas) {
+                    (datas.names || []).forEach(function (name) {
+                        var option = document.createElement('option');
+                        option.value = name;
+                        option.textContent = name;
+                        select.appendChild(option);
+                    });
+                    group.style.display = select.options.length ? 'block' : 'none';
+                })
+                .catch(function (error) { console.log(error); });
+        };
+    })();
+</script>
+{% endif %}
+{% endblock %}
