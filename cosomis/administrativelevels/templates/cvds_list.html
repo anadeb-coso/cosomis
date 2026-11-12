@@ -23,15 +23,18 @@
                         {% if user.is_superuser or user|has_group:"Admin" %}
                         <a class="btn btn-primary" href="{% url 'administrativelevels:cvd_create' %}"><i class="fa fa-plus"></i> {% translate 'Create CVD' %}</a>
                         {% endif %}
+                        {% if user.is_superuser or user|has_group:"Admin" %}
+                        <a class="btn btn-primary" href="{% url 'administrativelevels:geographical_unit_cvd_import' %}"><i class="fas fa-file-import"></i> {% translate 'Import GU and CVD' %}</a>
+                        {% endif %}
                         {% include 'components/modal_upload_one_sheet.html' with type_object="cvd" show_just_villages=False %}
                     {% endif %}
                     {% include 'components/download.html' with export_url='administrativelevels:download_cvd' %}
                 </div>
                 <div class="results-actions">
                     {% if user.is_superuser or user|has_group:"Admin" %}
-                    <a class="btn btn-primary" href="{% url 'administrativelevels:geographical_unit_create' %}"><i class="fa fa-plus"></i> {% translate 'Create geographical unit' %}</a>
+                    <a class="btn btn-primary" href="{% url 'administrativelevels:geographical_unit_create' %}"><i class="fa fa-plus"></i> {% translate 'Create GU' %}</a>
                     {% endif %}
-                    <a class="btn btn-primary" href="{% url 'administrativelevels:geographical_units_list' %}">{% translate 'Geographical units' %}</a>
+                    <a class="btn btn-primary" href="{% url 'administrativelevels:geographical_units_list' %}"><i class="fas fa-list"></i> {% translate 'GU' %}</a>
                 </div>
             </div>
 

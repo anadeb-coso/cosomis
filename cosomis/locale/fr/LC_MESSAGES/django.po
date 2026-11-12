@@ -4645,6 +4645,28 @@ msgstr "Aucun résultat"
 msgid "Choose an area status"
 msgstr "Choisir un statut de zone"
 
+#: .\administrativelevels\templates\components\download.html
+msgid "Choose one or more"
+msgstr "Choisir un ou plusieurs"
+
+#: .\administrativelevels\templates\cvds_list.html
+#: .\administrativelevels\templates\geographical_unit_list.html
+msgid "Create GU"
+msgstr "Créer une UG"
+
+#: .\administrativelevels\templates\cvds_list.html
+#: .\administrativelevels\templates\geographical_unit_list.html
+msgid "Import GU and CVD"
+msgstr "Importer UG et CVD"
+
+#: .\cosomis\templates\layouts\project_picker.html
+msgid "Search a project"
+msgstr "Rechercher un projet"
+
+#: .\cosomis\templates\layouts\project_picker.html
+msgid "No project matches your search."
+msgstr "Aucun projet ne correspond à votre recherche."
+
 #: .\administrativelevels\templates\administrativelevel_area_status.html
 msgid "Please select at least one administrative level."
 msgstr "Veuillez sélectionner au moins un niveau administratif."
@@ -6427,3 +6449,380 @@ msgstr "non vérifiés"
 
 msgid "photo(s)"
 msgstr "photo(s)"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "Missing column(s) in the file: %(columns)s"
+msgstr "Colonne(s) manquante(s) dans le fichier : %(columns)s"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "The file is empty."
+msgstr "Le fichier est vide."
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "The file could not be read: %(error)s"
+msgstr "Le fichier n'a pas pu être lu : %(error)s"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "Missing value(s): %(fields)s"
+msgstr "Valeur(s) manquante(s) : %(fields)s"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "Invalid geographical unit number: « %(value)s »"
+msgstr "Numéro d'unité géographique invalide : « %(value)s »"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "Canton « %(canton)s » matches several cantons: %(candidates)s"
+msgstr "Le canton « %(canton)s » correspond à plusieurs cantons : %(candidates)s"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "Canton « %(canton)s » not found"
+msgstr "Canton « %(canton)s » introuvable"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Several villages with this name in the canton"
+msgstr "Plusieurs villages portent ce nom dans le canton"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "Village not found in the canton %(canton)s"
+msgstr "Village introuvable dans le canton %(canton)s"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "GU %(number)s (line(s) %(lines)s)"
+msgstr "UG %(number)s (ligne(s) %(lines)s)"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "CVD « %(cvd)s » is given several geographical unit numbers: %(detail)s"
+msgstr "Le CVD « %(cvd)s » a plusieurs numéros d'unité géographique : %(detail)s"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "Village « %(village)s » is listed several times (lines %(lines)s): only one is kept"
+msgstr "Le village « %(village)s » apparaît plusieurs fois (lignes %(lines)s) : une seule est retenue"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "Village « %(village)s » is placed in several CVD or geographical units (lines %(lines)s)"
+msgstr "Le village « %(village)s » est placé dans plusieurs CVD ou unités géographiques (lignes %(lines)s)"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "CVD « %(cvd)s »: headquarters « %(value)s » (line %(line)s) is not one of the villages of the CVD"
+msgstr "CVD « %(cvd)s » : le siège « %(value)s » (ligne %(line)s) n'est pas un des villages du CVD"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "CVD « %(cvd)s » has several headquarters villages: %(villages)s"
+msgstr "Le CVD « %(cvd)s » a plusieurs villages sièges : %(villages)s"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "CVD « %(cvd)s »: no headquarters village given, « %(village)s » is used"
+msgstr "CVD « %(cvd)s » : aucun village siège indiqué, « %(village)s » est retenu"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "Village « %(village)s » is not in the file but stays in the CVD « %(cvd)s »"
+msgstr "Le village « %(village)s » n'est pas dans le fichier mais reste dans le CVD « %(cvd)s »"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Line"
+msgstr "Ligne"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Reason"
+msgstr "Motif"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Close names in the canton"
+msgstr "Noms proches dans le canton"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Import geographical units and CVD"
+msgstr "Importer les unités géographiques et CVD"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Import cancelled: nothing has been saved."
+msgstr "Import annulé : rien n'a été enregistré."
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "No file to import: load the file again."
+msgstr "Aucun fichier à importer : chargez à nouveau le fichier."
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Nothing can be imported from this file."
+msgstr "Rien ne peut être importé depuis ce fichier."
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "Import done: %(units_created)s geographical unit(s) created, %(units_updated)s updated; %(cvds_created)s CVD created, %(cvds_updated)s updated; %(villages)s village(s) attached."
+msgstr "Import terminé : %(units_created)s unité(s) géographique(s) créée(s), %(units_updated)s mise(s) à jour ; %(cvds_created)s CVD créé(s), %(cvds_updated)s mis à jour ; %(villages)s village(s) rattaché(s)."
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Choose a file to import."
+msgstr "Choisissez un fichier à importer."
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Load the file"
+msgstr "Charger le fichier"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "The file must have one line per village with the columns below (other columns are ignored):"
+msgstr "Le fichier doit avoir une ligne par village avec les colonnes ci-dessous (les autres colonnes sont ignorées) :"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "locate the village (the canton is required)"
+msgstr "situent le village (le canton est obligatoire)"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "or"
+msgstr "ou"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "the village, which must already exist"
+msgstr "le village, qui doit déjà exister"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "villages of the same canton with the same CVD name are in the same CVD"
+msgstr "les villages d'un même canton portant le même nom de CVD sont dans le même CVD"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "OUI / NON for the village of the line, or the name of the headquarters village of the CVD"
+msgstr "OUI / NON pour le village de la ligne, ou le nom du village siège du CVD"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "number of the geographical unit in the canton; villages of the same canton with the same number are in the same geographical unit"
+msgstr "numéro de l'unité géographique dans le canton ; les villages d'un même canton portant le même numéro sont dans la même unité géographique"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Lines without CVD or geographical unit are ignored. Nothing is saved before you confirm the preview."
+msgstr "Les lignes sans CVD ni unité géographique sont ignorées. Rien n'est enregistré avant la confirmation de l'aperçu."
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "File (Excel or CSV)"
+msgstr "Fichier (Excel ou CSV)"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Download the template"
+msgstr "Télécharger le canevas"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Lines read"
+msgstr "Lignes lues"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "new"
+msgstr "nouveau"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Villages attached"
+msgstr "Villages rattachés"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Villages not found"
+msgstr "Villages introuvables"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Geographical units excluded"
+msgstr "Unités géographiques écartées"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Villages of the file that do not exist"
+msgstr "Villages du fichier qui n'existent pas"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "These lines are ignored: create the villages (or fix their name in the file) and import again."
+msgstr "Ces lignes sont ignorées : créez les villages (ou corrigez leur nom dans le fichier) puis importez à nouveau."
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "GU"
+msgstr "UG"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Incomplete lines (ignored)"
+msgstr "Lignes incomplètes (ignorées)"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Problem"
+msgstr "Problème"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Geographical units excluded from the import (inconsistent lines)"
+msgstr "Unités géographiques écartées de l'import (lignes incohérentes)"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Points to check"
+msgstr "Points à vérifier"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Geographical units and CVD to save"
+msgstr "Unités géographiques et CVD à enregistrer"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "existing"
+msgstr "existant"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Already in this geographical unit and not in the file (they stay in it):"
+msgstr "Déjà dans cette unité géographique et absents du fichier (ils y restent) :"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Currently"
+msgstr "Actuellement"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "moved"
+msgstr "déplacé"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "unchanged"
+msgstr "inchangé"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Confirm and save"
+msgstr "Confirmer et enregistrer"
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+msgid "Only the geographical units listed above will be saved."
+msgstr "Seules les unités géographiques listées ci-dessus seront enregistrées."
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "Preview of the file « %(file)s »: nothing has been saved yet. Check the result, then confirm or cancel."
+msgstr "Aperçu du fichier « %(file)s » : rien n'est encore enregistré. Vérifiez le résultat, puis confirmez ou annulez."
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "%(n)s line(s) without CVD or geographical unit are ignored."
+msgstr "%(n)s ligne(s) sans CVD ni unité géographique sont ignorées."
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "Existing CVD « %(name)s » (%(canton)s) will no longer have any village (it is not deleted)."
+msgstr "Le CVD existant « %(name)s » (%(canton)s) n'aura plus aucun village (il n'est pas supprimé)."
+
+#: .dministrativelevelsunctions_import_ug_cvd.py
+#, python-format
+msgid "Existing geographical unit %(code)s (GU %(number)s, %(canton)s) will no longer have any village (it is not deleted)."
+msgstr "L'unité géographique existante %(code)s (UG %(number)s, %(canton)s) n'aura plus aucun village (elle n'est pas supprimée)."
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "each level is searched under the level of the column before it, and created if it does not exist"
+msgstr "chaque niveau est cherché sous le niveau de la colonne précédente, et créé s'il n'existe pas"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "optional, saved on the village of the line"
+msgstr "facultatif, enregistré sur le village de la ligne"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "Nothing is saved before you confirm the preview."
+msgstr "Rien n'est enregistré avant la confirmation de l'aperçu."
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "Administrative levels in the file"
+msgstr "Niveaux administratifs du fichier"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "To create"
+msgstr "À créer"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "Already existing"
+msgstr "Déjà existants"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "Existing villages updated"
+msgstr "Villages existants mis à jour"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "Lines in error"
+msgstr "Lignes en erreur"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "By type"
+msgstr "Par type"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "In the file"
+msgstr "Dans le fichier"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "Administrative levels to create"
+msgstr "Niveaux administratifs à créer"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "No new administrative level: all the levels of the file already exist."
+msgstr "Aucun nouveau niveau administratif : tous les niveaux du fichier existent déjà."
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "Lines in error (stopped at the level in error)"
+msgstr "Lignes en erreur (arrêtées au niveau en erreur)"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "Names of the file matched with a close existing name (no duplicate is created):"
+msgstr "Noms du fichier rapprochés d'un nom existant proche (aucun doublon n'est créé) :"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "Lines of the file"
+msgstr "Lignes du fichier"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "With a level to create"
+msgstr "Avec un niveau à créer"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "In error"
+msgstr "En erreur"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "Link to the project"
+msgstr "Lien au projet"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "Without this link, the levels created are not shown in the lists of the project."
+msgstr "Sans ce lien, les niveaux créés ne s'affichent pas dans les listes du projet."
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "No project selected: the administrative levels will not be linked to a project."
+msgstr "Aucun projet sélectionné : les niveaux administratifs ne seront liés à aucun projet."
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+msgid "The lines in error stop at the level in error; the levels above it are saved."
+msgstr "Les lignes en erreur s'arrêtent au niveau en erreur ; les niveaux au-dessus sont enregistrés."
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+#, python-format
+msgid "Link the %(total)s administrative level(s) of the file to the project « %(project)s »"
+msgstr "Lier les %(total)s niveau(x) administratif(s) du fichier au projet « %(project)s »"
+
+#: .\administrativelevels\templates\administrativelevel_import.html
+#, python-format
+msgid "%(linked)s already linked to the project, %(to_link)s to link. The levels already linked to the project stay linked; the cycles of the project are updated as when the levels are chosen on the project form."
+msgstr "%(linked)s déjà lié(s) au projet, %(to_link)s à lier. Les niveaux déjà liés au projet le restent ; les cycles du projet sont mis à jour comme lors du choix des niveaux dans le formulaire du projet."
+
+#: .\administrativelevels\views_import_admin_levels.py
+msgid "Import administrative levels"
+msgstr "Importer des niveaux administratifs"
+
+#: .\administrativelevels\views_import_admin_levels.py
+#, python-format
+msgid "Import done: %(new)s administrative level(s) created, %(existing)s already existing, %(villages)s village(s) updated."
+msgstr "Import terminé : %(new)s niveau(x) administratif(s) créé(s), %(existing)s déjà existant(s), %(villages)s village(s) mis à jour."
+
+#: .\administrativelevels\views_import_admin_levels.py
+#, python-format
+msgid "%(linked)s administrative level(s) linked to the project %(project)s."
+msgstr "%(linked)s niveau(x) administratif(s) lié(s) au projet %(project)s."
+
+#: .\administrativelevels\views_import_admin_levels.py
+#, python-format
+msgid "%(n)s line(s) not saved:"
+msgstr "%(n)s ligne(s) non enregistrée(s) :"

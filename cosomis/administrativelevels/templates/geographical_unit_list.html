@@ -20,14 +20,17 @@
             <div class="results-top">
                 <div class="results-actions">
                     {% if user.is_superuser or user|has_group:"Admin" %}
-                    <a class="btn btn-primary" href="{% url 'administrativelevels:geographical_unit_create' %}"><i class="fa fa-plus"></i> {% translate 'Create geographical unit' %}</a>
+                    <a class="btn btn-primary" href="{% url 'administrativelevels:geographical_unit_create' %}"><i class="fa fa-plus"></i> {% translate 'Create GU' %}</a>
+                    {% endif %}
+                    {% if user.is_superuser or user|has_group:"Admin" %}
+                    <a class="btn btn-primary" href="{% url 'administrativelevels:geographical_unit_cvd_import' %}"><i class="fas fa-file-import"></i> {% translate 'Import GU and CVD' %}</a>
                     {% endif %}
                 </div>
                 <div class="results-actions">
                     {% if user.is_superuser or user|has_group:"Admin" %}
                     <a class="btn btn-primary" href="{% url 'administrativelevels:cvd_create' %}"><i class="fa fa-plus"></i> {% translate 'Create CVD' %}</a>
                     {% endif %}
-                    <a class="btn btn-primary" href="{% url 'administrativelevels:cvds_list' %}">{% translate 'CVD list' %}</a>
+                    <a class="btn btn-primary" href="{% url 'administrativelevels:cvds_list' %}"><i class="fas fa-list"></i> {% translate 'CVD list' %}</a>
                 </div>
             </div>
 
